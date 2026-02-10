@@ -18,3 +18,4 @@ dependencies:
   - cgranges
   - pip:
       - lightmotif
+      

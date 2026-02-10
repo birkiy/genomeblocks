@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 from .loci import Loci
+from .tags import Tags
 
 
 def plan_workers(n_tracks: int, n_loci: int, *, cores: int | None = None,
@@ -59,7 +60,7 @@ def _worker(
     dt: np.dtype,
     ctr: Value, # type: ignore
     span: bool = False,
-):
+    ):
     """Worker process for parallel signal extraction from bigwig files."""
     t_lo, t_hi = t_b
     l_lo, l_hi = l_b
@@ -128,7 +129,7 @@ def signal(
     max_workers: int | None = None,
     span: bool = False,
     verbose: bool = True
-) -> np.ndarray:
+    ) -> np.ndarray:
     """
     Extract signal from bigwig files for given genomic loci.
 
@@ -217,6 +218,7 @@ def plot_heatmap(
     loci: Loci,
     S: np.ndarray,
     *,
+    tags: Tags | None = None,
     sets: List[str] | None = None,
     samples: List[str] | None = None,
     colors: Dict[str, tuple] | None = None,
@@ -228,14 +230,15 @@ def plot_heatmap(
     profile: bool = True,
     no_sort: bool = False,
     dpi: int = 100,
-):
+    ):
     """
     Plot heatmap of genomic signals.
     
     Args:
-        loci: Genomic loci with .attr['Set'] membership
+        loci: Genomic loci
         S: Signal array of shape (regions × tracks × bins)
-        sets: List of set names
+        tags: Tags object for grouping loci (if None, all loci treated as one group)
+        sets: List of tag names to use as groups (if None, uses all tags in Tags object)
         samples: List of sample names
         colors: Dictionary mapping set names to colors
         ymax: Maximum y-axis value for profile plots
@@ -250,8 +253,28 @@ def plot_heatmap(
     Returns:
         matplotlib Figure
     """
-    if sets is None:
-        sets = sorted({loc.attr.get("Set", "regions") for loc in loci})
+    # Build uid to index mapping for efficient lookup
+    uid_to_idx = {loc.uid: i for i, loc in enumerate(loci)}
+    
+    if tags is None:
+        # No tags provided - treat all loci as one group
+        sets = ["all"]
+        gidx = [np.ones(len(loci), dtype=bool)]
+    else:
+        # Use tags to group loci
+        if sets is None:
+            sets = sorted(tags.keys())
+        
+        gidx = []
+        for tag_name in sets:
+            if tag_name not in tags:
+                raise ValueError(f"Tag '{tag_name}' not found in Tags object")
+            tag_view = tags[tag_name]
+            # Get UIDs from the tag and create boolean index
+            tag_uids = tag_view.uids if hasattr(tag_view, 'uids') else set(tag_view)
+            idx = np.array([loc.uid in tag_uids for loc in loci])
+            gidx.append(idx)
+    
     if samples is None:
         samples = [f"track_{i}" for i in range(S.shape[1])]
 
@@ -263,8 +286,6 @@ def plot_heatmap(
 
     if colors is None:
         colors = {k: plt.get_cmap('tab10')(i) for i, k in enumerate(sets)}
-
-    gidx = [np.array([loc.attr.get("Set") == s for loc in loci]) for s in sets]
     order = (np.arange(len(loci)) if no_sort
              else np.argsort(S.mean(axis=(1, 2)))[::-1])
     S_ = S[order]
@@ -305,19 +326,21 @@ def plot_profiles(
     loci: Loci,
     S: np.ndarray,
     *,
+    tags: Tags | None = None,
     sets: List[str] | None = None,
     colors: Dict[str, tuple] | None = None,
     ylim: float | None = None,
     dpi: int = 100,
     height: int = 3000,
-):
+    ):
     """
     Plot average signal profiles by set.
     
     Args:
+        loci: Genomic loci
         S: Signal array of shape (regions × tracks × bins)
-        loci: Genomic loci with .attr['Set'] membership
-        sets: List of set names
+        tags: Tags object for grouping loci (if None, all loci treated as one group)
+        sets: List of tag names to use as groups (if None, uses all tags in Tags object)
         colors: Dictionary mapping set names to colors
         ylim: Y-axis limit
         dpi: Figure DPI
@@ -326,12 +349,30 @@ def plot_profiles(
     Returns:
         matplotlib Figure
     """
-    if sets is None:
-        sets = sorted({loc.attr.get("Set", "regions") for loc in loci})
+    # Build uid to index mapping for efficient lookup
+    uid_to_idx = {loc.uid: i for i, loc in enumerate(loci)}
+    
+    if tags is None:
+        # No tags provided - treat all loci as one group
+        sets = ["all"]
+        gidx = [np.ones(len(loci), dtype=bool)]
+    else:
+        # Use tags to group loci
+        if sets is None:
+            sets = sorted(tags.keys())
+        
+        gidx = []
+        for tag_name in sets:
+            if tag_name not in tags:
+                raise ValueError(f"Tag '{tag_name}' not found in Tags object")
+            tag_view = tags[tag_name]
+            # Get UIDs from the tag and create boolean index
+            tag_uids = tag_view.uids if hasattr(tag_view, 'uids') else set(tag_view)
+            idx = np.array([loc.uid in tag_uids for loc in loci])
+            gidx.append(idx)
+    
     if colors is None:
         colors = {k: plt.get_cmap('tab10')(i) for i, k in enumerate(sets)}
-
-    gidx = [np.array([loc.attr.get("Set") == s for loc in loci]) for s in sets]
     fig, axs = plt.subplots(1, len(sets), figsize=(len(sets) * 3, 3), dpi=dpi, squeeze=False)
     axs = axs[0]
 

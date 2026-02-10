@@ -206,3 +206,8 @@ Loci.merge = merge
 Loci.nearest = nearest
 Loci.tag = tag
 Loci.map = map
+
+# Import signal module to attach signal-related methods to Loci
+from . import signal  # noqa: F401
+from . import motifs  # noqa: F401
+from . import bedpe  # noqa: F401

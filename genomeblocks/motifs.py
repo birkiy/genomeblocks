@@ -1,6 +1,8 @@
 """Motif scanning utilities."""
 from typing import Dict
 
+from .loci import Loci
+
 
 def _parse_fasta(path):
     import gzip
@@ -31,6 +33,7 @@ def make_genome(path):
 def scan_motifs(s, genome, motif_path, motif_format='jaspar', r=250, threshold=13.0, norm=True, verbose=True):
     import lightmotif
     from tqdm import tqdm
+
     # ensure genome is a dict
     if not isinstance(genome, dict): genome = make_genome(genome)
     n_motif = len([_ for _ in lightmotif.load(motif_path, format=motif_format)])
@@ -39,8 +42,15 @@ def scan_motifs(s, genome, motif_path, motif_format='jaspar', r=250, threshold=1
         M[m.name] = 0
         pssm = m.counts.normalize(0.1).log_odds()
         for l in s:
-            seq = lightmotif.stripe(l.sequence(genome, r=r).upper())
+            seq = l.sequence(genome, r=500).upper()
+            if len(seq)  == (2*r):
+                seq = lightmotif.stripe(l.sequence(genome, r=r).upper())
+            else:
+                continue
             for _ in lightmotif.scan(pssm, seq, threshold=threshold):
                 M[m.name] += 1
         if norm: M[m.name] = M[m.name] / len(m.counts)
     return M
+
+
+Loci.scan_motifs = scan_motifs

@@ -1,7 +1,7 @@
 """Transcript/Gene/Genes definitions and GTF parsing helpers."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, ClassVar, Callable
 
 # local imports delayed where necessary to avoid circular refs
 from .locus import Exon, CDS, UTR, Locus
@@ -21,11 +21,14 @@ class Transcript(Locus):
         if s.utr is not None: s.utr = Loci(s.utr)
 
     def add_exon(s, e: Exon) -> None:
-        s.exons.append(e)
+        if s.exons is not None:
+            s.exons.append(e)
     def add_cds(s, c: CDS) -> None:
-        s.cds.append(c)
+        if s.cds is not None:
+            s.cds.append(c)
     def add_utr(s, u: UTR) -> None:
-        s.utr.append(u)
+        if s.utr is not None:
+            s.utr.append(u)
 
 
 @dataclass
@@ -40,7 +43,8 @@ class Gene(Locus):
         s.tss = Locus(s.chrom, s.start, s.start+1) if s.strand == '+' else Locus(s.chrom, s.end, s.end-1)
 
     def add_transript(s, t_id, t: Transcript) -> None:
-        s.transcripts[t_id] = t
+        if s.transcripts is not None:
+            s.transcripts[t_id] = t
 
 @dataclass
 class Genes(dict):
@@ -54,9 +58,10 @@ class Genes(dict):
     def _build_annot(s):
         # delay Loci import to avoid circular import
         from .loci import Loci
+        # Loci functions are used here, slop
         s._annot = {
             'body' : Loci(s.values()),
-            'prom' : Loci(s.get_tss().values()).slop(s._promoter_r).sort().merge(),
+            'prom' : Loci(s.get_tss().values()).slop(s._promoter_r).sort().merge(), 
             'exon' : Loci(e for g in s.values() for t in g.transcripts.values() for e in t.exons).sort().merge(),
             'utr5' : Loci(u for g in s.values() for t in g.transcripts.values() for u in t.utr if u.type ==  "5'").sort().merge(),
             'utr3' : Loci(u for g in s.values() for t in g.transcripts.values() for u in t.utr if u.type ==  "3'").sort().merge()
@@ -101,19 +106,23 @@ def _parse_attributes(attr_str: str) -> Dict[str, str]:
 
 
 # GTF/GFF make function (as classmethod)
-@classmethod
 def make(cls, filename, gene_name_key='gene_name', gene_type_key='gene_type', chr_map=None, promoter_r=1000):
-    genes = Genes(filename=filename, _promoter_r=promoter_r)
+    from tqdm import tqdm
+
+    genes = cls(filename=filename, _promoter_r=promoter_r)
     unmapped = []
 
     with open(filename) as f:
-        for line in f:
+        for line in tqdm(f, desc='[INFO] Parsing GTF/GFF file 🧩', mininterval=30):
             if line.startswith("#") or not line.strip(): continue
             fields = line.strip().split("\t")
             if len(fields) == 9:
                 chrom, source, feature_type, start, end, score, strand, phase, attributes = fields
             elif len(fields) == 8:
                 chrom, source, feature_type, start, end, score, strand, attributes = fields
+            else:
+                # Skip malformed lines that do not conform to GTF/GFF column counts
+                continue
 
             if chr_map is not None and chrom in chr_map: chrom = chr_map[chrom]
             start, end = int(start), int(end)
@@ -151,7 +160,8 @@ def make(cls, filename, gene_name_key='gene_name', gene_type_key='gene_type', ch
                 elif feature_type == 'three_prime_UTR': utr_type = "3'"
                 else:
                     if strand == '+': utr_type = "5'" if end <= genes[gene_id].transcripts[t_id].cds[0].start else "3'"
-                    if strand == '-': utr_type = "3'" if end <= genes[gene_id].transcripts[t_id].cds[0].start else "5'"
+                    elif strand == '-': utr_type = "3'" if end <= genes[gene_id].transcripts[t_id].cds[0].start else "5'"
+                    else: utr_type = "5'"  # default fallback
                 u = UTR(chrom, start, end, strand, exon_number=e_number, type=utr_type)
                 genes[gene_id].transcripts[t_id].add_utr(u)
             else:
@@ -161,7 +171,8 @@ def make(cls, filename, gene_name_key='gene_name', gene_type_key='gene_type', ch
     return genes
 
 # Attach helper functions to Genes to preserve original API assignment
-Genes.make = make
+Genes.make = classmethod(make)
+
 
 def annotations(s: Genes, L):
     import pandas as pd
