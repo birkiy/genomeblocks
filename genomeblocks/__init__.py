@@ -34,6 +34,8 @@ _EXPORTS: Dict[str, tuple[str, str]] = {
 	# motifs
 	'make_genome': ('.motifs', 'make_genome'),
 	'scan_motifs': ('.motifs', 'scan_motifs'),
+	# signal
+	'compare_heatmap': ('.signal', 'compare_heatmap'),
 }
 
 

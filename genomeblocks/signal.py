@@ -214,11 +214,27 @@ def _bcast(x, n, name):
     return list(x)
 
 
+def _resolve_groups(S, gidx, sort):
+    """Convert boolean masks to sorted index arrays."""
+    groups = []
+    for idx in gidx:
+        indices = np.where(idx)[0]
+        if sort == "group":
+            order = np.argsort(S[indices].mean(axis=(1, 2)))[::-1]
+            indices = indices[order]
+        groups.append(indices)
+    if sort == "global":
+        vals = S.mean(axis=(1, 2))
+        groups = [g[np.argsort(vals[g])[::-1]] for g in groups]
+    return groups
+
+
 def plot_heatmap(
     loci: Loci,
     S: np.ndarray,
     *,
     tags: Tags | None = None,
+    groups: Dict[str, "Loci"] | None = None,
     sets: List[str] | None = None,
     samples: List[str] | None = None,
     colors: Dict[str, tuple] | None = None,
@@ -228,53 +244,57 @@ def plot_heatmap(
     cmap: str = "Blues",
     vmax: float = 10,
     profile: bool = True,
-    no_sort: bool = False,
+    sort: str | None = "group",
     dpi: int = 100,
     ):
     """
     Plot heatmap of genomic signals.
-    
+
     Args:
         loci: Genomic loci
-        S: Signal array of shape (regions × tracks × bins)
+        S: Signal array of shape (regions x tracks x bins)
         tags: Tags object for grouping loci (if None, all loci treated as one group)
-        sets: List of tag names to use as groups (if None, uses all tags in Tags object)
-        samples: List of sample names
+        groups: Dict mapping group names to Loci objects (alternative to tags).
+                Mutually exclusive with tags.
+        sets: List of group names controlling row order (if None, uses all keys)
+        samples: List of sample names (column labels)
         colors: Dictionary mapping set names to colors
-        ymax: Maximum y-axis value for profile plots
-        ymin: Minimum y-axis value for profile plots
-        height: Region height in base pairs
-        cmap: Colormap for heatmaps
-        vmax: Maximum value for heatmap color scaling
+        ymax: Maximum y-axis value for profile plots (scalar or per-track list)
+        ymin: Minimum y-axis value for profile plots (scalar or per-track list)
+        height: Region height in base pairs (for x-axis labels)
+        cmap: Colormap for heatmaps (scalar or per-track list)
+        vmax: Maximum value for heatmap color scaling (scalar or per-track list)
         profile: Include average profile above heatmaps
-        no_sort: Don't sort regions by mean signal
+        sort: Sorting mode - "group" (per-group), "global", or None (no sort)
         dpi: Figure DPI
-    
+
     Returns:
         matplotlib Figure
     """
-    # Build uid to index mapping for efficient lookup
-    uid_to_idx = {loc.uid: i for i, loc in enumerate(loci)}
-    
+    if groups is not None and tags is not None:
+        raise ValueError("Cannot specify both 'tags' and 'groups'")
+
+    if groups is not None:
+        tags = Tags.make(loci, verbose=False)
+        tags.add(groups)
+        if sets is None:
+            sets = list(groups.keys())
+
     if tags is None:
-        # No tags provided - treat all loci as one group
         sets = ["all"]
         gidx = [np.ones(len(loci), dtype=bool)]
     else:
-        # Use tags to group loci
         if sets is None:
             sets = sorted(tags.keys())
-        
         gidx = []
         for tag_name in sets:
             if tag_name not in tags:
                 raise ValueError(f"Tag '{tag_name}' not found in Tags object")
             tag_view = tags[tag_name]
-            # Get UIDs from the tag and create boolean index
             tag_uids = tag_view.uids if hasattr(tag_view, 'uids') else set(tag_view)
             idx = np.array([loc.uid in tag_uids for loc in loci])
             gidx.append(idx)
-    
+
     if samples is None:
         samples = [f"track_{i}" for i in range(S.shape[1])]
 
@@ -286,13 +306,11 @@ def plot_heatmap(
 
     if colors is None:
         colors = {k: plt.get_cmap('tab10')(i) for i, k in enumerate(sets)}
-    order = (np.arange(len(loci)) if no_sort
-             else np.argsort(S.mean(axis=(1, 2)))[::-1])
-    S_ = S[order]
-    g_ = [idx[order] for idx in gidx]
+
+    g_ = _resolve_groups(S, gidx, sort)
     nb = S.shape[-1]
 
-    rows = ([sum(idx.sum() for idx in g_) // 4] if profile else []) + [idx.sum() for idx in g_]
+    rows = ([max(sum(len(g) for g in g_) // 4, 1)] if profile else []) + [max(len(g), 1) for g in g_]
     fig = plt.figure(figsize=(3 * n, 10), dpi=dpi)
     gs = gridspec.GridSpec(len(rows), n, height_ratios=rows)
     plt.subplots_adjust(hspace=0.05, wspace=0.3)
@@ -301,16 +319,22 @@ def plot_heatmap(
         if profile:
             ax = fig.add_subplot(gs[0, i])
             for j, idx in enumerate(g_):
-                ax.plot(S_[idx, i, :].mean(0), color=colors[sets[j]], lw=2)
+                if len(idx) > 0:
+                    ax.plot(S[idx, i, :].mean(0), color=colors[sets[j]], lw=2,
+                            label=sets[j])
             ax.set_ylim(yl[i], ys[i])
             ax.set_xticks([])
             if i == 0:
-                ax.set_ylabel("signal")
+                ax.set_ylabel("CPM signal")
+            if i == n - 1:
+                ax.legend(fontsize=7, frameon=False)
             ax.set_title(s)
 
         for j, idx in enumerate(g_):
             ax = fig.add_subplot(gs[j + (1 if profile else 0), i])
-            ax.imshow(S_[idx, i, :], aspect='auto', cmap=cmaps[i], vmin=0, vmax=vms[i])
+            if len(idx) > 0:
+                ax.imshow(S[idx, i, :], aspect='auto', cmap=cmaps[i],
+                          vmin=0, vmax=vms[i])
             ax.set_xticks([])
             ax.set_yticks([])
             if i == 0:
@@ -388,6 +412,96 @@ def plot_profiles(
 
     axs[0].set_ylabel("signal")
     return fig
+
+
+def compare_heatmap(
+    a: Loci,
+    b: Loci,
+    bigwigs: Sequence[str],
+    *,
+    a_name: str = "A",
+    b_name: str = "B",
+    common_name: str = "common",
+    sets: List[str] | None = None,
+    samples: List[str] | None = None,
+    n_bins: int = 200,
+    flank: int = 3_000,
+    agg: str = "mean",
+    cmap: str = "Blues",
+    vmax: float = 10,
+    ymax: float = 10,
+    ymin: float = 0,
+    profile: bool = True,
+    sort: str | None = "group",
+    colors: Dict[str, tuple] | None = None,
+    dpi: int = 100,
+    S: np.ndarray | None = None,
+    signal_kw: dict | None = None,
+    ):
+    """
+    Compare two Loci sets as a heatmap grid.
+
+    Computes a-specific (a - b), b-specific (b - a), and common (a & b),
+    extracts signal from bigwigs, and plots a heatmap grid.
+
+    Args:
+        a, b: Two Loci objects to compare
+        bigwigs: BigWig file paths (columns of the heatmap)
+        a_name, b_name: Labels for the specific rows
+        common_name: Label for the common row
+        sets: Row order. Defaults to [a_name, common_name, b_name].
+              Pass a subset or reorder to customise.
+        samples: Column labels (one per bigwig)
+        n_bins, flank, agg: Passed to signal() when S is not provided
+        cmap, vmax, ymax, ymin: Passed to plot_heatmap (scalar or per-track)
+        profile: Include average profile above heatmaps
+        sort: Sorting mode - "group" (per-group), "global", or None
+        colors: Dict mapping group names to colors
+        dpi: Figure DPI
+        S: Pre-computed signal array for the union loci. Skips extraction.
+        signal_kw: Extra kwargs passed to signal()
+
+    Returns:
+        (fig, union_loci, S, tags)
+    """
+    a_specific = a - b
+    b_specific = b - a
+    common = a & b
+    union = a_specific | common | b_specific
+
+    tags = Tags.make(union, verbose=False)
+    tags.add({
+        a_name: a_specific,
+        common_name: common,
+        b_name: b_specific,
+    })
+
+    if S is None:
+        kw = dict(n_bins=n_bins, flank=flank, agg=agg)
+        if signal_kw:
+            kw.update(signal_kw)
+        S = signal(union, bigwigs, **kw)
+
+    if sets is None:
+        sets = [a_name, common_name, b_name]
+
+    height = flank
+
+    fig = plot_heatmap(
+        union, S,
+        tags=tags,
+        sets=sets,
+        samples=samples,
+        colors=colors,
+        ymax=ymax, ymin=ymin,
+        height=height,
+        cmap=cmap, vmax=vmax,
+        profile=profile,
+        sort=sort,
+        dpi=dpi,
+    )
+
+    return fig, union, S, tags
 
 
 Loci.signal = signal
