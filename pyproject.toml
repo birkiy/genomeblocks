@@ -32,7 +32,8 @@ dependencies = [
     "pyranges",
     "tqdm",
     "cgranges",
-    "lightmotif"
+    "lightmotif",
+    "conorm"
 ]
 
 [tool.setuptools.packages.find]

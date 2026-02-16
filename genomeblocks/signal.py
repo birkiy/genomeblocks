@@ -205,6 +205,27 @@ def signal(
     shm.unlink()
     return out
 
+
+def tmm(cube: np.ndarray) -> np.ndarray:
+    """TMM-normalize a signal cube (regions × tracks × bins).
+
+    Computes per-track TMM normalization factors and library-size
+    scaling so that tracks become comparable.
+
+    Args:
+        cube: Signal array of shape (regions, tracks, bins)
+
+    Returns:
+        Normalized copy of the cube (same shape).
+    """
+    import conorm
+    means = np.nanmean(cube, axis=2)                        # (regions, tracks)
+    factors = conorm.tmm_norm_factors(means)                 # (tracks,)
+    lib_size = means.sum(0)                                  # (tracks,)
+    scale = 1.0 / (factors * lib_size / 1_000_000)
+    return cube * scale[None, :, None]
+
+
 def _bcast(x, n, name):
     """Convert scalar/str to list [x]*n; sequence of length n passes through"""
     if isinstance(x, str) or not isinstance(x, SequenceABC):
@@ -423,10 +444,11 @@ def compare_heatmap(
     b_name: str = "B",
     common_name: str = "common",
     sets: List[str] | None = None,
-    samples: List[str] | None = None,
+    samples: List[str] | Dict[str, List[int]] | None = None,
     n_bins: int = 200,
     flank: int = 3_000,
     agg: str = "mean",
+    normalize: bool = True,
     cmap: str = "Blues",
     vmax: float = 10,
     ymax: float = 10,
@@ -451,14 +473,20 @@ def compare_heatmap(
         common_name: Label for the common row
         sets: Row order. Defaults to [a_name, common_name, b_name].
               Pass a subset or reorder to customise.
-        samples: Column labels (one per bigwig)
+        samples: Column labels. Either a list of strings (one per bigwig,
+                 no merging) or a dict mapping column names to lists of
+                 bigwig indices to average together, e.g.
+                 ``{"ATAC": [0, 1], "H3K4me3": [2, 3]}``.
         n_bins, flank, agg: Passed to signal() when S is not provided
-        cmap, vmax, ymax, ymin: Passed to plot_heatmap (scalar or per-track)
+        normalize: Apply TMM normalization before merging (default True)
+        cmap, vmax, ymax, ymin: Passed to plot_heatmap (scalar or per-track).
+                 When samples is a dict, lengths must match the merged count.
         profile: Include average profile above heatmaps
         sort: Sorting mode - "group" (per-group), "global", or None
         colors: Dict mapping group names to colors
         dpi: Figure DPI
-        S: Pre-computed signal array for the union loci. Skips extraction.
+        S: Pre-computed signal array for the union loci. Skips extraction
+           and normalization.
         signal_kw: Extra kwargs passed to signal()
 
     Returns:
@@ -476,11 +504,28 @@ def compare_heatmap(
         b_name: b_specific,
     })
 
+    # --- signal extraction + normalization + merging ----
     if S is None:
         kw = dict(n_bins=n_bins, flank=flank, agg=agg)
         if signal_kw:
             kw.update(signal_kw)
         S = signal(union, bigwigs, **kw)
+        S = np.nan_to_num(S)
+
+        if normalize:
+            S = tmm(S)
+            S = np.nan_to_num(S)
+
+    # merge tracks when samples is a dict
+    if isinstance(samples, dict):
+        merged = np.stack(
+            [S[:, idx, :].mean(axis=1) for idx in samples.values()],
+            axis=1,
+        )
+        S = merged
+        sample_labels = list(samples.keys())
+    else:
+        sample_labels = samples  # list[str] or None
 
     if sets is None:
         sets = [a_name, common_name, b_name]
@@ -491,7 +536,7 @@ def compare_heatmap(
         union, S,
         tags=tags,
         sets=sets,
-        samples=samples,
+        samples=sample_labels,
         colors=colors,
         ymax=ymax, ymin=ymin,
         height=height,

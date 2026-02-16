@@ -36,6 +36,7 @@ _EXPORTS: Dict[str, tuple[str, str]] = {
 	'scan_motifs': ('.motifs', 'scan_motifs'),
 	# signal
 	'compare_heatmap': ('.signal', 'compare_heatmap'),
+	'tmm': ('.signal', 'tmm'),
 }
 
 
