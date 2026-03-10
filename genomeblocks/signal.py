@@ -1,13 +1,12 @@
 from __future__ import annotations
 import time
 import shutil
-from multiprocessing import Process, Value, cpu_count
-from multiprocessing.shared_memory import SharedMemory
+import threading
+from os import cpu_count
 from typing import List, Tuple, Sequence, Dict
 from collections.abc import Sequence as SequenceABC
 
 import numpy as np
-import pyBigWig as bw
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
@@ -16,17 +15,83 @@ from .loci import Loci
 from .tags import Tags
 
 
+# ── backend selection ────────────────────────────────────────────────────────
+# Prefer pybigtools (Rust, fastest) → fall back to our pure-Python reader.
+# Both are thread-safe, so the threading architecture works with either.
+
+def _open_pybigtools(path):
+    """Adapter wrapping pybigtools handle to match our API."""
+    import pybigtools
+    return _PyBigToolsHandle(pybigtools.open(path, "r"))
+
+
+class _PyBigToolsHandle:
+    """Thin wrapper so pybigtools matches BigWigReader's interface."""
+    __slots__ = ('_h',)
+    def __init__(self, h):
+        self._h = h
+    def chroms(self):
+        return dict(self._h.chroms())
+    def stats(self, chrom, start, end, *, n_bins=1, nBins=None,
+              stat='mean', type=None, **kw):
+        if nBins is not None:
+            n_bins = nBins
+        if type is not None:
+            stat = type
+        vals = self._h.values(chrom, start, end)
+        n = len(vals)
+        # fast path: exact division (common case: 6000bp / 200 bins = 30)
+        if n % n_bins == 0:
+            chunks = vals.reshape(n_bins, -1)
+        else:
+            # pad to nearest multiple then reshape
+            pad = n_bins - (n % n_bins)
+            vals = np.concatenate([vals, np.full(pad, np.nan)])
+            chunks = vals.reshape(n_bins, -1)
+        _stat = {'mean': np.nanmean, 'max': np.nanmax,
+                 'min': np.nanmin, 'std': np.nanstd,
+                 'sum': np.nansum, 'coverage': np.nanmean}
+        fn = _stat.get(stat, np.nanmean)
+        with np.errstate(all='ignore'):
+            result = fn(chunks, axis=1)
+        # convert all-NaN bins to None
+        all_nan = np.all(np.isnan(chunks), axis=1)
+        return [None if m else float(v) for v, m in zip(result, all_nan)]
+    def values(self, chrom, start, end):
+        return np.nan_to_num(self._h.values(chrom, start, end).astype(np.float64))
+    def close(self):
+        self._h.close()
+
+
+def _detect_backend():
+    """Return (opener_func, backend_name).
+
+    Prefer pybigtools (Rust) — releases GIL, scales with threads,
+    fastest for base-pair resolution.  Falls back to pure-python
+    reader (zero compiled deps, exact pyBigWig match for binned stats).
+    """
+    try:
+        import pybigtools  # noqa: F401
+        return _open_pybigtools, 'pybigtools'
+    except ImportError:
+        from . import bigwig
+        return bigwig.open, 'bigwig'
+
+
+_bw_open, _bw_backend = _detect_backend()
+
+
 def plan_workers(n_tracks: int, n_loci: int, *, cores: int | None = None,
                 max_bw_parallel: int = 6) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
     """
-    Plan the distribution of work across multiple processes.
-    
+    Plan the distribution of work across multiple threads.
+
     Args:
         n_tracks: Number of bigwig tracks
         n_loci: Number of genomic loci
         cores: Number of CPU cores to use (default: all available)
         max_bw_parallel: Maximum number of bigwig files to process in parallel
-    
+
     Returns:
         List of work chunks as [((track_start,track_end), (loci_start,loci_end)), ...]
     """
@@ -47,6 +112,20 @@ def plan_workers(n_tracks: int, n_loci: int, *, cores: int | None = None,
     return plan
 
 
+class _Counter:
+    """Thread-safe counter for progress tracking."""
+    __slots__ = ('_v', '_lock')
+    def __init__(self):
+        self._v = 0
+        self._lock = threading.Lock()
+    @property
+    def value(self):
+        return self._v
+    def add(self, n: int):
+        with self._lock:
+            self._v += n
+
+
 def _worker(
     t_b: Tuple[int, int],
     l_b: Tuple[int, int],
@@ -55,28 +134,24 @@ def _worker(
     n_bins: int,
     flank: int,
     agg: str,
-    shm_name: str,
-    shape: Tuple[int, int, int],
+    cube: np.ndarray,
     dt: np.dtype,
-    ctr: Value, # type: ignore
+    ctr: _Counter,
     span: bool = False,
     ):
-    """Worker process for parallel signal extraction from bigwig files."""
+    """Thread worker for parallel signal extraction from bigwig files."""
     t_lo, t_hi = t_b
     l_lo, l_hi = l_b
-    shm = SharedMemory(name=shm_name)
-    cube = np.ndarray(shape, dtype=dt, buffer=shm.buf)
 
-    hs = [bw.open(p) for p in bwp[t_lo:t_hi]]
+    hs = [_bw_open(p) for p in bwp[t_lo:t_hi]]
     ch = hs[0].chroms()
 
     try:
         for r in range(l_lo, l_hi):
             loc = loci[r]
             chrom = loc.chrom
-            if chrom not in ch:  # skip unknown chrom
-                with ctr.get_lock():
-                    ctr.value += (t_hi - t_lo)
+            if chrom not in ch:
+                ctr.add(t_hi - t_lo)
                 continue
 
             if span:
@@ -96,8 +171,9 @@ def _worker(
             if core > 0:
                 for off, h in enumerate(hs):
                     t = t_lo + off
-                    xs = h.stats(chrom, L, R, nBins=core, type=agg)
-                    xs = np.nan_to_num(xs).astype(dt, copy=False)
+                    xs = h.stats(chrom, L, R, n_bins=core, stat=agg)
+                    xs = np.array([0.0 if x is None else x for x in xs],
+                                  dtype=dt)
                     if span:
                         arr = xs
                     else:
@@ -108,12 +184,10 @@ def _worker(
                         ))
                     cube[r, t, :len(arr)] = arr
 
-            with ctr.get_lock():
-                ctr.value += (t_hi - t_lo)
+            ctr.add(t_hi - t_lo)
     finally:
         for h in hs:
             h.close()
-        shm.close()
 
 
 def signal(
@@ -128,10 +202,14 @@ def signal(
     max_bw_parallel: int = 6,
     max_workers: int | None = None,
     span: bool = False,
-    verbose: bool = True
+    verbose: bool = True,
+    backend: str | None = None,
     ) -> np.ndarray:
     """
     Extract signal from bigwig files for given genomic loci.
+
+    Uses threading (no multiprocessing, no SharedMemory).
+    I/O and zlib decompression release the GIL.
 
     Args:
         loci: Genomic loci to extract signal from
@@ -142,15 +220,27 @@ def signal(
         dtype: Numpy dtype for the output array
         progress: Show progress bar
         max_bw_parallel: Maximum number of bigwig files to process in parallel
-        max_workers: Maximum number of worker processes
+        max_workers: Maximum number of worker threads
         span: Use full region span instead of center±flank
+        backend: 'pybigtools', 'bigwig' (pure-python), or None (auto-detect)
 
     Returns:
         numpy array of shape (n_loci, n_tracks, n_bins)
     """
+    global _bw_open, _bw_backend
+    if backend is not None:
+        if backend == 'pybigtools':
+            _bw_open = _open_pybigtools
+        elif backend == 'bigwig':
+            from . import bigwig as _bw_mod
+            _bw_open = _bw_mod.open
+        else:
+            raise ValueError(f"Unknown backend: {backend!r}")
+
     if verbose:
+        be = backend or _bw_backend
         print(f"[INFO] Extracting {len(bigwigs)} bigwigs for {len(loci)} loci "
-            f"into {n_bins} bins (span={span}, agg='{agg}'). 🪏")
+            f"into {n_bins} bins (span={span}, agg='{agg}', backend='{be}').")
 
 
     n_loci, n_tracks = len(loci), len(bigwigs)
@@ -161,9 +251,7 @@ def signal(
     if bytes_need > 0.5 * shutil.disk_usage("/").free:
         raise MemoryError("Cube may exceed safe RAM; try disk-chunk mode.")
 
-    shm = SharedMemory(create=True, size=bytes_need)
-    cube = np.ndarray((n_loci, n_tracks, n_bins), dtype=dtype, buffer=shm.buf)
-    cube.fill(0)
+    cube = np.zeros((n_loci, n_tracks, n_bins), dtype=dtype)
 
     plan = plan_workers(
         n_tracks,
@@ -172,38 +260,31 @@ def signal(
         max_bw_parallel=max_bw_parallel,
     )
 
-    ctr = Value('i', 0)
-    procs = []
+    ctr = _Counter()
+    threads = []
     for t_b, l_b in plan:
-        p = Process(target=_worker, args=(
+        t = threading.Thread(target=_worker, args=(
             t_b, l_b, bigwigs, loci, n_bins, flank, agg,
-            shm.name, cube.shape, dtype, ctr, span
+            cube, dtype, ctr, span
         ))
-        p.start()
-        procs.append(p)
+        t.start()
+        threads.append(t)
 
     if progress:
         tot = n_loci * n_tracks
         with tqdm(total=tot, dynamic_ncols=True) as bar:
             last = 0
-            while any(p.is_alive() for p in procs):
+            while any(t.is_alive() for t in threads):
                 v = ctr.value
                 bar.update(v - last)
                 last = v
                 time.sleep(0.2)
             bar.update(ctr.value - last)
 
-    for p in procs:
-        p.join()
-        if p.exitcode != 0:
-            shm.close()
-            shm.unlink()
-            raise RuntimeError(f"worker {p.pid} exit {p.exitcode}")
+    for t in threads:
+        t.join()
 
-    out = cube.copy()
-    shm.close()
-    shm.unlink()
-    return out
+    return cube
 
 
 def tmm(cube: np.ndarray) -> np.ndarray:
