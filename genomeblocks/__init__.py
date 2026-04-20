@@ -37,6 +37,8 @@ _EXPORTS: Dict[str, tuple[str, str]] = {
 	# signal
 	'compare_heatmap': ('.signal', 'compare_heatmap'),
 	'tmm': ('.signal', 'tmm'),
+	# browser
+	'browser': ('.browser', 'browser'),
 }
 
 

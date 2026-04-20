@@ -172,25 +172,16 @@ def nearest(s: Loci, o: Loci, s_names=None, o_names=None):
 
 
 from .tags import Tags
-from .genes import Genes
 
 
-def map(
-    s: Loci,
-    mapping: Union[Dict[str, "Loci"], Genes],
-) -> Tags:
+def map(s: "Loci", o: "Loci") -> Dict[str, List[str]]:
+    """Overlap-based mapper: returns {a.uid: [b.uid, ...]} for each a in self
+    against loci in o. Multi-overlap preserved; empty list if no hit.
     """
-    Convenience wrapper that materialises tag masks for the provided mapping.
-
-    Args:
-        mapping: Dict of label -> Loci overlaps to evaluate, or a `Genes` object.
-
-    Returns:
-        Tags database populated with the requested annotations.
-    """
-    tags = Tags.make(s)
-    tags.add(mapping)
-    return tags
+    out: Dict[str, List[str]] = {}
+    for a in s:
+        out[a.uid] = [o[j].uid for *_, j in o.cgr.overlap(a.chrom, a.start, a.end)]
+    return out
 
 
 def tag(s: Loci, o: Loci, tag: str):

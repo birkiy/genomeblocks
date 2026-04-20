@@ -1,0 +1,34 @@
+---
+---
+
+@import "./support/support";
+@import "./color_schemes/{{ site.color_scheme | default: 'light' }}";
+@import "./modules";
+
+/* Tighten up the landing-page hero a bit */
+.site-title {
+  font-weight: 700;
+}
+
+h1.fs-9 {
+  margin-bottom: 0.4em;
+}
+
+/* Readable code blocks */
+div.highlighter-rouge pre {
+  line-height: 1.45;
+}
+
+/* Subtle table styling */
+table {
+  border-collapse: collapse;
+}
+
+table th {
+  background: #f4f6f8;
+}
+
+/* Callout tweaks */
+.note, .warning, .tip {
+  border-radius: 6px;
+}

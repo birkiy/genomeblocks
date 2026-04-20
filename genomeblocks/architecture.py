@@ -531,6 +531,7 @@ def make(cls, loci, bedpe: str, *, name: str="Skeleton", r: int=2500, dmax=1e9, 
     G = cls(name=name)
     mapped_loops = 0
     total_loops = 0
+    edge_set = set()
     with open(bedpe) as f:
         for line in tqdm(f, desc='[INFO] Building Architecture from loops'):
             if line.startswith('#') or not line.strip(): continue
@@ -551,6 +552,9 @@ def make(cls, loci, bedpe: str, *, name: str="Skeleton", r: int=2500, dmax=1e9, 
             for locus1 in a1:
                 for locus2 in a2:
                     if locus1.uid == locus2.uid: continue
+                    edge_key = tuple(sorted([locus1.uid, locus2.uid]))
+                    if edge_key in edge_set: continue
+                    edge_set.add(edge_key)
                     v1 = G._add_vertex(locus1.uid)
                     v2 = G._add_vertex(locus2.uid)
                     G.add_edge(v1, v2)
@@ -690,94 +694,102 @@ def make_spread(cls, source_loci, bedpe: str, *,
     # Statistics
     total_loops = 0
     mapped_loops_per_hop = defaultdict(int)
-    
+    edge_set = set()
+
     # Perform spreading for each hop
     for hop in range(hops):
         if len(active_loci) == 0:
             if verbose:
                 print(f"[INFO] No active loci at hop {hop+1}, stopping early")
             break
-        
+
         new_loci = []
-        
+
         # Scan BEDPE file
         with open(bedpe) as f:
             desc = f'[INFO] Hop {hop+1}/{hops}: Scanning loops'
             for line in tqdm(f, desc=desc, disable=not verbose):
                 if line.startswith('#') or not line.strip():
                     continue
-                
+
                 if hop == 0:
                     total_loops += 1
-                
+
                 fields = line.strip().split()
                 if len(fields) < 6:
                     continue
-                
+
                 try:
                     chrom1, start1, end1 = fields[0], int(fields[1]), int(fields[2])
                     chrom2, start2, end2 = fields[3], int(fields[4]), int(fields[5])
                 except ValueError:
                     continue
-                
+
                 # Calculate centers
                 mid1 = (start1 + end1) // 2
                 mid2 = (start2 + end2) // 2
-                
+
                 # Check distance constraint
                 if chrom1 == chrom2 and abs(mid1 - mid2) > dmax:
                     continue
-                
+
                 # Use cgr.overlap() to efficiently check if anchors overlap active loci
                 # Check anchor1 against active loci
                 a1_overlaps = [active_loci[j] for *_, j in active_loci.cgr.overlap(chrom1, mid1 - r, mid1 + r)]
-                # Check anchor2 against active loci  
+                # Check anchor2 against active loci
                 a2_overlaps = [active_loci[j] for *_, j in active_loci.cgr.overlap(chrom2, mid2 - r, mid2 + r)]
-                
+
                 # Create UIDs for anchors (centers)
                 #uid1 = f"{chrom1}:{mid1}"
                 uid1 = f"{chrom1}:{mid1-r}-{mid1+r}(.)"
                 uid2 = f"{chrom2}:{mid2-r}-{mid2+r}(.)"
-                
+
                 # If anchor1 overlaps active loci, spread to anchor2
                 if a1_overlaps and uid1 != uid2:
                     mapped_loops_per_hop[hop] += 1
-                    
+
                     # Add vertices
                     G._add_vertex(uid1)
                     G._add_vertex(uid2)
-                    
-                    # Add edges (one for each active locus in anchor1)
-                    for _ in a1_overlaps:
+
+                    # Add edge (only once per uid pair)
+                    edge_key = (uid1, uid2) if directed else tuple(sorted([uid1, uid2]))
+                    if edge_key not in edge_set:
+                        edge_set.add(edge_key)
                         v1 = G.index[uid1]
                         v2 = G.index[uid2]
                         G.add_edge(v1, v2)
-                    
+
                     # Mark anchor2 for next hop if not already discovered
                     if uid2 not in all_discovered_uids:
                         # Create a Locus object for this anchor center
                         new_loc = Locus(chrom2, mid2, mid2 + 1)  # Single bp at center
                         new_loci.append(new_loc)
                         all_discovered_uids.add(uid2)
-                
+
                 # If anchor2 overlaps active loci, spread to anchor1
                 if a2_overlaps and uid1 != uid2:
                     if not a1_overlaps:  # Don't double-count
                         mapped_loops_per_hop[hop] += 1
-                    
+
                     # Add vertices
                     G._add_vertex(uid1)
                     G._add_vertex(uid2)
-                    
-                    # Add edges (one for each active locus in anchor2)
-                    for _ in a2_overlaps:
+
+                    # Add edge (only once per uid pair)
+                    if directed:
+                        edge_key = (uid2, uid1)  # v2 (active) → v1 (target)
+                    else:
+                        edge_key = tuple(sorted([uid1, uid2]))
+                    if edge_key not in edge_set:
+                        edge_set.add(edge_key)
                         v1 = G.index[uid1]
                         v2 = G.index[uid2]
                         if directed:
-                            G.add_edge(v2, v1)  # v2 (active) → v1 (target)
+                            G.add_edge(v2, v1)
                         else:
                             G.add_edge(v1, v2)
-                    
+
                     # Mark anchor1 for next hop if not already discovered
                     if uid1 not in all_discovered_uids:
                         new_loc = Locus(chrom1, mid1, mid1 + 1)
@@ -909,36 +921,188 @@ def normalize(s: Architecture, loci, *, source: str = "w", name: str = "n", verb
 
 def annotate(self, loci, genes, *, verbose=True):
     """Add gene and genomic region annotations to vertices.
-    
-    Args:
-        loci: Loci collection (same one used to build the graph)
-        genes: Genes object for annotation
+
+    Stores per vertex:
+        vp.annot       : region label (Promoter-TSS / 5UTR / 3UTR / Exonic /
+                         Intronic / Intergenic).
+        vp.gene        : single nearest gene (back-compat convenience pick).
+        vp.genes       : ';'-joined list of *all* candidate gene names whose
+                         promoter (gene-TSS ± genes._promoter_r) overlaps
+                         this CRE. '' for non-promoter CREs.
+        vp.transcripts : ','-joined list of all candidate transcript IDs
+                         whose TSS ± genes._promoter_r overlaps this CRE.
+                         Captures alt-promoters (TP53 has 15 isoforms);
+                         downstream methods can vote at transcript level.
+
+    Multi-candidate entries capture bidirectional promoters (TP53/WRAP53),
+    alt-promoters, and dense TSS neighborhoods. `focus` / `prime_hubs`
+    aggregate contact weight across these candidates.
     """
-    # Add annotation mapping
+    from collections import defaultdict
+
     cre_a_df = genes.annotations(loci)
     annot_map = cre_a_df.set_index('uid')['annotation'].to_dict()
-    
-    # Add nearest gene mapping
+
     cre_g_df = genes.nearest_genes(loci)
     nearest_map = dict(zip(cre_g_df['Name'], cre_g_df['Name_b']))
-    
-    # Create vertex properties
-    self.vp.gene = self.new_vp('string')
-    self.vp.annot = self.new_vp('string')
-    
+
+    r = genes._promoter_r
+
+    # Candidate genes whose promoter overlaps each CRE.
+    cre_to_genes: dict = defaultdict(list)
+    for g in genes.values():
+        tss = g.tss
+        lo = max(0, min(tss.start, tss.end) - r)
+        hi = max(tss.start, tss.end) + r
+        for c in loci.overlaps(tss.chrom, lo, hi):
+            cre_to_genes[c.uid].append(g.gene_name)
+
+    # Candidate transcripts whose TSS overlaps each CRE.
+    cre_to_transcripts: dict = defaultdict(list)
+    for t_id, tss in genes.get_tss_transcripts().items():
+        lo = max(0, min(tss.start, tss.end) - r)
+        hi = max(tss.start, tss.end) + r
+        for c in loci.overlaps(tss.chrom, lo, hi):
+            cre_to_transcripts[c.uid].append(t_id)
+
+    self.vp.gene        = self.new_vp('string')
+    self.vp.genes       = self.new_vp('string')
+    self.vp.transcripts = self.new_vp('string')
+    self.vp.annot       = self.new_vp('string')
+
     for v in self.vertices():
         uid = self.vp.uid[v]
-        self.vp.gene[v] = nearest_map.get(uid, '')
-        self.vp.annot[v] = annot_map.get(uid, '')
-    
+        annot_val = annot_map.get(uid, '')
+        self.vp.gene[v]  = nearest_map.get(uid, '')
+        self.vp.annot[v] = annot_val
+        if 'Promoter' in annot_val:
+            seen, kept = set(), []
+            for gn in cre_to_genes.get(uid, []):
+                if gn and gn not in seen:
+                    seen.add(gn); kept.append(gn)
+            self.vp.genes[v] = ';'.join(kept)
+            t_seen, t_kept = set(), []
+            for tid in cre_to_transcripts.get(uid, []):
+                if tid and tid not in t_seen:
+                    t_seen.add(tid); t_kept.append(tid)
+            self.vp.transcripts[v] = ','.join(t_kept)
+        else:
+            self.vp.genes[v] = ''
+            self.vp.transcripts[v] = ''
+
     if verbose:
-        print(f"[INFO] Annotated {self.n_loci} loci with genes and regions.")
-    
+        n_prom  = sum(1 for v in self.vertices() if self.vp.genes[v])
+        n_multi = sum(1 for v in self.vertices() if ';' in self.vp.genes[v])
+        n_alt   = sum(1 for v in self.vertices() if ',' in self.vp.transcripts[v])
+        print(f"[INFO] Annotated {self.n_loci} loci: {n_prom} promoter CREs "
+              f"({n_multi} multi-gene, {n_alt} multi-transcript).")
     return self
 
 
-def draw(self, loci, region, *, 
-         vertex_size_by=None, 
+def _merge_nearby(self, sub_loci, merge_distance, edge_key='w', label_prop='gene', vertex_size_by=None):
+    """Merge loci within *merge_distance* bp into single nodes.
+
+    Builds a fresh gt.Graph where each cluster of nearby loci becomes one
+    vertex, and inter-cluster edges carry the summed weight of member edges.
+
+    Args:
+        sub_loci: Loci in the region that are also present in the graph.
+        merge_distance: Max center-to-center bp for two consecutive sorted
+            loci to be merged (uses Locus.distance_to).
+        edge_key: Edge property to aggregate (default 'w').
+        label_prop: Vertex property used for labels (default 'gene').
+        vertex_size_by: Vertex property to sum for merged node sizes, or None.
+
+    Returns:
+        (merged_graph, clusters, uid_to_cluster)
+        merged_graph  – gt.Graph with vp.uid, vp.label, vp.size_val, ep.w
+        clusters      – list[list[Locus]]
+        uid_to_cluster – dict mapping original uid → cluster index
+    """
+    from collections import defaultdict
+
+    graph_loci = sorted(
+        [l for l in sub_loci if l.uid in self.index],
+        key=lambda l: (l.chrom, l.start),
+    )
+
+    # Greedy clustering on sorted loci
+    clusters = [[graph_loci[0]]]
+    for l in graph_loci[1:]:
+        if clusters[-1][-1].distance_to(l) <= merge_distance:
+            clusters[-1].append(l)
+        else:
+            clusters.append([l])
+
+    uid_to_cluster = {}
+    for ci, cluster in enumerate(clusters):
+        for loc in cluster:
+            uid_to_cluster[loc.uid] = ci
+
+    # Build merged graph
+    mg = gt.Graph(directed=False)
+    mg.vp.uid   = mg.new_vertex_property("string")
+    mg.vp.label = mg.new_vertex_property("string")
+    mg.vp.size_val = mg.new_vertex_property("float")
+    mg.ep.w     = mg.new_edge_property("float")
+
+    cluster_verts = []
+    for ci, cluster in enumerate(clusters):
+        v = mg.add_vertex()
+        cluster_verts.append(v)
+
+        first, last = cluster[0], cluster[-1]
+        mg.vp.uid[v] = f"{first.chrom}:{first.start}-{last.end}"
+
+        # Label
+        if label_prop in self.vp:
+            labels = []
+            for loc in cluster:
+                if loc.uid in self.index:
+                    lbl = str(self.vp[label_prop][self.index[loc.uid]])
+                    if lbl and lbl not in labels:
+                        labels.append(lbl)
+            mg.vp.label[v] = "/".join(labels) if labels else mg.vp.uid[v]
+        else:
+            mg.vp.label[v] = mg.vp.uid[v]
+
+        # Size value
+        if vertex_size_by and vertex_size_by in self.vp:
+            mg.vp.size_val[v] = sum(
+                self.vp[vertex_size_by][self.index[loc.uid]]
+                for loc in cluster if loc.uid in self.index
+            )
+        else:
+            mg.vp.size_val[v] = float(len(cluster))
+
+    # Aggregate inter-cluster edges
+    ep_key = edge_key if edge_key and edge_key in self.ep else 'w'
+    edge_weights = defaultdict(float)
+    for ci, cluster in enumerate(clusters):
+        for loc in cluster:
+            if loc.uid not in self.index:
+                continue
+            v_orig = self.index[loc.uid]
+            for nb in v_orig.all_neighbors():
+                n_uid = self.vp.uid[nb]
+                if n_uid not in uid_to_cluster:
+                    continue
+                cj = uid_to_cluster[n_uid]
+                if ci == cj:
+                    continue
+                pair = (min(ci, cj), max(ci, cj))
+                edge_weights[pair] += self.ep[ep_key][self.edge(v_orig, nb)]
+
+    for (ci, cj), w in edge_weights.items():
+        e = mg.add_edge(cluster_verts[ci], cluster_verts[cj])
+        mg.ep.w[e] = w
+
+    return mg, clusters, uid_to_cluster
+
+
+def draw(self, loci, region, *,
+         merge_distance=None,
+         vertex_size_by=None,
          edge_width_by='w',
          vertex_size_range=(10, 50),
          edge_width_range=(1, 10),
@@ -951,10 +1115,12 @@ def draw(self, loci, region, *,
          ax=None,
          **kwargs):
     """Draw the subgraph for CREs overlapping a genomic region.
-    
+
     Args:
         loci: Loci collection (same one used to build the graph)
         region: Tuple of (chrom, start, end) or Locus object
+        merge_distance: If set, merge loci within this many bp into single
+            nodes before drawing (center-to-center via Locus.distance_to).
         vertex_size_by: Vertex property name to scale node sizes (e.g., 'Agg_H1')
         edge_width_by: Edge property name to scale edge widths (default: 'w')
         vertex_size_range: (min_size, max_size) for vertices (default: (10, 50))
@@ -970,91 +1136,136 @@ def draw(self, loci, region, *,
         label_prop: Vertex property to use for labels (default: 'gene')
         ax: Matplotlib axis to plot on (creates new if None)
         **kwargs: Additional arguments passed to graph_tool's graph_draw
-    
+
     Returns:
         Matplotlib axis object
     """
     import matplotlib.pyplot as plt
     import numpy as np
     from graph_tool.draw import prop_to_size
-    
+
     # Parse region
     if hasattr(region, 'chrom'):  # Locus object
         chrom, start, end = region.chrom, region.start, region.end
     else:
         chrom, start, end = region
-    
+
     # Get overlapping loci
     sub_loci = loci.overlaps(chrom, start, end)
     if len(sub_loci) == 0:
         print(f"[WARNING] No loci found in region {chrom}:{start}-{end}")
         return ax
-    
+
     # Get UIDs in region
     region_uids = {l.uid for l in sub_loci}
     region_uids_in_graph = {uid for uid in region_uids if uid in self}
-    
+
     if len(region_uids_in_graph) == 0:
         print(f"[WARNING] No graph vertices found in region {chrom}:{start}-{end}")
         return ax
-    
-    # Create vertex filter for subgraph
-    vfilt = self.new_vertex_property("bool")
-    for v in self.vertices():
-        vfilt[v] = self.vp.uid[v] in region_uids_in_graph
-    
-    # Create subgraph
-    subgraph = gt.GraphView(self, vfilt=vfilt)
-    
-    if subgraph.num_vertices() == 0:
-        print(f"[WARNING] No vertices in subgraph for region {chrom}:{start}-{end}")
-        return ax
-    
-    # Prepare vertex sizes using prop_to_size
-    if vertex_size_by and vertex_size_by in self.vp:
-        vertex_sizes = prop_to_size(
-            self.vp[vertex_size_by], 
-            mi=vertex_size_range[0], 
-            ma=vertex_size_range[1],
-            power=1.0
+
+    # ── Merge nearby loci if requested ───────────────────────────────
+    if merge_distance is not None:
+        graph_loci = [l for l in sub_loci if l.uid in region_uids_in_graph]
+        if len(graph_loci) == 0:
+            print(f"[WARNING] No graph loci to merge in region {chrom}:{start}-{end}")
+            return ax
+
+        n_before = len(graph_loci)
+        mg, clusters, _ = self._merge_nearby(
+            sub_loci, merge_distance,
+            edge_key=edge_width_by, label_prop=label_prop,
+            vertex_size_by=vertex_size_by,
         )
-    else:
-        vertex_sizes = np.mean(vertex_size_range)
-    
-    # Prepare edge widths using prop_to_size
-    if edge_width_by and edge_width_by in self.ep:
-        edge_widths = prop_to_size(
-            self.ep[edge_width_by],
-            mi=edge_width_range[0],
-            ma=edge_width_range[1],
-            power=1.0
-        )
-    else:
-        edge_widths = np.mean(edge_width_range)
-    
-    # Prepare vertex colors
-    if vertex_color is None:
-        vertex_fill_color = '#4A90E2'
-    elif isinstance(vertex_color, str):
-        # Check if it's a property name or a color string
-        if vertex_color in self.vp:
-            # It's a property name - use it for coloring
-            vertex_fill_color = self.vp[vertex_color]
+        subgraph = mg
+
+        # Vertex sizes from aggregated size_val
+        if vertex_size_by and vertex_size_by in self.vp:
+            vals = mg.vp.size_val.a
+            if vals.max() > vals.min():
+                normed = (vals - vals.min()) / (vals.max() - vals.min())
+                mg.vp.size_val.a = vertex_size_range[0] + normed * (vertex_size_range[1] - vertex_size_range[0])
+            else:
+                mg.vp.size_val.a[:] = np.mean(vertex_size_range)
+            vertex_sizes = mg.vp.size_val
         else:
-            # It's a color string
+            vertex_sizes = np.mean(vertex_size_range)
+
+        # Edge widths from aggregated ep.w
+        if mg.num_edges() > 0:
+            vals = mg.ep.w.a
+            if vals.max() > vals.min():
+                normed = (vals - vals.min()) / (vals.max() - vals.min())
+                mg.ep.w.a = edge_width_range[0] + normed * (edge_width_range[1] - edge_width_range[0])
+            else:
+                mg.ep.w.a[:] = np.mean(edge_width_range)
+            edge_widths = mg.ep.w
+        else:
+            edge_widths = np.mean(edge_width_range)
+
+        vertex_fill_color = vertex_color if vertex_color else '#4A90E2'
+        labels = mg.vp.label if show_labels else None
+
+        title_extra = (f"{subgraph.num_vertices()} nodes "
+                       f"({n_before} loci merged at {merge_distance}bp), "
+                       f"{subgraph.num_edges()} edges")
+    else:
+        # ── Standard (unmerged) path ─────────────────────────────────
+        vfilt = self.new_vertex_property("bool")
+        for v in self.vertices():
+            vfilt[v] = self.vp.uid[v] in region_uids_in_graph
+
+        subgraph = gt.GraphView(self, vfilt=vfilt)
+
+        if subgraph.num_vertices() == 0:
+            print(f"[WARNING] No vertices in subgraph for region {chrom}:{start}-{end}")
+            return ax
+
+        # Vertex sizes
+        if vertex_size_by and vertex_size_by in self.vp:
+            vertex_sizes = prop_to_size(
+                self.vp[vertex_size_by],
+                mi=vertex_size_range[0],
+                ma=vertex_size_range[1],
+                power=1.0,
+            )
+        else:
+            vertex_sizes = np.mean(vertex_size_range)
+
+        # Edge widths
+        if edge_width_by and edge_width_by in self.ep:
+            edge_widths = prop_to_size(
+                self.ep[edge_width_by],
+                mi=edge_width_range[0],
+                ma=edge_width_range[1],
+                power=1.0,
+            )
+        else:
+            edge_widths = np.mean(edge_width_range)
+
+        # Vertex colors
+        if vertex_color is None:
+            vertex_fill_color = '#4A90E2'
+        elif isinstance(vertex_color, str):
+            if vertex_color in self.vp:
+                vertex_fill_color = self.vp[vertex_color]
+            else:
+                vertex_fill_color = vertex_color
+        else:
             vertex_fill_color = vertex_color
-    else:
-        vertex_fill_color = vertex_color
-    
-    # Prepare labels
-    if show_labels and label_prop in self.vp:
-        labels = subgraph.new_vertex_property("string")
-        for v in subgraph.vertices():
-            labels[v] = str(self.vp[label_prop][v])
-    else:
-        labels = None
-    
-    # Choose layout
+
+        # Labels
+        if show_labels and label_prop in self.vp:
+            labels = subgraph.new_vertex_property("string")
+            for v in subgraph.vertices():
+                labels[v] = str(self.vp[label_prop][v])
+        else:
+            labels = None
+
+        title_extra = (f"{subgraph.num_vertices()} nodes, "
+                       f"{subgraph.num_edges()} edges")
+
+    # ── Common drawing code ──────────────────────────────────────────
     if layout == 'spring':
         pos = gt.sfdp_layout(subgraph)
     elif layout == 'circular':
@@ -1063,12 +1274,10 @@ def draw(self, loci, region, *,
         pos = gt.kamada_kawai_layout(subgraph)
     else:
         pos = gt.sfdp_layout(subgraph)
-    
-    # Create figure if needed
+
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
-    
-    # Draw using graph-tool
+
     gt.graph_draw(
         subgraph,
         pos=pos,
@@ -1080,16 +1289,288 @@ def draw(self, loci, region, *,
         vertex_font_size=10,
         output_size=tuple(int(x * 100) for x in figsize),
         mplfig=ax,
-        **kwargs
+        **kwargs,
     )
-    
-    # Set title
-    ax.set_title(f"{self._name}: {chrom}:{start:,}-{end:,}\n"
-                 f"{subgraph.num_vertices()} nodes, {subgraph.num_edges()} edges",
+
+    ax.set_title(f"{self._name}: {chrom}:{start:,}-{end:,}\n{title_extra}",
                  fontsize=14, pad=10)
     ax.axis('off')
-    
+
     return ax
+
+
+# ── Network metrics ──────────────────────────────────────────────────────────
+def aggregate(s: Architecture, key: str = "n", name: str = "agg", *, verbose: bool = True) -> Architecture:
+    """Compute node strength (sum of incident edge weights) per vertex.
+
+    For each vertex, sums the edge property ``key`` across all incident edges.
+    Stores the raw sum in ``vp[name]`` and the total-normalized version in
+    ``vp['n' + name]``.
+
+    Args:
+        key:  Edge property to aggregate (default ``"n"`` = O/E weights).
+        name: Vertex property name for the result (default ``"agg"``).
+
+    Returns:
+        self (for chaining).
+    """
+    if key not in s.ep:
+        raise ValueError(f"Edge property '{key}' not found.")
+
+    s.vp[name] = s.new_vp("float")
+
+    for e in s.edges():
+        w = s.ep[key][e]
+        s.vp[name][e.source()] += w
+        s.vp[name][e.target()] += w
+
+    nname = f"n{name}"
+    s.vp[nname] = s.new_vp("float")
+    total = s.vp[name].a.sum()
+    if total > 0:
+        s.vp[nname].a = s.vp[name].a / total
+
+    if verbose:
+        print(f"[INFO] Aggregated ep.{key} → vp.{name} (node strength) + vp.{nname} (normalized)")
+    return s
+
+
+def cluster(s: Architecture, key: str = "n", name: str = "lc", *, verbose: bool = True) -> Architecture:
+    """Compute weighted local clustering coefficient per vertex.
+
+    Uses graph-tool's ``local_clustering`` with optional edge weights.
+    Stores the result in ``vp[name]``.
+
+    Args:
+        key:  Edge property for weighting (default ``"n"``).
+              Use ``None`` for unweighted clustering.
+        name: Vertex property name (default ``"lc"``).
+
+    Returns:
+        self (for chaining).
+    """
+    import graph_tool.clustering as gt_clust
+
+    weight = s.ep[key] if key and key in s.ep else None
+    s.vp[name] = gt_clust.local_clustering(s, weight=weight)
+
+    if verbose:
+        nz = sum(1 for v in s.vertices() if s.vp[name][v] > 0)
+        print(f"[INFO] Local clustering → vp.{name}  ({nz}/{s.n_loci} non-zero)")
+    return s
+
+
+def elbow(s: Architecture, key: str, *, transform: str = "double_exp", verbose: bool = True):
+    """Find elbow cutoff on a vertex property via the Kneedle algorithm.
+
+    Sorts vertices by ``vp[key]`` descending, optionally applies a
+    double-exponential transform (``exp(exp(x_norm))``) to amplify curvature,
+    then returns the index of maximum perpendicular distance from the chord.
+
+    Args:
+        key:       Vertex property name to analyze (e.g. ``"agg"``).
+        transform: ``"double_exp"`` (default) or ``"none"``.
+
+    Returns:
+        ``(cutoff_index, sorted_uids)`` where ``cutoff_index`` is the number
+        of elements above the elbow and ``sorted_uids`` lists UIDs descending.
+    """
+    import numpy as np
+
+    if key not in s.vp:
+        raise ValueError(f"Vertex property '{key}' not found.")
+
+    # Collect (uid, value) pairs, drop zeros
+    vals = [(s.vp.uid[v], float(s.vp[key][v])) for v in s.vertices() if s.vp[key][v] > 0]
+    vals.sort(key=lambda x: -x[1])
+    uids = [v[0] for v in vals]
+    y = np.array([v[1] for v in vals])
+
+    if len(y) < 3:
+        return len(y), uids
+
+    # Normalize to [0, 1]
+    y_norm = (y - y[-1]) / (y[0] - y[-1])
+
+    # Transform
+    y_t = np.exp(np.exp(y_norm)) if transform == "double_exp" else y_norm
+
+    # Kneedle: max perpendicular distance from chord
+    x = np.arange(len(y_t), dtype=float)
+    line_vec = np.array([x[-1] - x[0], y_t[-1] - y_t[0]])
+    pts = np.column_stack([x - x[0], y_t - y_t[0]])
+    distances = np.abs(np.cross(line_vec, pts)) / np.linalg.norm(line_vec)
+    cutoff = int(np.argmax(distances))
+
+    if verbose:
+        print(f"[INFO] Elbow on vp.{key} ({transform}): cutoff at {cutoff}/{len(y)} "
+              f"({100 * cutoff / len(y):.1f}%)")
+    return cutoff, uids
+
+
+def focus(s: Architecture, sources, key: str = "n", *, verbose: bool = True):
+    """Find focus genes for source CREs via network-weighted candidate voting.
+
+    For each source CRE we walk its promoter-annotated neighbors and tally edge
+    weight ``ep[key]`` per *candidate* gene (from the neighbor's ``vp.genes``
+    list — falls back to single ``vp.gene`` if ``annotate`` is pre-multi).
+    This lets bidirectional promoters (TP53/WRAP53) and dense TSS clusters be
+    disambiguated by contact strength rather than arbitrary pick.
+
+    A per-source double-exponential Kneedle elbow on the sorted gene-weight
+    vector selects the "focus" subset for that source.
+
+    Args:
+        sources: Iterable of UIDs (or single UID string).
+        key:     Edge property used to weight the candidate vote (default ``"n"``).
+
+    Returns:
+        dict with keys:
+            ``'genes'``   – union of focus genes across sources.
+            ``'records'`` – per-source dict including ``focus_genes``,
+                           ``gene_weights`` (full dict), ``n_candidates``,
+                           ``n_focus``.
+    """
+    import numpy as np
+    from collections import defaultdict
+
+    if isinstance(sources, str):
+        sources = [sources]
+    if key not in s.ep:
+        raise ValueError(f"Edge property '{key}' not found.")
+    if "annot" not in s.vp:
+        raise ValueError("vp.annot missing — run annotate() first.")
+    use_multi = "genes" in s.vp
+    has_single = "gene" in s.vp
+
+    all_focus_genes = set()
+    records = []
+
+    for uid in sources:
+        if uid not in s.index: continue
+        v = s.index[uid]
+
+        gene_weight: dict = defaultdict(float)
+        for nb in v.all_neighbors():
+            if "Promoter" not in s.vp.annot[nb]: continue
+            e = s.edge(v, nb)
+            w = float(s.ep[key][e])
+            cands = []
+            if use_multi and s.vp.genes[nb]:
+                cands = [g for g in s.vp.genes[nb].split(";") if g]
+            elif has_single and s.vp.gene[nb]:
+                cands = [s.vp.gene[nb]]
+            for gn in cands:
+                gene_weight[gn] += w
+
+        n = len(gene_weight)
+        record = {"source": uid, "n_candidates": n, "gene_weights": dict(gene_weight)}
+
+        if n == 0:
+            record["focus_genes"] = set()
+            record["n_focus"] = 0
+            records.append(record)
+            continue
+
+        items = sorted(gene_weight.items(), key=lambda kv: -kv[1])
+        w_sorted = np.array([kv[1] for kv in items], dtype=float)
+        if n < 3:
+            cutoff = n
+        else:
+            wmin, wmax = w_sorted[-1], w_sorted[0]
+            if wmax == wmin:
+                cutoff = n
+            else:
+                a = (w_sorted - wmin) / (wmax - wmin)
+                y = np.exp(np.exp(a))
+                x = np.arange(n, dtype=float)
+                lv = np.array([x[-1] - x[0], y[-1] - y[0]])
+                pts = np.column_stack([x - x[0], y - y[0]])
+                dists = np.abs(np.cross(lv, pts)) / np.linalg.norm(lv)
+                cutoff = int(np.argmax(dists)) + 1
+
+        focus_genes = {items[i][0] for i in range(cutoff)} - {""}
+        record["focus_genes"] = focus_genes
+        record["n_focus"] = len(focus_genes)
+        all_focus_genes |= focus_genes
+        records.append(record)
+
+    if verbose:
+        print(f"[INFO] Focus (network-weighted): {len(sources)} sources → "
+              f"{len(all_focus_genes)} focus genes.")
+    return {"genes": all_focus_genes, "records": records}
+
+
+def prime_hubs(s: Architecture, key: str = "n", *, verbose: bool = True):
+    """Find prime genes: hub promoter genes ∪ focus genes of hub enhancers.
+
+    Full pipeline:
+        1. ``aggregate(key)`` — compute node strength if not yet present.
+        2. ``elbow("agg")`` — find hub CREs above the elbow.
+        3. Split hubs into promoters (→ direct genes) and enhancers.
+        4. ``focus(enhancer_hubs, key)`` — find focus neighbor genes.
+        5. Union → prime genes.
+
+    Requires ``vp.annot`` and ``vp.gene`` (from ``annotate()``).
+
+    Args:
+        key: Edge property for weighting (default ``"n"``).
+
+    Returns:
+        dict with ``'prime_genes'``, ``'promoter_genes'``, ``'focus_genes'``,
+        ``'hub_uids'``, ``'cutoff'``.
+    """
+    for req in ("annot", "gene"):
+        if req not in s.vp:
+            raise ValueError(f"vp.{req} missing — run annotate() first.")
+
+    agg_name=f'agg_{key.replace('n_', '')}' if key != 'n' else 'agg'
+    # 1. aggregate
+    if agg_name not in s.vp:
+        s.aggregate(key=key, name=agg_name, verbose=verbose)
+
+    # 2. elbow on node strength
+    cutoff, sorted_uids = s.elbow(agg_name, verbose=verbose)
+    hub_uids = sorted_uids[:cutoff]
+
+    # 3. split by annotation — promoter hubs contribute *all* candidate genes
+    use_multi = "genes" in s.vp
+    prom_hubs, enh_hubs = [], []
+    prom_genes = set()
+    for uid in hub_uids:
+        v = s.index[uid]
+        annot_val = s.vp.annot[v]
+        if "Promoter" in annot_val:
+            prom_hubs.append(uid)
+            if use_multi and s.vp.genes[v]:
+                prom_genes.update(s.vp.genes[v].split(";"))
+            elif s.vp.gene[v]:
+                prom_genes.add(s.vp.gene[v])
+        else:
+            enh_hubs.append(uid)
+
+    # 4. focus genes from hub enhancers
+    foc_genes = s.focus(enh_hubs, key=key, verbose=verbose)["genes"] if enh_hubs else set()
+
+    # 5. union
+    p_genes = prom_genes | foc_genes
+
+    if verbose:
+        print(f"[INFO] Prime hubs: {len(hub_uids)} hubs "
+              f"({len(prom_hubs)} promoters, {len(enh_hubs)} enhancers)")
+        print(f"[INFO] Prime genes: {len(p_genes)} = "
+              f"{len(prom_genes)} promoter + {len(foc_genes)} focus "
+              f"(overlap: {len(prom_genes & foc_genes)})")
+
+    return {
+        "prime_genes"   : p_genes,
+        "promoter_genes": prom_genes,
+        "focus_genes"   : foc_genes,
+        "hub_uids"      : hub_uids,
+        "cutoff"        : cutoff,
+        "promoter_uids" : prom_hubs,
+        "enhancer_uids" : enh_hubs
+    }
 
 
 # attach these utilities to the Architecture class to preserve the old API
@@ -1099,4 +1580,10 @@ Architecture.make_spread = make_spread
 Architecture.add_mcool = add_mcool
 Architecture.normalize = normalize
 Architecture.annotate = annotate
+Architecture._merge_nearby = _merge_nearby
 Architecture.draw = draw
+Architecture.aggregate = aggregate
+Architecture.cluster = cluster
+Architecture.elbow = elbow
+Architecture.focus = focus
+Architecture.prime_hubs = prime_hubs

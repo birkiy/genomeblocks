@@ -1,0 +1,152 @@
+---
+title: Signal
+parent: User Guide
+layout: default
+nav_order: 5
+---
+
+# Signal
+{: .no_toc }
+
+Threaded bigWig extraction, TMM normalization, and comparative heatmaps for a `Loci` set.
+{: .fs-5 .fw-300 }
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
+---
+
+## `loci.signal()` — pull a `(loci × tracks × bins)` cube
+
+```python
+cube = loci.signal(
+    bigwigs=["atac.bw", "h3k4me1.bw", "h3k27ac.bw"],
+    n_bins=200,         # bins per region
+    flank=3_000,        # ±flank around the region center (ignored if span=True)
+    agg="mean",         # per-bin aggregator: mean / max / min / std / sum / coverage
+    span=False,         # True → use the full Locus span rather than center±flank
+    dtype=np.float32,
+    progress=True,
+    max_bw_parallel=6,
+    max_workers=None,   # None → cpu_count()
+    backend=None,       # None → auto-detect pybigtools; 'bigwig' forces pure-Python
+)
+print(cube.shape)       # (n_loci, n_tracks, n_bins)
+```
+
+Returns a dense `numpy.ndarray` — immediately suitable for `tmm()`, plotting, or clustering.
+
+### Threading model
+
+- Work is split by (track-chunk, loci-chunk).
+- Up to `max_bw_parallel` bigWig files open concurrently per thread group.
+- Each worker opens its own bigWig handles — no cross-thread file sharing.
+- `pybigtools` releases the GIL for reads + decompression, so wall-clock scales with `--cores`.
+
+### Backends
+
+| Backend | Source | Notes |
+|---|---|---|
+| `pybigtools` (default) | Rust, via `pybigtools` | Fastest; releases the GIL; exact base-pair reads. |
+| `bigwig` | Pure Python in `genomeblocks.bigwig` | Zero compiled deps; falls back when `pybigtools` isn't importable. |
+
+---
+
+## TMM normalization
+
+```python
+from genomeblocks import tmm
+cube_n = tmm(cube)
+```
+
+Per-track TMM normalization factors computed over per-region means (via `conorm.tmm_norm_factors`), then scaled to library size in per-million. Useful when pooling biological replicates or comparing cell types.
+
+---
+
+## `compare_heatmap` — A-specific / shared / B-specific grid
+
+Typical task: compare enhancer sets between two conditions across multiple marks.
+
+```python
+from genomeblocks import compare_heatmap
+
+fig, union, S, tags = compare_heatmap(
+    a=cre_mesc,
+    b=cre_hesc,
+    bigwigs=["ATAC_mESC.bw", "ATAC_hESC.bw",
+             "H3K27ac_mESC.bw", "H3K27ac_hESC.bw"],
+    a_name="mESC",
+    b_name="hESC",
+    common_name="shared",
+    n_bins=200,
+    flank=3_000,
+    normalize=True,          # run tmm() before plotting
+    cmap=["Blues", "Blues", "Reds", "Reds"],
+    vmax=[10, 10, 6, 6],
+    samples={"ATAC":   [0, 1],    # merge bigwigs 0 and 1 into one column
+             "H3K27ac": [2, 3]},
+)
+fig.savefig("cre_compare.pdf")
+```
+
+- `sets` controls row order (default `[a_name, common_name, b_name]`).
+- `samples` can be a list (no merging) or a dict `{column_name: [bigwig_indices]}` to average replicates inline.
+- `sort="group"` orders rows within each group by mean signal; `"global"` orders across all rows; `None` keeps input order.
+- Pass a pre-computed `S` to skip extraction entirely (useful for iterating on plot params).
+
+Returns `(fig, union_loci, S, tags)` so you can re-plot with different params.
+
+---
+
+## `plot_heatmap` / `plot_profiles`
+
+Same plotting machinery as `compare_heatmap`, but decoupled from Loci comparison:
+
+```python
+from genomeblocks import Tags
+
+tags = Tags.make(loci).add({
+    "promoter":  promoter_cre,
+    "enhancer":  enhancer_cre,
+    "quiescent": quiescent_cre,
+})
+
+fig = loci.plot_heatmap(cube, tags=tags,
+                        sets=["promoter", "enhancer", "quiescent"],
+                        cmap="Blues", vmax=8)
+fig.savefig("heatmap.pdf")
+
+fig = loci.plot_profiles(cube, tags=tags, ylim=5)
+fig.savefig("profiles.pdf")
+```
+
+You can also pass `groups={"A": loci_a, "B": loci_b}` instead of a `Tags` object for one-liners.
+
+---
+
+## Sizing considerations
+
+Memory for the cube is `n_loci × n_tracks × n_bins × dtype_size`. The extractor refuses to allocate more than half of `/`-free space as a safety check. If you need to scan a million CREs × 50 tracks × 200 bins, chunk by loci and stream to disk (`np.save` per chunk).
+
+---
+
+## Example: ChIP-seq enrichment profile around CRE centers
+
+```python
+from genomeblocks import Loci
+
+cre = Loci.make("cre.bed")
+bigwigs = [
+    "H3K4me1.bw", "H3K4me3.bw", "H3K27ac.bw",
+    "H3K27me3.bw", "H3K9me3.bw",
+]
+
+cube = cre.signal(bigwigs, n_bins=200, flank=3_000, agg="mean")
+cube = gb.tmm(cube)
+
+fig = cre.plot_profiles(cube, ylim=6)
+fig.savefig("marks.pdf")
+```
