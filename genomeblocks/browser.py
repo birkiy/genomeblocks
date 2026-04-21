@@ -106,11 +106,11 @@ def _draw_bigwig(ax, track, chrom, start, end, color, n_bins, ymax):
     opened = isinstance(track, str)
     h = _bw_open(track) if opened else track
     try:
-        vals = h.stats(chrom, start, end, n_bins=n_bins, stat='mean')
+        y = h.stats_array(chrom, start, end, n_bins=n_bins,
+                          stat='mean', missing=0.0).astype(np.float64, copy=False)
     finally:
         if opened:
             h.close()
-    y = np.array([0.0 if v is None else float(v) for v in vals], dtype=np.float64)
     x = np.linspace(start, end, n_bins, endpoint=False) + (end - start) / (2 * n_bins)
 
     ax.fill_between(x, 0.0, y, facecolor=color, linewidth=0, step='mid')

@@ -316,6 +316,24 @@ class BigWigReader:
             return self._stats_zoom(cid, start, end, n_bins, stat, zoom_idx)
         return self._stats_full(cid, start, end, n_bins, stat)
 
+    def stats_array(self, chrom: str, start: int, end: int, *,
+                    n_bins: int = 1, stat: str = 'mean',
+                    exact: bool = True, missing: float = 0.0,
+                    ) -> np.ndarray:
+        """ndarray variant of :meth:`stats` — missing bins filled with *missing*.
+
+        Matches the pybigtools adapter's fast-path signature so the
+        worker in ``signal.py`` can call it uniformly. ``exact`` is
+        accepted for API compatibility; the pure-Python reader always
+        uses full-resolution data when it has it.
+        """
+        raw = self.stats(chrom, start, end, n_bins=n_bins,
+                         stat=stat, exact=exact)
+        return np.fromiter(
+            (missing if v is None else v for v in raw),
+            dtype=np.float64, count=len(raw),
+        )
+
     def _stats_full(self, cid, start, end, n_bins, stat):
         bs = (end - start) / n_bins
         vc = np.zeros(n_bins)
