@@ -6,6 +6,8 @@ description: "Fluent building blocks for regulatory genomics in Python."
 permalink: /
 ---
 
+<span class="gb-eyebrow">v0.9 · MIT · <code>pip install genomeblocks</code></span>
+
 # genomeblocks
 {: .fs-9 }
 
@@ -15,20 +17,24 @@ Fluent building blocks for regulatory genomics — from peaks to chromatin netwo
 [Quickstart](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [View on GitHub](https://github.com/birkiy/genomeblocks){: .btn .fs-5 .mb-4 .mb-md-0 }
 
+<img src="{{ '/assets/images/browser_Nanog.svg' | relative_url }}" alt="Genomeblocks browser — IGV-like region viewer" class="gb-browser-hero" />
+
 ---
 
 ## Why genomeblocks?
 
 Regulatory-genomics analyses usually end up as a cocktail of bedtools, PyRanges, cooler, pyBigWig, GTF parsing boilerplate, graph libraries, and one-off heatmap code. `genomeblocks` unifies those pieces behind a small set of composable objects:
 
-- **`Loci`** — a list-of-intervals container with set algebra (`&`, `|`, `-`, `^`), `slop`, `sort`, `merge`, `nearest`, indexed overlap queries, and signal extraction.
-- **`Locus`** — a single interval with a canonical UID (`chrom:start-end(strand)`) used everywhere as a stable key.
-- **`Tags`** — an in-memory annotation store for a `Loci` set, queryable by boolean expression (`l.atac & (l.h3k27ac > 1.5)`).
-- **`Genes`** — GENCODE / GTF / UCSC parser yielding `Gene` → `Transcript` → `Exon`/`CDS`/`UTR` hierarchies, with enhancer-to-gene assignment in one call.
-- **`Architecture`** — a chromatin-contact graph (graph-tool) built from BEDPE loops or mcool matrices; supports spreading, clique construction, O/E normalization, and hub/focus-gene discovery.
-- **`signal`** — threaded bigWig extraction (pybigtools backend, pure-Python fallback), TMM normalization, and comparative heatmaps.
-- **`browser`** — an IGV-like, SVG-clean multi-track region viewer built on matplotlib.
-- **`bedpe`** / **`motifs`** — BEDPE parsing + pair-to-bed intersection; JASPAR motif scanning over a FASTA genome.
+<ul class="gb-modules">
+  <li><strong>Loci</strong><br><small>A list-of-intervals container with set algebra (<code>&</code>, <code>|</code>, <code>-</code>, <code>^</code>), <code>slop</code>, <code>sort</code>, <code>merge</code>, <code>nearest</code>, indexed overlap queries, and signal extraction.</small></li>
+  <li><strong>Locus</strong><br><small>A single interval with a canonical UID (<code>chrom:start-end(strand)</code>) used everywhere as a stable key.</small></li>
+  <li><strong>Tags</strong><br><small>An in-memory annotation store for a <code>Loci</code> set, queryable by boolean expression (<code>l.atac & (l.h3k27ac > 1.5)</code>).</small></li>
+  <li><strong>Genes</strong><br><small>GENCODE / GTF / UCSC parser yielding <code>Gene</code> → <code>Transcript</code> → <code>Exon</code>/<code>CDS</code>/<code>UTR</code> hierarchies, with enhancer-to-gene assignment in one call.</small></li>
+  <li><strong>Architecture</strong><br><small>A chromatin-contact graph (graph-tool) built from BEDPE loops or mcool matrices; spreading, cliques, O/E, hub discovery.</small></li>
+  <li><strong>signal</strong><br><small>Threaded bigWig extraction (pybigtools backend, pure-Python fallback), TMM normalization, and comparative heatmaps.</small></li>
+  <li><strong>browser</strong><br><small>An IGV-like, SVG-clean multi-track region viewer built on matplotlib.</small></li>
+  <li><strong>bedpe / motifs</strong><br><small>BEDPE parsing + pair-to-bed intersection; JASPAR motif scanning over a FASTA genome.</small></li>
+</ul>
 
 Everything is **chainable**: the output of one stage is always a first-class object accepted by the next.
 

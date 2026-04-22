@@ -10,7 +10,9 @@ kramdown:
   hard_wrap: false
 
 # just-the-docs settings
-color_scheme: light
+color_scheme: genomeblocks
+logo: /assets/images/logo-light.png
+favicon_ico: /assets/images/logo-bare.png
 search_enabled: true
 search:
   heading_level: 3
@@ -46,6 +48,7 @@ exclude:
   - Gemfile.lock
   - vendor
   - .bundle
+  - design-preview.html
 
 plugins:
   - jekyll-remote-theme

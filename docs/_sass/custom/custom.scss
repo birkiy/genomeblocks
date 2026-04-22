@@ -1,26 +1,423 @@
-// Loaded automatically by just-the-docs *after* the theme's own styles.
-// Safe to put overrides here — no @import of internal theme partials.
+// ============================================================
+//   GENOMEBLOCKS — custom.scss
+//   Loaded by just-the-docs AFTER its own styles, so these rules
+//   sit on top of the theme. The design tokens below mirror the
+//   Genomeblocks design system (colors_and_type.css).
+// ============================================================
 
+/* ── Brand fonts ───────────────────────────────────────────── */
+/* Nunito @font-face rules live in /assets/css/brand-fonts.css so that
+   Liquid can resolve `relative_url` (baseurl) correctly on GitHub Pages.
+   See _includes/head_custom.html for the stylesheet link. */
+
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  --brand:         #003552;
+  --brand-hover:   #00273d;
+  --brand-subtle:  #e8eff4;
+
+  --n-0:   #fbfaf4;
+  --n-50:  #f6f4e8;
+  --n-100: #e1dcc5;
+  --n-200: #d4cfba;
+  --n-300: #ada999;
+  --n-400: #868377;
+  --n-500: #52514b;
+  --n-600: #3a3935;
+  --n-700: #2d2c29;
+  --n-800: #252422;
+  --n-900: #1e1e1e;
+
+  --color-code-bg:     #1e1e1e;
+  --color-code-header: #252526;
+  --color-code-text:   #d4d4d4;
+  --color-code-kw:     #569cd6;
+  --color-code-cls:    #4ec9b0;
+  --color-code-fn:     #dcdcaa;
+  --color-code-str:    #ce9178;
+  --color-code-cm:     #6a9955;
+  --color-code-nu:     #b5cea8;
+  --color-code-var:    #9cdcfe;
+
+  --font-sans: "Nunito", "Helvetica Neue", Arial, sans-serif;
+  --font-code: "Varela Round", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(30,30,30,.07), 0 1px 2px rgba(30,30,30,.04);
+  --shadow-md: 0 3px 10px rgba(30,30,30,.08), 0 1px 3px rgba(30,30,30,.05);
+  --shadow-lg: 0 6px 20px rgba(30,30,30,.09), 0 3px 6px rgba(30,30,30,.06);
+  --shadow-focus: 0 0 0 3px rgba(0,53,82,0.25);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 110ms;
+  --duration-normal: 180ms;
+}
+
+/* ── Base document ─────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+  color: var(--n-900);
+  background: var(--n-50);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Headings — tight display feel ─────────────────────────── */
+.main-content {
+  h1, h2, h3, h4, h5, h6 { font-family: var(--font-sans); color: var(--n-900); }
+  h1 { font-weight: 900; letter-spacing: -0.025em; line-height: 1.15; }
+  h2 { font-weight: 800; letter-spacing: -0.015em; line-height: 1.2;
+       margin-top: 2em; padding-top: .2em; border-top: 1px solid var(--n-100); }
+  h3 { font-weight: 700; letter-spacing: -0.01em; }
+  h4 { font-weight: 700; }
+  h1:first-child, h2:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+}
+
+/* The big display headline on the home page (`{: .fs-9 }`) */
+.fs-9 {
+  font-weight: 900 !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.05 !important;
+  background: linear-gradient(180deg, var(--n-900) 0%, var(--brand) 120%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.fs-6 { color: var(--n-500); font-weight: 300 !important; }
+
+/* ── Links ─────────────────────────────────────────────────── */
+.main-content a:not(.btn) {
+  color: var(--brand);
+  text-decoration: none;
+  background-image: linear-gradient(var(--brand), var(--brand));
+  background-size: 0% 1.5px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  transition: background-size var(--duration-normal) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+.main-content a:not(.btn):hover { background-size: 100% 1.5px; color: var(--brand-hover); }
+
+/* ── Buttons (just-the-docs `.btn` / `.btn-primary`) ───────── */
+.main-content .btn,
+.btn {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: var(--radius-md);
+  padding: 9px 18px;
+  border: 1.5px solid var(--n-200);
+  background: var(--n-0);
+  color: var(--n-900);
+  box-shadow: var(--shadow-sm);
+  transition: background var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+.main-content .btn:hover,
+.btn:hover {
+  background: var(--n-50);
+  border-color: var(--n-300);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+}
+.main-content .btn:active,
+.btn:active { transform: scale(0.98); box-shadow: var(--shadow-sm); }
+.main-content .btn:focus-visible,
+.btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+.main-content .btn-primary,
+.btn-primary {
+  background: var(--brand);
+  color: var(--n-0) !important;
+  border-color: var(--brand);
+}
+.main-content .btn-primary:hover,
+.btn-primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); color: var(--n-0) !important; }
+
+.main-content .btn.fs-5 { font-size: 14px; padding: 11px 22px; border-radius: 12px; }
+
+/* ── Inline code & code blocks ─────────────────────────────── */
+.main-content code {
+  font-family: var(--font-code);
+  font-size: 0.92em;
+  background: #eeece2;
+  color: var(--n-900);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+.main-content pre,
+.main-content div.highlighter-rouge,
+.main-content figure.highlight,
+.main-content .highlight {
+  background: var(--color-code-bg) !important;
+  border-radius: var(--radius-md);
+  border: 1px solid #0d0d0d;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.main-content div.highlighter-rouge pre.highlight,
+.main-content figure.highlight pre,
+.main-content pre.highlight {
+  background: var(--color-code-bg) !important;
+  color: var(--color-code-text) !important;
+  font-family: var(--font-code) !important;
+  font-size: 13.5px;
+  line-height: 1.75;
+  padding: 16px 20px;
+  margin: 0;
+  border: none;
+}
+
+.main-content pre.highlight code,
+.main-content div.highlighter-rouge pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+  font-size: inherit;
+}
+
+/* Rouge syntax colors — mapped to the design-system palette */
+.highlight .k, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kt { color: var(--color-code-kw) !important; }
+.highlight .nc, .highlight .nn, .highlight .nt { color: var(--color-code-cls) !important; }
+.highlight .nf, .highlight .nx { color: var(--color-code-fn) !important; }
+.highlight .s, .highlight .s1, .highlight .s2, .highlight .sb, .highlight .sd, .highlight .si { color: var(--color-code-str) !important; }
+.highlight .c, .highlight .c1, .highlight .cm, .highlight .cs, .highlight .cp { color: var(--color-code-cm) !important; font-style: italic; }
+.highlight .m, .highlight .mi, .highlight .mf, .highlight .il { color: var(--color-code-nu) !important; }
+.highlight .n, .highlight .nv, .highlight .nb { color: var(--color-code-var) !important; }
+.highlight .o, .highlight .p { color: #d4d4d4 !important; }
+
+/* ── Tables ────────────────────────────────────────────────── */
+.main-content table {
+  background: var(--n-0);
+  border: 1px solid var(--n-100);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  box-shadow: var(--shadow-sm);
+}
+.main-content table th {
+  background: var(--n-50);
+  color: var(--n-900);
+  font-weight: 700;
+  border-bottom: 1px solid var(--n-100);
+  text-align: left;
+}
+.main-content table td { border-bottom: 1px solid var(--n-100); }
+.main-content table tr:last-child td { border-bottom: none; }
+.main-content table tr:hover td { background: rgba(232,239,244,0.35); }
+
+/* ── Blockquotes ───────────────────────────────────────────── */
+.main-content blockquote {
+  border-left: 3px solid var(--brand);
+  background: var(--brand-subtle);
+  color: var(--n-500);
+  padding: 12px 18px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  margin: 1em 0;
+}
+.main-content blockquote p:last-child { margin-bottom: 0; }
+
+/* ── Callouts (note / warning / tip) ───────────────────────── */
+.main-content .note,
+.main-content .warning,
+.main-content .tip {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--n-100);
+  background: var(--n-0);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 18px;
+}
+.main-content .note    { border-left: 3px solid var(--brand); }
+.main-content .warning { border-left: 3px solid #b58a00; background: #fdf7e2; }
+.main-content .tip     { border-left: 3px solid #1fa653; background: #eafaf0; }
+
+/* ── Horizontal rules ──────────────────────────────────────── */
+.main-content hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--n-100) 20%, var(--n-100) 80%, transparent);
+  margin: 2.5em 0;
+}
+
+/* ── Site header / title / search ──────────────────────────── */
+.side-bar {
+  background: var(--n-0);
+  border-right: 1px solid var(--n-100);
+}
 .site-title {
+  font-family: var(--font-sans) !important;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--n-900) !important;
+}
+.site-title:hover { background: transparent; }
+.site-logo { background-size: contain; }
+
+.site-header { border-bottom: 1px solid var(--n-100); }
+.site-footer {
+  border-top: 1px solid var(--n-100);
+  color: var(--n-400);
+  font-size: 12px;
+  padding: 18px 0;
+}
+
+.search-input,
+.search-input-wrap {
+  background: var(--n-0);
+  border: 1px solid var(--n-100);
+  border-radius: var(--radius-md);
+}
+.search-input:focus { box-shadow: var(--shadow-focus); border-color: var(--brand); }
+
+/* ── Sidebar navigation ────────────────────────────────────── */
+.nav-list .nav-list-item .nav-list-link {
+  color: var(--n-500);
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+.nav-list .nav-list-item .nav-list-link:hover {
+  background: var(--n-50);
+  color: var(--n-900);
+}
+.nav-list .nav-list-item .nav-list-link.active {
+  background: var(--brand-subtle);
+  color: var(--brand);
   font-weight: 700;
 }
+.nav-list .nav-list-item .nav-list-expander:hover { background: var(--n-50); border-radius: var(--radius-sm); }
 
-h1.fs-9 {
-  margin-bottom: 0.4em;
+/* Aux links (GitHub / PyPI in the top bar) */
+.aux-nav-list-item .site-button {
+  color: var(--n-500);
+  font-weight: 600;
+}
+.aux-nav-list-item .site-button:hover { color: var(--brand); background: var(--brand-subtle); border-radius: var(--radius-sm); }
+
+/* ── Main content surface ──────────────────────────────────── */
+.main-content-wrap { background: var(--n-50); }
+.main-content {
+  background: transparent;
+  color: var(--n-900);
+  line-height: 1.65;
+}
+.main-content p { color: var(--n-900); }
+
+/* ── Label chips (just-the-docs `.label`) ──────────────────── */
+.main-content .label {
+  background: var(--n-100);
+  color: var(--n-700);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  padding: 2px 10px;
+}
+.main-content .label-blue,
+.main-content .label-green,
+.main-content .label-purple,
+.main-content .label-yellow,
+.main-content .label-red { background: var(--brand); color: var(--n-0); }
+
+/* ── Scrollbar (webkit) ────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--n-200); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--n-300); }
+
+/* ── Selection ─────────────────────────────────────────────── */
+::selection { background: var(--brand-subtle); color: var(--brand); }
+
+/* ── Focus-visible outlines everywhere ─────────────────────── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
 }
 
-div.highlighter-rouge pre {
-  line-height: 1.45;
+/* ── Optional: hero "module" cards for index.md ────────────── */
+.gb-modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 28px 0 8px;
+  list-style: none !important;
+  padding: 0 !important;
+}
+.gb-modules li {
+  background: var(--n-0);
+  border: 1px solid var(--n-100);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out);
+  list-style: none;
+  margin: 0 !important;
+}
+.gb-modules li::before { content: none !important; }
+.gb-modules li:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--n-200); }
+.gb-modules li strong {
+  display: inline-block;
+  font-family: var(--font-code);
+  font-size: 13px;
+  color: var(--brand);
+  margin-bottom: 4px;
+}
+.gb-modules li small { color: var(--n-400); font-size: 12px; line-height: 1.5; }
+
+/* ── Optional: brand badge on the home page ───────────────── */
+.gb-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--brand-subtle);
+  color: var(--brand);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  margin-bottom: 10px;
 }
 
-table {
-  border-collapse: collapse;
+/* ── Hero browser image frame ──────────────────────────────── */
+.gb-browser-hero {
+  display: block;
+  margin: 24px auto;
+  max-width: 100%;
+  border: 1px solid var(--n-100);
+  border-radius: var(--radius-lg);
+  background: var(--n-0);
+  box-shadow: var(--shadow-md);
+  padding: 10px;
 }
 
-table th {
-  background: #f4f6f8;
-}
+/* ── Small type polish ─────────────────────────────────────── */
+.main-content small,
+.main-content sup,
+.main-content sub { color: var(--n-400); }
 
-.note, .warning, .tip {
-  border-radius: 6px;
+/* ── Print ─────────────────────────────────────────────────── */
+@media print {
+  .side-bar, .site-header, .aux-nav { display: none !important; }
+  .main-content-wrap { background: white; }
+  .main-content pre, .main-content .highlight { box-shadow: none; }
 }

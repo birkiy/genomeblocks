@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genomeblocks docs — design preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+<style>
+@font-face { font-family:"Nunito"; src:url("assets/fonts/Nunito-Regular.ttf") format("truetype"); font-weight:400; }
+@font-face { font-family:"Nunito"; src:url("assets/fonts/Nunito-Medium.ttf") format("truetype"); font-weight:500; }
+@font-face { font-family:"Nunito"; src:url("assets/fonts/Nunito-SemiBold.ttf") format("truetype"); font-weight:600; }
+@font-face { font-family:"Nunito"; src:url("assets/fonts/Nunito-Bold.ttf") format("truetype"); font-weight:700; }
+@font-face { font-family:"Nunito"; src:url("assets/fonts/Nunito-ExtraBold.ttf") format("truetype"); font-weight:800; }
+@font-face { font-family:"Nunito"; src:url("assets/fonts/Nunito-Black.ttf") format("truetype"); font-weight:900; }
+
+:root {
+  --brand:#003552; --brand-hover:#00273d; --brand-subtle:#e8eff4;
+  --n-0:#fbfaf4; --n-50:#f6f4e8; --n-100:#e1dcc5; --n-200:#d4cfba; --n-300:#ada999;
+  --n-400:#868377; --n-500:#52514b; --n-900:#1e1e1e;
+  --code-bg:#1e1e1e;
+  --font-sans:"Nunito","Helvetica Neue",sans-serif;
+  --font-code:"Varela Round",ui-monospace,monospace;
+  --radius-md:10px; --radius-lg:16px; --radius-full:9999px;
+  --shadow-sm:0 1px 3px rgba(30,30,30,.07), 0 1px 2px rgba(30,30,30,.04);
+  --shadow-md:0 3px 10px rgba(30,30,30,.08), 0 1px 3px rgba(30,30,30,.05);
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--font-sans); background:var(--n-50); color:var(--n-900); -webkit-font-smoothing:antialiased; }
+
+.shell { display:flex; min-height:100vh; }
+.side-bar { width:260px; background:var(--n-0); border-right:1px solid var(--n-100); padding:24px 20px; flex-shrink:0; }
+.site-title { font-weight:800; font-size:18px; letter-spacing:-0.015em; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+.site-title img { height:24px; }
+.nav-list { list-style:none; }
+.nav-list li a { display:block; padding:6px 10px; color:var(--n-500); font-weight:600; font-size:13px; border-radius:6px; text-decoration:none; margin-bottom:2px; }
+.nav-list li a:hover { background:var(--n-50); color:var(--n-900); }
+.nav-list li a.active { background:var(--brand-subtle); color:var(--brand); }
+
+.main-content-wrap { flex:1; padding:40px 60px; max-width:900px; }
+.main-content p { line-height:1.65; margin:0 0 1em; color:var(--n-900); }
+.main-content a { color:var(--brand); text-decoration:none; border-bottom:1.5px solid transparent; transition:border-color .15s; }
+.main-content a:hover { border-bottom-color:var(--brand); }
+
+.gb-eyebrow { display:inline-flex; align-items:center; gap:10px; background:var(--brand-subtle); color:var(--brand); font-weight:700; font-size:12px; padding:4px 12px; border-radius:var(--radius-full); margin-bottom:12px; }
+.gb-eyebrow code { background:none; color:inherit; padding:0; }
+
+h1.fs-9 { font-weight:900; font-size:56px; letter-spacing:-0.03em; line-height:1.05; margin-bottom:14px;
+  background:linear-gradient(180deg,var(--n-900) 0%,var(--brand) 120%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.fs-6 { color:var(--n-500); font-weight:300; font-size:18px; line-height:1.6; margin-bottom:22px; }
+
+.btn { font-family:var(--font-sans); font-weight:700; font-size:14px; border-radius:var(--radius-md); padding:11px 22px; border:1.5px solid var(--n-200); background:var(--n-0); color:var(--n-900); box-shadow:var(--shadow-sm); cursor:pointer; text-decoration:none; display:inline-block; margin-right:8px; transition:all .15s; }
+.btn:hover { background:var(--n-50); border-color:var(--n-300); box-shadow:var(--shadow-md); }
+.btn-primary { background:var(--brand); color:var(--n-0); border-color:var(--brand); }
+.btn-primary:hover { background:var(--brand-hover); border-color:var(--brand-hover); color:var(--n-0); }
+
+.gb-browser-hero { display:block; margin:24px 0; max-width:100%; border:1px solid var(--n-100); border-radius:var(--radius-lg); background:var(--n-0); box-shadow:var(--shadow-md); padding:10px; }
+
+h2 { font-weight:800; font-size:28px; letter-spacing:-0.015em; line-height:1.2; margin:2em 0 .6em; padding-top:.2em; border-top:1px solid var(--n-100); }
+h2:first-child { border:none; padding-top:0; margin-top:0; }
+
+code { font-family:var(--font-code); font-size:0.92em; background:#eeece2; color:var(--n-900); padding:1px 6px; border-radius:6px; border:1px solid rgba(0,0,0,0.04); }
+
+pre { background:var(--code-bg); color:#d4d4d4; font-family:var(--font-code); font-size:13.5px; line-height:1.75; padding:16px 20px; border-radius:var(--radius-md); overflow-x:auto; box-shadow:var(--shadow-md); margin:1em 0; }
+pre .kw{color:#569cd6;} pre .cls{color:#4ec9b0;} pre .fn{color:#dcdcaa;} pre .st{color:#ce9178;} pre .cm{color:#6a9955;font-style:italic;} pre .nu{color:#b5cea8;} pre .var{color:#9cdcfe;}
+
+.gb-modules { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin:28px 0 8px; list-style:none; padding:0; }
+.gb-modules li { background:var(--n-0); border:1px solid var(--n-100); border-radius:var(--radius-md); padding:14px 16px; box-shadow:var(--shadow-sm); transition:all .15s; list-style:none; }
+.gb-modules li:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); border-color:var(--n-200); }
+.gb-modules li strong { display:inline-block; font-family:var(--font-code); font-size:13px; color:var(--brand); margin-bottom:4px; }
+.gb-modules li small { color:var(--n-400); font-size:12px; line-height:1.5; display:block; }
+
+table { background:var(--n-0); border:1px solid var(--n-100); border-radius:var(--radius-md); overflow:hidden; border-collapse:separate; border-spacing:0; box-shadow:var(--shadow-sm); width:100%; margin:1em 0; }
+table th { background:var(--n-50); color:var(--n-900); font-weight:700; border-bottom:1px solid var(--n-100); text-align:left; padding:10px 14px; font-size:14px; }
+table td { border-bottom:1px solid var(--n-100); padding:10px 14px; font-size:14px; }
+table tr:last-child td { border-bottom:none; }
+table tr:hover td { background:rgba(232,239,244,0.35); }
+
+hr { border:none; height:1px; background:linear-gradient(90deg,transparent,var(--n-100) 20%,var(--n-100) 80%,transparent); margin:2.5em 0; }
+
+.note { border-radius:var(--radius-md); border:1px solid var(--n-100); border-left:3px solid var(--brand); background:var(--n-0); box-shadow:var(--shadow-sm); padding:14px 18px; margin:1em 0; }
+.note::before { content:"Note"; display:block; font-weight:700; color:var(--brand); font-size:12px; letter-spacing:.05em; text-transform:uppercase; margin-bottom:4px; }
+
+::selection { background:var(--brand-subtle); color:var(--brand); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side-bar">
+    <div class="site-title"><img src="assets/images/logo-bare.png" alt="">genomeblocks</div>
+    <ul class="nav-list">
+      <li><a href="#" class="active">Home</a></li>
+      <li><a href="#">Installation</a></li>
+      <li><a href="#">Quickstart</a></li>
+      <li><a href="#">Concepts</a></li>
+      <li><a href="#">User Guide</a></li>
+      <li><a href="#">API Reference</a></li>
+      <li><a href="#">Examples</a></li>
+    </ul>
+  </aside>
+  <main class="main-content-wrap">
+    <div class="main-content">
+      <span class="gb-eyebrow">v0.9 · MIT · <code>pip install genomeblocks</code></span>
+      <h1 class="fs-9">genomeblocks</h1>
+      <p class="fs-6">Fluent building blocks for regulatory genomics — from peaks to chromatin networks in a handful of expressive chained calls.</p>
+      <a href="#" class="btn btn-primary">Quickstart →</a>
+      <a href="#" class="btn">View on GitHub</a>
+      <img src="assets/images/browser_Nanog.svg" alt="Genomeblocks browser preview" class="gb-browser-hero">
+
+      <hr>
+      <h2>Why genomeblocks?</h2>
+      <p>Regulatory-genomics analyses usually end up as a cocktail of bedtools, PyRanges, cooler, pyBigWig, GTF parsing boilerplate, graph libraries, and one-off heatmap code. <code>genomeblocks</code> unifies those pieces behind a small set of composable objects:</p>
+      <ul class="gb-modules">
+        <li><strong>Loci</strong><small>Interval container with set algebra, slop, sort, merge, overlap queries, and signal extraction.</small></li>
+        <li><strong>Tags</strong><small>In-memory CRE annotation store, queryable by boolean expression.</small></li>
+        <li><strong>Genes</strong><small>GENCODE / GTF / UCSC parser with enhancer-to-gene in one call.</small></li>
+        <li><strong>Architecture</strong><small>Chromatin-contact graph with spreading, cliques, O/E normalization.</small></li>
+        <li><strong>signal</strong><small>Threaded bigWig extraction, TMM normalization, heatmaps.</small></li>
+        <li><strong>browser</strong><small>IGV-like, SVG-clean multi-track region viewer.</small></li>
+      </ul>
+
+      <h2>60-second example</h2>
+<pre><span class="kw">from</span> genomeblocks <span class="kw">import</span> <span class="cls">Architecture</span>, <span class="cls">Genes</span>, <span class="cls">Loci</span>
+
+<span class="cm"># CREs: ATAC peaks, extended ±100 bp, sorted, merged</span>
+<span class="var">cre</span> = (<span class="cls">Loci</span>.<span class="fn">make</span>(<span class="st">"atac_peaks.narrowPeak"</span>)
+           .<span class="fn">slop</span>(<span class="nu">100</span>)
+           .<span class="fn">sort</span>()
+           .<span class="fn">merge</span>())
+
+<span class="var">arch</span> = (<span class="cls">Architecture</span>.<span class="fn">make</span>(<span class="var">cre</span>, <span class="st">"loops.bedpe"</span>, r=<span class="nu">2500</span>)
+                    .<span class="fn">add_mcool</span>(<span class="var">cre</span>, <span class="st">"hic.mcool"</span>, resolution=<span class="nu">5000</span>)
+                    .<span class="fn">normalize</span>(<span class="var">cre</span>))</pre>
+
+      <div class="note">Everything is <strong>chainable</strong>: the output of one stage is always a first-class object accepted by the next.</div>
+
+      <h2>Documentation map</h2>
+      <table>
+        <thead><tr><th>Section</th><th>When to read it</th></tr></thead>
+        <tbody>
+          <tr><td><a href="#">Installation</a></td><td>Setup with conda or pip.</td></tr>
+          <tr><td><a href="#">Quickstart</a></td><td>A 10-minute tour end-to-end.</td></tr>
+          <tr><td><a href="#">Concepts</a></td><td>The mental model — UIDs, lazy indexes, chainable APIs.</td></tr>
+          <tr><td><a href="#">API Reference</a></td><td>Full method signatures.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+</body>
+</html>

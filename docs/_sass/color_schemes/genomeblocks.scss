@@ -1,0 +1,56 @@
+// ============================================================
+//   GENOMEBLOCKS color scheme for just-the-docs
+//   Overrides the built-in variables so the theme picks up the
+//   warm-parchment + deep-navy brand palette from the design system.
+// ============================================================
+
+// ── Neutral ramp (warm parchment → VS Code dark) ──
+$n-0:   #fbfaf4;
+$n-50:  #f6f4e8;
+$n-100: #e1dcc5;
+$n-200: #d4cfba;
+$n-300: #ada999;
+$n-400: #868377;
+$n-500: #52514b;
+$n-600: #3a3935;
+$n-700: #2d2c29;
+$n-800: #252422;
+$n-900: #1e1e1e;
+
+// ── Brand primary (deep navy) ──
+$brand:        #003552;
+$brand-hover:  #00273d;
+$brand-subtle: #e8eff4;
+
+// ── just-the-docs variable overrides ──
+$body-background-color:     $n-50;      // page bg — warm parchment
+$sidebar-color:             $n-0;       // sidebar surface (slightly lighter)
+$search-background-color:   $n-0;
+$table-background-color:    $n-0;
+$feedback-color:            darken($n-50, 3%);
+
+$body-text-color:           $n-900;
+$body-heading-color:        $n-900;
+$nav-child-link-color:      $n-500;
+$link-color:                $brand;
+$btn-primary-color:         $brand;
+$base-button-color:         $n-0;
+
+// Code / syntax
+$code-background-color:     #eeece2;       // inline code — near-white beige
+$code-linenumber-color:     $n-400;
+$body-code-color:           $n-900;
+
+// Borders / rules
+$border-color:              $n-100;
+
+// Typography — use Nunito + Varela Round (fonts loaded in head_custom.html)
+$body-font-family:          "Nunito", "Helvetica Neue", Arial, sans-serif;
+$mono-font-family:          "Varela Round", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+$root-font-size:            16px;
+$body-line-height:          1.55;
+$content-line-height:       1.6;
+$body-heading-line-height:  1.25;
+
+// Radii are bumped to match the design system
+$border-radius:             10px;
