@@ -16,6 +16,21 @@
   --brand-hover:   #00273d;
   --brand-subtle:  #e8eff4;
 
+  /* Module color language — mirrors the browser SVG palette.
+     Green = intervals/peaks/signal; Purple = architecture/loops/networks;
+     Navy  = genes/annotation/structural. Use on `.gb-modules li.green|purple|navy`.
+     `-ink` variants are darker tones used for text on light tinted backgrounds
+     so small labels still clear WCAG AA (4.5:1) contrast. */
+  --mod-green:     #1fa653;
+  --mod-green-ink: #0f7a3a;
+  --mod-green-bg:  #eafaf0;
+  --mod-purple:    #6934c8;
+  --mod-purple-ink:#5325a3;
+  --mod-purple-bg: #f1ecfb;
+  --mod-navy:      #003552;
+  --mod-navy-ink:  #003552;
+  --mod-navy-bg:   #e8eff4;
+
   --n-0:   #fbfaf4;
   --n-50:  #f6f4e8;
   --n-100: #e1dcc5;
@@ -379,20 +394,22 @@ select:focus-visible {
   border-radius: var(--radius-sm);
 }
 
-/* ── Optional: hero "module" cards for index.md ────────────── */
+/* ── Hero "module" cards for index.md ──────────────────────── */
 .gb-modules {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
-  margin: 28px 0 8px;
+  margin: 24px 0 8px;
   list-style: none !important;
   padding: 0 !important;
 }
 .gb-modules li {
+  position: relative;
   background: var(--n-0);
   border: 1px solid var(--n-100);
+  border-left: 3px solid var(--n-200);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
+  padding: 14px 16px 14px 18px;
   box-shadow: var(--shadow-sm);
   transition: transform var(--duration-fast) var(--ease-out),
               box-shadow var(--duration-fast) var(--ease-out),
@@ -401,15 +418,189 @@ select:focus-visible {
   margin: 0 !important;
 }
 .gb-modules li::before { content: none !important; }
-.gb-modules li:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--n-200); }
-.gb-modules li strong {
+.gb-modules li:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.gb-modules .mod-name {
+  display: block;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.005em;
+  color: var(--n-900);
+  margin-bottom: 4px;
+}
+.gb-modules .mod-name code {
+  font-family: var(--font-code);
+  font-weight: 400;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--n-900);
+  font-size: 15px;
+}
+.gb-modules .mod-tag {
+  display: inline-block;
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+.gb-modules li small { color: var(--n-500); font-size: 12.5px; line-height: 1.55; display: block; }
+
+/* Color families — tie each card to the design-system color language */
+.gb-modules li.green  { border-left-color: var(--mod-green); }
+.gb-modules li.green  .mod-tag { background: var(--mod-green-bg); color: var(--mod-green-ink); }
+.gb-modules li.green:hover  { border-color: rgba(31,166,83,0.25); }
+.gb-modules li.purple { border-left-color: var(--mod-purple); }
+.gb-modules li.purple .mod-tag { background: var(--mod-purple-bg); color: var(--mod-purple-ink); }
+.gb-modules li.purple:hover { border-color: rgba(105,52,200,0.25); }
+.gb-modules li.navy   { border-left-color: var(--mod-navy); }
+.gb-modules li.navy   .mod-tag { background: var(--mod-navy-bg); color: var(--mod-navy-ink); }
+.gb-modules li.navy:hover   { border-color: rgba(0,53,82,0.25); }
+
+/* Legacy <strong> inside gb-modules li still renders reasonably if any page uses it */
+.gb-modules li > strong:first-child {
   display: inline-block;
   font-family: var(--font-code);
   font-size: 13px;
   color: var(--brand);
   margin-bottom: 4px;
 }
-.gb-modules li small { color: var(--n-400); font-size: 12px; line-height: 1.5; }
+
+/* ── Section accents (h2.sec-green / .sec-purple / .sec-navy) ─ */
+/* Adds a subtle colored rail to section headings so prose sections
+   visually tie back to the module color language. */
+.main-content h2.sec-green,
+.main-content h2.sec-purple,
+.main-content h2.sec-navy {
+  position: relative;
+  padding-left: 14px;
+}
+.main-content h2.sec-green::before,
+.main-content h2.sec-purple::before,
+.main-content h2.sec-navy::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  bottom: 0.25em;
+  width: 3px;
+  border-radius: 2px;
+}
+.main-content h2.sec-green::before  { background: var(--mod-green); }
+.main-content h2.sec-purple::before { background: var(--mod-purple); }
+.main-content h2.sec-navy::before   { background: var(--mod-navy); }
+
+/* ── Eyebrow row with copyable install chip ────────────────── */
+.gb-eyebrow-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-bottom: 14px;
+}
+.gb-install-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--n-0); color: var(--n-900);
+  border: 1px solid var(--n-100);
+  font-family: var(--font-code); font-size: 12px;
+  padding: 4px 10px; border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+.gb-install-chip:hover { border-color: var(--brand); color: var(--brand); }
+.gb-install-chip .copy-icon {
+  opacity: 0.45;
+  font-size: 11px;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.gb-install-chip:hover .copy-icon { opacity: 1; }
+.gb-install-chip.copied {
+  border-color: var(--mod-green);
+  color: var(--mod-green);
+}
+
+/* ── "Works with" chip strip ───────────────────────────────── */
+/* Chip text sits on `--n-0` (card) while the wrapper label sits on the page.
+   All text colors use `--n-500` (≥ 7:1 on both surfaces) to clear WCAG AA. */
+.gb-works-with {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  margin: 0 0 22px;
+  font-size: 12px;
+  color: var(--n-500);
+}
+.gb-works-with .label { font-weight: 600; color: var(--n-500); }
+.gb-works-with .chip {
+  background: var(--n-0);
+  border: 1px solid var(--n-100);
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  color: var(--n-500);
+  font-size: 11.5px;
+}
+
+/* ── Browser output showcase ───────────────────────────────── */
+.gb-showcase {
+  background: var(--n-0);
+  border: 1px solid var(--n-100);
+  border-radius: var(--radius-lg);
+  padding: 18px 18px 14px;
+  box-shadow: var(--shadow-md);
+  margin: 20px 0 8px;
+}
+.gb-showcase > img,
+.gb-showcase img.gb-browser-hero {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--n-100);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+.gb-showcase-caption {
+  display: flex; justify-content: space-between; align-items: baseline;
+  flex-wrap: wrap; gap: 8px;
+  margin-top: 12px; padding: 0 4px;
+  font-size: 12.5px; color: var(--n-400);
+}
+.gb-showcase-caption strong { font-weight: 700; color: var(--n-900); }
+.gb-showcase-caption code { background: var(--n-50); }
+
+/* ── Numbered stage rail under code examples ───────────────── */
+.gb-stage-rail {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.gb-stage {
+  background: var(--n-0);
+  border: 1px solid var(--n-100);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex; gap: 10px; align-items: baseline;
+  font-size: 12px;
+  color: var(--n-500);
+}
+.gb-stage-num {
+  display: inline-flex; justify-content: center; align-items: center;
+  flex-shrink: 0;
+  width: 20px; height: 20px; border-radius: var(--radius-full);
+  font-weight: 800; font-size: 11px;
+  color: white;
+}
+.gb-stage.green  .gb-stage-num { background: var(--mod-green); }
+.gb-stage.navy   .gb-stage-num { background: var(--mod-navy); }
+.gb-stage.purple .gb-stage-num { background: var(--mod-purple); }
+.gb-stage strong { color: var(--n-900); font-weight: 700; margin-right: 4px; }
+
+@media (max-width: 740px) {
+  .gb-stage-rail { grid-template-columns: 1fr; }
+}
 
 /* ── Optional: brand badge on the home page ───────────────── */
 .gb-eyebrow {
