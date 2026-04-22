@@ -1,0 +1,14 @@
+{% comment %}
+  Override of just-the-docs' title.html.
+  The theme renders EITHER the logo OR the site title text.
+  We want both: the mark on the left, the wordmark on the right.
+{% endcomment %}
+
+{% if site.logo %}
+  <picture>
+    <img class="site-logo" src="{{ site.logo | relative_url }}" alt="{{ site.title }}" />
+  </picture>
+  <span class="site-wordmark">{{ site.title }}</span>
+{% else %}
+  {{ site.title }}
+{% endif %}

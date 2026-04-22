@@ -6,12 +6,12 @@ description: "Fluent building blocks for regulatory genomics in Python."
 permalink: /
 ---
 
-<span class="gb-eyebrow">v0.9 · MIT · <code>pip install genomeblocks</code></span>
+<span class="gb-eyebrow">v0.9 · MIT · <code>conda env create -f environment.yml</code></span>
 
 # genomeblocks
 {: .fs-9 }
 
-Fluent building blocks for regulatory genomics — from peaks to chromatin networks in a handful of expressive chained calls.
+Fluent building blocks for regulatory genomics; from peaks to chromatin networks in a handful of expressive chained calls.
 {: .fs-6 .fw-300 }
 
 [Quickstart](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
@@ -83,6 +83,7 @@ counts = genes.annotations(se & cre).groupby("annotation").size()
 | [User Guide → Motifs](guide/motifs) | TF motif scanning. |
 | [API Reference](api/) | Full method signatures. |
 | [Examples](examples) | End-to-end scripts. |
+| [Credits](credits) | Upstream tools & citations. |
 
 ---
 
@@ -94,6 +95,8 @@ If `genomeblocks` is useful in your work, please cite the GitHub repository:
 Altintas, U. B. (2024). genomeblocks: Fluent building blocks for regulatory genomics.
 https://github.com/birkiy/genomeblocks
 ```
+
+`genomeblocks` stands on top of several excellent upstream libraries — please also cite the ones whose module was load-bearing in your analysis. The [Credits](credits) page lists them all with BibTeX.
 
 ---
 

@@ -257,14 +257,42 @@ body {
   background: var(--n-0);
   border-right: 1px solid var(--n-100);
 }
+// Logo + wordmark pair (title.html is overridden locally to render both)
 .site-title {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px !important;
   font-family: var(--font-sans) !important;
   font-weight: 800;
   letter-spacing: -0.015em;
   color: var(--n-900) !important;
+  text-decoration: none !important;
 }
-.site-title:hover { background: transparent; }
-.site-logo { background-size: contain; }
+.site-title:hover { background: transparent; color: var(--brand) !important; }
+.site-title:hover .site-wordmark { color: var(--brand); }
+
+.site-logo {
+  display: inline-block;
+  height: 40px;
+  width: 40px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
+  // logo-main.png has lots of whitespace around the glyph — crop tight
+  object-fit: contain;
+}
+
+.site-wordmark {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: var(--n-900);
+  line-height: 1;
+  transition: color var(--duration-fast) var(--ease-out);
+}
 
 .site-header { border-bottom: 1px solid var(--n-100); }
 .site-footer {

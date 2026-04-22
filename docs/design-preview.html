@@ -29,8 +29,9 @@ body { font-family:var(--font-sans); background:var(--n-50); color:var(--n-900);
 
 .shell { display:flex; min-height:100vh; }
 .side-bar { width:260px; background:var(--n-0); border-right:1px solid var(--n-100); padding:24px 20px; flex-shrink:0; }
-.site-title { font-weight:800; font-size:18px; letter-spacing:-0.015em; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
-.site-title img { height:24px; }
+.site-title { font-weight:800; font-size:18px; letter-spacing:-0.015em; margin-bottom:20px; display:flex; align-items:center; gap:10px; color:var(--n-900); text-decoration:none; }
+.site-title img { height:40px; width:40px; object-fit:contain; }
+.site-wordmark { font-weight:900; font-size:20px; letter-spacing:-0.02em; color:var(--n-900); }
 .nav-list { list-style:none; }
 .nav-list li a { display:block; padding:6px 10px; color:var(--n-500); font-weight:600; font-size:13px; border-radius:6px; text-decoration:none; margin-bottom:2px; }
 .nav-list li a:hover { background:var(--n-50); color:var(--n-900); }
@@ -86,7 +87,7 @@ hr { border:none; height:1px; background:linear-gradient(90deg,transparent,var(-
 <body>
 <div class="shell">
   <aside class="side-bar">
-    <div class="site-title"><img src="assets/images/logo-bare.png" alt="">genomeblocks</div>
+    <a class="site-title" href="#"><img src="assets/images/logo-main.png" alt="genomeblocks"><span class="site-wordmark">genomeblocks</span></a>
     <ul class="nav-list">
       <li><a href="#" class="active">Home</a></li>
       <li><a href="#">Installation</a></li>
@@ -99,7 +100,7 @@ hr { border:none; height:1px; background:linear-gradient(90deg,transparent,var(-
   </aside>
   <main class="main-content-wrap">
     <div class="main-content">
-      <span class="gb-eyebrow">v0.9 · MIT · <code>pip install genomeblocks</code></span>
+      <span class="gb-eyebrow">v0.9 · MIT · <code>conda env create -f environment.yml</code></span>
       <h1 class="fs-9">genomeblocks</h1>
       <p class="fs-6">Fluent building blocks for regulatory genomics — from peaks to chromatin networks in a handful of expressive chained calls.</p>
       <a href="#" class="btn btn-primary">Quickstart →</a>

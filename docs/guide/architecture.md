@@ -21,7 +21,7 @@ Chromatin-contact networks in a few lines: build from HiChIP/loop files, overlay
 
 ## What it is
 
-`Architecture` is a thin subclass of `graph_tool.Graph`. Each vertex represents a CRE (or loop anchor) and is keyed by a `Locus` UID. Edges represent contacts, with built-in edge properties:
+`Architecture` is a thin subclass of [`graph_tool.Graph`](https://graph-tool.skewed.de/) (Peixoto 2014 — see [Credits](../credits#graph-tool)). Each vertex represents a CRE (or loop anchor) and is keyed by a `Locus` UID. Edges represent contacts, with built-in edge properties:
 
 | Edge property | Meaning |
 |---|---|
@@ -30,6 +30,9 @@ Chromatin-contact networks in a few lines: build from HiChIP/loop files, overlay
 | `ep.d` | genomic distance between endpoints |
 
 Because it **is** a `graph_tool.Graph`, every graph-tool algorithm (centrality, SBM, layouts, community detection) works out of the box.
+
+{: .note }
+> If you use SBM-based algorithms (block models, nested partitioning, community plots), please also cite the specific method paper referenced in graph-tool's [citation guide](https://graph-tool.skewed.de/static/doc/index.html).
 
 ---
 

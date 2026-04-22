@@ -8,7 +8,7 @@ nav_order: 8
 # Motifs
 {: .no_toc }
 
-Scan TF binding motifs (JASPAR / MEME / custom PSSM) across a `Loci` set using the fast `lightmotif` backend.
+Scan TF binding motifs (JASPAR / MEME / custom PSSM) across a `Loci` set using the fast [lightmotif](https://github.com/althonos/lightmotif) backend (Martin Larralde, EMBL) — see [Credits](../credits#lightmotif) for the citation.
 {: .fs-5 .fw-300 }
 
 ## Table of contents

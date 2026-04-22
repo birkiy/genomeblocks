@@ -18,12 +18,18 @@ nav_order: 2
 ## Requirements
 
 - **Python** ≥ 3.10
-- **graph-tool** (chromatin-architecture graphs — not pip-installable; use conda/mamba)
+- **[graph-tool](https://graph-tool.skewed.de/)** — chromatin-architecture graphs (Peixoto 2014; not pip-installable, use conda/mamba)
 - Standard scientific stack: `numpy`, `pandas`, `scipy`, `matplotlib`
-- Genomics I/O: `pybigtools`, `cooler`, `pyranges`, `cgranges`
-- Optional: `lightmotif` (motif scanning), `conorm` (TMM normalization)
+- Genomics I/O:
+  - **[pybigtools](https://github.com/jackh726/bigtools)** — threaded bigWig reader (Huey 2023)
+  - **[pyranges](https://github.com/pyranges/pyranges)** — genomic interval DataFrames (Stovner & Sætrom 2020)
+  - **[cgranges](https://github.com/lh3/cgranges)** — C-level interval overlap index (Heng Li)
+  - `cooler` — Hi-C `.mcool` I/O
+- Optional:
+  - **[lightmotif](https://github.com/althonos/lightmotif)** — SIMD-accelerated PSSM scanning (Larralde 2023)
+  - `conorm` — TMM normalization
 
-Because `graph-tool` is a compiled C++/Boost library, the recommended path is conda.
+Because `graph-tool` is a compiled C++/Boost library, the recommended path is conda. See the [Credits page](credits) for full citations of every upstream tool.
 
 ---
 

@@ -96,7 +96,7 @@ cre = Loci.make("peaks.bed").slop(100).sort().merge()
 
 ## Fast overlap queries
 
-Under the hood, `Loci` builds a `cgranges` tree the first time you run an overlap:
+Under the hood, `Loci` builds a [cgranges](https://github.com/lh3/cgranges) tree (Heng Li) the first time you run an overlap — see [Credits](../credits#cgranges) for the citation:
 
 ```python
 # Query by chrom / start / end
@@ -114,7 +114,7 @@ Returns a new `Loci` of matching intervals. All of `intersect`, `difference`, `m
 ## Nearest-neighbor lookup
 
 ```python
-# Uses pyranges under the hood
+# Uses pyranges under the hood (Stovner & Sætrom 2020 — see Credits)
 df = loci.nearest(other_loci)
 # → DataFrame with columns Chr, Start, End, ... and Name_b (neighbor UID)
 ```

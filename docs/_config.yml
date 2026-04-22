@@ -11,8 +11,8 @@ kramdown:
 
 # just-the-docs settings
 color_scheme: genomeblocks
-logo: /assets/images/logo-light.png
-favicon_ico: /assets/images/logo-bare.png
+logo: /assets/images/logo-main.png
+favicon_ico: /assets/images/logo-main.png
 search_enabled: true
 search:
   heading_level: 3

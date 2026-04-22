@@ -8,7 +8,7 @@ nav_order: 5
 # Signal
 {: .no_toc }
 
-Threaded bigWig extraction, TMM normalization, and comparative heatmaps for a `Loci` set.
+Threaded bigWig extraction, TMM normalization, and comparative heatmaps for a `Loci` set. Powered by [pybigtools](https://github.com/jackh726/bigtools) (Huey, 2023) on the fast path — see [Credits](../credits#pybigtools) for the full citation.
 {: .fs-5 .fw-300 }
 
 ## Table of contents
