@@ -12,4 +12,4 @@ Interactive, in-browser utilities that complement the Python API. Everything run
 
 | Tool | What it does |
 |---|---|
-| [Venn diagram](venn) | Drop 2 or 3 BED / narrowPeak files and see a live overlap Venn. Mirrors `Loci` set algebra (`a & b`, `a - b`, `a ^ b`) in the browser. |
+| [Venn diagram](venn) | Drop 2 or 3 BED / narrowPeak files and see a live overlap Venn — proportional (Euler) by default, with a classic-Venn toggle. Mirrors `Loci` set algebra (`a & b`, `a - b`, `a ^ b`) in the browser. |
