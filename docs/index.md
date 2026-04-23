@@ -32,15 +32,6 @@ Fluent building blocks for regulatory genomics — from peaks to chromatin netwo
 
 [Quickstart →](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [View on GitHub](https://github.com/birkiy/genomeblocks){: .btn .fs-5 .mb-4 .mb-md-0 }
-
-<figure class="gb-showcase">
-  <img src="{{ '/assets/images/browser_Nanog.svg' | relative_url }}" alt="Genomeblocks browser — Nanog locus, ATAC + H3K27ac + HiChIP loops">
-  <figcaption class="gb-showcase-caption">
-    <span><strong>Browser output</strong> — one call: <code>browser(region, tracks).render("fig.svg")</code></span>
-    <span>Nanog locus · ATAC + H3K27ac + HiChIP loops</span>
-  </figcaption>
-</figure>
-
 ---
 
 ## Why genomeblocks?
