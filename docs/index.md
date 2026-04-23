@@ -153,6 +153,7 @@ counts = genes.annotations(se & cre).groupby("annotation").size()
 | [User Guide → Motifs](guide/motifs) | TF motif scanning. |
 | [API Reference](api/) | Full method signatures. |
 | [Examples](examples) | End-to-end scripts. |
+| [Tools → Venn diagram](tools/venn) | Drop 2–3 BED / narrowPeak files in the browser and get a live overlap Venn. |
 | [Credits](credits) | Upstream tools & citations. |
 
 ---

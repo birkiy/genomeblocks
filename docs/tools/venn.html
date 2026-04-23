@@ -1,0 +1,831 @@
+---
+title: Venn diagram
+parent: Tools
+layout: default
+nav_order: 1
+permalink: /tools/venn/
+---
+
+<style>
+/* ============================================================
+   Venn tool — scoped styles. Design tokens (--mod-green / purple /
+   navy, --n-50, fonts, radii, shadows) come from custom.scss and
+   apply automatically on the docs site.
+   ============================================================ */
+.gb-venn {
+  --vn-a: var(--mod-green);
+  --vn-a-ink: var(--mod-green-ink);
+  --vn-a-bg: var(--mod-green-bg);
+  --vn-b: var(--mod-purple);
+  --vn-b-ink: var(--mod-purple-ink);
+  --vn-b-bg: var(--mod-purple-bg);
+  --vn-c: var(--mod-navy);
+  --vn-c-ink: var(--mod-navy-ink);
+  --vn-c-bg: var(--mod-navy-bg);
+  --vn-muted: var(--n-400);
+  --vn-border: var(--n-100);
+  --vn-surface: var(--n-0);
+
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  gap: 1.5rem;
+  margin: 1.5rem 0 2rem;
+  font-family: var(--font-sans);
+}
+
+@media (max-width: 900px) {
+  .gb-venn { grid-template-columns: 1fr; }
+}
+
+/* ── Left column: drop zones ─────────────────────────────── */
+.gb-venn-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.gb-venn-drop {
+  position: relative;
+  background: var(--vn-surface);
+  border: 2px dashed var(--vn-border);
+  border-radius: var(--radius-md);
+  padding: .9rem 1rem;
+  transition: border-color var(--duration-normal) var(--ease-out),
+              background var(--duration-normal) var(--ease-out);
+}
+
+.gb-venn-drop[data-set="A"] { border-color: color-mix(in srgb, var(--vn-a) 45%, var(--vn-border)); }
+.gb-venn-drop[data-set="B"] { border-color: color-mix(in srgb, var(--vn-b) 45%, var(--vn-border)); }
+.gb-venn-drop[data-set="C"] { border-color: color-mix(in srgb, var(--vn-c) 45%, var(--vn-border)); }
+
+.gb-venn-drop.is-dragover { background: var(--n-50); }
+.gb-venn-drop.is-loaded[data-set="A"] { background: var(--vn-a-bg); border-style: solid; }
+.gb-venn-drop.is-loaded[data-set="B"] { background: var(--vn-b-bg); border-style: solid; }
+.gb-venn-drop.is-loaded[data-set="C"] { background: var(--vn-c-bg); border-style: solid; }
+
+.gb-venn-drop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .15rem;
+}
+
+.gb-venn-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--n-600);
+}
+
+.gb-venn-swatch {
+  width: .75rem; height: .75rem;
+  border-radius: var(--radius-full);
+  display: inline-block;
+}
+.gb-venn-drop[data-set="A"] .gb-venn-swatch { background: var(--vn-a); }
+.gb-venn-drop[data-set="B"] .gb-venn-swatch { background: var(--vn-b); }
+.gb-venn-drop[data-set="C"] .gb-venn-swatch { background: var(--vn-c); }
+
+.gb-venn-clear {
+  background: transparent;
+  border: 0;
+  color: var(--vn-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: .9rem;
+  line-height: 1;
+}
+.gb-venn-clear:hover { color: var(--n-900); background: var(--n-50); }
+.gb-venn-drop:not(.is-loaded) .gb-venn-clear { display: none; }
+
+.gb-venn-label-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+  font-weight: 700;
+  color: var(--n-900);
+  min-width: 0;
+}
+
+.gb-venn-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-code);
+  font-weight: 500;
+  color: var(--n-700);
+  font-size: .88rem;
+}
+
+.gb-venn-drop:not(.is-loaded) .gb-venn-name { color: var(--vn-muted); font-style: italic; }
+
+.gb-venn-meta {
+  font-size: .78rem;
+  color: var(--n-500);
+  margin-top: .25rem;
+  display: flex;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+
+.gb-venn-meta b { font-family: var(--font-code); color: var(--n-800); font-weight: 600; }
+
+.gb-venn-picker {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.gb-venn-hint {
+  font-size: .78rem;
+  color: var(--vn-muted);
+  margin-top: .15rem;
+}
+
+.gb-venn-drop.is-loaded .gb-venn-hint { display: none; }
+.gb-venn-drop.is-loaded .gb-venn-picker { display: none; }
+
+/* ── Actions strip ───────────────────────────────────────── */
+.gb-venn-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: .25rem;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+.gb-venn-actions button {
+  font-family: var(--font-sans);
+  font-size: .82rem;
+  font-weight: 600;
+  padding: .4rem .75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--vn-border);
+  background: var(--vn-surface);
+  color: var(--n-800);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.gb-venn-actions button:hover { background: var(--n-50); }
+.gb-venn-actions button.primary {
+  background: var(--brand);
+  color: var(--n-0);
+  border-color: var(--brand);
+}
+.gb-venn-actions button.primary:hover { background: var(--brand-hover); }
+
+/* ── Right column: diagram + counts ──────────────────────── */
+.gb-venn-stage {
+  background: var(--vn-surface);
+  border: 1px solid var(--vn-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1rem .5rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.gb-venn-stage svg {
+  width: 100%;
+  height: auto;
+  max-height: 460px;
+  font-family: var(--font-sans);
+  display: block;
+}
+
+.gb-venn-empty {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--vn-muted);
+  gap: .5rem;
+  padding: 2rem 1rem;
+}
+
+.gb-venn-empty-title {
+  font-weight: 700;
+  color: var(--n-700);
+  font-size: 1.05rem;
+}
+
+.gb-venn-counts {
+  margin-top: .5rem;
+  border-top: 1px solid var(--vn-border);
+  padding-top: .75rem;
+  font-size: .88rem;
+}
+
+.gb-venn-counts table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.gb-venn-counts th, .gb-venn-counts td {
+  text-align: left;
+  padding: .3rem .5rem;
+  border-bottom: 1px solid var(--vn-border);
+  font-family: var(--font-sans);
+}
+
+.gb-venn-counts th {
+  font-weight: 700;
+  font-size: .75rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--n-500);
+}
+
+.gb-venn-counts td.num,
+.gb-venn-counts th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-code); }
+
+.gb-venn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-weight: 600;
+  color: var(--n-800);
+}
+.gb-venn-chip .gb-venn-swatch { width: .65rem; height: .65rem; }
+
+/* ── Venn SVG styling ────────────────────────────────────── */
+.gb-venn-circle {
+  fill-opacity: .32;
+  stroke-width: 1.5;
+  mix-blend-mode: multiply;
+  transition: fill-opacity var(--duration-normal) var(--ease-out);
+}
+.gb-venn-circle.a { fill: var(--vn-a); stroke: var(--vn-a-ink); }
+.gb-venn-circle.b { fill: var(--vn-b); stroke: var(--vn-b-ink); }
+.gb-venn-circle.c { fill: var(--vn-c); stroke: var(--vn-c-ink); }
+
+.gb-venn-count {
+  font-weight: 800;
+  font-size: 20px;
+  fill: var(--n-900);
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.gb-venn-count.small { font-size: 16px; font-weight: 700; }
+
+.gb-venn-set-label {
+  font-weight: 700;
+  font-size: 13px;
+  text-anchor: middle;
+  letter-spacing: .02em;
+}
+.gb-venn-set-label.a { fill: var(--vn-a-ink); }
+.gb-venn-set-label.b { fill: var(--vn-b-ink); }
+.gb-venn-set-label.c { fill: var(--vn-c-ink); }
+
+.gb-venn-note {
+  margin-top: .5rem;
+  font-size: .78rem;
+  color: var(--vn-muted);
+}
+
+.gb-venn-error {
+  color: #b3261e;
+  font-size: .82rem;
+  margin-top: .4rem;
+}
+</style>
+
+# Venn diagram
+{: .no_toc }
+
+Drop 2 or 3 peak files (BED, narrowPeak, broadPeak) to visualize their overlap. Runs entirely in your browser — nothing is uploaded. The set semantics mirror [`Loci` algebra](../guide/loci#set-algebra): each Venn region counts **merged intervals** after collapsing overlapping peaks across all input files.
+{: .fs-5 .fw-300 }
+
+<div class="gb-venn" id="gbVenn">
+
+  <!-- Left: file drop zones + actions -->
+  <div class="gb-venn-inputs">
+    <div class="gb-venn-drop" data-set="A">
+      <div class="gb-venn-drop-head">
+        <span class="gb-venn-tag"><span class="gb-venn-swatch"></span> Set A</span>
+        <button type="button" class="gb-venn-clear" data-clear="A" aria-label="Clear set A">✕</button>
+      </div>
+      <div class="gb-venn-label-wrap">
+        <span class="gb-venn-name" data-name="A">drop or choose a .bed / .narrowPeak</span>
+      </div>
+      <div class="gb-venn-meta" data-meta="A"></div>
+      <div class="gb-venn-hint">Tab-separated · chrom, start, end</div>
+      <input class="gb-venn-picker" type="file" accept=".bed,.narrowPeak,.broadPeak,.gappedPeak,.txt,.tsv,text/plain" data-picker="A">
+    </div>
+
+    <div class="gb-venn-drop" data-set="B">
+      <div class="gb-venn-drop-head">
+        <span class="gb-venn-tag"><span class="gb-venn-swatch"></span> Set B</span>
+        <button type="button" class="gb-venn-clear" data-clear="B" aria-label="Clear set B">✕</button>
+      </div>
+      <div class="gb-venn-label-wrap">
+        <span class="gb-venn-name" data-name="B">drop or choose a .bed / .narrowPeak</span>
+      </div>
+      <div class="gb-venn-meta" data-meta="B"></div>
+      <div class="gb-venn-hint">Tab-separated · chrom, start, end</div>
+      <input class="gb-venn-picker" type="file" accept=".bed,.narrowPeak,.broadPeak,.gappedPeak,.txt,.tsv,text/plain" data-picker="B">
+    </div>
+
+    <div class="gb-venn-drop" data-set="C">
+      <div class="gb-venn-drop-head">
+        <span class="gb-venn-tag"><span class="gb-venn-swatch"></span> Set C <small style="font-weight:500;color:var(--n-400);">· optional</small></span>
+        <button type="button" class="gb-venn-clear" data-clear="C" aria-label="Clear set C">✕</button>
+      </div>
+      <div class="gb-venn-label-wrap">
+        <span class="gb-venn-name" data-name="C">drop or choose a third file</span>
+      </div>
+      <div class="gb-venn-meta" data-meta="C"></div>
+      <div class="gb-venn-hint">Adds a third circle to the Venn</div>
+      <input class="gb-venn-picker" type="file" accept=".bed,.narrowPeak,.broadPeak,.gappedPeak,.txt,.tsv,text/plain" data-picker="C">
+    </div>
+
+    <div class="gb-venn-actions">
+      <button type="button" id="gbVennReset">Clear all</button>
+      <button type="button" class="primary" id="gbVennExport" disabled>Download SVG</button>
+    </div>
+    <div class="gb-venn-error" id="gbVennError" role="alert" aria-live="polite"></div>
+  </div>
+
+  <!-- Right: diagram + counts -->
+  <div class="gb-venn-stage">
+    <div id="gbVennDiagram">
+      <div class="gb-venn-empty">
+        <div class="gb-venn-empty-title">Load at least two files to render.</div>
+        <div>Drop <code>.bed</code> or <code>.narrowPeak</code> into the slots on the left. Adding a third file switches to a 3-way Venn.</div>
+      </div>
+    </div>
+    <div class="gb-venn-counts" id="gbVennCounts"></div>
+    <div class="gb-venn-note">
+      Counts are merged intervals per region (bedtools-<code>multiinter</code> style). Overlap is any shared base — equivalent to
+      <code>Loci.make(a) &amp; Loci.make(b)</code> after <code>sort().merge()</code>.
+    </div>
+  </div>
+</div>
+
+## What this mirrors
+
+The diagram above is the browser-side counterpart of this Python:
+
+```python
+from genomeblocks import Loci
+
+a = Loci.make("file_A.narrowPeak").sort().merge()
+b = Loci.make("file_B.narrowPeak").sort().merge()
+c = Loci.make("file_C.bed").sort().merge()
+
+# 2-way regions
+a_only   = a - b            # len → "A only"
+b_only   = b - a            # len → "B only"
+shared   = a & b            # len → "A ∩ B"
+
+# 3-way regions (merged-universe count)
+union   = (a | b | c).sort().merge()
+region  = {
+    "A only":     len(union - b - c & a),     # merged intervals touched only by A
+    "A ∩ B only": len(((a & b) - c).sort().merge()),
+    # …one entry per Venn slice
+}
+```
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Parsing ─────────────────────────────────────────────
+  // Accept BED3+ / narrowPeak / broadPeak. Skip comments, track /
+  // browser lines, and malformed rows. Returns list of {chrom,start,end}.
+  function parseBED(text) {
+    const out = [];
+    const lines = text.split(/\r?\n/);
+    let bad = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line) continue;
+      const trimmed = line.trimStart();
+      if (!trimmed || trimmed[0] === '#' ||
+          trimmed.startsWith('track') ||
+          trimmed.startsWith('browser')) continue;
+      const parts = line.split(/\t/);
+      if (parts.length < 3) { bad++; continue; }
+      const chrom = parts[0];
+      const start = +parts[1];
+      const end   = +parts[2];
+      if (!chrom || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+        bad++; continue;
+      }
+      out.push({ chrom: chrom, start: start, end: end });
+    }
+    return { intervals: out, skipped: bad };
+  }
+
+  // ── Set algebra via merged-universe labeling ────────────
+  // Each input set gets a bit in a mask. We sort ALL intervals
+  // by (chrom, start) and sweep, merging overlapping/adjacent
+  // intervals and OR-ing their source masks. The resulting list
+  // gives exactly one labeled merged region per Venn slice.
+  function buildRegions(sets) {
+    // sets: array of { bit, intervals } for loaded sets only
+    const all = [];
+    sets.forEach(function (s) {
+      for (let i = 0; i < s.intervals.length; i++) {
+        const iv = s.intervals[i];
+        all.push({ chrom: iv.chrom, start: iv.start, end: iv.end, src: s.bit });
+      }
+    });
+    all.sort(function (x, y) {
+      if (x.chrom !== y.chrom) return x.chrom < y.chrom ? -1 : 1;
+      return x.start - y.start;
+    });
+
+    const counts = Object.create(null); // mask → merged-region count
+    const bpPerMask = Object.create(null); // mask → covered bp
+    let cur = null;
+    for (let i = 0; i < all.length; i++) {
+      const iv = all[i];
+      if (cur && cur.chrom === iv.chrom && iv.start < cur.end) {
+        if (iv.end > cur.end) cur.end = iv.end;
+        cur.src |= iv.src;
+      } else {
+        if (cur) {
+          counts[cur.src] = (counts[cur.src] || 0) + 1;
+          bpPerMask[cur.src] = (bpPerMask[cur.src] || 0) + (cur.end - cur.start);
+        }
+        cur = { chrom: iv.chrom, start: iv.start, end: iv.end, src: iv.src };
+      }
+    }
+    if (cur) {
+      counts[cur.src] = (counts[cur.src] || 0) + 1;
+      bpPerMask[cur.src] = (bpPerMask[cur.src] || 0) + (cur.end - cur.start);
+    }
+    return { counts: counts, bp: bpPerMask };
+  }
+
+  // Per-set totals BEFORE merging across sets, but within the set
+  // we merge so chained overlapping peaks count as one region — this
+  // matches `Loci.make(file).sort().merge()`.
+  function mergeSingle(intervals) {
+    const sorted = intervals.slice().sort(function (a, b) {
+      if (a.chrom !== b.chrom) return a.chrom < b.chrom ? -1 : 1;
+      return a.start - b.start;
+    });
+    let merged = 0;
+    let cur = null;
+    for (let i = 0; i < sorted.length; i++) {
+      const iv = sorted[i];
+      if (cur && cur.chrom === iv.chrom && iv.start < cur.end) {
+        if (iv.end > cur.end) cur.end = iv.end;
+      } else {
+        if (cur) merged++;
+        cur = { chrom: iv.chrom, start: iv.start, end: iv.end };
+      }
+    }
+    if (cur) merged++;
+    return merged;
+  }
+
+  // ── State ───────────────────────────────────────────────
+  const state = {
+    A: null, // { name, intervals, merged, skipped }
+    B: null,
+    C: null,
+  };
+  const SETS = ['A', 'B', 'C'];
+  const BIT = { A: 1, B: 2, C: 4 };
+  const COLOR_CLASS = { A: 'a', B: 'b', C: 'c' };
+
+  const $ = function (sel, root) { return (root || document).querySelector(sel); };
+  const $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+
+  const diagramEl = document.getElementById('gbVennDiagram');
+  const countsEl = document.getElementById('gbVennCounts');
+  const errorEl = document.getElementById('gbVennError');
+  const exportBtn = document.getElementById('gbVennExport');
+
+  function fmtInt(n) { return n.toLocaleString('en-US'); }
+  function fmtBp(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + ' Mb';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + ' kb';
+    return n + ' bp';
+  }
+
+  function setError(msg) { errorEl.textContent = msg || ''; }
+
+  // ── File handling ───────────────────────────────────────
+  function loadFile(setKey, file) {
+    setError('');
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const parsed = parseBED(String(reader.result || ''));
+        if (!parsed.intervals.length) {
+          setError('"' + file.name + '" had no valid BED rows. Expected tab-separated chrom / start / end.');
+          return;
+        }
+        state[setKey] = {
+          name: file.name,
+          intervals: parsed.intervals,
+          merged: mergeSingle(parsed.intervals),
+          skipped: parsed.skipped,
+        };
+        renderSlot(setKey);
+        render();
+      } catch (err) {
+        setError('Could not read "' + file.name + '": ' + err.message);
+      }
+    };
+    reader.onerror = function () { setError('Failed to read "' + file.name + '".'); };
+    reader.readAsText(file);
+  }
+
+  function renderSlot(setKey) {
+    const slot = document.querySelector('.gb-venn-drop[data-set="' + setKey + '"]');
+    const nameEl = slot.querySelector('[data-name="' + setKey + '"]');
+    const metaEl = slot.querySelector('[data-meta="' + setKey + '"]');
+    const data = state[setKey];
+    if (!data) {
+      slot.classList.remove('is-loaded');
+      nameEl.textContent = setKey === 'C'
+        ? 'drop or choose a third file'
+        : 'drop or choose a .bed / .narrowPeak';
+      metaEl.innerHTML = '';
+      return;
+    }
+    slot.classList.add('is-loaded');
+    nameEl.textContent = data.name;
+    const warn = data.skipped > 0
+      ? ' <span style="color:var(--n-400);">· ' + fmtInt(data.skipped) + ' skipped</span>'
+      : '';
+    metaEl.innerHTML =
+      '<span><b>' + fmtInt(data.intervals.length) + '</b> intervals</span>' +
+      '<span><b>' + fmtInt(data.merged) + '</b> merged</span>' +
+      warn;
+  }
+
+  function clearSet(setKey) {
+    state[setKey] = null;
+    const picker = document.querySelector('[data-picker="' + setKey + '"]');
+    if (picker) picker.value = '';
+    renderSlot(setKey);
+    render();
+  }
+
+  // ── Wire up drop zones ──────────────────────────────────
+  $$('.gb-venn-drop').forEach(function (slot) {
+    const setKey = slot.getAttribute('data-set');
+    const picker = slot.querySelector('.gb-venn-picker');
+    picker.addEventListener('change', function (e) {
+      const f = e.target.files && e.target.files[0];
+      if (f) loadFile(setKey, f);
+    });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      slot.addEventListener(ev, function (e) {
+        e.preventDefault(); e.stopPropagation();
+        slot.classList.add('is-dragover');
+      });
+    });
+    ['dragleave', 'dragend', 'drop'].forEach(function (ev) {
+      slot.addEventListener(ev, function (e) {
+        e.preventDefault(); e.stopPropagation();
+        slot.classList.remove('is-dragover');
+      });
+    });
+    slot.addEventListener('drop', function (e) {
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) loadFile(setKey, f);
+    });
+  });
+
+  $$('.gb-venn-clear').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      clearSet(btn.getAttribute('data-clear'));
+    });
+  });
+
+  document.getElementById('gbVennReset').addEventListener('click', function () {
+    SETS.forEach(clearSet);
+    setError('');
+  });
+
+  exportBtn.addEventListener('click', function () {
+    const svg = diagramEl.querySelector('svg');
+    if (!svg) return;
+    const clone = svg.cloneNode(true);
+    // Inline computed colors because standalone SVG won't see our CSS vars.
+    const style = getComputedStyle(document.documentElement);
+    const inlineVars = [
+      '--mod-green', '--mod-green-ink', '--mod-purple', '--mod-purple-ink',
+      '--mod-navy', '--mod-navy-ink', '--n-900', '--n-0'
+    ];
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleEl.textContent =
+      '.gb-venn-circle{fill-opacity:.32;stroke-width:1.5;mix-blend-mode:multiply}' +
+      '.gb-venn-circle.a{fill:' + style.getPropertyValue('--mod-green').trim() + ';stroke:' + style.getPropertyValue('--mod-green-ink').trim() + '}' +
+      '.gb-venn-circle.b{fill:' + style.getPropertyValue('--mod-purple').trim() + ';stroke:' + style.getPropertyValue('--mod-purple-ink').trim() + '}' +
+      '.gb-venn-circle.c{fill:' + style.getPropertyValue('--mod-navy').trim() + ';stroke:' + style.getPropertyValue('--mod-navy-ink').trim() + '}' +
+      '.gb-venn-count{font-weight:800;font-size:20px;fill:' + style.getPropertyValue('--n-900').trim() + ';text-anchor:middle;font-family:Nunito,sans-serif}' +
+      '.gb-venn-count.small{font-size:16px}' +
+      '.gb-venn-set-label{font-weight:700;font-size:13px;text-anchor:middle;font-family:Nunito,sans-serif}' +
+      '.gb-venn-set-label.a{fill:' + style.getPropertyValue('--mod-green-ink').trim() + '}' +
+      '.gb-venn-set-label.b{fill:' + style.getPropertyValue('--mod-purple-ink').trim() + '}' +
+      '.gb-venn-set-label.c{fill:' + style.getPropertyValue('--mod-navy-ink').trim() + '}';
+    clone.insertBefore(styleEl, clone.firstChild);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const blob = new Blob([
+      '<?xml version="1.0" encoding="UTF-8"?>\n',
+      new XMLSerializer().serializeToString(clone)
+    ], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'genomeblocks-venn.svg';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 500);
+  });
+
+  // ── Render ──────────────────────────────────────────────
+  function render() {
+    const loaded = SETS.filter(function (k) { return state[k]; });
+    exportBtn.disabled = loaded.length < 2;
+
+    if (loaded.length < 2) {
+      diagramEl.innerHTML =
+        '<div class="gb-venn-empty">' +
+          '<div class="gb-venn-empty-title">Load at least two files to render.</div>' +
+          '<div>Drop <code>.bed</code> or <code>.narrowPeak</code> into the slots on the left. ' +
+          'Adding a third file switches to a 3-way Venn.</div>' +
+        '</div>';
+      countsEl.innerHTML = '';
+      return;
+    }
+
+    const inputs = loaded.map(function (k) {
+      return { key: k, bit: BIT[k], name: state[k].name, intervals: state[k].intervals };
+    });
+    const regions = buildRegions(inputs);
+
+    if (loaded.length === 2) {
+      diagramEl.innerHTML = buildVenn2Svg(loaded, regions);
+    } else {
+      diagramEl.innerHTML = buildVenn3Svg(regions);
+    }
+    countsEl.innerHTML = buildCountsTable(loaded, regions);
+  }
+
+  // ── SVG builders ────────────────────────────────────────
+  // Fixed-position (non-proportional) Venn layouts. Proportional
+  // Venns for 3 sets aren't always solvable — keeping geometry
+  // constant also makes empty regions visually obvious.
+
+  function buildVenn2Svg(loaded, regions) {
+    const W = 520, H = 360;
+    const r = 110;
+    const cxA = 195, cxB = 325, cy = 175;
+
+    const a = loaded[0], b = loaded[1];
+    const mA = BIT[a], mB = BIT[b];
+    const nA = regions.counts[mA] || 0;
+    const nB = regions.counts[mB] || 0;
+    const nAB = regions.counts[mA | mB] || 0;
+
+    return '' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Two-set Venn diagram">' +
+        '<circle class="gb-venn-circle ' + COLOR_CLASS[a] + '" cx="' + cxA + '" cy="' + cy + '" r="' + r + '"/>' +
+        '<circle class="gb-venn-circle ' + COLOR_CLASS[b] + '" cx="' + cxB + '" cy="' + cy + '" r="' + r + '"/>' +
+        '<text class="gb-venn-set-label ' + COLOR_CLASS[a] + '" x="' + (cxA - 70) + '" y="' + (cy - r - 12) + '">' + escapeXml(truncateName(state[a].name)) + '</text>' +
+        '<text class="gb-venn-set-label ' + COLOR_CLASS[b] + '" x="' + (cxB + 70) + '" y="' + (cy - r - 12) + '">' + escapeXml(truncateName(state[b].name)) + '</text>' +
+        '<text class="gb-venn-count" x="' + (cxA - 55) + '" y="' + (cy + 6) + '">' + fmtInt(nA) + '</text>' +
+        '<text class="gb-venn-count" x="' + (cxB + 55) + '" y="' + (cy + 6) + '">' + fmtInt(nB) + '</text>' +
+        '<text class="gb-venn-count" x="' + ((cxA + cxB) / 2) + '" y="' + (cy + 6) + '">' + fmtInt(nAB) + '</text>' +
+      '</svg>';
+  }
+
+  function buildVenn3Svg(regions) {
+    const W = 520, H = 460;
+    const r = 115;
+    // Equilateral triangle of centers. Distance d between centers ~ r.
+    const cx0 = W / 2, cy0 = 230;
+    const d = 118;
+    // Circle A top, B bottom-left, C bottom-right
+    const Ax = cx0,          Ay = cy0 - d * 0.72;
+    const Bx = cx0 - d * 0.85, By = cy0 + d * 0.45;
+    const Cx = cx0 + d * 0.85, Cy = cy0 + d * 0.45;
+
+    const n = function (mask) { return regions.counts[mask] || 0; };
+
+    return '' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Three-set Venn diagram">' +
+        '<circle class="gb-venn-circle a" cx="' + Ax + '" cy="' + Ay + '" r="' + r + '"/>' +
+        '<circle class="gb-venn-circle b" cx="' + Bx + '" cy="' + By + '" r="' + r + '"/>' +
+        '<circle class="gb-venn-circle c" cx="' + Cx + '" cy="' + Cy + '" r="' + r + '"/>' +
+
+        // Set labels just outside each circle
+        '<text class="gb-venn-set-label a" x="' + Ax + '" y="' + (Ay - r - 10) + '">' + escapeXml(truncateName(state.A.name)) + '</text>' +
+        '<text class="gb-venn-set-label b" x="' + (Bx - r + 12) + '" y="' + (By + r + 22) + '" text-anchor="start">' + escapeXml(truncateName(state.B.name)) + '</text>' +
+        '<text class="gb-venn-set-label c" x="' + (Cx + r - 12) + '" y="' + (Cy + r + 22) + '" text-anchor="end">' + escapeXml(truncateName(state.C.name)) + '</text>' +
+
+        // Counts — positions tuned for default r/d so labels sit in each region
+        '<text class="gb-venn-count" x="' + Ax + '" y="' + (Ay - 50) + '">' + fmtInt(n(BIT.A)) + '</text>' +
+        '<text class="gb-venn-count" x="' + (Bx - 50) + '" y="' + (By + 35) + '">' + fmtInt(n(BIT.B)) + '</text>' +
+        '<text class="gb-venn-count" x="' + (Cx + 50) + '" y="' + (Cy + 35) + '">' + fmtInt(n(BIT.C)) + '</text>' +
+
+        '<text class="gb-venn-count small" x="' + ((Ax + Bx) / 2 - 20) + '" y="' + ((Ay + By) / 2 + 6) + '">' + fmtInt(n(BIT.A | BIT.B)) + '</text>' +
+        '<text class="gb-venn-count small" x="' + ((Ax + Cx) / 2 + 20) + '" y="' + ((Ay + Cy) / 2 + 6) + '">' + fmtInt(n(BIT.A | BIT.C)) + '</text>' +
+        '<text class="gb-venn-count small" x="' + ((Bx + Cx) / 2) + '" y="' + ((By + Cy) / 2 + 30) + '">' + fmtInt(n(BIT.B | BIT.C)) + '</text>' +
+
+        '<text class="gb-venn-count" x="' + ((Ax + Bx + Cx) / 3) + '" y="' + ((Ay + By + Cy) / 3 + 6) + '">' + fmtInt(n(BIT.A | BIT.B | BIT.C)) + '</text>' +
+      '</svg>';
+  }
+
+  // ── Counts table ────────────────────────────────────────
+  function buildCountsTable(loaded, regions) {
+    // Rows: every non-empty combination actually observed OR the
+    // canonical 3/7 regions so empty regions are still reported.
+    const canonical = [];
+    const n = loaded.length;
+    for (let mask = 1; mask < (1 << n); mask++) {
+      // Translate local mask into global BIT mask based on loaded keys
+      let global = 0;
+      for (let i = 0; i < n; i++) if (mask & (1 << i)) global |= BIT[loaded[i]];
+      canonical.push({ mask: global, keys: loaded.filter(function (_, i) { return mask & (1 << i); }) });
+    }
+
+    const totalRegions = canonical.reduce(function (s, r) { return s + (regions.counts[r.mask] || 0); }, 0);
+
+    const rows = canonical.map(function (r) {
+      const count = regions.counts[r.mask] || 0;
+      const bp = regions.bp[r.mask] || 0;
+      const pct = totalRegions ? (100 * count / totalRegions) : 0;
+      const chips = r.keys.map(function (k) {
+        return '<span class="gb-venn-chip"><span class="gb-venn-swatch" style="background:' + swatchColor(k) + '"></span>' + k + '</span>';
+      }).join(' ∩ ');
+      return '<tr>' +
+        '<td>' + chips + '</td>' +
+        '<td class="num">' + fmtInt(count) + '</td>' +
+        '<td class="num">' + pct.toFixed(1) + '%</td>' +
+        '<td class="num">' + fmtBp(bp) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    // Per-set totals (before cross-set merging) using single-file merged counts
+    const perSet = loaded.map(function (k) {
+      return '<tr>' +
+        '<td><span class="gb-venn-chip"><span class="gb-venn-swatch" style="background:' + swatchColor(k) + '"></span>' +
+          escapeXml(truncateName(state[k].name, 32)) +
+        '</span></td>' +
+        '<td class="num">' + fmtInt(state[k].intervals.length) + '</td>' +
+        '<td class="num">' + fmtInt(state[k].merged) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '' +
+      '<table>' +
+        '<thead><tr><th>Region</th><th class="num">Merged regions</th><th class="num">% of union</th><th class="num">Bases</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+      '<table style="margin-top:.75rem;">' +
+        '<thead><tr><th>Input</th><th class="num">Intervals</th><th class="num">Merged (self)</th></tr></thead>' +
+        '<tbody>' + perSet + '</tbody>' +
+      '</table>';
+  }
+
+  function swatchColor(k) {
+    const style = getComputedStyle(document.documentElement);
+    if (k === 'A') return style.getPropertyValue('--mod-green').trim();
+    if (k === 'B') return style.getPropertyValue('--mod-purple').trim();
+    return style.getPropertyValue('--mod-navy').trim();
+  }
+
+  function truncateName(name, max) {
+    max = max || 22;
+    if (!name) return '';
+    if (name.length <= max) return name;
+    return name.slice(0, max - 1) + '…';
+  }
+
+  function escapeXml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
+  // Initial render (shows the empty-state hero)
+  render();
+})();
+</script>
