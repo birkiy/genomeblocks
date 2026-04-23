@@ -1,0 +1,89 @@
+/* ============================================================
+   Genomeblocks design tokens — ported from the design system
+   (see /GenomeBlocks/colors_and_type.css). Do not edit colors
+   or type scale directly; those belong in the design system.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300..900;1,400;1,700&family=Varela+Round&display=swap");
+
+:root {
+  /* Brand */
+  --brand:         #003552;
+  --brand-hover:   #00273d;
+  --brand-subtle:  #e8eff4;
+
+  /* Neutral ramp (warm parchment → VS Code dark) */
+  --n-0:   #fbfaf4;
+  --n-50:  #f6f4e8;
+  --n-100: #e1dcc5;
+  --n-200: #d4cfba;
+  --n-300: #ada999;
+  --n-400: #868377;
+  --n-500: #52514b;
+  --n-600: #3a3935;
+  --n-700: #2d2c29;
+  --n-800: #252422;
+  --n-900: #1e1e1e;
+
+  /* Semantic — light */
+  --color-bg:           var(--n-50);
+  --color-bg-raised:    var(--n-0);
+  --color-bg-sunken:    var(--n-100);
+  --color-border:       var(--n-100);
+  --color-border-strong:var(--n-200);
+  --color-text:         var(--n-900);
+  --color-text-muted:   var(--n-400);
+  --color-text-subtle:  var(--n-300);
+  --color-primary:      var(--brand);
+
+  /* Code */
+  --color-code-bg:        #1e1e1e;
+  --color-code-text:      #d4d4d4;
+  --color-code-inline-bg: #eeece2;
+
+  /* Type */
+  --font-sans: "Nunito", "Helvetica Neue", sans-serif;
+  --font-code: "Varela Round", "Helvetica Neue", sans-serif;
+
+  --text-xs:   0.6875rem;
+  --text-sm:   0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg:   1.0625rem;
+  --text-xl:   1.1875rem;
+  --text-2xl:  1.375rem;
+  --text-3xl:  1.75rem;
+  --text-4xl:  2.125rem;
+  --text-5xl:  2.75rem;
+
+  --leading-tight:   1.2;
+  --leading-snug:    1.35;
+  --leading-normal:  1.55;
+  --leading-relaxed: 1.7;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
+  --space-4: 16px; --space-5: 20px; --space-6: 24px;
+  --space-8: 32px; --space-10: 40px; --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(30,30,30,0.07), 0 1px 2px rgba(30,30,30,0.04);
+  --shadow-md: 0 3px 10px rgba(30,30,30,0.08), 0 1px 3px rgba(30,30,30,0.05);
+  --shadow-lg: 0 6px 20px rgba(30,30,30,0.09), 0 3px 6px rgba(30,30,30,0.06);
+  --shadow-focus: 0 0 0 3px rgba(0,53,82,0.25);
+
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast:   110ms;
+  --duration-normal: 180ms;
+}
+
+/* Venn module palette (drawn from the scientific browser output) */
+:root {
+  --venn-a: #1fa653;  /* green  — signal */
+  --venn-b: #6934c8;  /* purple — structure */
+  --venn-c: #003552;  /* brand navy */
+}

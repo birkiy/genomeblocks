@@ -1,0 +1,39 @@
+# Fly.io configuration for the orchestrator + compute sidecar.
+# Replace `app` with your chosen Fly app name after `flyctl launch --no-deploy`.
+
+app = "genomeblocks-orchestrator"
+primary_region = "fra"   # pick a region near your users
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  DRIVES_ROOT = "/data/drives"
+  # Session TTL (minutes). Sweeper deletes drives older than this.
+  SESSION_TTL_MINUTES = "120"
+  # CORS origin for dev; in prod the Vercel rewrite means requests appear
+  # same-origin, but leave this for direct API clients.
+  CORS_ORIGIN = "https://genomeblocks.vercel.app"
+
+[[mounts]]
+  source = "drives"         # created via `flyctl volumes create drives --size 3`
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0   # scale-to-zero; the first request wakes it
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "get"
+    path = "/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
