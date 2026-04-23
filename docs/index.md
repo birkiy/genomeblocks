@@ -32,7 +32,7 @@ Fluent building blocks for regulatory genomics — from peaks to chromatin netwo
 
 [Quickstart →](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [View on GitHub](https://github.com/birkiy/genomeblocks){: .btn .fs-5 .mb-4 .mb-md-0 }
----
+
 
 ## Why genomeblocks?
 {: .sec-navy }
