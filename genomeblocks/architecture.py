@@ -999,7 +999,8 @@ def annotate(self, loci, genes, *, verbose=True):
     return self
 
 
-def _merge_nearby(self, sub_loci, merge_distance, edge_key='w', label_prop='gene', vertex_size_by=None):
+def _merge_nearby(self, sub_loci, merge_distance, edge_key='w', label_prop='gene',
+                  vertex_size_by=None, color_prop=None):
     """Merge loci within *merge_distance* bp into single nodes.
 
     Builds a fresh gt.Graph where each cluster of nearby loci becomes one
@@ -1012,14 +1013,20 @@ def _merge_nearby(self, sub_loci, merge_distance, edge_key='w', label_prop='gene
         edge_key: Edge property to aggregate (default 'w').
         label_prop: Vertex property used for labels (default 'gene').
         vertex_size_by: Vertex property to sum for merged node sizes, or None.
+        color_prop: Optional vertex PropertyMap on self whose values should be
+            aggregated per cluster into ``mg.vp.color_val``. String values take
+            the first non-empty member; vector values average per-component;
+            scalars average.
 
     Returns:
         (merged_graph, clusters, uid_to_cluster)
         merged_graph  – gt.Graph with vp.uid, vp.label, vp.size_val, ep.w
+                        and (if color_prop given) vp.color_val
         clusters      – list[list[Locus]]
         uid_to_cluster – dict mapping original uid → cluster index
     """
     from collections import defaultdict
+    import numpy as np
 
     graph_loci = sorted(
         [l for l in sub_loci if l.uid in self.index],
@@ -1045,6 +1052,10 @@ def _merge_nearby(self, sub_loci, merge_distance, edge_key='w', label_prop='gene
     mg.vp.label = mg.new_vertex_property("string")
     mg.vp.size_val = mg.new_vertex_property("float")
     mg.ep.w     = mg.new_edge_property("float")
+
+    color_vtype = color_prop.value_type() if color_prop is not None else None
+    if color_prop is not None:
+        mg.vp.color_val = mg.new_vertex_property(color_vtype)
 
     cluster_verts = []
     for ci, cluster in enumerate(clusters):
@@ -1074,6 +1085,19 @@ def _merge_nearby(self, sub_loci, merge_distance, edge_key='w', label_prop='gene
             )
         else:
             mg.vp.size_val[v] = float(len(cluster))
+
+        # Color value
+        if color_prop is not None:
+            vals = [color_prop[self.index[loc.uid]]
+                    for loc in cluster if loc.uid in self.index]
+            if vals:
+                if color_vtype == "string":
+                    mg.vp.color_val[v] = next((x for x in vals if x), vals[0])
+                elif "vector" in color_vtype:
+                    arr = np.array([list(x) for x in vals], dtype=float)
+                    mg.vp.color_val[v] = arr.mean(axis=0).tolist()
+                else:
+                    mg.vp.color_val[v] = float(np.mean(vals))
 
     # Aggregate inter-cluster edges
     ep_key = edge_key if edge_key and edge_key in self.ep else 'w'
@@ -1112,6 +1136,8 @@ def draw(self, loci, region, *,
          layout='spring',
          show_labels=True,
          label_prop='gene',
+         label_position='outside',
+         vertex_font_size=10,
          ax=None,
          **kwargs):
     """Draw the subgraph for CREs overlapping a genomic region.
@@ -1127,13 +1153,21 @@ def draw(self, loci, region, *,
         edge_width_range: (min_width, max_width) for edges (default: (1, 10))
         vertex_color: Color for vertices - can be:
             - String (e.g., '#4A90E2') - single color for all
-            - Vertex property name (e.g., 'Agg_H1') - color by values
+            - Vertex property name (e.g., 'crest_color') - color by values
+            - PropertyMap (e.g., arch.vp.crest_color) - color by values
             - None - defaults to blue
+            Under ``merge_distance``, per-vertex colors are aggregated across
+            each cluster (string → first non-empty; vector → mean per channel;
+            scalar → mean).
         edge_color: Color for edges (default: gray)
         figsize: Figure size as (width, height)
         layout: Layout algorithm ('spring', 'circular', 'kamada_kawai')
         show_labels: Whether to show node labels
         label_prop: Vertex property to use for labels (default: 'gene')
+        label_position: Where to render labels — 'outside' (default; preserves
+            vertex sizes by placing text radially) or 'inside' (may inflate
+            vertices to fit text). Ignored when ``show_labels=False``.
+        vertex_font_size: Font size for vertex labels (default: 10)
         ax: Matplotlib axis to plot on (creates new if None)
         **kwargs: Additional arguments passed to graph_tool's graph_draw
 
@@ -1164,6 +1198,27 @@ def draw(self, loci, region, *,
         print(f"[WARNING] No graph vertices found in region {chrom}:{start}-{end}")
         return ax
 
+    # ── Resolve vertex_color once, shared across paths ───────────────
+    # color_prop: a PropertyMap on self (needs to be remapped under merge)
+    # color_literal: a scalar color value (string / tuple) or None
+    color_prop = None
+    color_literal = None
+    if vertex_color is None:
+        color_literal = '#4A90E2'
+    elif isinstance(vertex_color, str):
+        if vertex_color in self.vp:
+            color_prop = self.vp[vertex_color]
+        else:
+            color_literal = vertex_color
+    elif isinstance(vertex_color, gt.PropertyMap):
+        if vertex_color.get_graph().base is not self.base:
+            raise ValueError(
+                "vertex_color PropertyMap is not bound to this Architecture"
+            )
+        color_prop = vertex_color
+    else:
+        color_literal = vertex_color  # tuple/list RGBA, etc.
+
     # ── Merge nearby loci if requested ───────────────────────────────
     if merge_distance is not None:
         graph_loci = [l for l in sub_loci if l.uid in region_uids_in_graph]
@@ -1176,6 +1231,7 @@ def draw(self, loci, region, *,
             sub_loci, merge_distance,
             edge_key=edge_width_by, label_prop=label_prop,
             vertex_size_by=vertex_size_by,
+            color_prop=color_prop,
         )
         subgraph = mg
 
@@ -1203,7 +1259,7 @@ def draw(self, loci, region, *,
         else:
             edge_widths = np.mean(edge_width_range)
 
-        vertex_fill_color = vertex_color if vertex_color else '#4A90E2'
+        vertex_fill_color = mg.vp.color_val if color_prop is not None else color_literal
         labels = mg.vp.label if show_labels else None
 
         title_extra = (f"{subgraph.num_vertices()} nodes "
@@ -1243,16 +1299,7 @@ def draw(self, loci, region, *,
         else:
             edge_widths = np.mean(edge_width_range)
 
-        # Vertex colors
-        if vertex_color is None:
-            vertex_fill_color = '#4A90E2'
-        elif isinstance(vertex_color, str):
-            if vertex_color in self.vp:
-                vertex_fill_color = self.vp[vertex_color]
-            else:
-                vertex_fill_color = vertex_color
-        else:
-            vertex_fill_color = vertex_color
+        vertex_fill_color = color_prop if color_prop is not None else color_literal
 
         # Labels
         if show_labels and label_prop in self.vp:
@@ -1278,6 +1325,19 @@ def draw(self, loci, region, *,
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
 
+    # Label placement: -1 draws inside the vertex and forces it to grow to fit
+    # the text (breaks size scaling); any non-negative value renders text
+    # radially outside, preserving vertex_size.
+    if labels is not None:
+        if label_position == 'outside':
+            kwargs.setdefault('vertex_text_position', 0)
+        elif label_position == 'inside':
+            kwargs.setdefault('vertex_text_position', -1)
+        else:
+            raise ValueError(
+                f"label_position must be 'inside' or 'outside', got {label_position!r}"
+            )
+
     gt.graph_draw(
         subgraph,
         pos=pos,
@@ -1286,7 +1346,7 @@ def draw(self, loci, region, *,
         edge_pen_width=edge_widths,
         edge_color=edge_color,
         vertex_text=labels,
-        vertex_font_size=10,
+        vertex_font_size=vertex_font_size,
         output_size=tuple(int(x * 100) for x in figsize),
         mplfig=ax,
         **kwargs,
