@@ -1584,7 +1584,7 @@ def prime_hubs(s: Architecture, key: str = "n", *, verbose: bool = True):
         if req not in s.vp:
             raise ValueError(f"vp.{req} missing — run annotate() first.")
 
-    agg_name=f'agg_{key.replace('n_', '')}' if key != 'n' else 'agg'
+    agg_name=f"agg_{key.replace('n_', '')}" if key != 'n' else 'agg'
     # 1. aggregate
     if agg_name not in s.vp:
         s.aggregate(key=key, name=agg_name, verbose=verbose)
