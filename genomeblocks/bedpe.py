@@ -428,12 +428,183 @@ def count_pairs(
     return out
 
 
+def _group_loci_by_chrom(loci):
+    """Group a Loci into per-chrom sorted (starts, ends, gidx) arrays for searchsorted."""
+    import numpy as np
+    by_chrom: dict = {}
+    for gi, locus in enumerate(loci):
+        d = by_chrom.setdefault(locus.chrom, {"starts": [], "ends": [], "gidx": []})
+        d["starts"].append(locus.start)
+        d["ends"].append(locus.end)
+        d["gidx"].append(gi)
+    for d in by_chrom.values():
+        order = np.argsort(d["starts"])
+        d["starts"] = np.asarray(d["starts"], dtype=np.int64)[order]
+        d["ends"] = np.asarray(d["ends"], dtype=np.int64)[order]
+        d["gidx"] = np.asarray(d["gidx"], dtype=np.int64)[order]
+    return by_chrom
+
+
+def _locate(d, positions):
+    """Vectorized window lookup: returns (idx, ok) where ok[i] is True iff
+    positions[i] falls inside d['gidx'][idx[i]]."""
+    import numpy as np
+    idx = np.searchsorted(d["starts"], positions, side="right") - 1
+    ok = idx >= 0
+    if ok.any():
+        safe = idx[ok]
+        ok2 = positions[ok] < d["ends"][safe]
+        final = np.zeros_like(ok)
+        final[ok] = ok2
+        return idx, final
+    return idx, ok
+
+
+def count_pairs_2d(
+    loci_a: "Loci",
+    pairs_file: str,
+    *,
+    loci_b: Optional["Loci"] = None,
+    format: str = "auto",
+    columns: Optional[Tuple[int, int, int, int]] = None,
+    chunksize: int = 2_000_000,
+    verbose: bool = True,
+):
+    """Window-to-window pair counts. Returns a scipy.sparse.csr_matrix of shape
+    (len(loci_a), len(loci_b)).
+
+    Single streaming pass. For each pair (cA, pA, cB, pB), both directions are tried:
+      - if pA in loci_a window i and pB in loci_b window j → M[i, j] += 1
+      - if pB in loci_a window i and pA in loci_b window j → M[i, j] += 1
+
+    With loci_b=None (default), uses loci_a on both axes — the resulting matrix is
+    symmetric (each pair contributes to both M[i,j] and M[j,i]).
+
+    Caveat for cis self-cells: a pair whose two anchors fall in the same window W
+    contributes M[W,W] += 2 in the symmetric (loci_b=None) case (once per direction).
+    Negligible at 50kb resolution.
+
+    Args:
+        loci_a: Loci for the rows (must be non-overlapping per chrom).
+        pairs_file: .allValidPairs / .pairs / juicer-medium file.
+        loci_b: Loci for the columns; if None, uses loci_a (all-vs-all).
+        format, columns, chunksize: forwarded to read_pairs_chunks.
+        verbose: print progress.
+
+    Returns:
+        scipy.sparse.csr_matrix of shape (len(loci_a), len(loci_b)) with int64 counts.
+        Use pair_2d_block / pair_2d_to_frame to slice or materialize results.
+    """
+    import numpy as np
+    import scipy.sparse as sp
+
+    same = loci_b is None
+    if same:
+        loci_b = loci_a
+
+    by_a = _group_loci_by_chrom(loci_a)
+    by_b = by_a if same else _group_loci_by_chrom(loci_b)
+
+    n_a, n_b = len(loci_a), len(loci_b)
+
+    rows_acc: list = []
+    cols_acc: list = []
+    data_acc: list = []
+    n_seen = 0
+
+    for chunk in read_pairs_chunks(pairs_file, format=format, columns=columns, chunksize=chunksize):
+        n_seen += len(chunk)
+
+        c1 = chunk["chrom1"].astype(str).to_numpy()
+        c2 = chunk["chrom2"].astype(str).to_numpy()
+        p1 = chunk["pos1"].to_numpy(dtype=np.int64, copy=False)
+        p2 = chunk["pos2"].to_numpy(dtype=np.int64, copy=False)
+
+        for cA_arr, pA_arr, cB_arr, pB_arr in (
+            (c1, p1, c2, p2),
+            (c2, p2, c1, p1),
+        ):
+            for chrom_a, d_a in by_a.items():
+                ma = cA_arr == chrom_a
+                if not ma.any():
+                    continue
+                for chrom_b, d_b in by_b.items():
+                    mab = ma & (cB_arr == chrom_b)
+                    if not mab.any():
+                        continue
+                    pos_a = pA_arr[mab]
+                    pos_b = pB_arr[mab]
+                    idx_a, ok_a = _locate(d_a, pos_a)
+                    idx_b, ok_b = _locate(d_b, pos_b)
+                    ok = ok_a & ok_b
+                    if not ok.any():
+                        continue
+                    ga = d_a["gidx"][idx_a[ok]]
+                    gb = d_b["gidx"][idx_b[ok]]
+
+                    keys = ga.astype(np.int64) * n_b + gb.astype(np.int64)
+                    uk, uc = np.unique(keys, return_counts=True)
+                    rows_acc.append((uk // n_b).astype(np.int64))
+                    cols_acc.append((uk %  n_b).astype(np.int64))
+                    data_acc.append(uc.astype(np.int64))
+
+        if verbose:
+            print(f"[INFO] processed {n_seen:,} pairs", end="\r")
+
+    if verbose:
+        print(f"\n[INFO] processed {n_seen:,} pairs total")
+
+    if not data_acc:
+        return sp.csr_matrix((n_a, n_b), dtype=np.int64)
+
+    rows = np.concatenate(rows_acc)
+    cols = np.concatenate(cols_acc)
+    data = np.concatenate(data_acc)
+    coo = sp.coo_matrix((data, (rows, cols)), shape=(n_a, n_b), dtype=np.int64)
+    coo.sum_duplicates()
+    return coo.tocsr()
+
+
+def pair_2d_block(mat, loci_a, loci_b, chrom_a: str, chrom_b: str):
+    """Extract the dense submatrix for one chromosome pair from a count_pairs_2d result.
+
+    Returns (block, windows_a_on_chrom_a, windows_b_on_chrom_b).
+    """
+    import numpy as np
+    from .loci import Loci
+    rows = [i for i, l in enumerate(loci_a) if l.chrom == chrom_a]
+    cols = [j for j, l in enumerate(loci_b) if l.chrom == chrom_b]
+    if not rows or not cols:
+        return np.zeros((len(rows), len(cols)), dtype=np.int64), Loci(), Loci()
+    block = mat[rows, :][:, cols].toarray()
+    return block, Loci(loci_a[i] for i in rows), Loci(loci_b[j] for j in cols)
+
+
+def pair_2d_to_frame(mat, loci_a, loci_b) -> pd.DataFrame:
+    """Convert a count_pairs_2d sparse matrix to a long-format DataFrame of non-zero cells:
+    chrom1 start1 end1 chrom2 start2 end2 count.
+    """
+    coo = mat.tocoo()
+    rows = [int(i) for i in coo.row]
+    cols = [int(j) for j in coo.col]
+    return pd.DataFrame({
+        "chrom1": [loci_a[i].chrom for i in rows],
+        "start1": [loci_a[i].start for i in rows],
+        "end1":   [loci_a[i].end   for i in rows],
+        "chrom2": [loci_b[j].chrom for j in cols],
+        "start2": [loci_b[j].start for j in cols],
+        "end2":   [loci_b[j].end   for j in cols],
+        "count":  coo.data,
+    })
+
+
 # Attach to Loci class
 def _attach_to_loci():
-    """Attach pair_to_bed and count_pairs methods to Loci class."""
+    """Attach pair_to_bed, count_pairs, and count_pairs_2d to Loci class."""
     from .loci import Loci
     Loci.pair_to_bed = pair_to_bed
     Loci.count_pairs = count_pairs
+    Loci.count_pairs_2d = count_pairs_2d
 
 
 # Auto-attach when module is imported

@@ -147,12 +147,41 @@ def tile(cls, chrom: str, size: int, chromsizes) -> "Loci":
     )
 
 
+@classmethod
+def tile_genome(cls, chromsizes, size: int, chroms: Optional[List[str]] = None) -> "Loci":
+    """Tile every chromosome in `chromsizes` at uniform `size` bp.
+
+    chromsizes: dict, .chrom.sizes path, or any object with a .chromsizes mapping.
+    chroms: optional whitelist (and ordering) of chroms to include.
+    """
+    if isinstance(chromsizes, dict):
+        sizes = {k: int(v) for k, v in chromsizes.items()}
+    elif isinstance(chromsizes, str):
+        sizes = {}
+        with open(chromsizes) as f:
+            for line in f:
+                if not line.strip() or line.startswith("#"): continue
+                parts = line.split()
+                sizes[parts[0]] = int(parts[1])
+    else:
+        sizes = {k: int(v) for k, v in dict(chromsizes.chromsizes).items()}
+    if chroms is None:
+        chroms = list(sizes.keys())
+    out = cls()
+    for c in chroms:
+        clen = sizes[c]
+        for s in range(0, clen, size):
+            out.append(Locus(c, s, min(s + size, clen)))
+    return out
+
+
 def subloci(s, uids: List[str]):
     sub = Loci(s[s.uids[u]] for u in uids)
     return sub
 
 Loci.make = make
 Loci.tile = tile
+Loci.tile_genome = tile_genome
 Loci.subloci = subloci
 
 
