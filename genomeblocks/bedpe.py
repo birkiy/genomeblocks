@@ -238,16 +238,23 @@ def pairs_to_bedpe(pairs: List[Pair], filename: str) -> None:
             f.write('\t'.join(fields) + '\n')
 
 
-def _detect_pairs_format(filename: str) -> str:
-    """Peek at the first non-comment line of a pairs file to identify the format.
+# (chrom1_col, pos1_col, chrom2_col, pos2_col) — 0-indexed positions in the row.
+PAIRS_FORMAT_COLUMNS = {
+    "allvalidpairs": (1, 2, 4, 5),  # HiC-Pro: readID chr1 pos1 strand1 chr2 pos2 strand2 ...
+    "pairs":         (1, 2, 3, 4),  # pairtools / 4DN: readID chrom1 pos1 chrom2 pos2 strand1 strand2 ...
+    "juicer":        (2, 3, 6, 7),  # Juicer medium: readname str1 chr1 pos1 frag1 str2 chr2 pos2 frag2
+}
 
-    Returns 'allvalidpairs' (HiC-Pro: col 3 is a strand) or 'pairs' (pairtools 4DN: col 3 is chrom2).
-    """
+
+def _detect_pairs_format(filename: str) -> str:
+    """Peek at the first non-comment line of a pairs file to identify the format."""
     with open(filename) as f:
         for line in f:
             if line.startswith("#") or not line.strip():
                 continue
             fields = line.rstrip("\n").split("\t")
+            if len(fields) >= 8 and fields[1] in ("+", "-") and fields[5] in ("+", "-"):
+                return "juicer"
             if len(fields) >= 7 and fields[3] in ("+", "-"):
                 return "allvalidpairs"
             return "pairs"
@@ -258,28 +265,35 @@ def read_pairs_chunks(
     filename: str,
     *,
     format: str = "auto",
+    columns: Optional[Tuple[int, int, int, int]] = None,
     chunksize: int = 2_000_000,
 ) -> Iterator[pd.DataFrame]:
-    """Stream a HiC-Pro .allValidPairs or pairtools .pairs file in chunks.
+    """Stream a pairs / allValidPairs file in chunks.
 
     Yields DataFrames with columns chrom1, pos1, chrom2, pos2 only — the
     minimum needed for window-vs-chromosome contact counting. chrom columns
     are categorical for memory efficiency on large files.
 
     Args:
-        filename: path to .allValidPairs or .pairs (optionally gzipped — pandas auto-detects).
-        format: 'allvalidpairs' (HiC-Pro), 'pairs' (pairtools/4DN), or 'auto' to detect.
+        filename: path to the pairs file (optionally gzipped — pandas auto-detects).
+        format: one of 'allvalidpairs' (HiC-Pro), 'pairs' (pairtools/4DN),
+            'juicer' (Juicer medium: readname str1 chr1 pos1 frag1 str2 chr2 pos2 frag2),
+            or 'auto' to detect.
+        columns: explicit (chrom1_col, pos1_col, chrom2_col, pos2_col) 0-indexed
+            override for non-standard layouts. Wins over `format` if provided.
         chunksize: rows per pandas chunk.
     """
-    if format == "auto":
-        format = _detect_pairs_format(filename)
-
-    if format == "allvalidpairs":
-        usecols = [1, 2, 4, 5]
-    elif format == "pairs":
-        usecols = [1, 2, 3, 4]
+    if columns is not None:
+        usecols = list(columns)
     else:
-        raise ValueError(f"Unknown pairs format: {format!r}")
+        if format == "auto":
+            format = _detect_pairs_format(filename)
+        if format not in PAIRS_FORMAT_COLUMNS:
+            raise ValueError(
+                f"Unknown pairs format: {format!r}. "
+                f"Known: {sorted(PAIRS_FORMAT_COLUMNS)}, or pass columns=(c1,p1,c2,p2)."
+            )
+        usecols = list(PAIRS_FORMAT_COLUMNS[format])
 
     reader = pd.read_csv(
         filename,
@@ -302,6 +316,7 @@ def count_pairs(
     *,
     target_chrom: Optional[str] = None,
     format: str = "auto",
+    columns: Optional[Tuple[int, int, int, int]] = None,
     chunksize: int = 2_000_000,
     verbose: bool = True,
 ) -> pd.DataFrame:
@@ -321,7 +336,9 @@ def count_pairs(
             counted, and the output has a single 'count' column. If None, every
             partner chrom seen in the file gets its own column (whole-genome scan
             in one pass).
-        format: 'allvalidpairs', 'pairs', or 'auto'.
+        format: 'allvalidpairs', 'pairs', 'juicer', or 'auto'.
+        columns: explicit (chrom1_col, pos1_col, chrom2_col, pos2_col) 0-indexed
+            override for non-standard layouts.
         chunksize: rows per pandas chunk.
 
     Returns:
@@ -346,7 +363,7 @@ def count_pairs(
     counts: dict = defaultdict(lambda: np.zeros(len(loci), dtype=np.int64))
     n_seen = 0
 
-    for chunk in read_pairs_chunks(pairs_file, format=format, chunksize=chunksize):
+    for chunk in read_pairs_chunks(pairs_file, format=format, columns=columns, chunksize=chunksize):
         n_seen += len(chunk)
 
         for self_chrom_col, self_pos_col, other_chrom_col in (
