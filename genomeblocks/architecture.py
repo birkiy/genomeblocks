@@ -911,12 +911,271 @@ def normalize(s: Architecture, loci, *, source: str = "w", name: str = "n", verb
     expected, fit_params = _pl_expect(distances, raw_weights)
     if verbose:
         print(f"[INFO] Power-law fit complete: alpha={fit_params['alpha']:.3f}, C={fit_params['C']:.3e}")
+    # Cache the fit on the Architecture so `add_patches` (and any other
+    # downstream step) can reuse it without refitting. Keyed by source
+    # property name so multiple normalizations don't clobber each other.
+    if not hasattr(s, "_pl_fits"):
+        s._pl_fits = {}
+    s._pl_fits[source] = dict(fit_params)
     norm_weights = raw_weights / np.maximum(expected, 1e-12)
     for i, e in enumerate(s.edges()):
         s.ep[name][e] = norm_weights[i]
     if verbose:
         print(f"[INFO] Set O/E weights for {s.n_links} intra-chromosomal edges to `ep.{name}`.")
     return s
+
+
+# ── Patch extraction (Akita / C.Origami style, HiChIP-correct) ─────────────
+#
+# What this is:
+#   For each edge in the Architecture, extract a K×K matrix of contact
+#   counts around the edge's (bin_a, bin_b) cell from the underlying
+#   .mcool, then optionally normalize it by the SAME power-law fit
+#   that `normalize` uses (NOT ICE — ICE's uniform-contact-probability
+#   assumption is wrong for HiChIP, which is enriched at protein-bound
+#   regions).
+#
+# Why this exists separately from add_mcool/normalize:
+#   add_mcool stores ONE scalar count per edge (and distributes the
+#   bin-pair count among co-binned edges). add_patches stores a K×K
+#   neighborhood per edge — the raw bin-pair counts straight from the
+#   cooler, which gives a richer, lower-variance target for downstream
+#   models (Akita-style smoothing without distorting per-edge attribution).
+#
+# Speed:
+#   - One sparse-CSR fetch per chromosome (cached) — 22-23 mcool calls
+#     for hg38, not n_edges calls.
+#   - Vectorized expected-grid computation per edge.
+#   - Power-law expected reuses the fit from `normalize` if already done.
+
+def _build_uid_to_bin(loci, clr):
+    """Map each anchor uid to its nearest cooler bin id. Returns
+    (uid_to_bin, chrom_of_bin, chrom_offsets) — same convention as
+    add_mcool uses internally."""
+    import numpy as np
+    bins = clr.bins()[:][['chrom', 'start', 'end']].reset_index()
+    from .loci import Loci
+    from .locus import Locus
+    bins_l = Loci(Locus(row[1], row[2], row[3]) for row in bins.itertuples(index=False))
+    near = loci.nearest(bins_l)
+    uid_to_bin = dict(zip(near['Name'], near['Name_b'].map(bins_l.uids)))
+    chrom_of_bin = dict(zip(bins.index, bins['chrom']))
+    # Per-chromosome bin offset (the bin id of the chromosome's first bin)
+    chrom_offsets = bins.groupby('chrom').apply(lambda g: int(g.index.min())).to_dict()
+    return uid_to_bin, chrom_of_bin, chrom_offsets
+
+
+def add_patches(s: Architecture, loci, mcool: str, *,
+                resolution: "Optional[int]" = None,
+                K: int = 3,
+                source: str = "w",
+                normalize: bool = True,
+                clip: float = 0.0,
+                smooth_sigma: float = 0.0,
+                pseudocount: float = 1e-3,
+                verbose: bool = True):
+    """Extract K×K contact patches around each edge, normalized by the
+    same power-law expectation as `Architecture.normalize`.
+
+    Parameters
+    ----------
+    loci, mcool, resolution
+        Same as add_mcool — the .mcool whose contacts you're sampling.
+    K : int (odd, ≥1)
+        Side length of the patch. K=3 → 3×3 (9 outputs/edge); K=5 → 5×5.
+    source : str
+        Edge property to use when fitting the genome-wide power-law
+        decay (default 'w', i.e. raw counts already added by add_mcool).
+        If `s._pl_fits[source]` is already cached (because `normalize`
+        was called with the same source), the fit is reused.
+    normalize : bool
+        If True (default), divide each patch cell by its distance-
+        expected value and take log2 → log2(O/E). If False, return raw
+        counts.
+    clip : float
+        Clip log2(O/E) values to (-clip, +clip) (Akita uses 2.0). 0 disables.
+    smooth_sigma : float
+        Convolve each patch with a 5-wide 2D Gaussian of this sigma
+        (Akita uses 1.0). 0 disables.
+    pseudocount : float
+        Added to numerator+denominator when computing O/E to avoid
+        log(0). Same default as generate_log2n_dataset.py's --n-pseudocount.
+
+    Returns
+    -------
+    np.ndarray of shape (n_edges, K, K), dtype float32
+        Aligned with `s.edges()` iteration order. Edges that map to
+        unknown bins (e.g. inter-chromosomal or off-end-of-chrom) get
+        all-zero patches; the caller can detect these via the
+        `valid` mask returned alongside.
+    np.ndarray of shape (n_edges,), dtype bool
+        Per-edge validity mask (True = patch is real, False = zero-filled).
+    """
+    import cooler
+    import numpy as np
+    from tqdm import tqdm
+    from collections import defaultdict
+    from scipy.signal import convolve2d
+
+    if K < 1 or K % 2 == 0:
+        raise ValueError(f"K must be a positive odd integer (got {K})")
+    half = K // 2
+
+    uri = f"{mcool}::resolutions/{resolution}" if resolution else mcool
+    clr = cooler.Cooler(uri)
+    res = clr.binsize
+    if verbose:
+        print(f"[INFO] add_patches: {K}x{K} patches at {res} bp resolution. 🪟")
+
+    # ── 1. Bin mapping (same as add_mcool) ────────────────────────────────
+    uid_to_bin, chrom_of_bin, chrom_offsets = _build_uid_to_bin(loci, clr)
+
+    # ── 2. Per-edge metadata (chrom, bins, anchor distance) ───────────────
+    edge_list = list(s.edges())
+    n_edges = len(edge_list)
+    edge_chrom = [None] * n_edges
+    edge_bin_a = np.zeros(n_edges, dtype=np.int64)
+    edge_bin_b = np.zeros(n_edges, dtype=np.int64)
+    edge_dist  = np.zeros(n_edges, dtype=np.float64)   # bp distance, same as ep.d
+    valid = np.zeros(n_edges, dtype=bool)
+    for i, edge in enumerate(edge_list):
+        v1, v2 = edge.source(), edge.target()
+        uid1, uid2 = s.vp.uid[v1], s.vp.uid[v2]
+        bin1 = uid_to_bin.get(uid1)
+        bin2 = uid_to_bin.get(uid2)
+        if bin1 is None or bin2 is None:
+            continue
+        ch1 = chrom_of_bin[bin1]
+        ch2 = chrom_of_bin[bin2]
+        if ch1 != ch2:
+            continue
+        edge_chrom[i] = ch1
+        edge_bin_a[i] = bin1
+        edge_bin_b[i] = bin2
+        edge_dist[i]  = loci[uid1].distance_to(loci[uid2])
+        valid[i] = True
+
+    # ── 3. Power-law fit (reuse cached, else fit from edge raw counts) ────
+    fit = None
+    if hasattr(s, "_pl_fits") and source in getattr(s, "_pl_fits", {}):
+        fit = s._pl_fits[source]
+        if verbose:
+            print(f"[INFO] add_patches: reusing cached pl_fit for '{source}': "
+                  f"alpha={fit['alpha']:.3f}, C={fit['C']:.3e}")
+    elif normalize:
+        if source not in s.ep:
+            raise ValueError(
+                f"add_patches: source edge property '{source}' not found "
+                f"and no cached pl_fit available. Call add_mcool + normalize "
+                f"first, or pass normalize=False to get raw patches."
+            )
+        raw_w = np.array([s.ep[source][e] for e in edge_list], dtype=float)
+        _, fit = _pl_expect(edge_dist, raw_w)
+        if verbose:
+            print(f"[INFO] add_patches: power-law fit on '{source}': "
+                  f"alpha={fit['alpha']:.3f}, C={fit['C']:.3e}")
+        if not hasattr(s, "_pl_fits"):
+            s._pl_fits = {}
+        s._pl_fits[source] = dict(fit)
+
+    # ── 4. Group edges by chromosome ──────────────────────────────────────
+    by_chrom = defaultdict(list)
+    for i, ch in enumerate(edge_chrom):
+        if ch is not None:
+            by_chrom[ch].append(i)
+
+    # ── 5. Pre-build offset grids (used in distance calc) ─────────────────
+    offs = np.arange(-half, half + 1)
+    da, db = np.meshgrid(offs, offs, indexing="ij")          # (K, K)
+    rel_offset = (da - db).astype(np.float64) * res          # bp offset along diagonal
+
+    # ── 6. Per-chromosome extraction ──────────────────────────────────────
+    raw_patches = np.zeros((n_edges, K, K), dtype=np.float32)
+
+    for chrom, idxs in tqdm(by_chrom.items(),
+                            desc="[INFO] add_patches: per-chrom extraction",
+                            total=len(by_chrom)):
+        try:
+            mat = clr.matrix(balance=False, sparse=True).fetch(chrom).tocsr()
+        except Exception as e:
+            print(f"[WARN] add_patches: skipping chrom {chrom}: {e}")
+            for i in idxs:
+                valid[i] = False
+            continue
+        coff = chrom_offsets[chrom]
+        n_bins = mat.shape[0]
+
+        for i in idxs:
+            a = int(edge_bin_a[i] - coff)
+            b = int(edge_bin_b[i] - coff)
+            # Clamp + remember the slot offsets within the K×K patch
+            a_lo = max(0, a - half); a_hi = min(n_bins, a + half + 1)
+            b_lo = max(0, b - half); b_hi = min(n_bins, b + half + 1)
+            if a_hi <= a_lo or b_hi <= b_lo:
+                valid[i] = False
+                continue
+            sub = mat[a_lo:a_hi, b_lo:b_hi].toarray().astype(np.float32)
+            # Slot offsets — handles patches that fall partially off the
+            # chromosome edge.
+            rs = a_lo - (a - half)
+            cs = b_lo - (b - half)
+            raw_patches[i, rs:rs+sub.shape[0], cs:cs+sub.shape[1]] = sub
+
+    if verbose:
+        n_valid = int(valid.sum())
+        n_zero  = int((raw_patches.sum(axis=(1, 2)) == 0).sum())
+        print(f"[INFO] add_patches: {n_valid}/{n_edges} edges have a patch; "
+              f"{n_zero} of those have all-zero raw counts.")
+
+    if not normalize:
+        return raw_patches, valid
+
+    # ── 7. Distance-correct (power-law) → log2(O/E) ───────────────────────
+    if fit is None or not (np.isfinite(fit.get('alpha', np.nan))
+                           and np.isfinite(fit.get('C', np.nan))):
+        raise RuntimeError(
+            "add_patches: cannot normalize — no valid power-law fit "
+            "available. Either run normalize() first, or pass normalize=False."
+        )
+    alpha, C = float(fit['alpha']), float(fit['C'])
+
+    # Per-edge expected grid: shape (n_edges, K, K)
+    # d_cell_bp[i, da, db] = max(|edge_dist[i] + (da - db) * res|, res)
+    # Floor at `res` because the power-law diverges as d → 0.
+    if verbose:
+        print(f"[INFO] add_patches: computing log2(O/E) "
+              f"(alpha={alpha:.3f}, C={C:.3e}, clip={clip}, σ={smooth_sigma})")
+    d_centered = edge_dist[:, None, None] + rel_offset[None, :, :]
+    d_cell_bp = np.maximum(np.abs(d_centered), float(res))
+    expected = C * d_cell_bp ** (-alpha)
+    oe = (np.maximum(raw_patches, 0.0) + pseudocount) / np.maximum(expected, 1e-12)
+    log2oe = np.log2(np.maximum(oe, 1e-12)).astype(np.float32)
+    log2oe[~valid] = 0.0
+
+    if clip > 0:
+        log2oe = np.clip(log2oe, -clip, clip)
+
+    if smooth_sigma > 0:
+        # Per-edge 2D Gaussian smooth. For K ≤ 5 the convolution is cheap
+        # enough that we just loop; for larger K replace with FFT-batched.
+        r = 2  # 5-wide kernel as in Akita
+        xs = np.arange(-r, r + 1)
+        g = np.exp(-(xs[:, None] ** 2 + xs[None, :] ** 2) / (2 * smooth_sigma ** 2))
+        kernel = (g / g.sum()).astype(np.float32)
+        for i in range(n_edges):
+            if valid[i]:
+                log2oe[i] = convolve2d(log2oe[i], kernel,
+                                       mode="same", boundary="symm").astype(np.float32)
+
+    if verbose:
+        v = log2oe[valid]
+        if v.size:
+            c = K // 2
+            ctr = log2oe[valid, c, c]
+            print(f"[INFO] add_patches: log2(O/E) range [{v.min():.2f}, {v.max():.2f}], "
+                  f"mean {v.mean():.2f}; center cell mean {ctr.mean():.2f}.")
+
+    return log2oe, valid
 
 
 def annotate(self, loci, genes, *, verbose=True):
@@ -1639,6 +1898,7 @@ Architecture.make_clique = make_clique
 Architecture.make_spread = make_spread
 Architecture.add_mcool = add_mcool
 Architecture.normalize = normalize
+Architecture.add_patches = add_patches
 Architecture.annotate = annotate
 Architecture._merge_nearby = _merge_nearby
 Architecture.draw = draw

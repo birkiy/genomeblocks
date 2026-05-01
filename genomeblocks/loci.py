@@ -117,11 +117,42 @@ def make(cls, filename: str, filetype: Optional[str] = None) -> Loci:
     return L
 
 
+@classmethod
+def tile(cls, chrom: str, size: int, chromsizes) -> "Loci":
+    """Build uniform `size`-bp tiles across `chrom`.
+
+    chromsizes can be:
+      - int: chromosome length directly
+      - dict: {chrom: length}
+      - str: path to a UCSC .chrom.sizes file (chrom\\tlength)
+      - any object with a .chromsizes mapping (e.g. cooler.Cooler)
+    """
+    if isinstance(chromsizes, int):
+        clen = chromsizes
+    elif isinstance(chromsizes, dict):
+        clen = int(chromsizes[chrom])
+    elif isinstance(chromsizes, str):
+        sizes = {}
+        with open(chromsizes) as f:
+            for line in f:
+                if not line.strip() or line.startswith("#"): continue
+                parts = line.split()
+                sizes[parts[0]] = int(parts[1])
+        clen = sizes[chrom]
+    else:
+        clen = int(chromsizes.chromsizes[chrom])
+    return cls(
+        Locus(chrom, s, min(s + size, clen))
+        for s in range(0, clen, size)
+    )
+
+
 def subloci(s, uids: List[str]):
     sub = Loci(s[s.uids[u]] for u in uids)
     return sub
 
 Loci.make = make
+Loci.tile = tile
 Loci.subloci = subloci
 
 
