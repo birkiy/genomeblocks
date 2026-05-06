@@ -262,3 +262,4 @@ Loci.map = map
 from . import signal  # noqa: F401
 from . import motifs  # noqa: F401
 from . import bedpe  # noqa: F401
+from . import atlas  # noqa: F401

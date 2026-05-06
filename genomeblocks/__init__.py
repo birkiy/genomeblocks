@@ -29,6 +29,8 @@ _EXPORTS: Dict[str, tuple[str, str]] = {
 	'Genes': ('.genes', 'Genes'),
 	# loci
 	'Loci': ('.loci', 'Loci'),
+	# atlas (giggle-style enrichment)
+	'Atlas': ('.atlas', 'Atlas'),
 	# architecture
 	'Architecture': ('.architecture', 'Architecture'),
 	# motifs
