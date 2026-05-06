@@ -344,18 +344,39 @@ class Atlas:
 
     def bootstrap(
         self,
-        query: Loci,
+        query: Union[Loci, Dict[str, Loci]],
         *,
         n: int = 10,
+        pool: Optional[Loci] = None,
+        sample: Optional[int] = None,
+        replace: bool = False,
         keep_chrom: bool = True,
         seed: Optional[int] = None,
         verbose: bool = True,
     ):
-        """Compare observed shared-bin counts to a shuffled-position null.
+        """Compare observed overlaps to a resampled null.
 
-        ``keep_chrom=True`` (default) preserves each interval's chromosome
-        and only randomizes the start bin -- the standard ChIP-seq
-        permutation. ``keep_chrom=False`` resamples chroms by length.
+        Three knobs that interact:
+
+        * ``pool=None`` (default) -- null is per-interval position shuffle
+          (``keep_chrom`` preserves the original chromosome). Each group
+          shuffles independently.
+        * ``pool=<Loci>`` -- null is sampled from a curated CRE universe.
+          Use this when query is a subset of pool and you want to control
+          for the universe's bias (LOLA / regioneR style).
+        * ``sample=<int>`` -- per iteration, subsample BOTH every query
+          group and the pool down to ``sample`` regions. The pool draw is
+          **shared across all groups** within each iteration, so cross-
+          group comparisons are paired against the same null. Use this
+          for differently-sized query groups.
+
+        ``query`` may be a single ``Loci`` or a ``dict[str, Loci]``. With
+        a dict, the result is a long-format DataFrame with a ``group``
+        column.
+
+        With ``sample`` set, ``observed`` and ``expected`` are means over
+        the bootstrap distribution of subsamples; ``z`` is the paired z
+        of (obs - null) per iteration.
         """
         import pandas as pd
 
@@ -363,78 +384,192 @@ class Atlas:
             raise ValueError("n must be positive.")
         rng = np.random.default_rng(seed)
 
-        chrom_idx = {c: i for i, c in enumerate(self.chrom_names)}
-        chrom_offsets_arr = np.array(
-            [self.chrom_offsets[c] for c in self.chrom_names],
-            dtype=np.int64,
-        )
-        chrom_bins = np.array(
-            [self._chrom_max_bins[c] for c in self.chrom_names],
-            dtype=np.int64,
-        )
+        single = not isinstance(query, dict)
+        groups = {"query": query} if single else dict(query)
+        if not groups:
+            raise ValueError("query dict is empty.")
 
-        bs = self.bin_size
-        c_ids: List[int] = []
-        lens: List[int] = []
-        for l in query:
-            ci = chrom_idx.get(l.chrom)
-            if ci is None:
-                continue
-            s_b = int(l.start) // bs
-            e_b = max((int(l.end) - 1) // bs + 1, s_b + 1)
-            length = min(e_b - s_b, int(chrom_bins[ci]))
-            c_ids.append(ci)
-            lens.append(length)
-        if not c_ids:
-            raise ValueError("Empty query (after chrom filter).")
-        c_ids_arr = np.asarray(c_ids, dtype=np.int64)
-        lens_arr = np.asarray(lens, dtype=np.int64)
+        # per-group bin ranges (one row per interval)
+        group_ranges: Dict[str, np.ndarray] = {}
+        for g, q in groups.items():
+            r = self._intervals_to_bin_ranges(q)
+            if len(r) == 0:
+                raise ValueError(
+                    f"query group {g!r} has no bins on atlas chroms.",
+                )
+            group_ranges[g] = r
 
-        observed = self._overlap_counts(
-            self._bins_union(self._intervals_to_bin_ranges(query)),
-        )
+        if pool is not None:
+            pool_ranges = self._intervals_to_bin_ranges(pool)
+            if len(pool_ranges) == 0:
+                raise ValueError("pool has no bins on atlas chromosomes.")
+            n_pool = int(len(pool_ranges))
+        else:
+            pool_ranges = None
+            n_pool = 0
+            chrom_idx = {c: i for i, c in enumerate(self.chrom_names)}
+            chrom_offsets_arr = np.array(
+                [self.chrom_offsets[c] for c in self.chrom_names],
+                dtype=np.int64,
+            )
+            chrom_bins = np.array(
+                [self._chrom_max_bins[c] for c in self.chrom_names],
+                dtype=np.int64,
+            )
+            chrom_p = chrom_bins / chrom_bins.sum()
 
-        chrom_p = chrom_bins / chrom_bins.sum()
-        n_intervals = len(c_ids_arr)
+        # If subsampling, validate sizes once
+        if sample is not None:
+            if sample <= 0:
+                raise ValueError("sample must be positive.")
+            for g, r in group_ranges.items():
+                if len(r) < sample and not replace:
+                    raise ValueError(
+                        f"query group {g!r} has {len(r)} regions but "
+                        f"sample={sample}. Pass replace=True or lower sample.",
+                    )
+            if pool is not None and n_pool < sample and not replace:
+                raise ValueError(
+                    f"pool has {n_pool} regions but sample={sample}. "
+                    f"Pass replace=True or lower sample.",
+                )
+
         n_tracks = len(self.track_names)
-        boot = np.zeros((n, n_tracks), dtype=np.int64)
+
+        # Per-group accumulators
+        obs_acc = {g: np.zeros((n, n_tracks), dtype=np.int64) for g in groups}
+        null_acc = {g: np.zeros((n, n_tracks), dtype=np.int64) for g in groups}
+
+        # If query isn't subsampled, observed is fixed -- compute once
+        fixed_observed: Dict[str, np.ndarray] = {}
+        if sample is None:
+            for g, r in group_ranges.items():
+                bins_u = np.unique(_explode_ranges(r[:, 0], r[:, 1] - r[:, 0]))
+                fixed_observed[g] = self._overlap_counts(bins_u)
+
+        # Pre-stage the per-group genome-shuffle inputs (only if pool is None)
+        gs: Dict[str, dict] = {}
+        if pool is None:
+            bs = self.bin_size
+            for g, q in groups.items():
+                c_ids: List[int] = []
+                lens: List[int] = []
+                for l in q:
+                    ci = chrom_idx.get(l.chrom)
+                    if ci is None:
+                        continue
+                    s_b = int(l.start) // bs
+                    e_b = max((int(l.end) - 1) // bs + 1, s_b + 1)
+                    length = min(e_b - s_b, int(chrom_bins[ci]))
+                    c_ids.append(ci)
+                    lens.append(length)
+                gs[g] = {
+                    "c_ids": np.asarray(c_ids, dtype=np.int64),
+                    "lens": np.asarray(lens, dtype=np.int64),
+                }
 
         it = range(n)
         if verbose:
             from tqdm import tqdm
             it = tqdm(it, desc="[atlas bootstrap]")
+
         for i in it:
-            cs = c_ids_arr if keep_chrom else rng.choice(
-                len(self.chrom_names), size=n_intervals, p=chrom_p,
-            )
-            cb = chrom_bins[cs]
-            free = np.maximum(cb - lens_arr, 0)
-            local_starts = rng.integers(0, free + 1)
-            starts = chrom_offsets_arr[cs] + local_starts
-            q_bins = np.unique(_explode_ranges(starts, lens_arr))
-            boot[i] = self._overlap_counts(q_bins)
+            # ---- null draw(s) for this iteration ----
+            if pool is not None and sample is not None:
+                # ONE shared pool draw, broadcast to every group
+                idx = rng.choice(n_pool, size=sample, replace=replace)
+                sampled = pool_ranges[idx]
+                bins_u = np.unique(
+                    _explode_ranges(sampled[:, 0],
+                                    sampled[:, 1] - sampled[:, 0]),
+                )
+                shared_null = self._overlap_counts(bins_u)
+                for g in groups:
+                    null_acc[g][i] = shared_null
+            elif pool is not None:
+                # No subsample: each group draws len(group) from pool
+                # (independent draws -- not paired across groups)
+                for g, r in group_ranges.items():
+                    k = len(r)
+                    if k > n_pool and not replace:
+                        raise ValueError(
+                            f"query group {g!r} has {k} regions but pool "
+                            f"has {n_pool}. Pass replace=True or set sample.",
+                        )
+                    idx = rng.choice(n_pool, size=k, replace=replace)
+                    sampled = pool_ranges[idx]
+                    bins_u = np.unique(
+                        _explode_ranges(sampled[:, 0],
+                                        sampled[:, 1] - sampled[:, 0]),
+                    )
+                    null_acc[g][i] = self._overlap_counts(bins_u)
+            else:
+                # Genome-shuffle null per group (independent)
+                for g in groups:
+                    c_ids_arr = gs[g]["c_ids"]
+                    lens_arr = gs[g]["lens"]
+                    cs = c_ids_arr if keep_chrom else rng.choice(
+                        len(self.chrom_names), size=len(c_ids_arr), p=chrom_p,
+                    )
+                    cb = chrom_bins[cs]
+                    free = np.maximum(cb - lens_arr, 0)
+                    local = rng.integers(0, free + 1)
+                    starts = chrom_offsets_arr[cs] + local
+                    q_bins = np.unique(_explode_ranges(starts, lens_arr))
+                    null_acc[g][i] = self._overlap_counts(q_bins)
 
-        mean = boot.mean(axis=0)
-        std = boot.std(axis=0, ddof=1) if n > 1 else np.zeros(n_tracks)
-        z = np.divide(observed - mean, std,
-                      out=np.zeros_like(mean, dtype=float), where=std > 0)
-        log2fc = np.log2((observed + 1.0) / (mean + 1.0))
-        more_extreme = (np.abs(boot - mean[None, :])
-                        >= np.abs(observed - mean)[None, :]).sum(axis=0)
-        p_emp = (1 + more_extreme) / (n + 1)
+            # ---- observed for this iteration ----
+            if sample is None:
+                for g in groups:
+                    obs_acc[g][i] = fixed_observed[g]
+            else:
+                for g, r in group_ranges.items():
+                    idx = rng.choice(len(r), size=sample, replace=replace)
+                    sampled = r[idx]
+                    bins_u = np.unique(
+                        _explode_ranges(sampled[:, 0],
+                                        sampled[:, 1] - sampled[:, 0]),
+                    )
+                    obs_acc[g][i] = self._overlap_counts(bins_u)
 
-        df = pd.DataFrame({
-            "name": self.track_names,
-            "observed": observed,
-            "expected": mean,
-            "std": std,
-            "log2fc": log2fc,
-            "z": z,
-            "p_emp": p_emp,
-            "track_n_bins": self.track_n_bins,
-        })
-        df = self._with_meta(df)
-        return df.sort_values("z", ascending=False).reset_index(drop=True)
+        # ---- per-group summary ----
+        out_frames: List["pd.DataFrame"] = []
+        for g in groups:
+            obs = obs_acc[g]
+            null = null_acc[g]
+            mean_obs = obs.mean(axis=0)
+            mean_null = null.mean(axis=0)
+            obs_std = obs.std(axis=0, ddof=1) if n > 1 else np.zeros(n_tracks)
+            null_std = null.std(axis=0, ddof=1) if n > 1 else np.zeros(n_tracks)
+            diff = obs - null
+            mean_diff = diff.mean(axis=0)
+            std_diff = (diff.std(axis=0, ddof=1)
+                        if n > 1 else np.zeros(n_tracks))
+            z = np.divide(mean_diff, std_diff,
+                          out=np.zeros_like(mean_diff, dtype=float),
+                          where=std_diff > 0)
+            log2fc = np.log2((mean_obs + 1.0) / (mean_null + 1.0))
+            n_le_zero = (diff <= 0).sum(axis=0)
+            p_emp = (1 + n_le_zero) / (n + 1)
+
+            df = pd.DataFrame({
+                "name": self.track_names,
+                "observed": mean_obs,
+                "expected": mean_null,
+                "obs_std": obs_std,
+                "null_std": null_std,
+                "log2fc": log2fc,
+                "z": z,
+                "p_emp": p_emp,
+                "track_n_bins": self.track_n_bins,
+            })
+            df = self._with_meta(df)
+            df = df.sort_values("z", ascending=False).reset_index(drop=True)
+            if not single:
+                df.insert(0, "group", g)
+            out_frames.append(df)
+
+        return out_frames[0] if single else pd.concat(out_frames, ignore_index=True)
 
     # ---- helpers -----------------------------------------------------
 
