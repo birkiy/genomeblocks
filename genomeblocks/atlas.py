@@ -60,6 +60,7 @@ class Atlas:
         self.track_n_peaks = np.asarray(track_n_peaks, dtype=np.int64)
         self.track_n_bins = np.asarray(track_n_bins, dtype=np.int64)
         self.M = M
+        self.meta = None  # Optional[pandas.DataFrame] aligned to track_names
         self._chrom_max_bins = {
             c: (s + self.bin_size - 1) // self.bin_size
             for c, s in self.chrom_sizes.items()
@@ -77,12 +78,26 @@ class Atlas:
         bin_size: int = 1000,
         workers: Optional[int] = None,
         verbose: bool = True,
+        meta: Union[str, "pd.DataFrame", None] = None,
+        meta_columns: Optional[Sequence[str]] = None,
+        meta_id_col: Optional[str] = None,
+        meta_sep: str = "\t",
+        name_pattern: Optional[str] = None,
     ) -> "Atlas":
         files = _resolve_paths(paths)
         if not files:
             raise ValueError(f"No BED files matched: {paths!r}")
+        missing = [p for p in files if not os.path.isfile(p)]
+        if missing:
+            hint = (" Did you pass `os.listdir(dir)`? That returns bare "
+                    "filenames -- pass the directory string directly, or "
+                    "join it to each name.") if not os.path.isabs(missing[0]) else ""
+            raise FileNotFoundError(
+                f"{len(missing)}/{len(files)} input files not found. "
+                f"First missing: {missing[0]!r}.{hint}"
+            )
         if names is None:
-            names = [_basename(p) for p in files]
+            names = [_basename(p, pattern=name_pattern) for p in files]
         elif len(names) != len(files):
             raise ValueError("names length must match number of input files")
 
@@ -157,7 +172,7 @@ class Atlas:
             shape=(n_bins, n_tracks),
         ).tocsr()
 
-        return cls(
+        atlas = cls(
             bin_size=bin_size,
             chrom_names=chrom_names,
             chrom_sizes=chrom_sizes,
@@ -168,6 +183,51 @@ class Atlas:
             track_n_bins=track_n_bins,
             M=M,
         )
+        if meta is not None:
+            atlas.attach_meta(
+                meta,
+                id_col=meta_id_col,
+                columns=meta_columns,
+                sep=meta_sep,
+            )
+        return atlas
+
+    # ---- metadata ------------------------------------------------------
+
+    def attach_meta(
+        self,
+        meta: Union[str, "pd.DataFrame"],
+        *,
+        id_col: Optional[str] = None,
+        columns: Optional[Sequence[str]] = None,
+        sep: str = "\t",
+    ) -> "Atlas":
+        """Attach per-track metadata aligned to ``self.track_names``.
+
+        ``meta`` can be a path to a TSV/CSV or an in-memory ``DataFrame``.
+        ``columns`` supplies headers for a header-less file (also implies
+        ``header=None`` on read). ``id_col`` selects the column that joins
+        against ``track_names``; defaults to the first column.
+
+        Tracks with no row in the metadata get NaN; metadata rows for
+        unknown tracks are dropped.
+        """
+        import pandas as pd
+        if isinstance(meta, str):
+            df = pd.read_csv(
+                meta, sep=sep,
+                header=None if columns is not None else "infer",
+                names=list(columns) if columns is not None else None,
+                dtype=str,
+            )
+        else:
+            df = meta.copy()
+        if id_col is None:
+            id_col = df.columns[0]
+        df = df.set_index(id_col)
+        df.index = df.index.astype(str)
+        self.meta = df.reindex(self.track_names)
+        return self
 
     # ---- bin conversion ------------------------------------------------
 
@@ -276,9 +336,9 @@ class Atlas:
             "p": p,
             "giggle_score": score,
         }
-        return (pd.DataFrame(out)
-                  .sort_values("giggle_score", ascending=False)
-                  .reset_index(drop=True))
+        df = pd.DataFrame(out)
+        df = self._with_meta(df)
+        return df.sort_values("giggle_score", ascending=False).reset_index(drop=True)
 
     # ---- Monte Carlo bootstrap ----------------------------------------
 
@@ -363,24 +423,32 @@ class Atlas:
                         >= np.abs(observed - mean)[None, :]).sum(axis=0)
         p_emp = (1 + more_extreme) / (n + 1)
 
-        return (pd.DataFrame({
-                    "name": self.track_names,
-                    "observed": observed,
-                    "expected": mean,
-                    "std": std,
-                    "log2fc": log2fc,
-                    "z": z,
-                    "p_emp": p_emp,
-                    "track_n_bins": self.track_n_bins,
-                })
-                .sort_values("z", ascending=False)
-                .reset_index(drop=True))
+        df = pd.DataFrame({
+            "name": self.track_names,
+            "observed": observed,
+            "expected": mean,
+            "std": std,
+            "log2fc": log2fc,
+            "z": z,
+            "p_emp": p_emp,
+            "track_n_bins": self.track_n_bins,
+        })
+        df = self._with_meta(df)
+        return df.sort_values("z", ascending=False).reset_index(drop=True)
+
+    # ---- helpers -----------------------------------------------------
+
+    def _with_meta(self, df):
+        if self.meta is None or self.meta.empty:
+            return df
+        return df.merge(
+            self.meta, left_on="name", right_index=True, how="left",
+        )
 
     # ---- persistence ---------------------------------------------------
 
     def save(self, path: str) -> None:
-        np.savez_compressed(
-            path,
+        arrays = dict(
             bin_size=np.int64(self.bin_size),
             n_bins=np.int64(self.n_bins),
             chrom_names=np.array(self.chrom_names),
@@ -400,6 +468,14 @@ class Atlas:
             M_indptr=self.M.indptr,
             M_shape=np.array(self.M.shape, dtype=np.int64),
         )
+        if self.meta is not None and not self.meta.empty:
+            cols = list(self.meta.columns)
+            arrays["meta_columns"] = np.array([str(c) for c in cols], dtype=str)
+            for col in cols:
+                arrays[f"meta__{col}"] = np.array(
+                    self.meta[col].fillna("").tolist(), dtype=str,
+                )
+        np.savez_compressed(path, **arrays)
 
     @classmethod
     def load(cls, path: str) -> "Atlas":
@@ -413,17 +489,25 @@ class Atlas:
             (d["M_data"], d["M_indices"], d["M_indptr"]),
             shape=tuple(int(x) for x in d["M_shape"].tolist()),
         )
-        return cls(
+        track_names = [str(x) for x in d["track_names"].tolist()]
+        atlas = cls(
             bin_size=int(d["bin_size"]),
             chrom_names=chrom_names,
             chrom_sizes=chrom_sizes,
             chrom_offsets=chrom_off,
             n_bins=int(d["n_bins"]),
-            track_names=[str(x) for x in d["track_names"].tolist()],
+            track_names=track_names,
             track_n_peaks=d["track_n_peaks"].astype(np.int64),
             track_n_bins=d["track_n_bins"].astype(np.int64),
             M=M,
         )
+        if "meta_columns" in d.files:
+            import pandas as pd
+            cols = [str(x) for x in d["meta_columns"].tolist()]
+            data = {c: [str(x) for x in d[f"meta__{c}"].tolist()] for c in cols}
+            df = pd.DataFrame(data, index=track_names)
+            atlas.meta = df.replace("", pd.NA)
+        return atlas
 
     # ---- dunders -------------------------------------------------------
 
@@ -499,7 +583,7 @@ def _build_worker(args):
             on_bad_lines="skip", engine="c",
             dtype={0: str},
         )
-    except Exception:
+    except pd.errors.EmptyDataError:
         return tid, np.zeros(0, dtype=np.int64), 0
 
     df = df.dropna(subset=["start", "end"])
@@ -536,8 +620,21 @@ def _build_worker(args):
 # ---- file / chromsize helpers ----------------------------------------
 
 
-def _basename(p: str) -> str:
+def _basename(p: str, pattern: Optional[str] = None) -> str:
+    """Extract a track id from a file path.
+
+    Default: strip the BED-family extension. If ``pattern`` is given, it's
+    used as ``re.search`` against the basename and the first group (or the
+    full match if there are no groups) is returned. Useful for ChIP-Atlas
+    files like ``SRX10895570.05.bed.gz`` -- pass ``r'^[^.]+'`` to keep
+    only the SRX accession.
+    """
     b = os.path.basename(p)
+    if pattern is not None:
+        import re
+        m = re.search(pattern, b)
+        if m:
+            return m.group(1) if m.groups() else m.group(0)
     for ext in sorted(_BED_EXT, key=len, reverse=True):
         if b.endswith(ext):
             return b[: -len(ext)]
