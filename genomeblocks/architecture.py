@@ -1892,6 +1892,124 @@ def prime_hubs(s: Architecture, key: str = "n", *, verbose: bool = True):
     }
 
 
+def mutual(s: Architecture, key: str = "n", *, transform: str = "double_exp", verbose: bool = True):
+    """Find mutual-focus (reciprocal best hits) pairings between CREs.
+
+    Applies the same double-exp + Kneedle machinery as :meth:`elbow` and
+    :meth:`focus`, but *per row* of the contact matrix: for each vertex ``i``
+    the sorted neighbor weights ``ep[key]`` define a focused tail F_i. The
+    mutual mask is
+
+        M = F & F^T
+
+    i.e. edge (i, j) is mutual iff ``j ∈ F_i`` AND ``i ∈ F_j``. Equivalent to
+    BLAST reciprocal best hits / mutual k-NN, but with a per-node data-driven
+    cutoff rather than fixed k.
+
+    Args:
+        key:       Edge property used to rank neighbors (default ``"n"``).
+        transform: ``"double_exp"`` (default) or ``"none"``.
+
+    Returns:
+        ``pandas.DataFrame`` with one row per mutual pair (``uid_a < uid_b``):
+        ``uid_a, uid_b, weight, annot_a, annot_b, gene_a, gene_b`` (``genes_*``
+        columns appear when ``vp.genes`` is present).
+    """
+    import numpy as np
+    import pandas as pd
+    from scipy import sparse
+
+    if key not in s.ep:
+        raise ValueError(f"Edge property '{key}' not found.")
+
+    n = s.num_vertices()
+    uids = np.array([s.vp.uid[v] for v in s.vertices()])
+
+    # Build symmetric CSR of neighbor weights (each undirected edge → both directions)
+    rows, cols, data = [], [], []
+    for e in s.edges():
+        w = float(s.ep[key][e])
+        if w <= 0: continue
+        i, j = int(e.source()), int(e.target())
+        rows.append(i); cols.append(j); data.append(w)
+        rows.append(j); cols.append(i); data.append(w)
+    C = sparse.csr_matrix((data, (rows, cols)), shape=(n, n))
+
+    # Per-row Kneedle elbow on sorted neighbor weights → directed focus mask F
+    F_rows, F_cols = [], []
+    indptr, indices, values = C.indptr, C.indices, C.data
+    for i in range(n):
+        a, b = indptr[i], indptr[i + 1]
+        if a == b: continue
+        v_row = values[a:b]
+        c_row = indices[a:b]
+        order = np.argsort(-v_row)
+        v_sorted = v_row[order]
+        c_sorted = c_row[order]
+        m = len(v_sorted)
+        if m < 3:
+            cutoff = m
+        else:
+            vmin, vmax = v_sorted[-1], v_sorted[0]
+            if vmax == vmin:
+                cutoff = m
+            else:
+                yn = (v_sorted - vmin) / (vmax - vmin)
+                y = np.exp(np.exp(yn)) if transform == "double_exp" else yn
+                x = np.arange(m, dtype=float)
+                lv = np.array([x[-1] - x[0], y[-1] - y[0]])
+                pts = np.column_stack([x - x[0], y - y[0]])
+                dists = np.abs(np.cross(lv, pts)) / np.linalg.norm(lv)
+                cutoff = int(np.argmax(dists)) + 1
+        F_rows.extend([i] * cutoff)
+        F_cols.extend(c_sorted[:cutoff].tolist())
+
+    if not F_rows:
+        if verbose:
+            print(f"[INFO] Mutual focus on ep.{key}: 0 reciprocal pairs (empty focus).")
+        return pd.DataFrame(columns=["uid_a", "uid_b", "weight",
+                                     "annot_a", "annot_b", "gene_a", "gene_b"])
+
+    F = sparse.csr_matrix(
+        (np.ones(len(F_rows), dtype=np.int8), (F_rows, F_cols)),
+        shape=(n, n),
+    )
+    M = sparse.triu(F.multiply(F.T), k=1).tocoo()
+
+    has_annot = "annot" in s.vp
+    has_multi = "genes" in s.vp
+    has_gene  = "gene" in s.vp
+
+    # Look up edge weights via the original CSR (already has both directions)
+    Clil = C.tolil()
+    records = []
+    for i, j in zip(M.row.tolist(), M.col.tolist()):
+        vi, vj = s.vertex(i), s.vertex(j)
+        rec = {
+            "uid_a":  uids[i],
+            "uid_b":  uids[j],
+            "weight": float(Clil[i, j]),
+        }
+        if has_annot:
+            rec["annot_a"] = s.vp.annot[vi]
+            rec["annot_b"] = s.vp.annot[vj]
+        if has_gene:
+            rec["gene_a"] = s.vp.gene[vi]
+            rec["gene_b"] = s.vp.gene[vj]
+        if has_multi:
+            rec["genes_a"] = s.vp.genes[vi]
+            rec["genes_b"] = s.vp.genes[vj]
+        records.append(rec)
+
+    df = pd.DataFrame(records).sort_values("weight", ascending=False).reset_index(drop=True)
+
+    if verbose:
+        print(f"[INFO] Mutual focus on ep.{key} ({transform}): "
+              f"{F.nnz} directed focus edges → {len(df)} reciprocal pairs.")
+    return df
+
+
+
 # attach these utilities to the Architecture class to preserve the old API
 Architecture.make = make
 Architecture.make_clique = make_clique
@@ -1907,3 +2025,4 @@ Architecture.cluster = cluster
 Architecture.elbow = elbow
 Architecture.focus = focus
 Architecture.prime_hubs = prime_hubs
+Architecture.mutual = mutual
