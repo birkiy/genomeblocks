@@ -160,16 +160,19 @@ def _draw_bedpe(ax, track, chrom, start, end, color, arc_points=40,
     ax.set_yticks([])
 
 
-def _stack_genes(visible, gap_frac, span):
-    """Assign each visible gene to a stacking row to avoid overlap.
+def _stack_genes(visible_with_tx, gap_frac, span):
+    """Assign each shown transcript to a stacking row to avoid overlap.
 
-    Returns ``(row_of_gene_id, n_rows)``.
+    ``visible_with_tx`` is a list of ``(gene, [transcript, ...])`` — caller
+    pre-filters transcripts (e.g. cap at k per gene) before stacking.
+
+    Returns ``(row_of_transcript_id, n_rows)``.
     """
     gap = span * gap_frac
     rows = []  # rightmost end per row
     row_of = {}
-    for g in visible:
-        for t in g.transcripts.values():
+    for _, tx_list in visible_with_tx:
+        for t in tx_list:
             placed = False
             for i, rend in enumerate(rows):
                 if t.start > rend + gap:
@@ -183,19 +186,37 @@ def _stack_genes(visible, gap_frac, span):
     return row_of, max(1, len(rows))
 
 
-def _draw_genes(ax, genes, chrom, start, end, color, show_labels=True):
-    """Draw a Genes object: body line, exon boxes, taller CDS boxes, label."""
+def _select_transcripts(gene, max_per_gene):
+    """Pick up to ``max_per_gene`` transcripts to display, longest-first by
+    genomic span (end − start). ``max_per_gene=None`` keeps all; ``1``
+    collapses each gene to its longest isoform."""
+    tx_list = list((gene.transcripts or {}).values())
+    if max_per_gene is None or len(tx_list) <= max_per_gene:
+        return tx_list
+    tx_list.sort(key=lambda t: t.end - t.start, reverse=True)
+    return tx_list[:max_per_gene]
+
+
+def _draw_genes(ax, genes, chrom, start, end, color, show_labels=True,
+                max_transcripts_per_gene=None):
+    """Draw a Genes object: body line, exon boxes, taller CDS boxes, label.
+
+    Set ``max_transcripts_per_gene=1`` to collapse each gene to its longest
+    transcript (cleaner view for dense regions); ``None`` (default) shows
+    every isoform.
+    """
     visible = [g for g in genes.values()
                if g.chrom == chrom and g.end >= start and g.start <= end]
     visible.sort(key=lambda g: (g.start, -g.end))
-    row_of, n_rows = _stack_genes(visible, gap_frac=0.1, span=end - start)
+
+    visible_with_tx = [(g, _select_transcripts(g, max_transcripts_per_gene))
+                       for g in visible]
+    row_of, n_rows = _stack_genes(visible_with_tx, gap_frac=0.1, span=end - start)
 
     exon_boxes, cds_boxes = [], []
 
-    for g in visible:
-        # Aggregate features across transcripts
-
-        for t in (g.transcripts or {}).values():
+    for g, tx_list in visible_with_tx:
+        for t in tx_list:
 
             r = row_of[id(t)]
             yc = (n_rows - 1 - r) + 0.5  # flipped: row 0 on top
@@ -220,7 +241,7 @@ def _draw_genes(ax, genes, chrom, start, end, color, show_labels=True):
                 if w <= 0: continue
                 cds_boxes.append(Rectangle((x0, yc - 0.24), w, 0.48))
 
-        if show_labels:
+        if show_labels and tx_list:
             lbl = g.gene_name or g.gene_id
             lbl_x = max(g.start, start)
             arrow = '→' if g.strand == '+' else ('←' if g.strand == '-' else '')
@@ -264,6 +285,7 @@ def browser(
     bw_ymax: Optional[Dict[str, float]] = None,
     label_fontsize: int = 8,
     hspace: float = 0.15,
+    genes_max_transcripts: Optional[int] = None,
 ):
     """Plot an IGV-like browser view of a genomic region.
 
@@ -338,7 +360,8 @@ def browser(
         elif tt == 'bedpe':
             _draw_bedpe(ax, track, chrom, start, end, color=col)
         elif tt == 'genes':
-            _draw_genes(ax, track, chrom, start, end, color=col)
+            _draw_genes(ax, track, chrom, start, end, color=col,
+                        max_transcripts_per_gene=genes_max_transcripts)
 
         ax.set_xlim(start, end)
         ax.set_ylabel(name, rotation=0, ha='right', va='center',

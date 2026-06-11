@@ -817,6 +817,114 @@ def make_spread(cls, source_loci, bedpe: str, *,
     return G
 
 
+def surrounds(s: Architecture, positions, cre_loci, window: int, mcool: str, *,
+              resolution: Optional[int]=None, source: str="w",
+              name: str="s", verbose: bool=True) -> Architecture:
+    """Sum normalized contact frequency between each TSS-anchored CRE and all
+    CREs within ±``window`` bp, stored as ``s.vp[name]``.
+
+    Positions are mapped to ``cre_loci`` via overlap to pick anchor CREs. For
+    each anchor, raw bin counts to neighbouring CREs are pulled in bulk from
+    ``mcool`` (one CSR fetch per chromosome), divided by the power-law expected
+    from ``s._pl_fits[source]`` (cached by :meth:`normalize`), and summed.
+    Anchors not present in the graph are added; non-anchor vertices stay NaN.
+    Run :meth:`normalize` first.
+    """
+    import cooler
+    import numpy as np
+    from tqdm import tqdm
+    from collections import defaultdict
+
+    if not hasattr(s, "_pl_fits") or source not in getattr(s, "_pl_fits", {}):
+        raise RuntimeError(
+            f"surrounds: no cached pl_fit for source='{source}'. "
+            f"Call normalize(source='{source}') first."
+        )
+    alpha = float(s._pl_fits[source]["alpha"])
+    C     = float(s._pl_fits[source]["C"])
+    if not (np.isfinite(alpha) and np.isfinite(C)):
+        raise RuntimeError(f"surrounds: pl_fit['{source}'] has non-finite params.")
+
+    uri = f"{mcool}::resolutions/{resolution}" if resolution else mcool
+    clr = cooler.Cooler(uri)
+    res = clr.binsize
+    if verbose:
+        print(f"[INFO] surrounds: ±{window}bp on {res}bp cool, "
+              f"pl_fit['{source}'] alpha={alpha:.3f} C={C:.3e}")
+
+    uid_to_bin, chrom_of_bin, chrom_offsets = _build_uid_to_bin(cre_loci, clr)
+
+    tss_to_anchor = positions.map(cre_loci)
+    n_tss = len(tss_to_anchor)
+    skipped_tss = sum(1 for vs in tss_to_anchor.values() if not vs)
+    anchor_uids = {u for vs in tss_to_anchor.values() for u in vs}
+
+    if name not in s.vp:
+        s.vp[name] = s.new_vertex_property("float")
+    nan_val = float("nan")
+    for v in s.vertices():
+        s.vp[name][v] = nan_val
+
+    anchors_by_chrom = defaultdict(list)
+    skipped_no_bin = 0
+    for anchor_uid in anchor_uids:
+        anchor = cre_loci[anchor_uid]
+        bin_id = uid_to_bin.get(anchor_uid)
+        if bin_id is None:
+            skipped_no_bin += 1
+            continue
+        anchors_by_chrom[anchor.chrom].append((anchor_uid, anchor, bin_id))
+
+    set_count = 0
+    iterator = anchors_by_chrom.items()
+    if verbose:
+        iterator = tqdm(iterator, desc='[INFO] surrounds: per-chrom contacts',
+                        total=len(anchors_by_chrom))
+    for chrom, anchors in iterator:
+        try:
+            mat = clr.matrix(balance=False, sparse=True).fetch(chrom).tocsr()
+        except Exception as e:
+            if verbose: print(f"[WARN] surrounds: skipping chrom {chrom}: {e}")
+            continue
+        coff = chrom_offsets[chrom]
+        n_bins = mat.shape[0]
+
+        for anchor_uid, anchor, anchor_bin_global in anchors:
+            anchor_bin = int(anchor_bin_global - coff)
+            if anchor_bin < 0 or anchor_bin >= n_bins:
+                continue
+            ctr = anchor.center
+            hits = cre_loci.cgr.overlap(chrom, max(0, ctr - window), ctr + window)
+            neighbor_bins = []
+            neighbor_dists = []
+            for *_, j in hits:
+                nb = cre_loci[j]
+                if nb.uid == anchor_uid: continue
+                gbin = uid_to_bin.get(nb.uid)
+                if gbin is None: continue
+                lbin = int(gbin - coff)
+                if lbin < 0 or lbin >= n_bins: continue
+                neighbor_bins.append(lbin)
+                neighbor_dists.append(abs(anchor.center - nb.center))
+            if not neighbor_bins:
+                continue
+            row = mat[anchor_bin].toarray().ravel()
+            raw = row[np.asarray(neighbor_bins, dtype=np.int64)].astype(np.float64)
+            # Floor at one bin width — power-law diverges as d → 0; mirrors add_patches.
+            d = np.maximum(np.asarray(neighbor_dists, dtype=np.float64), float(res))
+            expected = C * d ** (-alpha)
+            norm = raw / np.maximum(expected, 1e-12)
+            v = s._add_vertex(anchor_uid)
+            s.vp[name][v] = float(norm.sum())
+            set_count += 1
+
+    if verbose:
+        print(f"[INFO] surrounds: {n_tss} positions ({skipped_tss} no-overlap) | "
+              f"{len(anchor_uids)} anchor CREs ({skipped_no_bin} without bin) | "
+              f"set vp.{name} on {set_count} vertices.")
+    return s
+
+
 def add_mcool(s: Architecture, loci, mcool: str, *, resolution: Optional[int]=None, name: str="w", verbose: bool=True) -> Architecture:
     import cooler
     from tqdm import tqdm
@@ -868,7 +976,12 @@ def add_mcool(s: Architecture, loci, mcool: str, *, resolution: Optional[int]=No
 
 
 def _pl_model(x, C, alpha):
-    return C * (x**(-alpha))
+    import numpy as np
+    x = np.asarray(x, float)
+    out = np.full(x.shape, np.inf)          # x<=0 is singular → inf (→ O/E 0)
+    pos = x > 0
+    out[pos] = C * (x[pos] ** (-alpha))
+    return out
 
 
 def _pl_expect(x, y):
@@ -908,6 +1021,11 @@ def normalize(s: Architecture, loci, *, source: str = "w", name: str = "n", verb
         s.ep.d[edge] = dist
         raw_weights[i] = s.ep[source][edge]
         distances[i] = dist
+    # Zero-distance edges (overlapping/co-located loci) are a power-law
+    # singularity: _pl_expect fits on positive distances only, and _pl_model
+    # returns inf at distance 0 so their O/E falls to 0. They are not removed
+    # here — call Architecture.prune() once at the end to drop them (removing
+    # edges mid-pipeline desyncs the edge-index range across repeated calls).
     expected, fit_params = _pl_expect(distances, raw_weights)
     if verbose:
         print(f"[INFO] Power-law fit complete: alpha={fit_params['alpha']:.3f}, C={fit_params['C']:.3e}")
@@ -922,6 +1040,42 @@ def normalize(s: Architecture, loci, *, source: str = "w", name: str = "n", verb
         s.ep[name][e] = norm_weights[i]
     if verbose:
         print(f"[INFO] Set O/E weights for {s.n_links} intra-chromosomal edges to `ep.{name}`.")
+    return s
+
+
+def prune(s: Architecture, *, dist_prop: str = "d", verbose: bool = True) -> Architecture:
+    """Remove zero-distance edges (overlapping/co-located loci).
+
+    These share a center (``distance_to == 0``) and are a power-law
+    singularity, so they carry no meaningful O/E weight. Distances are read
+    from ``ep[dist_prop]`` (populated by ``normalize``), so run ``normalize``
+    before ``prune``.
+
+    Call this **once, at the very end** of a multi-cell pipeline. Removing
+    edges mid-pipeline leaves the edge-index range uncompacted, which desyncs
+    ``new_edge_property().a`` from ``list(edges())`` on the next ``normalize``.
+    """
+    import numpy as np
+    if dist_prop not in s.ep:
+        raise ValueError(
+            f"Edge property '{dist_prop}' not found — run normalize() first "
+            f"(it populates ep.{dist_prop} with edge distances).")
+    # Derive the mask from ep.d's array so it matches new_edge_property().a
+    # sizing (both indexed by edge-index range) — mixing a list-of-edges mask
+    # with a property array is exactly what broke before.
+    keep = np.asarray(s.ep[dist_prop].a) > 0
+    n_zero = int((~keep).sum())
+    if n_zero == 0:
+        if verbose:
+            print("[INFO] prune: no zero-distance edges to remove.")
+        return s
+    keep_ep = s.new_edge_property("bool")
+    keep_ep.a = keep
+    s.set_edge_filter(keep_ep)
+    s.purge_edges()
+    s.set_edge_filter(None)
+    if verbose:
+        print(f"[INFO] prune: removed {n_zero} zero-distance edges → {s.n_links} edges.")
     return s
 
 
@@ -961,7 +1115,7 @@ def _build_uid_to_bin(loci, clr):
     uid_to_bin = dict(zip(near['Name'], near['Name_b'].map(bins_l.uids)))
     chrom_of_bin = dict(zip(bins.index, bins['chrom']))
     # Per-chromosome bin offset (the bin id of the chromosome's first bin)
-    chrom_offsets = bins.groupby('chrom').apply(lambda g: int(g.index.min())).to_dict()
+    chrom_offsets = bins.groupby('chrom', observed=True)['index'].min().astype(int).to_dict()
     return uid_to_bin, chrom_of_bin, chrom_offsets
 
 
@@ -1178,26 +1332,34 @@ def add_patches(s: Architecture, loci, mcool: str, *,
     return log2oe, valid
 
 
-def annotate(self, loci, genes, *, verbose=True):
+def annotate(self, loci, genes, *, key='n', name='gene', verbose=True):
     """Add gene and genomic region annotations to vertices.
 
-    Stores per vertex:
-        vp.annot       : region label (Promoter-TSS / 5UTR / 3UTR / Exonic /
-                         Intronic / Intergenic).
-        vp.gene        : single nearest gene (back-compat convenience pick).
-        vp.genes       : ';'-joined list of *all* candidate gene names whose
-                         promoter (gene-TSS ± genes._promoter_r) overlaps
-                         this CRE. '' for non-promoter CREs.
-        vp.transcripts : ','-joined list of all candidate transcript IDs
-                         whose TSS ± genes._promoter_r overlaps this CRE.
-                         Captures alt-promoters (TP53 has 15 isoforms);
-                         downstream methods can vote at transcript level.
+    Two-stage gene assignment:
+      1. Region label (``vp.annot``) and promoter genes. A CRE labelled
+         'Promoter-TSS' gets ``vp[name]`` = its nearest gene.
+      2. Every non-promoter CRE is assigned (``vp[name]``) to the gene of its
+         **highest-weight promoter neighbour**, scored by edge property
+         ``key``. CREs with no promoter contact stay unassigned ('').
 
-    Multi-candidate entries capture bidirectional promoters (TP53/WRAP53),
-    alt-promoters, and dense TSS neighborhoods. `focus` / `prime_hubs`
-    aggregate contact weight across these candidates.
+    Stores per vertex:
+        vp.annot   : region label (Promoter-TSS / 5UTR / 3UTR / Exonic /
+                     Intronic / Intergenic).
+        vp[name]   : promoters → nearest gene; other CREs → gene of the
+                     top-``key``-weight promoter they contact ('' if none).
+                     Use a distinct ``name`` per ``key`` (e.g. key='n_CM',
+                     name='gene_CM') to keep assignments side by side.
+
+    Requires edge property ``key`` (run add_mcool/normalize first) so the
+    interaction-based assignment in stage 2 has weights to rank by.
     """
-    from collections import defaultdict
+    import numpy as np
+
+    if key not in self.ep:
+        raise ValueError(
+            f"Edge property '{key}' not found — compute edge weights before "
+            f"annotate (e.g. add_mcool/normalize) so promoter assignment can "
+            f"rank by interaction strength.")
 
     cre_a_df = genes.annotations(loci)
     annot_map = cre_a_df.set_index('uid')['annotation'].to_dict()
@@ -1205,56 +1367,64 @@ def annotate(self, loci, genes, *, verbose=True):
     cre_g_df = genes.nearest_genes(loci)
     nearest_map = dict(zip(cre_g_df['Name'], cre_g_df['Name_b']))
 
-    r = genes._promoter_r
+    self.vp[name] = self.new_vp('string')
+    self.vp.annot = self.new_vp('string')
+    gene_pm = self.vp[name]
+    annot_pm = self.vp.annot
 
-    # Candidate genes whose promoter overlaps each CRE.
-    cre_to_genes: dict = defaultdict(list)
-    for g in genes.values():
-        tss = g.tss
-        lo = max(0, min(tss.start, tss.end) - r)
-        hi = max(tss.start, tss.end) + r
-        for c in loci.overlaps(tss.chrom, lo, hi):
-            cre_to_genes[c.uid].append(g.gene_name)
+    # ── Stage 1: bulk-extract uids, derive labels/genes, single write pass ──
+    # PropertyMap iteration is C-level vertex-index order — much faster than
+    # per-vertex indexing.
+    uids = list(self.vp.uid)
+    annot_vals = [annot_map.get(u, '') for u in uids]
+    is_prom = np.fromiter(('Promoter' in a for a in annot_vals),
+                          dtype=bool, count=len(annot_vals))
 
-    # Candidate transcripts whose TSS overlaps each CRE.
-    cre_to_transcripts: dict = defaultdict(list)
-    for t_id, tss in genes.get_tss_transcripts().items():
-        lo = max(0, min(tss.start, tss.end) - r)
-        hi = max(tss.start, tss.end) + r
-        for c in loci.overlaps(tss.chrom, lo, hi):
-            cre_to_transcripts[c.uid].append(t_id)
+    n_prom = 0
+    for v, a, ip, u in zip(self.vertices(), annot_vals, is_prom, uids):
+        annot_pm[v] = a
+        if ip:
+            gene_pm[v] = nearest_map.get(u, '')
+            n_prom += 1
 
-    self.vp.gene        = self.new_vp('string')
-    self.vp.genes       = self.new_vp('string')
-    self.vp.transcripts = self.new_vp('string')
-    self.vp.annot       = self.new_vp('string')
+    # ── Stage 2: vectorized highest-weight promoter neighbour per non-prom ──
+    # Old per-vertex/per-edge loop did ~10M PropertyMap lookups for a
+    # 1.9M-edge graph. Replaced with numpy ops on the edge array.
+    ew = self.get_edges(eprops=[self.ep[key]])     # (E, 3): src, tgt, weight
+    src = ew[:, 0].astype(np.int64, copy=False)
+    tgt = ew[:, 1].astype(np.int64, copy=False)
+    w   = ew[:, 2].astype(float, copy=False)
 
-    for v in self.vertices():
-        uid = self.vp.uid[v]
-        annot_val = annot_map.get(uid, '')
-        self.vp.gene[v]  = nearest_map.get(uid, '')
-        self.vp.annot[v] = annot_val
-        if 'Promoter' in annot_val:
-            seen, kept = set(), []
-            for gn in cre_to_genes.get(uid, []):
-                if gn and gn not in seen:
-                    seen.add(gn); kept.append(gn)
-            self.vp.genes[v] = ';'.join(kept)
-            t_seen, t_kept = set(), []
-            for tid in cre_to_transcripts.get(uid, []):
-                if tid and tid not in t_seen:
-                    t_seen.add(tid); t_kept.append(tid)
-            self.vp.transcripts[v] = ','.join(t_kept)
-        else:
-            self.vp.genes[v] = ''
-            self.vp.transcripts[v] = ''
+    gene_arr = np.asarray(list(gene_pm), dtype=object)
+    eligible = is_prom & (gene_arr != '')          # promoter w/ a gene
+
+    # Each edge contributes at most one (non-prom-vertex, prom-gene, weight)
+    # row; self-loops and prom-prom / non-prom-non-prom edges drop out.
+    case1 = ~is_prom[src] & eligible[tgt]
+    case2 = ~is_prom[tgt] & eligible[src]
+
+    np_idx = np.concatenate([src[case1], tgt[case2]])
+    pgene  = np.concatenate([gene_arr[tgt[case1]], gene_arr[src[case2]]])
+    we     = np.concatenate([w[case1], w[case2]])
+
+    n_assigned = 0
+    if np_idx.size:
+        # Sort by (non-prom-vertex asc, weight desc) — first row per vertex
+        # group is the max-weight promoter contact.
+        order = np.lexsort((-we, np_idx))
+        np_sorted = np_idx[order]
+        pgene_sorted = pgene[order]
+        _, first = np.unique(np_sorted, return_index=True)
+        for vi, gn in zip(np_sorted[first], pgene_sorted[first]):
+            if gn:
+                gene_pm[self.vertex(int(vi))] = gn
+                n_assigned += 1
 
     if verbose:
-        n_prom  = sum(1 for v in self.vertices() if self.vp.genes[v])
-        n_multi = sum(1 for v in self.vertices() if ';' in self.vp.genes[v])
-        n_alt   = sum(1 for v in self.vertices() if ',' in self.vp.transcripts[v])
-        print(f"[INFO] Annotated {self.n_loci} loci: {n_prom} promoter CREs "
-              f"({n_multi} multi-gene, {n_alt} multi-transcript).")
+        n_others = int((~is_prom).sum())
+        print(f"[INFO] Annotated {self.n_loci} loci: {n_prom} promoter CREs | "
+              f"{n_assigned}/{n_others} non-promoter CREs assigned to a "
+              f"top-'{key}' promoter gene → vp.{name}.")
     return self
 
 
@@ -1654,6 +1824,57 @@ def aggregate(s: Architecture, key: str = "n", name: str = "agg", *, verbose: bo
     return s
 
 
+def weighted_activity(s: Architecture, features, *, key: str = "n", name: str = "abc",
+                      eps: float = 1e-12, verbose: bool = True) -> Architecture:
+    """Per-vertex sum of ``ep[key] * GM_features(neighbour)`` over incident edges.
+
+    For each vertex ``u``, sums over neighbours ``v``:
+        ``ep[key][edge(u,v)] * (∏_f vp[f][v])^(1/n_features)``
+    The vertex's own feature values are NOT in the geometric mean — only the
+    neighbour's. Single feature collapses to ``Σ ep[key] * vp[f][v]`` over
+    neighbours, the classical ABC numerator with activity sourced from the
+    neighbour side.
+
+    Asymmetric on each edge: edge ``(u, v)`` contributes ``w * gm[v]`` to ``u``
+    and ``w * gm[u]`` to ``v``. ``vp[f]`` must be non-negative; zeros are
+    clipped to ``eps`` to keep the log-space computation finite.
+    """
+    import numpy as np
+    if isinstance(features, str):
+        features = [features]
+    if not features:
+        raise ValueError("At least one vertex feature is required.")
+    for f in features:
+        if f not in s.vp:
+            raise ValueError(f"Vertex property '{f}' not found.")
+    if key not in s.ep:
+        raise ValueError(f"Edge property '{key}' not found.")
+
+    n_feat = len(features)
+    log_vp = np.zeros(s.num_vertices(), dtype=float)
+    for f in features:
+        vp_arr = np.maximum(np.asarray(s.vp[f].a, dtype=float), eps)
+        log_vp += np.log(vp_arr)
+    gm = np.exp(log_vp / n_feat)
+
+    edges = s.get_edges()
+    src, tgt = edges[:, 0], edges[:, 1]
+    w_arr = np.asarray(s.ep[key].a, dtype=float)
+
+    out = np.zeros(s.num_vertices(), dtype=float)
+    np.add.at(out, src, w_arr * gm[tgt])
+    np.add.at(out, tgt, w_arr * gm[src])
+
+    s.vp[name] = s.new_vertex_property("float")
+    s.vp[name].a = out
+
+    if verbose:
+        nz = int((out > 0).sum())
+        print(f"[INFO] weighted_activity(features={list(features)}, key='{key}') "
+              f"→ vp.{name} ({nz}/{s.n_loci} non-zero, neighbour-only GM)")
+    return s
+
+
 def cluster(s: Architecture, key: str = "n", name: str = "lc", *, verbose: bool = True) -> Architecture:
     """Compute weighted local clustering coefficient per vertex.
 
@@ -1679,20 +1900,30 @@ def cluster(s: Architecture, key: str = "n", name: str = "lc", *, verbose: bool 
     return s
 
 
-def elbow(s: Architecture, key: str, *, transform: str = "double_exp", verbose: bool = True):
-    """Find elbow cutoff on a vertex property via the Kneedle algorithm.
+def elbow(s: Architecture, key: str, *, transform: str = "double_exp",
+          method: str = "kneedle", verbose: bool = True):
+    """Find a cutoff on a vertex property's sorted-descending curve.
 
-    Sorts vertices by ``vp[key]`` descending, optionally applies a
-    double-exponential transform (``exp(exp(x_norm))``) to amplify curvature,
-    then returns the index of maximum perpendicular distance from the chord.
+    Sorts vertices by ``vp[key]`` descending, then selects a cutoff index by
+    one of two methods:
+
+    - ``"kneedle"`` (default): optionally applies a double-exponential
+      transform (``exp(exp(y_norm))``) to amplify curvature, then returns the
+      index of maximum perpendicular distance from the chord.
+    - ``"slope1"``: on the ascending curve with both axes normalized to
+      ``[0, 1]``, finds the point where the local tangent slope equals ``1``
+      (the 45° knee). The slope is measured on a smoothed curve so it reflects
+      the curve's shape rather than single-step jitter. The ``transform``
+      argument is ignored for this method.
 
     Args:
         key:       Vertex property name to analyze (e.g. ``"agg"``).
-        transform: ``"double_exp"`` (default) or ``"none"``.
+        transform: ``"double_exp"`` (default) or ``"none"`` (kneedle only).
+        method:    ``"kneedle"`` (default) or ``"slope1"``.
 
     Returns:
         ``(cutoff_index, sorted_uids)`` where ``cutoff_index`` is the number
-        of elements above the elbow and ``sorted_uids`` lists UIDs descending.
+        of elements above the cutoff and ``sorted_uids`` lists UIDs descending.
     """
     import numpy as np
 
@@ -1710,6 +1941,31 @@ def elbow(s: Architecture, key: str, *, transform: str = "double_exp", verbose: 
 
     # Normalize to [0, 1]
     y_norm = (y - y[-1]) / (y[0] - y[-1])
+
+    if method == "slope1":
+        # Tangent slope = 1 on the curve with both axes normalized to [0, 1].
+        # Work on the ascending curve (rank vs node strength). The slope is
+        # computed on a *smoothed* curve because with many CREs the normalized
+        # x-step is tiny (~1/m), so raw np.gradient is dominated by single-step
+        # jitter and crosses 1 at the very bottom of the curve. Smoothing makes
+        # the slope reflect the actual shape, so the slope-1 point lands on the
+        # real knee. Hubs are everything above the contact point.
+        from scipy.ndimage import uniform_filter1d
+        ys = y[::-1]                                   # ascending (y is descending)
+        m = len(ys)
+        xn = np.arange(m) / (m - 1)
+        yn = (ys - ys[0]) / (ys[-1] - ys[0])
+        w = max(11, m // 200)
+        yn_s = uniform_filter1d(yn, size=w, mode="nearest")
+        slope = np.gradient(yn_s, xn)
+        crossed = np.where(slope >= 1.0)[0]
+        i = int(crossed[0]) if len(crossed) else m
+        cutoff = m - i                                 # count of hubs above contact
+        if verbose:
+            val = ys[i] if i < m else ys[-1]
+            print(f"[INFO] Slope-1 on vp.{key} (value≈{val:.3g} at cutoff): "
+                  f"cutoff at {cutoff}/{m} ({100 * cutoff / m:.1f}%)")
+        return cutoff, uids
 
     # Transform
     y_t = np.exp(np.exp(y_norm)) if transform == "double_exp" else y_norm
@@ -1820,12 +2076,250 @@ def focus(s: Architecture, sources, key: str = "n", *, verbose: bool = True):
     return {"genes": all_focus_genes, "records": records}
 
 
-def prime_hubs(s: Architecture, key: str = "n", *, verbose: bool = True):
+def focus_genes(s: Architecture, sources, mapping=None, *, key: str="n", verbose: bool=True):
+    """Focus genes via a gene→representative-CRE mapping (pseudo-supernodes).
+
+    For each source uid, walks its neighbors and accumulates ``ep[key]`` into
+    ``gene_weight[gene]`` whenever the neighbor is a representative CRE for
+    that gene in ``mapping`` (or ``s.supernodes`` if ``mapping`` is None).
+    A representative CRE can vote for multiple genes if its uid appears under
+    several keys. Genes for which the source itself is a representative are
+    excluded from that source's score (no self-vote). Per-source Kneedle
+    elbow on the sorted weight vector picks the focus subset.
+
+    Unlike :func:`focus`, this does not consult ``vp.annot``/``vp.genes`` —
+    gene assignment comes from ``mapping``, typically built via
+    :meth:`Genes.cre_supernodes`. Return shape mirrors :func:`focus`.
+    """
+    import numpy as np
+    from collections import defaultdict
+
+    if mapping is None:
+        mapping = getattr(s, "supernodes", None)
+        if mapping is None:
+            raise RuntimeError(
+                "focus_genes: no mapping given and s.supernodes not set. "
+                "Pass mapping=... or assign s.supernodes = genes.cre_supernodes(...)."
+            )
+    if key not in s.ep:
+        raise ValueError(f"Edge property '{key}' not found.")
+    if isinstance(sources, str):
+        sources = [sources]
+    else:
+        sources = list(sources)
+
+    cre_to_genes: dict = defaultdict(list)
+    for gene, cres in mapping.items():
+        for cre in cres:
+            cre_to_genes[cre].append(gene)
+
+    all_focus_genes = set()
+    records = []
+    for uid in sources:
+        if uid not in s.index: continue
+        v = s.index[uid]
+        self_genes = set(cre_to_genes.get(uid, []))
+
+        gene_weight: dict = defaultdict(float)
+        for nb in v.all_neighbors():
+            nb_uid = s.vp.uid[nb]
+            if nb_uid not in cre_to_genes: continue
+            e = s.edge(v, nb)
+            w = float(s.ep[key][e])
+            for gn in cre_to_genes[nb_uid]:
+                if gn in self_genes: continue
+                gene_weight[gn] += w
+
+        n = len(gene_weight)
+        record = {"source": uid, "n_candidates": n, "gene_weights": dict(gene_weight)}
+        if n == 0:
+            record["focus_genes"] = set()
+            record["n_focus"] = 0
+            records.append(record)
+            continue
+
+        items = sorted(gene_weight.items(), key=lambda kv: -kv[1])
+        w_sorted = np.array([kv[1] for kv in items], dtype=float)
+        if n < 3:
+            cutoff = n
+        else:
+            wmin, wmax = w_sorted[-1], w_sorted[0]
+            if wmax == wmin:
+                cutoff = n
+            else:
+                a = (w_sorted - wmin) / (wmax - wmin)
+                y = np.exp(np.exp(a))
+                x = np.arange(n, dtype=float)
+                lv = np.array([x[-1] - x[0], y[-1] - y[0]])
+                pts = np.column_stack([x - x[0], y - y[0]])
+                dists = np.abs(np.cross(lv, pts)) / np.linalg.norm(lv)
+                cutoff = int(np.argmax(dists)) + 1
+
+        focus_set = {items[i][0] for i in range(cutoff)}
+        record["focus_genes"] = focus_set
+        record["n_focus"] = len(focus_set)
+        all_focus_genes |= focus_set
+        records.append(record)
+
+    if verbose:
+        print(f"[INFO] focus_genes (supernode mapping): {len(sources)} sources → "
+              f"{len(all_focus_genes)} focus genes.")
+    return {"genes": all_focus_genes, "records": records}
+
+
+def supernode_metrics(s: Architecture, mapping=None, *, ep_keys=(), vp_keys=(),
+                      vp_reduce: str = "sum", verbose: bool = True):
+    """Per-supernode aggregations of edge and vertex properties.
+
+    For each ``(gene, [cre_uid, ...])`` entry in ``mapping`` (or
+    ``s.supernodes`` if ``mapping`` is None):
+        - For each ``ep_keys`` entry: sums ``ep[k]`` across the union of edges
+          incident to any CRE in the supernode (internal edges between two
+          supernode members are counted once, not twice).
+        - For each ``vp_keys`` entry: reduces ``vp[k]`` across supernode CREs
+          via ``vp_reduce`` ∈ {"sum", "mean", "max"}.
+
+    Returns a ``pandas.DataFrame`` indexed by gene name with columns
+    ``[n_cres, *ep_keys, *vp_keys]``. CRE uids not present in the graph
+    (e.g. window mapped to a CRE that no loop touched) are skipped and
+    reported in the [INFO] line.
+    """
+    import pandas as pd
+    if mapping is None:
+        mapping = getattr(s, "supernodes", None)
+        if mapping is None:
+            raise RuntimeError(
+                "supernode_metrics: no mapping given and s.supernodes not set."
+            )
+    if isinstance(ep_keys, str): ep_keys = (ep_keys,)
+    if isinstance(vp_keys, str): vp_keys = (vp_keys,)
+    ep_keys = tuple(ep_keys); vp_keys = tuple(vp_keys)
+    for k in ep_keys:
+        if k not in s.ep:
+            raise ValueError(f"Edge property '{k}' not found.")
+    for k in vp_keys:
+        if k not in s.vp:
+            raise ValueError(f"Vertex property '{k}' not found.")
+    if vp_reduce not in ("sum", "mean", "max"):
+        raise ValueError(f"vp_reduce must be one of sum/mean/max; got {vp_reduce!r}")
+
+    rows = []
+    n_missing_cres = 0
+    for gene, cre_uids in mapping.items():
+        valid = [u for u in cre_uids if u in s.index]
+        n_missing_cres += len(cre_uids) - len(valid)
+        row = {"gene": gene, "n_cres": len(valid), "degree": 0}
+
+        if not valid:
+            for k in ep_keys: row[k] = 0.0
+            for k in vp_keys: row[k] = float("nan") if vp_reduce == "mean" else 0.0
+            rows.append(row); continue
+
+        # Edge dedup by sorted endpoint-idx pair, so an internal edge counts once.
+        seen = set()
+        unique_edges = []
+        for u in valid:
+            v = s.index[u]
+            for e in v.all_edges():
+                si, ti = int(e.source()), int(e.target())
+                k = (si, ti) if si < ti else (ti, si)
+                if k in seen: continue
+                seen.add(k)
+                unique_edges.append(e)
+        row["degree"] = len(unique_edges)
+        for k in ep_keys:
+            row[k] = float(sum(s.ep[k][e] for e in unique_edges))
+
+        for k in vp_keys:
+            vals = [float(s.vp[k][s.index[u]]) for u in valid]
+            if vp_reduce == "sum":   row[k] = sum(vals)
+            elif vp_reduce == "mean": row[k] = sum(vals) / len(vals)
+            else:                    row[k] = max(vals)
+        rows.append(row)
+
+    df = pd.DataFrame(rows).set_index("gene")
+    if verbose:
+        print(f"[INFO] supernode_metrics: {len(df)} genes | ep={list(ep_keys)} | "
+              f"vp={list(vp_keys)} ({vp_reduce}) | {n_missing_cres} CRE uids not in graph")
+    return df
+
+
+def supernode_abc(s: Architecture, mapping=None, features=None, *, key: str = "n",
+                  eps: float = 1e-12, verbose: bool = True):
+    """ABC numerator per supernode, internal edges excluded.
+
+    For each gene's supernode ``S``, sums over external edges ``(u, v)`` with
+    ``u ∈ S, v ∉ S``:
+        ``ep[key][edge] * (∏_f sqrt(vp[f][u] * vp[f][v]))^(1/|features|)``
+    i.e. edge weight × geometric-mean-across-features of the endpoint-pair
+    geometric mean. Both the supernode-side mark and the external CRE's mark
+    appear. Edges with both endpoints inside ``S`` are skipped (no
+    self-supernode contribution).
+
+    Returns a ``pandas.DataFrame`` indexed by gene with columns
+    ``[n_cres, abc]``.
+    """
+    import numpy as np
+    import pandas as pd
+    if mapping is None:
+        mapping = getattr(s, "supernodes", None)
+        if mapping is None:
+            raise RuntimeError("supernode_abc: no mapping given and s.supernodes not set.")
+    if features is None:
+        raise ValueError("supernode_abc: 'features' is required.")
+    if isinstance(features, str):
+        features = [features]
+    features = list(features)
+    if not features:
+        raise ValueError("supernode_abc: at least one feature required.")
+    for f in features:
+        if f not in s.vp:
+            raise ValueError(f"Vertex property '{f}' not found.")
+    if key not in s.ep:
+        raise ValueError(f"Edge property '{key}' not found.")
+
+    n_feat = len(features)
+    log_vp = np.zeros(s.num_vertices(), dtype=float)
+    for f in features:
+        arr = np.maximum(np.asarray(s.vp[f].a, dtype=float), eps)
+        log_vp += np.log(arr)
+    # log_vp[v] = Σ_f log(vp[f][v]); for an edge (u, v) the combined endpoint-pair
+    # GM-across-features = exp((log_vp[u] + log_vp[v]) / (2 * n_feat)).
+    half_norm = 1.0 / (2.0 * n_feat)
+
+    rows = []
+    n_missing = 0
+    for gene, cre_uids in mapping.items():
+        valid = [u for u in cre_uids if u in s.index]
+        n_missing += len(cre_uids) - len(valid)
+        valid_set = {int(s.index[u]) for u in valid}
+        score = 0.0
+        for u in valid:
+            v = s.index[u]
+            u_idx = int(v)
+            for e in v.all_edges():
+                si, ti = int(e.source()), int(e.target())
+                other = ti if si == u_idx else si
+                if other in valid_set:
+                    continue
+                combined = np.exp((log_vp[u_idx] + log_vp[other]) * half_norm)
+                score += float(s.ep[key][e]) * float(combined)
+        rows.append({"gene": gene, "n_cres": len(valid), "abc": score})
+
+    df = pd.DataFrame(rows).set_index("gene")
+    if verbose:
+        print(f"[INFO] supernode_abc: {len(df)} genes | features={features}, key='{key}' | "
+              f"{n_missing} CRE uids not in graph")
+    return df
+
+
+def prime_hubs(s: Architecture, key: str = "n", gene: str = 'gene', *,
+               method: str = "kneedle", verbose: bool = True):
     """Find prime genes: hub promoter genes ∪ focus genes of hub enhancers.
 
     Full pipeline:
         1. ``aggregate(key)`` — compute node strength if not yet present.
-        2. ``elbow("agg")`` — find hub CREs above the elbow.
+        2. ``elbow("agg", method=...)`` — find hub CREs above the cutoff.
         3. Split hubs into promoters (→ direct genes) and enhancers.
         4. ``focus(enhancer_hubs, key)`` — find focus neighbor genes.
         5. Union → prime genes.
@@ -1833,13 +2327,16 @@ def prime_hubs(s: Architecture, key: str = "n", *, verbose: bool = True):
     Requires ``vp.annot`` and ``vp.gene`` (from ``annotate()``).
 
     Args:
-        key: Edge property for weighting (default ``"n"``).
+        key:    Edge property for weighting (default ``"n"``).
+        method: Cutoff selection on the node-strength curve — ``"kneedle"``
+                (Kneedle elbow, default) or ``"slope1"`` (tangent slope = 1,
+                the 45° knee on the [0,1]-normalized ascending curve).
 
     Returns:
         dict with ``'prime_genes'``, ``'promoter_genes'``, ``'focus_genes'``,
         ``'hub_uids'``, ``'cutoff'``.
     """
-    for req in ("annot", "gene"):
+    for req in ("annot", gene):
         if req not in s.vp:
             raise ValueError(f"vp.{req} missing — run annotate() first.")
 
@@ -1848,43 +2345,39 @@ def prime_hubs(s: Architecture, key: str = "n", *, verbose: bool = True):
     if agg_name not in s.vp:
         s.aggregate(key=key, name=agg_name, verbose=verbose)
 
-    # 2. elbow on node strength
-    cutoff, sorted_uids = s.elbow(agg_name, verbose=verbose)
+    # 2. cutoff on node strength
+    cutoff, sorted_uids = s.elbow(agg_name, method=method, verbose=verbose)
     hub_uids = sorted_uids[:cutoff]
 
     # 3. split by annotation — promoter hubs contribute *all* candidate genes
-    use_multi = "genes" in s.vp
+    p_genes = set()
+    e_genes = set()
     prom_hubs, enh_hubs = [], []
-    prom_genes = set()
     for uid in hub_uids:
         v = s.index[uid]
+        
         annot_val = s.vp.annot[v]
         if "Promoter" in annot_val:
             prom_hubs.append(uid)
-            if use_multi and s.vp.genes[v]:
-                prom_genes.update(s.vp.genes[v].split(";"))
-            elif s.vp.gene[v]:
-                prom_genes.add(s.vp.gene[v])
+            p_genes.add(s.vp[gene][v])
         else:
             enh_hubs.append(uid)
-
-    # 4. focus genes from hub enhancers
-    foc_genes = s.focus(enh_hubs, key=key, verbose=verbose)["genes"] if enh_hubs else set()
+            e_genes.add(s.vp[gene][v])
 
     # 5. union
-    p_genes = prom_genes | foc_genes
+    prime_genes = p_genes | e_genes
 
     if verbose:
         print(f"[INFO] Prime hubs: {len(hub_uids)} hubs "
               f"({len(prom_hubs)} promoters, {len(enh_hubs)} enhancers)")
-        print(f"[INFO] Prime genes: {len(p_genes)} = "
-              f"{len(prom_genes)} promoter + {len(foc_genes)} focus "
-              f"(overlap: {len(prom_genes & foc_genes)})")
+        print(f"[INFO] Prime genes: {len(prime_genes)} = "
+              f"{len(p_genes)} promoter + {len(e_genes)} focus "
+              f"(overlap: {len(p_genes & e_genes)})")
 
     return {
-        "prime_genes"   : p_genes,
-        "promoter_genes": prom_genes,
-        "focus_genes"   : foc_genes,
+        "prime_genes"   : prime_genes,
+        "promoter_genes"   : p_genes,
+        "enhancer_genes"   : e_genes,
         "hub_uids"      : hub_uids,
         "cutoff"        : cutoff,
         "promoter_uids" : prom_hubs,
@@ -2014,15 +2507,21 @@ def mutual(s: Architecture, key: str = "n", *, transform: str = "double_exp", ve
 Architecture.make = make
 Architecture.make_clique = make_clique
 Architecture.make_spread = make_spread
+Architecture.surrounds = surrounds
 Architecture.add_mcool = add_mcool
 Architecture.normalize = normalize
+Architecture.prune = prune
 Architecture.add_patches = add_patches
 Architecture.annotate = annotate
 Architecture._merge_nearby = _merge_nearby
 Architecture.draw = draw
 Architecture.aggregate = aggregate
+Architecture.weighted_activity = weighted_activity
 Architecture.cluster = cluster
 Architecture.elbow = elbow
 Architecture.focus = focus
+Architecture.focus_genes = focus_genes
+Architecture.supernode_metrics = supernode_metrics
+Architecture.supernode_abc = supernode_abc
 Architecture.prime_hubs = prime_hubs
 Architecture.mutual = mutual

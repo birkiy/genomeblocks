@@ -179,7 +179,20 @@ def subloci(s, uids: List[str]):
     sub = Loci(s[s.uids[u]] for u in uids)
     return sub
 
+@classmethod
+def from_frame(cls, df) -> "Loci":
+    """Build a Loci from the first 3 columns of a DataFrame (chrom, start, end).
+
+    Column names are ignored — positional only. Strand defaults to '.'.
+    """
+    return cls(
+        Locus(str(r[0]), int(r[1]), int(r[2]))
+        for r in df.iloc[:, :3].itertuples(index=False)
+    )
+
+
 Loci.make = make
+Loci.from_frame = from_frame
 Loci.tile = tile
 Loci.tile_genome = tile_genome
 Loci.subloci = subloci
@@ -248,6 +261,60 @@ def tag(s: Loci, o: Loci, tag: str):
     return Tags.make(s).add({tag: o})
 
 
+_LIFTOVER_CACHE: Dict[str, object] = {}
+
+
+def liftover(s: Loci, chain_file: str, *, min_match: float = 0.95, verbose: bool = True) -> Loci:
+    """Lift to another assembly via a UCSC chain file (pyliftover wrapper).
+
+    Mirrors UCSC liftOver defaults: per-base tolerance of ``1 - min_match``.
+    When an endpoint falls in a chain gap, it walks inward up to that budget
+    before giving up — so small gaps at the edges (very common) don't kill
+    the whole interval, matching UCSC's base-fraction semantics.
+    """
+    from pyliftover import LiftOver
+    lo = _LIFTOVER_CACHE.get(chain_file)
+    if lo is None:
+        lo = LiftOver(chain_file)
+        _LIFTOVER_CACHE[chain_file] = lo
+
+    def _walk(chrom, pos, q_strand, step, budget):
+        for off in range(budget + 1):
+            hits = lo.convert_coordinate(chrom, pos + step * off, q_strand)
+            if hits:
+                return hits[0], off
+        return None, None
+
+    out = []
+    n_dropped = 0
+    for l in s:
+        length = l.end - l.start
+        if length <= 0:
+            n_dropped += 1
+            continue
+        q_strand = l.strand if l.strand in ('+', '-') else '+'
+        budget = max(0, int((1.0 - min_match) * length))
+        s_hit, s_off = _walk(l.chrom, l.start,     q_strand, +1, budget)
+        e_hit, e_off = _walk(l.chrom, l.end - 1,   q_strand, -1, budget)
+        if s_hit is None or e_hit is None:
+            n_dropped += 1
+            continue
+        sc, sp, sst, _ = s_hit
+        ec, ep, est, _ = e_hit
+        if sc != ec or sst != est:
+            n_dropped += 1
+            continue
+        if s_off + e_off > budget:
+            n_dropped += 1
+            continue
+        new_start, new_end = (sp, ep + 1) if sp <= ep else (ep, sp + 1)
+        out_strand = sst if l.strand in ('+', '-') else '.'
+        out.append(Locus(sc, new_start, new_end, out_strand))
+    if verbose:
+        print(f"[INFO] liftover: {len(s)} → {len(out)} ({n_dropped} dropped, min_match={min_match})")
+    return Loci(out)
+
+
 Loci.overlaps = overlaps
 Loci.intersect = intersect
 Loci.difference = difference
@@ -257,6 +324,7 @@ Loci.merge = merge
 Loci.nearest = nearest
 Loci.tag = tag
 Loci.map = map
+Loci.liftover = liftover
 
 # Import signal module to attach signal-related methods to Loci
 from . import signal  # noqa: F401

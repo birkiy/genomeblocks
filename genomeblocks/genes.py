@@ -396,8 +396,131 @@ def enhancer_to_genes(s, loci, prox: int = 50_000, level: str = 'gene'):
     return pd.DataFrame(rows)
 
 
+def cre_supernodes(s: Genes, gene_names, cre_loci, *, window: int=5000, verbose: bool=True) -> Dict[str, List[str]]:
+    """Map each gene to its representative CREs (longest-transcript TSS ±window).
+
+    For each name in ``gene_names`` the longest transcript by genomic span
+    (``end - start``) is picked from ``gene.transcripts``; its TSS is slopped by
+    ``window`` bp; CREs in ``cre_loci`` overlapping that window become the
+    gene's pseudo-supernode representatives. Genes missing from this Genes
+    object or with no transcripts are skipped (counted in the [INFO] line).
+    Genes whose window catches zero CREs remain in the result with an empty
+    list so callers can distinguish "resolved but empty" from "unresolvable."
+    """
+    # Genes from GTF (`make`) are keyed by gene_id; UCSC (`make_ucsc`) often by
+    # gene_name. Build a name→Gene reverse index so callers can pass symbols
+    # regardless of source. Last-wins on duplicate names — same convention as
+    # `get_tss` at genes.py:87.
+    by_name: Dict[str, "Gene"] = {}
+    for g in s.values():
+        if getattr(g, "gene_name", None):
+            by_name[g.gene_name] = g
+
+    out: Dict[str, List[str]] = {}
+    n_missing = 0
+    n_no_tx = 0
+    n_empty = 0
+    for name in gene_names:
+        g = s.get(name) or by_name.get(name)
+        if g is None:
+            n_missing += 1
+            continue
+        if not g.transcripts:
+            n_no_tx += 1
+            continue
+        tx = max(g.transcripts.values(), key=lambda t: t.end - t.start)
+        tss = tx.start if tx.strand == '+' else tx.end - 1
+        lo, hi = max(0, tss - window), tss + window
+        cres = [cre_loci[j].uid for *_, j in cre_loci.cgr.overlap(tx.chrom, lo, hi)]
+        if not cres:
+            n_empty += 1
+        out[name] = cres
+    if verbose:
+        print(f"[INFO] cre_supernodes: {len(gene_names)} requested | "
+              f"{n_missing} not in Genes | {n_no_tx} no transcripts | "
+              f"{n_empty} empty window | {len(out)} resolved")
+    return out
+
+
+def nearby(s: Genes, *, gene = None, region = None, window: int = 1_000_000,
+           by: str = 'tss', exclude_self: bool = True) -> Dict[str, "Gene"]:
+    """Find genes within ``window`` bp of a named anchor gene.
+
+    The anchor is located by ``gene_name`` (matching the convention used by
+    ``cre_supernodes`` and ``get_tss``). Genes on a different chromosome are
+    excluded.
+
+    Parameters
+    ----------
+    gene : str
+        ``gene_name`` (or gene_id) of the anchor gene.
+    window : int
+        Half-window (radius) in bp from the anchor's TSS.
+    by : {'tss', 'body'}
+        ``'tss'`` (default) selects genes whose TSS lies in [center-window,
+        center+window]. ``'body'`` selects genes whose body (start..end)
+        overlaps that interval — useful when you want to include long genes
+        that extend into the window from outside.
+    exclude_self : bool
+        If True, omit the anchor gene from the result.
+
+    Returns
+    -------
+    dict[str, Gene]
+        Keyed by ``gene_name``, sorted by TSS position (ascending). Empty
+        names (rare, from rows lacking a gene_name) are dropped.
+    """
+    # Same name→Gene reverse index as cre_supernodes (handles both
+    # GTF-keyed-by-id and UCSC-keyed-by-name layouts).
+
+    if gene is not None:
+        by_name: Dict[str, "Gene"] = {}
+        for g in s.values():
+            if getattr(g, "gene_name", None):
+                by_name[g.gene_name] = g
+
+        anchor = s.get(gene) or by_name.get(gene)
+        if anchor is None:
+            raise KeyError(f"Anchor gene {gene!r} not found in Genes object.")
+
+        if by not in ('tss', 'body'):
+            raise ValueError(f"`by` must be 'tss' or 'body', got {by!r}")
+
+        chrom = anchor.chrom
+        center = anchor.tss.start
+    
+    elif region is not None:
+        chrom = region[0]
+        center = ( int(region[1]) + int(region[2]) ) // 2
+    else:
+        raise Exception("Need to give either gene or region")
+
+    lo, hi = center - window, center + window
+
+    out: Dict[str, "Gene"] = {}
+    for g in s.values():
+        if g.chrom != chrom:
+            continue
+        name = getattr(g, "gene_name", None)
+        if not name:
+            continue
+        if exclude_self and name == gene:
+            continue
+        if by == 'tss':
+            if not (lo <= g.tss.start <= hi):
+                continue
+        else:  # body overlap
+            if g.end < lo or g.start > hi:
+                continue
+        out[name] = g
+
+    return dict(sorted(out.items(), key=lambda kv: kv[1].tss.start))
+
+
 Genes.annotations = annotations
 Genes.nearest_genes = nearest_genes
 Genes.get_tss_transcripts = get_tss_transcripts
 Genes.nearest_transcripts = nearest_transcripts
 Genes.enhancer_to_genes = enhancer_to_genes
+Genes.cre_supernodes = cre_supernodes
+Genes.nearby = nearby
