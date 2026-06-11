@@ -33,6 +33,8 @@ _EXPORTS: Dict[str, tuple[str, str]] = {
 	'Atlas': ('.atlas', 'Atlas'),
 	# architecture
 	'Architecture': ('.architecture', 'Architecture'),
+	# architecture drawing (kept separate so Architecture stays dependency-light)
+	'draw': ('.draw', 'draw'),
 	# motifs
 	'make_genome': ('.motifs', 'make_genome'),
 	'scan_motifs': ('.motifs', 'scan_motifs'),
