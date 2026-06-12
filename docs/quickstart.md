@@ -70,27 +70,23 @@ near_df = genes.nearest_genes(cre)
 
 ---
 
-## 4. Tag CREs and query them
+## 4. Annotate and group CREs
+
+Label CREs by gene context, and split them with set algebra. Grouping for
+plots is just a plain `dict[str, Loci]` — no separate annotation object:
 
 ```python
-from genomeblocks import Tags
+prom = Loci(list(genes.annot['prom']))
 
-tags = (Tags.make(cre)
-            .add({"atac":   peaks,
-                  "se":     superenhancers,
-                  "prom":   cre & Loci(list(genes.annot['prom']))}))
+annot  = genes.annotations(cre)                  # region class per CRE uid
+counts = annot["annotation"].value_counts()
 
-# Boolean queries — the lambda takes a tag accessor
-active_enhancers = tags.query(lambda l: l.atac - l.prom)
-se_at_prom       = tags.query(lambda l: l.se & l.prom)
+groups = {"promoters": cre & prom,               # CREs overlapping a promoter
+          "enhancers": cre - prom}               # the rest
 ```
 
-Numeric tags (mapping `uid -> value`) support comparison operators too:
-
-```python
-tags.add({"h3k27ac_cpm": {l.uid: some_signal[i] for i, l in enumerate(cre)}})
-strong = tags.query(lambda l: l.h3k27ac_cpm > 5.0)
-```
+`groups` feeds straight into `plot_heatmap(..., groups=groups)` (see the
+[AR & FOXA1 walkthrough](walkthrough/signal-heatmaps)).
 
 ---
 
@@ -107,14 +103,7 @@ print(arch)
 # Architecture(name='Skeleton', loci=42311, links=185093, vertex_props=[uid], edge_props=[w, n, d])
 ```
 
-Or start from source promoters and *spread* through the loops to discover enhancers:
-
-```python
-promoters = Loci(list(genes.annot['prom']))
-arch = Architecture.make_spread(promoters, "HiChIP_loops.bedpe", hops=2, directed=True)
-```
-
-Annotate the graph and extract hub / focus genes in one line:
+Annotate the graph and extract hub genes in one line:
 
 ```python
 arch.annotate(cre, genes)
@@ -180,5 +169,5 @@ A full Nanog-locus example is in [`examples/browser_example.py`](https://github.
 ## Next steps
 
 - [Concepts →](concepts) — the mental model behind the API.
+- [Example: AR & FOXA1 →](walkthrough/) — a complete real-data walkthrough, concept by concept.
 - [Architecture guide →](guide/architecture) — build & mine chromatin networks.
-- [Examples →](examples) — longer, annotated scripts.

@@ -144,24 +144,22 @@ Useful when you need to preserve *all* overlaps (not just "is there any"). For o
 
 ---
 
-## Tagging & signal extraction
+## Signal extraction & plotting
 
-Every `Loci` carries two methods contributed by sibling modules:
+`Loci` carries signal methods contributed by the `signal` / `signal_draw`
+modules:
 
 ```python
-# from tags.py — one-shot tagger
-tagged = loci.tag(atac_peaks, "atac")       # returns a Tags object
-
-# from signal.py — threaded bigWig extraction
+# threaded bigWig extraction
 cube = loci.signal(["a.bw", "b.bw"],
-                   n_bins=200, flank=3_000)  # shape (n_loci, 2, 200)
+                   n_bins=200, flank=3_000)   # shape (n_loci, 2, 200)
 
-# matching visualizations
-loci.plot_heatmap(cube, tags=tags)
-loci.plot_profiles(cube, tags=tags)
+# matching visualizations — grouping is a plain dict[str, Loci]
+loci.plot_heatmap(cube, groups={"up": up_loci, "down": down_loci})
+loci.plot_profiles(cube, groups={"up": up_loci, "down": down_loci})
 ```
 
-See the [Tags](tags) and [Signal](signal) guides for the full story.
+See the [Signal](signal) guide and the [AR & FOXA1 walkthrough](../walkthrough/) for the full story.
 
 ---
 

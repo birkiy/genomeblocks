@@ -3,14 +3,15 @@ Genomeblocks
 
 Fluent building blocks for regulatory genomics.
 
-- `Loci`: craft and manipulate candidate regulatory element (CRE) sets.
-- `Tags`: attach boolean / numeric annotations and query them with expressions.
+- `Loci`: craft and manipulate candidate regulatory element (CRE) sets with set algebra.
 - `Genes`: parse GTF / UCSC RefSeq and annotate CREs with promoter-anchored gene models.
-- `Architecture`: chromatin-contact graphs over CREs — build from BEDPE loops, overlay mcool matrices, discover hubs and focus genes.
+- `Architecture`: chromatin-contact graphs over CREs — build from BEDPE loops, overlay mcool matrices, normalize, annotate, find hubs.
 - `signal`: threaded bigWig extraction, TMM normalization, comparative heatmaps.
+- `motifs`: JASPAR motif scanning over a FASTA genome and enrichment.
+- `Atlas`: GIGGLE-style enrichment of a region set against a ChIP-Atlas index.
 - `browser`: IGV-like, fully-vectorial region viewer.
 
-📖 **Documentation**: [birkiy.github.io/genomeblocks](https://birkiy.github.io/genomeblocks/)
+📖 **Documentation**: [birkiy.github.io/genomeblocks](https://birkiy.github.io/genomeblocks/) — start with the [AR & FOXA1 walkthrough](https://birkiy.github.io/genomeblocks/walkthrough/).
 
 Quick Start
 -----------

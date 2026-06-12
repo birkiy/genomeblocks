@@ -13,7 +13,6 @@ Task-oriented walkthroughs for each subsystem. Each page assumes the concepts in
 | Module | What it's for |
 |---|---|
 | [Loci](loci) | Intervals, set algebra, merge/sort/slop/nearest. |
-| [Tags](tags) | Attach annotations to a `Loci` set and query by boolean expression. |
 | [Genes](genes) | Parse GTF / UCSC RefSeq; enhancer-to-gene assignment. |
 | [Architecture](architecture) | Chromatin-contact graphs from loops + Hi-C. |
 | [Signal](signal) | Threaded bigWig extraction, TMM, heatmaps. |

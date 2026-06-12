@@ -53,10 +53,6 @@ Regulatory-genomics analyses usually end up as a cocktail of bedtools, PyRanges,
     <small>Threaded bigWig extraction (pybigtools backend, pure-Python fallback), TMM normalization, and comparative heatmaps.</small>
   </li>
   <li class="navy">
-    <span class="mod-name"><code>Tags</code><span class="mod-tag">Annotation</span></span>
-    <small>An in-memory annotation store for a <code>Loci</code> set, queryable by boolean expression (<code>l.atac &amp; (l.h3k27ac &gt; 1.5)</code>).</small>
-  </li>
-  <li class="navy">
     <span class="mod-name"><code>Genes</code><span class="mod-tag">Annotation</span></span>
     <small>GENCODE / GTF / UCSC parser yielding <code>Gene</code> → <code>Transcript</code> → <code>Exon</code>/<code>CDS</code>/<code>UTR</code> hierarchies, with enhancer-to-gene assignment in one call.</small>
   </li>
@@ -134,8 +130,8 @@ counts = genes.annotations(se & cre).groupby("annotation").size()
 | [Installation](installation) | Setup with conda or pip. |
 | [Quickstart](quickstart) | A 10-minute tour end-to-end. |
 | [Concepts](concepts) | The mental model — UIDs, lazy indexes, chainable APIs. |
+| [Example: AR & FOXA1](walkthrough/) | A complete real-data walkthrough, concept by concept. |
 | [User Guide → Loci](guide/loci) | Interval algebra in depth. |
-| [User Guide → Tags](guide/tags) | Boolean queries over CREs. |
 | [User Guide → Genes](guide/genes) | GTF parsing & enhancer-to-gene. |
 | [User Guide → Architecture](guide/architecture) | Chromatin-contact networks. |
 | [User Guide → Signal](guide/signal) | BigWig extraction & heatmaps. |
@@ -143,7 +139,6 @@ counts = genes.annotations(se & cre).groupby("annotation").size()
 | [User Guide → BEDPE](guide/bedpe) | Loops & paired intervals. |
 | [User Guide → Motifs](guide/motifs) | TF motif scanning. |
 | [API Reference](api/) | Full method signatures. |
-| [Examples](examples) | End-to-end scripts. |
 | [Tools → Venn diagram](tools/venn) | Drop 2–3 BED / narrowPeak files in the browser and get a live overlap Venn. |
 | [Credits](credits) | Upstream tools & citations. |
 
