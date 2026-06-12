@@ -5,7 +5,8 @@ genomic region and a dict of named tracks, ``browser()`` lays out one
 sub-axes per track (sharing x) plus a coordinate ruler, dispatching to the
 appropriate drawer by track type:
 
-    - ``.bw`` / ``.bigwig``               → binned coverage (plt.plot/fill_between)
+    - ``.bw`` / ``.bigwig`` (or a list)   → binned coverage (a list of bigwigs
+                                            is averaged into one track — replicate grouping)
     - ``.narrowPeak`` / ``.bed`` / Loci   → interval rectangles
     - ``.bedpe`` / list[Pair]             → half-sine arcs between anchors
     - ``Genes``                           → stacked gene models (exon/CDS)
@@ -75,8 +76,13 @@ def _detect_track_type(track: Any) -> str:
         raise ValueError(f"Unknown track extension: {track}")
     if isinstance(track, Genes): return 'genes'
     if isinstance(track, Loci):  return 'bed'
-    if isinstance(track, (list, tuple)) and track and isinstance(track[0], Pair):
-        return 'bedpe'
+    if isinstance(track, (list, tuple)) and track:
+        # list[Pair] → bedpe; list of bigwig paths → one averaged bw track
+        # (replicate grouping), mirroring how the heatmap averages columns.
+        if isinstance(track[0], Pair):
+            return 'bedpe'
+        if all(isinstance(t, str) and t.lower().endswith(('.bw', '.bigwig')) for t in track):
+            return 'bw'
     raise ValueError(f"Cannot detect track type for: {type(track).__name__}")
 
 
@@ -101,16 +107,25 @@ def _draw_intervals(ax, track, chrom, start, end, color):
 
 
 def _draw_bigwig(ax, track, chrom, start, end, color, n_bins, ymax):
-    """Draw a bigwig coverage track via binned stats (fill_between + outline)."""
+    """Draw a bigwig coverage track via binned stats (fill_between + outline).
+
+    ``track`` may be a single bigwig (path or handle) or a list of bigwigs —
+    in which case their per-bin means are averaged into one track (replicate
+    grouping), the same averaging the heatmap does across signal columns.
+    """
     from .signal import _bw_open  # lazy — avoid import cost if no bw track
-    opened = isinstance(track, str)
-    h = _bw_open(track) if opened else track
-    try:
-        y = h.stats_array(chrom, start, end, n_bins=n_bins,
-                          stat='mean', missing=0.0).astype(np.float64, copy=False)
-    finally:
-        if opened:
-            h.close()
+    bws = track if isinstance(track, (list, tuple)) else [track]
+    ys = []
+    for tr in bws:
+        opened = isinstance(tr, str)
+        h = _bw_open(tr) if opened else tr
+        try:
+            ys.append(h.stats_array(chrom, start, end, n_bins=n_bins,
+                                    stat='mean', missing=0.0).astype(np.float64, copy=False))
+        finally:
+            if opened:
+                h.close()
+    y = ys[0] if len(ys) == 1 else np.mean(ys, axis=0)
     x = np.linspace(start, end, n_bins, endpoint=False) + (end - start) / (2 * n_bins)
 
     ax.fill_between(x, 0.0, y, facecolor=color, linewidth=0, step='mid')
