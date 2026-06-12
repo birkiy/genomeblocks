@@ -8,7 +8,9 @@ nav_order: 4
 # Architecture
 {: .no_toc }
 
-Chromatin-contact networks in a few lines: build from HiChIP/loop files, overlay Hi-C from mcool, normalize to O/E, annotate vertices with gene context, and mine hubs and focus genes.
+Chromatin-contact networks in a few lines: build from HiChIP/loop files, overlay
+Hi-C from mcool, normalize to O/E, annotate vertices with gene context, and mine
+hub genes.
 {: .fs-5 .fw-300 }
 
 ## Table of contents
@@ -21,7 +23,10 @@ Chromatin-contact networks in a few lines: build from HiChIP/loop files, overlay
 
 ## What it is
 
-`Architecture` is a thin subclass of [`graph_tool.Graph`](https://graph-tool.skewed.de/) (Peixoto 2014 — see [Credits](../credits#graph-tool)). Each vertex represents a CRE (or loop anchor) and is keyed by a `Locus` UID. Edges represent contacts, with built-in edge properties:
+`Architecture` is a thin subclass of
+[`graph_tool.Graph`](https://graph-tool.skewed.de/) (Peixoto 2014 — see
+[Credits](../credits#graph-tool)). Each vertex is a CRE keyed by its `Locus`
+UID; edges are contacts, with built-in edge properties:
 
 | Edge property | Meaning |
 |---|---|
@@ -29,50 +34,34 @@ Chromatin-contact networks in a few lines: build from HiChIP/loop files, overlay
 | `ep.n` | O/E-normalized weight (power-law expectation) |
 | `ep.d` | genomic distance between endpoints |
 
-Because it **is** a `graph_tool.Graph`, every graph-tool algorithm (centrality, SBM, layouts, community detection) works out of the box.
+Because it **is** a `graph_tool.Graph`, every graph-tool algorithm (centrality,
+SBM, layouts, community detection) works out of the box.
 
 {: .note }
-> If you use SBM-based algorithms (block models, nested partitioning, community plots), please also cite the specific method paper referenced in graph-tool's [citation guide](https://graph-tool.skewed.de/static/doc/index.html).
+> The core pipeline is intentionally small: **make → add_mcool → normalize →
+> annotate → strength → prime_hubs**. Drawing lives in a separate
+> `architecture_draw` module so the graph object stays dependency-light.
 
 ---
 
-## Three ways to build a graph
+## Build from loops
 
-### `Architecture.make(loci, bedpe, r=...)`
-
-Assumes you already have a CRE catalogue. Each BEDPE loop anchor is mapped to any CREs within `±r` bp of its midpoint; one edge per (CRE₁, CRE₂) pair.
+`Architecture.make` assumes you already have a CRE catalogue. Each BEDPE loop
+anchor is mapped to any CREs within `±r` bp of its midpoint; one edge per
+(CRE₁, CRE₂) pair. BEDPE parsing is delegated to the package's single reader
+(`bedpe.read_bedpe`) — you just pass a path.
 
 ```python
 from genomeblocks import Architecture, Loci
 
-cre = Loci.make("cre.bed")
+cre  = Loci.make("cre.bed")
 arch = Architecture.make(cre, "HiChIP_loops.bedpe", r=2500, dmax=1e9)
 ```
 
-### `Architecture.make_spread(source_loci, bedpe, hops=...)`
-
-Start from source anchors (e.g. gene promoters) and discover the network by hopping through loops. You do **not** need a pre-defined CRE list — vertices are loop-anchor centers.
-
-```python
-promoters = Loci(list(genes.annot["prom"]))
-arch = Architecture.make_spread(
-    source_loci=promoters,
-    bedpe="loops.bedpe",
-    hops=2,              # 1 = direct, 2 = neighbors of neighbors
-    r=2500,
-    directed=True,       # regulatory flow
-)
-```
-
-At `hops=2` the network grows: promoters → direct contacts → contacts of contacts.
-
-### `Architecture.make_clique(loci)`
-
-A fully connected graph over a `Loci` set — useful as a null model for contact enrichment tests, and as a lightweight container when edges come from somewhere else (e.g. co-expression).
-
-```python
-clique = Architecture.make_clique(cre, name="null")
-```
+| arg | meaning |
+|---|---|
+| `r` | radius (bp) around each loop-anchor midpoint to catch CREs |
+| `dmax` | drop loops whose anchors are farther apart than this |
 
 ---
 
@@ -82,151 +71,126 @@ clique = Architecture.make_clique(cre, name="null")
 arch = arch.add_mcool(cre, "cohesin.mcool", resolution=5000, name="w")
 ```
 
-Reads the `.mcool` at the requested resolution, assigns each CRE to its nearest bin, sums `pixels` for every bin pair an edge spans, and distributes the sum evenly across all edges sharing that bin pair. The result lands in `ep.w` (or the `name` you pass).
-
-{: .tip }
-> Call `add_mcool(..., name="...")` multiple times to stack weights from different Hi-C experiments on the same graph.
+Reads the `.mcool` at the requested resolution, assigns each CRE to its nearest
+bin, sums `pixels` for every bin pair an edge spans, and distributes that sum
+across the edges sharing the bin pair. The result lands in `ep.w` (or the `name`
+you pass — call it repeatedly to stack weights from several experiments).
 
 ---
 
-## Normalizing to O/E
+## Normalizing to O/E, and pruning
 
 ```python
-arch.normalize(cre, source="w", name="n")
+arch.normalize(cre, source="w", name="n")   # power-law O/E -> ep.n, distances -> ep.d
+arch.prune()                                 # drop zero-distance (co-located) edges
 ```
 
-Fits a power law `w ≈ C · d^-α` over all edges with both `ep.d > 0` and `ep.w > 0`, then divides the raw weight by the fitted expectation. Observed-over-Expected lands in `ep.n`.
-
-Typical alpha values from Hi-C: `0.8–1.2` intra-TAD, `1.5–2.0` inter-TAD. `arch.normalize()` prints the fitted `α` and `C`.
+`normalize` fits a power law `w ≈ C · d^-α` over all edges with positive distance
+and weight, then divides the raw weight by the fitted expectation; the
+observed-over-expected ratio lands in `ep.n` and the printed `α`/`C` describe the
+decay. Zero-distance edges are a power-law singularity — run `prune()` **once at
+the end** to remove them (removing edges mid-pipeline desyncs graph-tool's
+edge-index range).
 
 ---
 
 ## Annotating vertices
 
 ```python
-arch.annotate(cre, genes, verbose=True)
+arch.annotate(cre, genes, key="n")
 ```
 
-Populates, per vertex:
+Two-stage gene assignment (requires the edge weights from `normalize`, so it can
+rank promoter contacts):
 
 | Property | Value |
 |---|---|
-| `vp.annot` | region class (`Promoter-TSS`, `5UTR`, `Intronic`, `Intergenic`, …) |
-| `vp.gene` | single nearest gene (back-compat convenience) |
-| `vp.genes` | `;`-joined list of **all** candidate gene names with overlapping promoters |
-| `vp.transcripts` | `,`-joined list of candidate transcript IDs (alt-promoter aware) |
+| `vp.annot` | region class (`Promoter-TSS`, `5UTR`, `3UTR`, `Exonic`, `Intronic`, `Intergenic`) |
+| `vp.gene` | promoters → their nearest gene; other CREs → the gene of their **highest-`key`-weight promoter neighbour** (`''` if none) |
 
-Multi-candidate entries matter for bidirectional promoters (TP53 / WRAP53) and dense TSS clusters. Downstream `focus()` and `prime_hubs()` aggregate edge weight across candidates rather than forcing an arbitrary pick.
+So every CRE is tied to a gene either by being a promoter or by its strongest
+promoter contact. Pass a distinct `name=` per `key` to keep multiple assignments
+side by side.
 
 ---
 
-## Finding hubs and focus genes
+## Hub genes
 
-### Node strength (`aggregate`)
+### Node strength — `strength`
 
 ```python
-arch.aggregate(key="n", name="agg")
-# vp.agg   = sum of ep.n per vertex
-# vp.nagg  = normalized so it sums to 1
+arch.strength(key="n", name="strength")   # vp.strength = sum of ep.n per vertex
 ```
 
-### Elbow (`elbow`)
+Sums the incident edge weights per vertex. No normalization is applied — divide
+yourself if you want a fraction.
+
+### Cutoff — `elbow`
 
 ```python
-cutoff, sorted_uids = arch.elbow("agg", transform="double_exp")
+cutoff, sorted_uids = arch.elbow("strength")
 hub_uids = sorted_uids[:cutoff]
 ```
 
-Sorts by `vp.agg` descending and applies the Kneedle algorithm (with a double-exponential transform that amplifies curvature) to auto-pick the hub cutoff.
+Sorts vertices by `vp.strength` descending and finds the **slope-1 knee** (the
+45° point on the [0,1]-normalized ascending curve, measured on a smoothed
+curve). Hubs are everything above the cutoff.
 
-### Focus genes per source (`focus`)
-
-For each source CRE, tally edge weight to each candidate promoter gene, then take the per-source elbow over the sorted gene-weight vector.
-
-```python
-result = arch.focus(source_uids=enhancer_hubs, key="n")
-result["genes"]    # union of focus genes
-result["records"]  # per-source gene_weights, focus_genes, n_focus
-```
-
-### The one-liner: `prime_hubs`
-
-Runs the full pipeline end-to-end:
+### The one-liner — `prime_hubs`
 
 ```python
 result = arch.prime_hubs(key="n")
-result["prime_genes"]    # hub-promoter genes ∪ focus genes of hub enhancers
-result["promoter_genes"] # hub promoter CREs → their genes
-result["focus_genes"]    # hub enhancer CREs → their focus genes
-result["hub_uids"]       # all hub CREs
-result["cutoff"]         # elbow index
+result["prime_genes"]     # genes of all hub CREs
+result["promoter_genes"]  # genes of hub CREs that are promoters
+result["enhancer_genes"]  # genes of hub CREs that are not promoters
+result["hub_uids"]        # all hub CRE uids
+result["cutoff"]          # number of hubs
 ```
+
+`prime_hubs` runs `strength` (if needed) → `elbow` → splits the hub CREs by
+whether they are promoters, collecting each hub's `vp.gene`. Requires
+`vp.annot` and `vp.gene` from `annotate`.
 
 ---
 
-## Subsetting
+## Subsetting, set operations, serialization
 
 ```python
-# By custom predicate
-sub = arch.subgraph(filter_func=lambda v: arch.vp.agg[v] > 0.5)
-
-# By vertex property value
-sub = arch.subgraph(vp_name="gene", vp_values=["MYC", "TP53"])
-
-# By explicit UIDs
-sub = arch.subgraph(uids=["chr8:127000-128000(.)", ...])
-
-# Deep copy
+sub  = arch.subgraph(filter_func=lambda v: arch.vp.strength[v] > 0.5)
+sub  = arch.subgraph(vp_name="gene", vp_values=["MYC", "TP53"])
+sub  = arch.subgraph(uids=["chr8:127000-128000(.)", ...])
 copy = arch.copy()
-```
 
-All subgraphs preserve every vertex and edge property.
-
----
-
-## Set operations on graphs
-
-```python
-union     = arch_a | arch_b   # vertex + edge union
+union     = arch_a | arch_b   # vertex + edge union (edge props from the first operand)
 intersect = arch_a & arch_b   # common vertices + common edges
+
+import pickle
+pickle.dump(arch, open("arch.pkl", "wb"))   # all vertex/edge properties round-trip
 ```
 
-Edge properties in the output are copied from the first operand.
+All subgraphs and copies preserve every vertex and edge property.
 
 ---
 
 ## Drawing a region
 
-```python
-fig, ax = plt.subplots(figsize=(14, 10))
+Drawing lives in `genomeblocks.architecture_draw` (kept out of the core so
+`Architecture` carries no matplotlib dependency):
 
-arch.draw(
-    loci=cre,
+```python
+from genomeblocks.architecture_draw import draw
+
+ax = draw(
+    arch, loci=cre,
     region=("chr8", 127_000_000, 130_000_000),
-    merge_distance=1000,          # collapse loci within 1 kb into single nodes
-    vertex_size_by="agg",
+    merge_distance=1000,        # collapse loci within 1 kb into single nodes
+    vertex_size_by="strength",
     edge_width_by="n",
-    vertex_color="annot",         # color by vp.annot
+    vertex_color="annot",       # color by a vertex property
     label_prop="gene",
-    layout="spring",
-    ax=ax,
+    layout="spring",            # 'spring' | 'circular' | 'kamada_kawai'
 )
-fig.savefig("myc_locus.pdf")
 ```
-
-Uses graph-tool's SFDP / Kamada-Kawai / circular layouts.
-
----
-
-## Serialization
-
-```python
-import pickle
-pickle.dump(arch, open("arch.pkl", "wb"))
-arch2 = pickle.load(open("arch.pkl", "rb"))
-```
-
-`Architecture` overrides `__getstate__` / `__setstate__` to extract vertex and edge property maps into pickleable dicts and rebuild the graph on load. All properties round-trip.
 
 ---
 
@@ -236,13 +200,14 @@ arch2 = pickle.load(open("arch.pkl", "rb"))
 from genomeblocks import Loci, Genes, Architecture
 
 cre   = Loci.make("cre.bed")
-genes = Genes.make("gencode.v38.annotation.gtf", promoter_r=1000)
+genes = Genes.make("gencode.v49.annotation.gtf", promoter_r=1000)
 
 arch = (Architecture.make(cre, "HiChIP.bedpe", r=2500)
                     .add_mcool(cre, "cohesin.mcool", resolution=5000, name="w")
                     .normalize(cre, source="w", name="n")
                     .annotate(cre, genes)
-                    .aggregate(key="n", name="agg"))
+                    .strength(key="n", name="strength"))
+arch.prune()
 
 result = arch.prime_hubs(key="n")
 print(f"{len(result['prime_genes'])} prime genes, "

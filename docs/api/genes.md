@@ -79,20 +79,13 @@ Genes.make_ucsc(filename, chr_map=None,
 
 ```python
 Genes.get_tss(gene_type=None) -> dict[str, Locus]
-Genes.get_tss_transcripts(gene_type=None) -> dict[str, Locus]
+# {gene_name → TSS Locus}; optional gene_type filter.
 
 Genes.annotations(loci) -> pandas.DataFrame
 # Columns: uid, annotation ∈ {Promoter-TSS, 5UTR, 3UTR, Exonic, Intronic, Intergenic}
 
 Genes.nearest_genes(loci) -> pandas.DataFrame
 # pyranges.nearest against slopped-TSS Loci; Name_b = gene name, Distance in bp.
-
-Genes.nearest_transcripts(loci) -> pandas.DataFrame
-# Same but per transcript (alt-promoter aware).
-
-Genes.enhancer_to_genes(loci, prox=50_000, level='gene') -> pandas.DataFrame
-# Columns: uid, overlap (comma-joined), proximal (within ±prox of TSS), closest.
-# level='transcript' resolves alt-promoters.
 
 Genes.table() -> str
 # Summary of counts.

@@ -69,18 +69,15 @@ genes = Genes.make_ucsc("ncbiRefSeq.txt",
 ## TSS helpers
 
 ```python
-tss_by_gene       = genes.get_tss()                     # {gene_name → Locus}
-tss_by_transcript = genes.get_tss_transcripts()         # {tx_id    → Locus}
-tss_coding        = genes.get_tss(gene_type="protein_coding")
+tss_by_gene = genes.get_tss()                          # {gene_name → Locus}
+tss_coding  = genes.get_tss(gene_type="protein_coding")
 ```
-
-`get_tss_transcripts()` captures alternative promoters — TP53, CDKN2A, TCF7L2, etc. have multiple functional TSSs. Use `nearest_transcripts()` downstream when alt-promoter resolution matters.
 
 ---
 
 ## Annotating Loci
 
-Four annotations wrap the common use cases:
+Two annotations wrap the common use cases:
 
 ### 1. Region class per CRE
 
@@ -101,20 +98,9 @@ df = genes.nearest_genes(cre)
 
 TSS is slopped by `promoter_r` before the nearest lookup, so a CRE inside a promoter window is reported as 0-distance to that gene.
 
-### 3. Nearest transcript
-
-```python
-df = genes.nearest_transcripts(cre)   # same shape; Name_b = transcript_id
-```
-
-### 4. ROSE-style enhancer→gene bundle
-
-```python
-df = genes.enhancer_to_genes(cre, prox=50_000, level="gene")
-# Columns: uid, overlap (comma-separated), proximal (within ±50 kb of TSS), closest (single name)
-```
-
-Unlike the original ROSE, `closest` uses real interval-to-interval distance (`pyranges.nearest`), not enhancer-center → TSS. Pass `level="transcript"` to resolve alt-promoters.
+{: .note }
+> `annotations()` + `nearest_genes()` are exactly what `Architecture.annotate()`
+> uses under the hood to tie each CRE to a region class and a gene.
 
 ---
 
@@ -130,7 +116,7 @@ genes.annot["utr5"]   # all 5' UTRs, sorted and merged
 genes.annot["utr3"]   # all 3' UTRs, sorted and merged
 ```
 
-They are ordinary `Loci`, so you can intersect, tag, or use them as sources for `Architecture.make_spread(...)`.
+They are ordinary `Loci`, so you can intersect them with CRE sets or use them as promoter sources when building an `Architecture`.
 
 ---
 

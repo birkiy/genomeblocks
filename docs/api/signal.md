@@ -46,17 +46,16 @@ Per-track TMM normalization + library-size-per-million scaling. Input/output sha
 
 ---
 
-## `plot_heatmap(loci, S, *, tags=None, groups=None, sets=None, samples=None, ...)`
+## `plot_heatmap(loci, S, *, groups=None, sets=None, samples=None, ...)`
 
-Full signature:
+In `genomeblocks.signal_draw` (also attached as `Loci.plot_heatmap`). Full signature:
 
 ```python
 plot_heatmap(
     loci: Loci,
     S: np.ndarray,                          # (regions, tracks, bins)
     *,
-    tags: Tags | None = None,
-    groups: dict[str, Loci] | None = None,  # alternative to tags
+    groups: dict[str, Loci] | None = None,  # row groups (None = one group)
     sets: list[str] | None = None,          # row order
     samples: list[str] | None = None,       # column labels
     colors: dict[str, tuple] | None = None,
@@ -73,14 +72,16 @@ plot_heatmap(
 
 ---
 
-## `plot_profiles(loci, S, *, tags=None, sets=None, ...)`
+## `plot_profiles(loci, S, *, groups=None, sets=None, ...)`
+
+In `genomeblocks.signal_draw` (also attached as `Loci.plot_profiles`).
 
 ```python
 plot_profiles(
     loci,
     S,
     *,
-    tags: Tags | None = None,
+    groups: dict[str, Loci] | None = None,
     sets: list[str] | None = None,
     colors: dict | None = None,
     ylim: float | None = None,
@@ -92,6 +93,8 @@ plot_profiles(
 ---
 
 ## `compare_heatmap(a, b, bigwigs, ...)`
+
+In `genomeblocks.signal_draw` (re-exported as `genomeblocks.compare_heatmap`).
 
 ```python
 compare_heatmap(
@@ -117,10 +120,10 @@ compare_heatmap(
     dpi: int = 100,
     S: np.ndarray | None = None,  # pre-computed signal cube for the union
     signal_kw: dict | None = None,
-) -> (fig, union_loci, S, tags)
+) -> (fig, union_loci, S, groups)
 ```
 
-Computes `a - b`, `a & b`, `b - a`; stacks into a Tags-grouped heatmap.
+Computes `a - b`, `a & b`, `b - a`; stacks into a `groups`-grouped heatmap.
 
 ---
 

@@ -112,9 +112,8 @@ hr { border:none; height:1px; background:linear-gradient(90deg,transparent,var(-
       <p>Regulatory-genomics analyses usually end up as a cocktail of bedtools, PyRanges, cooler, pyBigWig, GTF parsing boilerplate, graph libraries, and one-off heatmap code. <code>genomeblocks</code> unifies those pieces behind a small set of composable objects:</p>
       <ul class="gb-modules">
         <li><strong>Loci</strong><small>Interval container with set algebra, slop, sort, merge, overlap queries, and signal extraction.</small></li>
-        <li><strong>Tags</strong><small>In-memory CRE annotation store, queryable by boolean expression.</small></li>
-        <li><strong>Genes</strong><small>GENCODE / GTF / UCSC parser with enhancer-to-gene in one call.</small></li>
-        <li><strong>Architecture</strong><small>Chromatin-contact graph with spreading, cliques, O/E normalization.</small></li>
+        <li><strong>Genes</strong><small>GENCODE / GTF / UCSC parser with promoter-anchored gene annotation.</small></li>
+        <li><strong>Architecture</strong><small>Chromatin-contact graph: build from loops, overlay Hi-C, normalize to O/E, find hubs.</small></li>
         <li><strong>signal</strong><small>Threaded bigWig extraction, TMM normalization, heatmaps.</small></li>
         <li><strong>browser</strong><small>IGV-like, SVG-clean multi-track region viewer.</small></li>
       </ul>

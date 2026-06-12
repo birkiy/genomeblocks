@@ -77,9 +77,9 @@ The lazy-import in `genomeblocks/__init__.py` means `Architecture` will only fai
 ```python
 import genomeblocks as gb
 print(gb.__all__)
-# ['Architecture', 'CDS', 'Exon', 'Gene', 'Genes', 'Loci', 'Locus',
-#  'Tags', 'Transcript', 'UTR', 'browser', 'compare_heatmap',
-#  'make_genome', 'scan_motifs', 'tmm']
+# ['Architecture', 'Atlas', 'CDS', 'Exon', 'Gene', 'Genes', 'Loci', 'Locus',
+#  'Transcript', 'UTR', 'browser', 'compare_heatmap', 'make_genome',
+#  'scan_motifs', 'tmm']
 ```
 
 Try a no-data smoke test:
@@ -102,6 +102,6 @@ print(loci.slop(100))        # Loci(n=2)  with ±100 bp
 | `tmm()` | `conorm` |
 | `Architecture.add_mcool()` | `cooler` |
 | BigWig signal (fast path) | `pybigtools` (falls back to pure Python) |
-| `pyranges`-backed ops (`nearest`, `enhancer_to_genes`) | `pyranges` |
+| `pyranges`-backed ops (`Loci.nearest`, `Genes.nearest_genes`) | `pyranges` |
 
 All are declared in `pyproject.toml`; the only one that absolutely needs conda is `graph-tool`.

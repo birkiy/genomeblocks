@@ -73,7 +73,7 @@ Typical task: compare enhancer sets between two conditions across multiple marks
 ```python
 from genomeblocks import compare_heatmap
 
-fig, union, S, tags = compare_heatmap(
+fig, union, S, groups = compare_heatmap(
     a=cre_mesc,
     b=cre_hesc,
     bigwigs=["ATAC_mESC.bw", "ATAC_hESC.bw",
@@ -97,33 +97,35 @@ fig.savefig("cre_compare.pdf")
 - `sort="group"` orders rows within each group by mean signal; `"global"` orders across all rows; `None` keeps input order.
 - Pass a pre-computed `S` to skip extraction entirely (useful for iterating on plot params).
 
-Returns `(fig, union_loci, S, tags)` so you can re-plot with different params.
+Returns `(fig, union_loci, S, groups)` so you can re-plot with different params.
 
 ---
 
 ## `plot_heatmap` / `plot_profiles`
 
-Same plotting machinery as `compare_heatmap`, but decoupled from Loci comparison:
+The same plotting machinery as `compare_heatmap`, decoupled from Loci comparison.
+Row groups are a plain `dict[str, Loci]` — there is no separate annotation
+object:
 
 ```python
-from genomeblocks import Tags
-
-tags = Tags.make(loci).add({
+groups = {
     "promoter":  promoter_cre,
     "enhancer":  enhancer_cre,
     "quiescent": quiescent_cre,
-})
+}
 
-fig = loci.plot_heatmap(cube, tags=tags,
+fig = loci.plot_heatmap(cube, groups=groups,
                         sets=["promoter", "enhancer", "quiescent"],
                         cmap="Blues", vmax=8)
 fig.savefig("heatmap.pdf")
 
-fig = loci.plot_profiles(cube, tags=tags, ylim=5)
+fig = loci.plot_profiles(cube, groups=groups, ylim=5)
 fig.savefig("profiles.pdf")
 ```
 
-You can also pass `groups={"A": loci_a, "B": loci_b}` instead of a `Tags` object for one-liners.
+Omit `groups` to treat all loci as one group. `plot_heatmap` / `plot_profiles`
+live in `genomeblocks.signal_draw` (and are attached as `Loci` methods); the
+processing functions `signal` / `tmm` stay in `genomeblocks.signal`.
 
 ---
 

@@ -7,7 +7,7 @@ permalink: /
 ---
 
 <div class="gb-eyebrow-row">
-  <span class="gb-eyebrow">v0.9 · MIT</span>
+  <span class="gb-eyebrow">v1.0 · MIT</span>
   <button type="button" class="gb-install-chip" onclick="gbCopyInstall(this)" title="Copy to clipboard">
     <span class="chip-text">pip install genomeblocks</span>
     <span class="copy-icon" aria-hidden="true">⧉</span>

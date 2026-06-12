@@ -60,7 +60,6 @@ Loci.merge()                                  # collapse overlapping / bookended
 Loci.nearest(other, s_names=None, o_names=None)  # → pandas.DataFrame (pyranges)
 Loci.subloci(uids: list[str])                 # subset by UID list
 Loci.map(other)                                # {a_uid: [b_uid, ...]}
-Loci.tag(other, tag_name: str)                 # → Tags
 Loci.copy()                                    # shallow copy preserving filename
 ```
 

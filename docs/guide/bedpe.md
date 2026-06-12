@@ -85,9 +85,8 @@ df = pairs_to_frame(hits)                       # pandas DataFrame
 
 ## Integration points
 
-- **`Architecture.make(loci, bedpe, r=...)`** consumes a BEDPE file path directly — no need to pre-parse.
-- **`Architecture.make_spread(source_loci, bedpe, ...)`** same.
-- **`browser(..., tracks={"loops": list[Pair]})`** uses `read_bedpe` internally when you pass a string path.
+- **`Architecture.make(loci, bedpe, r=...)`** consumes a BEDPE file path directly — it calls `read_bedpe` under the hood, so you never import this module yourself.
+- **`browser(..., tracks={"loops": "loops.bedpe"})`** likewise reads the path via `read_bedpe` to draw loop arcs.
 
 ---
 
@@ -106,5 +105,3 @@ ep_loops = [p for p in promoter_loops
             if any(l.chrom == p.chrom1 and l.start <= p.mid1 <= l.end for l in enhancer)
             or any(l.chrom == p.chrom2 and l.start <= p.mid2 <= l.end for l in enhancer)]
 ```
-
-(For the real pipeline use `Architecture.make_spread(promoter, bedpe, hops=1)` — same result, faster.)

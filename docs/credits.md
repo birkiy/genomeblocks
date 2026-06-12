@@ -45,7 +45,7 @@ Used by `Loci` for every overlap query (`&`, `-`, `^`, `overlaps`, `intersect`, 
 ## PyRanges — fast genomic interval DataFrames
 {: #pyranges }
 
-Used by `Loci.nearest()`, `Loci.to_pyranges()`, `Genes.enhancer_to_genes()`, and anywhere a DataFrame-shaped overlap report is more natural than a raw `Loci`.
+Used by `Loci.nearest()`, `Loci.to_pyranges()`, `Genes.nearest_genes()`, and anywhere a DataFrame-shaped overlap report is more natural than a raw `Loci`.
 
 - **Authors:** Endre Bakken Stovner and Pål Sætrom (NTNU)
 - **Repository:** [github.com/pyranges/pyranges](https://github.com/pyranges/pyranges)

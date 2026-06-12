@@ -30,12 +30,12 @@ Every interval carries a deterministic UID:
 The UID is how:
 
 - `Loci` maps names to positions: `loci["chr1:9800-10100(.)"]`.
-- `Tags` stores membership and numeric values.
 - `Architecture` names graph vertices — so intersecting two graphs or subsetting by locus is just set algebra on UID strings.
 - `Genes.annotations()` and `Genes.nearest_genes()` return DataFrames keyed on UIDs.
 
 {: .tip }
-> UIDs are stable across copies, so pickle a `Loci` and the downstream `Tags` / `Architecture` built from it still line up.
+> UIDs are stable across copies, so pickle a `Loci` and the downstream
+> `Architecture` built from it still line up.
 
 ---
 
@@ -67,7 +67,7 @@ arch = (Architecture.make(cre, "loops.bedpe", r=2500)
                     .add_mcool(cre, "m.mcool", resolution=5000)
                     .normalize(cre)
                     .annotate(cre, genes)
-                    .aggregate(key="n"))
+                    .strength(key="n"))
 ```
 
 This mirrors the `dplyr` / pandas method-chain style and keeps intermediate state out of your namespace.
@@ -86,10 +86,11 @@ Python operators map to set operations on both `Loci` and `Architecture`:
 | `a ^ b` | symmetric difference | — |
 | `a + b` | concatenation | — |
 
-`Tags` queries layer boolean logic on *UIDs* so you can write:
+Because `&`, `-`, `+` operate on UID membership, you compose CRE sets directly —
+no separate query layer:
 
 ```python
-tags.query(lambda l: (l.atac & l.h3k27ac) - l.promoter)
+active_distal = (atac & h3k27ac) - promoters
 ```
 
 ---
@@ -100,7 +101,7 @@ tags.query(lambda l: (l.atac & l.h3k27ac) - l.promoter)
 
 - You can import `Loci`, `Genes`, `browser` without paying the graph-tool import cost.
 - `Architecture` only requires graph-tool at the moment you touch it.
-- No circular-import headaches between `loci`, `tags`, `signal`, and `motifs` — each attaches its own methods to `Loci` on import.
+- No circular-import headaches between `loci`, `signal`, and `motifs` — each attaches its own methods to `Loci` on import.
 
 See `genomeblocks/__init__.py` for the full `_EXPORTS` map.
 
