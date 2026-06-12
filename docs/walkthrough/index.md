@@ -56,6 +56,9 @@ Each step maps to one page in this section:
 5. **[Genome browser](browser)** — an IGV-like view of all conditions at a
    locus, with replicate averaging and shared y-axes.
 
+Want to see it all at once? **[Full run & figures](notebook)** is the executed
+notebook, rendered with every figure and result table.
+
 ## Data
 
 ChIP-Atlas (hg38) peak + bigWig files, fetched by the example's
