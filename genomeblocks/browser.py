@@ -297,7 +297,8 @@ def browser(
     track_heights: Optional[Dict[str, float]] = None,
     colors: Optional[Dict[str, str]] = None,
     bw_n_bins: int = 1000,
-    bw_ymax: Optional[Dict[str, float]] = None,
+    bw_ymax: Union[float, Dict[str, float], None] = None,
+    bw_share: Optional[Sequence[Sequence[str]]] = None,
     label_fontsize: int = 8,
     hspace: float = 0.15,
     genes_max_transcripts: Optional[int] = None,
@@ -322,8 +323,14 @@ def browser(
         Per-track color overrides.
     bw_n_bins : int
         Number of bins to request per bigwig track.
-    bw_ymax : dict[str, float], optional
-        Per-track y-axis maximum for bigwig tracks (auto-scaled otherwise).
+    bw_ymax : float | dict[str, float], optional
+        Y-axis maximum for bigwig tracks. A scalar applies to every bigwig
+        track; a dict sets it per track. Auto-scaled (per track) otherwise.
+    bw_share : list[list[str]], optional
+        Groups of bigwig track names that should share one y-scale (the group's
+        region max), so tracks are directly comparable — e.g.
+        ``[["AR 0h", "AR 4h"]]`` scales both AR tracks together. An explicit
+        ``bw_ymax`` for a track still takes precedence.
     label_fontsize : int
         Y-label font size.
     hspace : float
@@ -355,7 +362,37 @@ def browser(
     )
 
     colors_cfg = colors or {}
-    ymax_cfg = bw_ymax or {}
+    # Resolve per-bigwig y-limits. bw_ymax may be a scalar (all bw tracks) or a
+    # per-track dict; bw_share lists groups that share one y-scale (their region
+    # max) so e.g. 0h/4h tracks are directly comparable. Explicit bw_ymax wins.
+    bw_names = [n for n in tracks if types[n] == 'bw']
+    if isinstance(bw_ymax, (int, float)):
+        ymax_cfg = {n: float(bw_ymax) for n in bw_names}
+    else:
+        ymax_cfg = dict(bw_ymax or {})
+    if bw_share:
+        from .signal import _bw_open
+
+        def _region_max(track):
+            bws = track if isinstance(track, (list, tuple)) else [track]
+            m = 0.0
+            for tr in bws:
+                h = _bw_open(tr)
+                try:
+                    v = h.stats_array(chrom, start, end, n_bins=bw_n_bins,
+                                      stat='mean', missing=0.0)
+                    m = max(m, float(np.nan_to_num(v).max()))
+                finally:
+                    h.close()
+            return m
+
+        for grp in bw_share:
+            members = [n for n in grp if n in tracks and types[n] == 'bw']
+            if not members:
+                continue
+            gmax = max(_region_max(tracks[n]) for n in members) * 1.05
+            for n in members:
+                ymax_cfg.setdefault(n, gmax)
     axes_by_name: Dict[str, plt.Axes] = {}
     first_ax = None
 

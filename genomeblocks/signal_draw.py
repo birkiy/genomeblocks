@@ -15,7 +15,9 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 from .loci import Loci
-from .signal import signal, tmm
+# NOTE: signal/tmm are imported lazily inside compare_heatmap. loci.py imports
+# this module at its tail, so a top-level `from .signal import ...` here would
+# deadlock when `genomeblocks.signal` is the first thing imported.
 
 
 def _bcast(x, n, name):
@@ -278,6 +280,7 @@ def compare_heatmap(
     }
 
     # --- signal extraction + normalization + merging ----
+    from .signal import signal, tmm  # lazy: avoids an import cycle (see top)
     if S is None:
         kw = dict(n_bins=n_bins, flank=flank, agg=agg)
         if signal_kw:
