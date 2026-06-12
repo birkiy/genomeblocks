@@ -217,7 +217,6 @@ def _run_render_smoke(loci, bigwigs, cube, *, n_bins, flank, out_dir):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from genomeblocks.tags import Tags
 
     results = []
 
@@ -239,20 +238,18 @@ def _run_render_smoke(loci, bigwigs, cube, *, n_bins, flank, out_dir):
 
     # 2) plot_heatmap: small slice of the already-extracted cube -----------
     try:
-        from genomeblocks.signal import plot_heatmap
+        from genomeblocks.signal_draw import plot_heatmap
         n_show = min(64, cube.shape[0])
         n_tr = min(4, cube.shape[1])
         sub = cube[:n_show, :n_tr, :]
         from genomeblocks.loci import Loci
-        sub_loci = Loci(loci[:n_show])
-        tags = Tags.make(sub_loci, verbose=False)
         half = n_show // 2
-        tags.add({
+        groups = {
             "first_half": Loci(loci[:half]),
             "second_half": Loci(loci[half:n_show]),
-        })
+        }
         t0 = time.perf_counter()
-        fig = plot_heatmap(loci[:n_show], sub, tags=tags,
+        fig = plot_heatmap(loci[:n_show], sub, groups=groups,
                            sets=["first_half", "second_half"],
                            samples=[f"bw_{i}" for i in range(n_tr)],
                            vmax=max(1.0, float(sub.max())),
@@ -267,19 +264,17 @@ def _run_render_smoke(loci, bigwigs, cube, *, n_bins, flank, out_dir):
 
     # 3) plot_profiles: average profile per group --------------------------
     try:
-        from genomeblocks.signal import plot_profiles
+        from genomeblocks.signal_draw import plot_profiles
         n_show = min(128, cube.shape[0])
         sub = cube[:n_show, :1, :]
         from genomeblocks.loci import Loci
-        sub_loci = Loci(loci[:n_show])
-        tags = Tags.make(sub_loci, verbose=False)
         half = n_show // 2
-        tags.add({
+        groups = {
             "first_half": Loci(loci[:half]),
             "second_half": Loci(loci[half:n_show]),
-        })
+        }
         t0 = time.perf_counter()
-        fig = plot_profiles(loci[:n_show], sub, tags=tags,
+        fig = plot_profiles(loci[:n_show], sub, groups=groups,
                             sets=["first_half", "second_half"])
         path = out_dir / "bench_profiles.png"
         fig.savefig(path, dpi=80, bbox_inches="tight")

@@ -244,9 +244,6 @@ def nearest(s: Loci, o: Loci, s_names=None, o_names=None):
     return pr_s.nearest(pr_o).df.rename(columns={'Chromosome': 'Chr'})
 
 
-from .tags import Tags
-
-
 def map(s: "Loci", o: "Loci") -> Dict[str, List[str]]:
     """Overlap-based mapper: returns {a.uid: [b.uid, ...]} for each a in self
     against loci in o. Multi-overlap preserved; empty list if no hit.
@@ -255,10 +252,6 @@ def map(s: "Loci", o: "Loci") -> Dict[str, List[str]]:
     for a in s:
         out[a.uid] = [o[j].uid for *_, j in o.cgr.overlap(a.chrom, a.start, a.end)]
     return out
-
-
-def tag(s: Loci, o: Loci, tag: str):
-    return Tags.make(s).add({tag: o})
 
 
 _LIFTOVER_CACHE: Dict[str, object] = {}
@@ -322,12 +315,13 @@ Loci.slop = slop
 Loci.sort = sort
 Loci.merge = merge
 Loci.nearest = nearest
-Loci.tag = tag
 Loci.map = map
 Loci.liftover = liftover
 
-# Import signal module to attach signal-related methods to Loci
+# Import domain modules to attach their methods to Loci. Each *_draw module is
+# imported alongside its processing module so the plotting methods attach too.
 from . import signal  # noqa: F401
+from . import signal_draw  # noqa: F401
 from . import motifs  # noqa: F401
 from . import bedpe  # noqa: F401
 from . import atlas  # noqa: F401

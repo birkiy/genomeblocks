@@ -528,38 +528,35 @@ class Architecture(gt.Graph):
 
 @classmethod
 def make(cls, loci, bedpe: str, *, name: str="Skeleton", r: int=2500, dmax=1e9, verbose: bool=True):
+    """Build an Architecture skeleton from a BEDPE loop file.
+
+    BEDPE parsing is delegated to ``genomeblocks.bedpe.read_bedpe`` — the
+    package's single BEDPE reader. Callers never import that module directly;
+    just pass a path here.
+    """
     from tqdm import tqdm
+    from .bedpe import read_bedpe
     G = cls(name=name)
+    pairs = read_bedpe(bedpe, verbose=verbose)
     mapped_loops = 0
-    total_loops = 0
     edge_set = set()
-    with open(bedpe) as f:
-        for line in tqdm(f, desc='[INFO] Building Architecture from loops'):
-            if line.startswith('#') or not line.strip(): continue
-            total_loops += 1
-            fields = line.strip().split()
-            if len(fields) < 6: continue
-            try:
-                chrom1, start1, end1 = fields[0], int(fields[1]), int(fields[2])
-                chrom2, start2, end2 = fields[3], int(fields[4]), int(fields[5])
-            except ValueError:
-                continue
-            mid1 = (start1 + end1) // 2; mid2 = (start2 + end2) // 2
-            if abs(mid1 - mid2) > dmax: continue
-            a1 = [loci[j] for *_, j in loci.cgr.overlap(chrom1, mid1 - r, mid1 + r)]
-            a2 = [loci[j] for *_, j in loci.cgr.overlap(chrom2, mid2 - r, mid2 + r)]
-            if not a1 or not a2: continue
-            mapped_loops += 1
-            for locus1 in a1:
-                for locus2 in a2:
-                    if locus1.uid == locus2.uid: continue
-                    edge_key = tuple(sorted([locus1.uid, locus2.uid]))
-                    if edge_key in edge_set: continue
-                    edge_set.add(edge_key)
-                    v1 = G._add_vertex(locus1.uid)
-                    v2 = G._add_vertex(locus2.uid)
-                    G.add_edge(v1, v2)
+    for p in tqdm(pairs, desc='[INFO] Building Architecture from loops', disable=not verbose):
+        if abs(p.mid1 - p.mid2) > dmax: continue
+        a1 = [loci[j] for *_, j in loci.cgr.overlap(p.chrom1, p.mid1 - r, p.mid1 + r)]
+        a2 = [loci[j] for *_, j in loci.cgr.overlap(p.chrom2, p.mid2 - r, p.mid2 + r)]
+        if not a1 or not a2: continue
+        mapped_loops += 1
+        for locus1 in a1:
+            for locus2 in a2:
+                if locus1.uid == locus2.uid: continue
+                edge_key = tuple(sorted([locus1.uid, locus2.uid]))
+                if edge_key in edge_set: continue
+                edge_set.add(edge_key)
+                v1 = G._add_vertex(locus1.uid)
+                v2 = G._add_vertex(locus2.uid)
+                G.add_edge(v1, v2)
     if verbose:
+        total_loops = len(pairs)
         pct_mapped = 100 * mapped_loops / max(total_loops, 1)
         print(f"[INFO] {total_loops} loops | {mapped_loops} mapped ({pct_mapped:.1f}%) | "
               f"loci={G.n_loci}, links={G.n_links}")

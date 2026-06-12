@@ -5,8 +5,11 @@ their implementation modules until the attribute is accessed. This keeps
 ``import locus2`` fast and avoids requiring heavy optional dependencies
 to be installed unless code paths that need them are used.
 
-Public names preserved: Locus, Exon, CDS, UTR, Features, Tags, Transcript,
+Public names preserved: Locus, Exon, CDS, UTR, Transcript,
 Gene, Genes, Loci, Architecture, make_genome, scan_motifs
+
+Domain visualization lives in ``<domain>_draw`` modules (architecture_draw,
+signal_draw, motifs_draw) to keep the processing modules dependency-light.
 """
 
 from importlib import import_module
@@ -21,8 +24,6 @@ _EXPORTS: Dict[str, tuple[str, str]] = {
 	'Exon': ('.locus', 'Exon'),
 	'CDS': ('.locus', 'CDS'),
 	'UTR': ('.locus', 'UTR'),
-	# features
-	'Tags': ('.tags', 'Tags'),
 	# genes
 	'Transcript': ('.genes', 'Transcript'),
 	'Gene': ('.genes', 'Gene'),
@@ -33,13 +34,11 @@ _EXPORTS: Dict[str, tuple[str, str]] = {
 	'Atlas': ('.atlas', 'Atlas'),
 	# architecture
 	'Architecture': ('.architecture', 'Architecture'),
-	# architecture drawing (kept separate so Architecture stays dependency-light)
-	'draw': ('.draw', 'draw'),
 	# motifs
 	'make_genome': ('.motifs', 'make_genome'),
 	'scan_motifs': ('.motifs', 'scan_motifs'),
-	# signal
-	'compare_heatmap': ('.signal', 'compare_heatmap'),
+	# signal (processing in signal.py; heatmaps/profiles in signal_draw.py)
+	'compare_heatmap': ('.signal_draw', 'compare_heatmap'),
 	'tmm': ('.signal', 'tmm'),
 	# browser
 	'browser': ('.browser', 'browser'),
