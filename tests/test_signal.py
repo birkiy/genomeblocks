@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from genomeblocks import tmm
-from genomeblocks.signal import _even_ranges, plan_workers
+from genomeblocks.signal import _even_ranges, plan_workers, _tmm_norm_factors
 from genomeblocks.signal_draw import _bcast, _resolve_groups   # plotting helpers
 
 
@@ -45,3 +45,13 @@ def test_tmm_preserves_shape():
     out = tmm(cube)
     assert out.shape == cube.shape
     assert np.isfinite(out).all()
+
+
+def test_tmm_norm_factors_geomean_one():
+    # vendored edgeR TMM (replaces the conorm dependency): one factor per
+    # column (sample), scaled to a geometric mean of 1.
+    rng = np.random.default_rng(1)
+    data = np.abs(rng.normal(20, 6, (300, 4))) + 1.0
+    f = _tmm_norm_factors(data)
+    assert f.shape == (4,)
+    assert np.isclose(np.exp(np.log(f).mean()), 1.0)

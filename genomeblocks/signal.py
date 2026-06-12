@@ -389,6 +389,44 @@ def _run_multiprocess(cube, bigwigs, chrom_list, starts, ends,
         shm.unlink()
 
 
+def _tmm_norm_factors(data, trim_lfc=0.3, trim_mag=0.05, index_ref=None):
+    """edgeR Trimmed-Mean-of-M-values normalization factors, one per column.
+
+    A self-contained implementation of the standard TMM algorithm (Robinson &
+    Oshlack, *Genome Biology* 2010) so genomeblocks carries no extra dependency
+    for :func:`tmm`. Rows are features, columns are samples; returns a factor
+    per sample, scaled to a geometric mean of 1.
+    """
+    x = np.asarray(data, dtype=float).T                     # (samples, features)
+    lib_size = x.sum(axis=1)
+    mask = x == 0
+    if index_ref is None:
+        xr = x.copy()
+        xr[:, np.all(mask, axis=0)] = np.nan                # drop all-zero features
+        p75 = np.nanpercentile(xr, 75, axis=1)
+        index_ref = int(np.argmin(np.abs(p75 - p75.mean())))
+    mask = mask.copy()
+    mask[:, mask[index_ref]] = True                          # mask where the ref is 0
+    x = x.copy(); x[mask] = np.nan
+    with np.errstate(invalid="ignore", divide="ignore"):
+        norm_x = x / lib_size[:, None]
+        logs = np.log2(norm_x)
+        m_g = logs - logs[index_ref]                         # log fold-change vs ref
+        a_g = (logs + logs[index_ref]) / 2                   # average abundance
+        pm = np.nanquantile(m_g, [trim_lfc, 1 - trim_lfc], axis=1, method="nearest")[..., None]
+        pa = np.nanquantile(a_g, [trim_mag, 1 - trim_mag], axis=1, method="nearest")[..., None]
+        mask = mask | (m_g < pm[0]) | (m_g > pm[1])
+        mask = mask | (a_g < pa[0]) | (a_g > pa[1])
+        w = (1 - norm_x) / x                                 # asymptotic variance
+        w = 1 / (w + w[index_ref])
+    w[mask] = 0
+    m_g[mask] = 0
+    w /= w.sum(axis=1)[:, None]
+    f = np.sum(w * m_g, axis=1)
+    f -= f.mean()                                            # geometric mean -> 1
+    return 2 ** f
+
+
 def tmm(cube: np.ndarray) -> np.ndarray:
     """TMM-normalize a signal cube (regions × tracks × bins).
 
@@ -401,9 +439,8 @@ def tmm(cube: np.ndarray) -> np.ndarray:
     Returns:
         Normalized copy of the cube (same shape).
     """
-    import conorm
     means = np.nanmean(cube, axis=2)                        # (regions, tracks)
-    factors = conorm.tmm_norm_factors(means)                 # (tracks,)
+    factors = _tmm_norm_factors(means)                       # (tracks,)
     lib_size = means.sum(0)                                  # (tracks,)
     scale = 1.0 / (factors * lib_size / 1_000_000)
     return cube * scale[None, :, None]

@@ -35,8 +35,7 @@ requirements:
     - pyranges            # bioconda
     - pybigtools          # bioconda
     - cgranges            # bioconda
-    - conorm              # NOT yet on conda — see ../conorm/meta.yaml
-    - lightmotif          # NOT yet on conda — see README (blocker)
+    - lightmotif          # NOT yet on conda — recipe at ~/apps/lightmotif-conda (see README)
 
 test:
   imports:
