@@ -217,7 +217,7 @@ __marimo__/
 
 # to-add
 to-add/
-meta.yaml
+/meta.yaml          # root build artifact only (not conda-recipe/*/meta.yaml)
 
 # Example data downloaded by each example's download_data.sh
 examples/*/data/
