@@ -7,8 +7,8 @@ import genomeblocks as gb
 
 EXPECTED_ALL = [
     "Architecture", "Atlas", "CDS", "Exon", "Gene", "Genes", "Loci", "Locus",
-    "Transcript", "UTR", "browser", "compare_heatmap", "make_genome",
-    "scan_motifs", "tmm",
+    "Transcript", "UTR", "browser", "compare_heatmap", "coverage",
+    "make_genome", "scan_motifs", "tmm",
 ]
 
 

@@ -40,6 +40,8 @@ _EXPORTS: Dict[str, tuple[str, str]] = {
 	# signal (processing in signal.py; heatmaps/profiles in signal_draw.py)
 	'compare_heatmap': ('.signal_draw', 'compare_heatmap'),
 	'tmm': ('.signal', 'tmm'),
+	# bam (per-base pileup coverage for the browser)
+	'coverage': ('.bam', 'coverage'),
 	# browser
 	'browser': ('.browser', 'browser'),
 }

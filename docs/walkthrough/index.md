@@ -20,11 +20,7 @@ and the `genomeblocks` API that implements it.
 
 ## The question
 
-In prostate cells, the **androgen receptor (AR)** is a hormone-activated
-transcription factor: androgen (here **DHT**, dihydrotestosterone) triggers AR
-to enter the nucleus and bind chromatin. But AR rarely works alone — it leans on
-**FOXA1**, a *pioneer factor* that can engage closed chromatin and pre-license
-sites for other factors.
+The **androgen receptor** (AR) is a ligand-dependent transcription factor that plays a critical role in regulating gene expression in the prostate. In its inactive form, the AR resides in the cytoplasm where it is stabilized by heat-shock chaperone proteins. After binding androgens, such as testosterone or dihydrotestosterone (DHT), the AR undergoes an allosteric modification and translocates into the nucleus. Once there, the AR binds to specific cis-regulatory elements (CREs) on DNA through an interplay of chromatin accessibility, pioneer factors such as **FOXA1**, and sequence motifs.
 
 We use **LNCaP** cells at **0 h** and **4 h** of DHT and ask:
 

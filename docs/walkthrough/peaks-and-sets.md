@@ -49,16 +49,16 @@ single most important idea in this page:
 | op | method | result |
 |---|---|---|
 | `a & b` | `intersect` | the **`a` peaks** that overlap any `b` peak (LHS intervals kept) |
-| `a - b` | `difference` | the **`a` peaks** that overlap **no** `b` peak |
-| `a + b` | concatenation | every locus from both — **duplicates kept, nothing merged** |
+| `a - b` (and `\`) | `difference` | the **`a` peaks** that overlap **no** `b` peak |
+| `a + b` (and `\|`) | concatenation | every locus from both — **duplicates kept, nothing merged** |
 | `a.sort().merge()` | — | sort, then fuse overlapping/adjacent intervals into one |
 
 {: .warning }
 > `+` (and `|`) **concatenate** — they do *not* deduplicate or merge. To build a
 > true *union of regions* you must follow with `.sort().merge()`. And `a & b`
 > returns the original `a` intervals that overlap `b` (peak-level membership),
-> **not** the geometric intersection rectangle. This is what you want for "which
-> of my peaks fall in this other set."
+> **not** the geometric intersection rectangle. This is what you want for **"which
+> of my peaks fall in this other set."**
 
 ## Accessible chromatin = the ATAC union
 
@@ -67,8 +67,12 @@ bind." We pool all four ATAC peak sets (both timepoints, both replicates) and
 merge them into one non-redundant region set:
 
 ```python
-accessible = (peaks["ATAC_0h_r1"] + peaks["ATAC_0h_r2"]
-              + peaks["ATAC_4h_r1"] + peaks["ATAC_4h_r2"]).sort().merge()
+accessible = ( \
+    peaks["ATAC_0h_r1"] \
+    + peaks["ATAC_0h_r2"] \
+    + peaks["ATAC_4h_r1"] \
+    + peaks["ATAC_4h_r2"]
+).sort().merge()
 ```
 
 `+` stacks the ~hundreds-of-thousands of peaks; `.sort().merge()` collapses
@@ -109,36 +113,13 @@ A4 = peaks["AR_4h"]    & accessible
 
 ## A Venn over genomic intervals
 
-A Venn of three peak sets is not a plain set intersection — two peaks "overlap"
-without being identical, so they share no label to count on. The standard fix is
-to build a shared **region universe** and ask, per region, which input sets
-overlap it:
+A Venn of three peak sets is a plain set intersection.
 
 ```python
 from matplotlib_venn import venn3
 
-def venn_id_sets(sets):
-    # merge all peaks into one region universe, then label each region by which
-    # input set overlaps it -> 3 id-sets that matplotlib_venn can count.
-    universe = Loci([l for s in sets for l in s]).sort().merge()
-    id_sets = [set() for _ in sets]
-    for i, reg in enumerate(universe):
-        for si, s in enumerate(sets):
-            if any(True for _ in s.cgr.overlap(reg.chrom, reg.start, reg.end)):
-                id_sets[si].add(i)
-    return id_sets
-
-ids = venn_id_sets([F0, F4, A4])
-venn3(ids, set_labels=["FOXA1 0h", "FOXA1 4h", "AR 4h"])
+venn3((F0, F4, A4), set_labels=["FOXA1 0h", "FOXA1 4h", "AR 4h"])
 ```
-
-Two ideas are worth calling out:
-
-- **The region universe** (`Loci([...]).sort().merge()`) flattens all three sets
-  into disjoint regions, so each region is counted once.
-- **`s.cgr.overlap(chrom, start, end)`** is the low-level overlap query on the
-  cgranges index — it yields the hits of `s` in a window. We only need *whether*
-  there is a hit, so `any(...)` short-circuits.
 
 ## Defining AR+F and AR−F
 

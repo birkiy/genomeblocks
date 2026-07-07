@@ -7,6 +7,8 @@ appropriate drawer by track type:
 
     - ``.bw`` / ``.bigwig`` (or a list)   → binned coverage (a list of bigwigs
                                             is averaged into one track — replicate grouping)
+    - ``.bam``                            → per-base coverage with IGV-style
+                                            reference-mismatch coloring (needs ``reference``)
     - ``.narrowPeak`` / ``.bed`` / Loci   → interval rectangles
     - ``.bedpe`` / list[Pair]             → half-sine arcs between anchors
     - ``Genes``                           → stacked gene models (exon/CDS)
@@ -23,6 +25,7 @@ from matplotlib import gridspec
 from matplotlib.patches import Rectangle
 from matplotlib.collections import PatchCollection
 from matplotlib.ticker import FuncFormatter
+from collections import defaultdict
 
 from .locus import Locus
 from .loci import Loci
@@ -36,16 +39,29 @@ _DEFAULT_HEIGHTS = {
     'bed':        0.2,
     'narrowPeak': 0.2,
     'bw':         0.5,
+    'bam':        0.6,
     'bedpe':      1.5,
     'genes':      1.5,
+    'sequence':   0.2,
 }
 
 _DEFAULT_COLORS = {
     'bed':        '#444444',
     'narrowPeak': '#444444',
     'bw':         '#4c78a8',
+    'bam':        '#a6a6a6',
     'bedpe':      '#888888',
     'genes':      '#000000',
+}
+
+# IGV-standard nucleotide colors, used both for BAM mismatch bars and the
+# reference sequence track (A green, C blue, G orange, T red, else gray).
+_NUC_COLORS = {
+    'A': '#009600',
+    'C': '#0000ff',
+    'G': '#d17105',
+    'T': '#ff0000',
+    'N': '#b0b0b0',
 }
 
 
@@ -70,6 +86,7 @@ def _detect_track_type(track: Any) -> str:
     if isinstance(track, str):
         p = track.lower()
         if p.endswith(('.bw', '.bigwig')):  return 'bw'
+        if p.endswith('.bam'):              return 'bam'
         if p.endswith('.narrowpeak'):       return 'narrowPeak'
         if p.endswith('.bed'):              return 'bed'
         if p.endswith('.bedpe'):            return 'bedpe'
@@ -136,6 +153,90 @@ def _draw_bigwig(ax, track, chrom, start, end, color, n_bins, ymax):
     ax.set_yticks([0, peak])
     ax.tick_params(axis='y', labelsize=6, length=2, pad=1)
     ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
+
+
+def _draw_bam(ax, track, chrom, start, end, color, *, reference, min_baseq,
+              allele_freq, ymax):
+    """Draw a BAM coverage track with IGV-style mismatch coloring.
+
+    Total per-base depth is a gray filled step (like the bigwig drawer); on
+    top, positions where the non-reference allele fraction reaches
+    ``allele_freq`` get the mismatching reads drawn as stacked, nucleotide-
+    colored bars (the matched fraction stays gray from the fill underneath).
+    Mismatch detection is vectorized and only the handful of passing positions
+    are rendered, so wide views stay cheap.
+    """
+    from .bam import pileup_counts, reference_seq
+
+    counts = pileup_counts(track, chrom, start, end, min_baseq=min_baseq)  # (4, n)
+    total = counts.sum(axis=0)
+    n = total.size
+    xc = np.arange(start, end) + 0.5
+    ax.fill_between(xc, 0.0, total, facecolor=color, linewidth=0, step='mid')
+
+    if reference is not None and n:
+        ref = reference_seq(reference, chrom, start, end)
+        ref = (ref + 'N' * n)[:n]                       # pad short edges with N
+        b2i = np.full(256, -1, dtype=np.int64)
+        for i, b in enumerate(b'ACGT'):
+            b2i[b] = i
+        ref_idx = b2i[np.frombuffer(ref.encode('ascii'), dtype=np.uint8)]
+        matched = np.zeros(n, dtype=np.int64)
+        valid = ref_idx >= 0
+        matched[valid] = counts[ref_idx[valid], np.nonzero(valid)[0]]
+        mism = total - matched
+        with np.errstate(invalid='ignore', divide='ignore'):
+            frac = np.where(total > 0, mism / total, 0.0)
+        boxes = defaultdict(list)
+        for p in np.nonzero((total > 0) & (frac >= allele_freq))[0]:
+            y = 0.0
+            for bi, base in enumerate('ACGT'):
+                if bi == ref_idx[p]:
+                    continue
+                c = counts[bi, p]
+                if c <= 0:
+                    continue
+                boxes[base].append(Rectangle((start + p, y), 1.0, c))
+                y += c
+        for base, patches in boxes.items():
+            ax.add_collection(PatchCollection(patches, facecolor=_NUC_COLORS[base],
+                                              edgecolor='none', zorder=3))
+
+    peak = float(ymax) if ymax is not None else (
+        float(total.max()) * 1.05 if n and total.max() > 0 else 1.0)
+    ax.set_ylim(0, peak)
+    ax.set_yticks([0, peak])
+    ax.tick_params(axis='y', labelsize=6, length=2, pad=1)
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
+
+
+def _draw_sequence(ax, chrom, start, end, reference):
+    """Draw the reference bases beneath the tracks, IGV-style.
+
+    Base-level zoom (≤ 200 bp) shows colored letters; a bit wider (≤ 5 kb)
+    shows a colored strip; wider still it stays blank (letters/strip would be
+    illegible and expensive).
+    """
+    from .bam import reference_seq
+    seq = reference_seq(reference, chrom, start, end)
+    span = end - start
+    ax.set_ylim(0, 1)
+    ax.set_yticks([])
+    if span <= 0 or not seq:
+        return
+    if span <= 200:
+        fs = min(8.0, max(3.0, 900.0 / span))
+        for i, b in enumerate(seq):
+            ax.text(start + i + 0.5, 0.5, b, ha='center', va='center',
+                    fontsize=fs, family='monospace', clip_on=True,
+                    color=_NUC_COLORS.get(b, '#888888'))
+    elif span <= 5000:
+        boxes = defaultdict(list)
+        for i, b in enumerate(seq):
+            boxes[b].append(Rectangle((start + i, 0.15), 1.0, 0.7))
+        for b, patches in boxes.items():
+            ax.add_collection(PatchCollection(patches, facecolor=_NUC_COLORS.get(b, '#888888'),
+                                              edgecolor='none'))
 
 
 def _draw_bedpe(ax, track, chrom, start, end, color, arc_points=40,
@@ -299,6 +400,12 @@ def browser(
     bw_n_bins: int = 1000,
     bw_ymax: Union[float, Dict[str, float], None] = None,
     bw_share: Optional[Sequence[Sequence[str]]] = None,
+    reference: Optional[str] = None,
+    show_sequence: bool = True,
+    bam_min_baseq: int = 15,
+    bam_allele_freq: float = 0.2,
+    bam_ymax: Union[float, Dict[str, float], None] = None,
+    bam_share: Optional[Sequence[Sequence[str]]] = None,
     label_fontsize: int = 8,
     hspace: float = 0.15,
     genes_max_transcripts: Optional[int] = None,
@@ -311,9 +418,10 @@ def browser(
         The region to display.
     tracks : dict[str, Any]
         Ordered mapping of track name → track source.  Type is auto-detected:
-        path strings dispatch by extension (``.bw``, ``.narrowPeak``, ``.bed``,
-        ``.bedpe``); ``Loci`` / ``Genes`` / ``list[Pair]`` objects are also
-        accepted directly.
+        path strings dispatch by extension (``.bw``, ``.bam``, ``.narrowPeak``,
+        ``.bed``, ``.bedpe``); ``Loci`` / ``Genes`` / ``list[Pair]`` objects are
+        also accepted directly.  ``.bam`` files need a coordinate-sorted BAM
+        with a ``.bai`` index alongside.
     figsize : (w, h)
         Figure size.  If ``h`` is None it is derived from track heights.
     dpi : int
@@ -331,6 +439,27 @@ def browser(
         region max), so tracks are directly comparable — e.g.
         ``[["AR 0h", "AR 4h"]]`` scales both AR tracks together. An explicit
         ``bw_ymax`` for a track still takes precedence.
+    reference : str, optional
+        Path to an indexed FASTA (``.fa`` + ``.fai``).  Required for ``.bam``
+        mismatch coloring; also drives the reference-sequence track drawn just
+        above the ruler (see ``show_sequence``).
+    show_sequence : bool
+        When ``reference`` is given, append a reference-sequence track at the
+        bottom.  Shows colored letters at base-level zoom (≤ 200 bp), a color
+        strip up to 5 kb, blank beyond.  Access its axes at ``'_sequence'``.
+    bam_min_baseq : int
+        Minimum base quality for a read to count toward BAM coverage (matches
+        IGV's default of 15).
+    bam_allele_freq : float
+        Fraction of non-reference reads at a position before it is colored as a
+        mismatch (IGV's ``0.2`` default); below this the bar stays fully gray.
+    bam_ymax : float | dict[str, float], optional
+        Coverage y-axis maximum for BAM tracks; scalar for all, or per-track
+        dict.  Auto-scaled per track otherwise.
+    bam_share : list[list[str]], optional
+        Groups of BAM track names sharing one coverage y-scale (their region
+        max), so depths are directly comparable — e.g. one group per condition.
+        An explicit ``bam_ymax`` for a track still takes precedence.
     label_fontsize : int
         Y-label font size.
     hspace : float
@@ -339,25 +468,33 @@ def browser(
     Returns
     -------
     (fig, axes_by_name) : (matplotlib.figure.Figure, dict[str, Axes])
-        ``axes_by_name`` includes an ``'_axis'`` entry for the ruler.
+        ``axes_by_name`` includes an ``'_axis'`` entry for the ruler and, when a
+        reference sequence track is drawn, a ``'_sequence'`` entry.
     """
     chrom, start, end = _parse_region(region)
     if end <= start:
         raise ValueError(f"Invalid region: end ({end}) must be > start ({start})")
 
     types = {name: _detect_track_type(tr) for name, tr in tracks.items()}
+    if any(t == 'bam' for t in types.values()) and reference is None:
+        raise ValueError("BAM tracks need a `reference` FASTA for mismatch "
+                         "coloring; pass reference='genome.fa'.")
+
     heights_cfg = track_heights or {}
     heights = [heights_cfg.get(n, _DEFAULT_HEIGHTS[types[n]]) for n in tracks]
     ruler_h = 0.25
+    seq_on = reference is not None and show_sequence
+    seq_h = heights_cfg.get('_sequence', _DEFAULT_HEIGHTS['sequence'])
+    tail_heights = ([seq_h] if seq_on else []) + [ruler_h]
 
     w, h = figsize
     if h is None:
-        h = max(2.0, sum(heights) + ruler_h + 0.4)
+        h = max(2.0, sum(heights) + sum(tail_heights) + 0.4)
 
     fig = plt.figure(figsize=(w, h), dpi=dpi)
     gs = gridspec.GridSpec(
-        len(tracks) + 1, 1,
-        height_ratios=heights + [ruler_h],
+        len(tracks) + len(tail_heights), 1,
+        height_ratios=heights + tail_heights,
         hspace=hspace,
     )
 
@@ -393,6 +530,28 @@ def browser(
             gmax = max(_region_max(tracks[n]) for n in members) * 1.05
             for n in members:
                 ymax_cfg.setdefault(n, gmax)
+
+    # Resolve per-BAM coverage y-limits, same scalar/dict/share logic as bigwig.
+    bam_names = [n for n in tracks if types[n] == 'bam']
+    if isinstance(bam_ymax, (int, float)):
+        bam_ymax_cfg = {n: float(bam_ymax) for n in bam_names}
+    else:
+        bam_ymax_cfg = dict(bam_ymax or {})
+    if bam_share:
+        from .bam import pileup_counts
+
+        def _bam_region_max(track):
+            return float(pileup_counts(track, chrom, start, end,
+                                       min_baseq=bam_min_baseq).sum(axis=0).max())
+
+        for grp in bam_share:
+            members = [n for n in grp if n in tracks and types[n] == 'bam']
+            if not members:
+                continue
+            gmax = max(_bam_region_max(tracks[n]) for n in members) * 1.05
+            for n in members:
+                bam_ymax_cfg.setdefault(n, gmax)
+
     axes_by_name: Dict[str, plt.Axes] = {}
     first_ax = None
 
@@ -409,6 +568,10 @@ def browser(
         elif tt == 'bw':
             _draw_bigwig(ax, track, chrom, start, end, color=col,
                          n_bins=bw_n_bins, ymax=ymax_cfg.get(name))
+        elif tt == 'bam':
+            _draw_bam(ax, track, chrom, start, end, color=col,
+                      reference=reference, min_baseq=bam_min_baseq,
+                      allele_freq=bam_allele_freq, ymax=bam_ymax_cfg.get(name))
         elif tt == 'bedpe':
             _draw_bedpe(ax, track, chrom, start, end, color=col)
         elif tt == 'genes':
@@ -420,9 +583,21 @@ def browser(
                       fontsize=label_fontsize, labelpad=10)
         for side in ('top', 'right', 'bottom'):
             ax.spines[side].set_visible(False)
-        if tt != 'bw':
+        if tt not in ('bw', 'bam'):
             ax.spines['left'].set_visible(False)
         ax.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+
+    # Reference sequence track (letters or color strip) just above the ruler.
+    if seq_on:
+        ax_seq = fig.add_subplot(gs[len(tracks)], sharex=first_ax)
+        axes_by_name['_sequence'] = ax_seq
+        _draw_sequence(ax_seq, chrom, start, end, reference)
+        ax_seq.set_xlim(start, end)
+        ax_seq.set_ylabel('sequence', rotation=0, ha='right', va='center',
+                          fontsize=label_fontsize, labelpad=10)
+        for side in ('top', 'right', 'bottom', 'left'):
+            ax_seq.spines[side].set_visible(False)
+        ax_seq.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
 
     # Coordinate ruler along the bottom
     ax_ruler = fig.add_subplot(gs[-1], sharex=first_ax)

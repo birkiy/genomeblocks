@@ -36,7 +36,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "pysam"]
+bam = ["pysam"]
 
 [tool.setuptools.packages.find]
 include = ["genomeblocks*"]
