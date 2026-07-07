@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genomeblocks"
-version = "1.0.0"
+version = "1.0.1"
 description = "Fluent building blocks for regulatory genomics."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -31,9 +31,12 @@ dependencies = [
     "cooler",
     "pyranges",
     "tqdm",
-    "cgranges",
     "lightmotif"
 ]
+# NOTE: `cgranges` (fast C interval index) is NOT a pip dependency — it is not
+# published on PyPI. genomeblocks falls back to a pure-Python index when it is
+# absent, so pip installs work; install cgranges (conda, or
+# `pip install git+https://github.com/lh3/cgranges`) for the fast path.
 
 [project.urls]
 Homepage = "https://birkiy.github.io/genomeblocks/"

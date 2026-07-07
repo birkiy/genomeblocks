@@ -1,5 +1,24 @@
+import genomeblocks.loci as loci_mod
 from genomeblocks import Loci
 from genomeblocks.locus import Locus
+
+
+def test_pure_python_interval_index(monkeypatch):
+    # cgranges isn't on PyPI, so pip-only installs use the pure-Python index.
+    # Force it and check overlap-based ops are still correct.
+    monkeypatch.setattr(loci_mod, "_get_cgranges", lambda: None)
+
+    a = Loci([Locus("chr1", s, s + 100) for s in (0, 100, 250, 400)])
+    b = Loci([Locus("chr1", s, s + 100) for s in (50, 300)])  # 50-150, 300-400
+
+    assert isinstance(a.cgr, loci_mod._PyIntervalIndex)   # fallback engaged
+    # 0-100, 100-200, 250-350 overlap b; 400-500 does not (half-open at 400)
+    assert sorted(l.start for l in a.intersect(b)) == [0, 100, 250]
+    assert sorted(l.start for l in a.difference(b)) == [400]
+    # a far-away interval overlaps nothing in b
+    assert len(Loci([Locus("chr1", 5000, 5100)]).intersect(b)) == 0
+    # different chromosome never overlaps
+    assert len(Loci([Locus("chr2", 60, 140)]).intersect(b)) == 0
 
 
 def test_make_from_bed(bed_path):

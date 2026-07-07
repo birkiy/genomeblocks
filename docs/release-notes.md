@@ -16,6 +16,23 @@ permalink: /release-notes/
 
 ---
 
+## v1.0.1 — pip-install fix
+
+`1.0.0` listed `cgranges` (Heng Li's C interval index) as a dependency, but
+**`cgranges` is not published on PyPI**, so `pip install genomeblocks` failed
+with `No matching distribution found for cgranges`.
+
+- `cgranges` is no longer a pip dependency. When it isn't importable,
+  genomeblocks now uses a **pure-Python interval index** with identical overlap
+  results, so `pip install genomeblocks` works out of the box. Install
+  `cgranges` (conda, or `pip install git+https://github.com/lh3/cgranges`) for
+  the fast C path on large sets.
+
+If you installed `1.0.0` from PyPI and hit the error, upgrade:
+`pip install -U genomeblocks`.
+
+---
+
 ## v1.0.0 — first stable release
 
 `genomeblocks` v1.0 is the first release with a frozen public surface, a full

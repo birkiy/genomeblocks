@@ -20,17 +20,16 @@ nav_order: 2
 - **Python** ≥ 3.10
 - **[graph-tool](https://graph-tool.skewed.de/)** — chromatin-architecture graphs (Peixoto 2014; not pip-installable, use conda/mamba)
 - Standard scientific stack: `numpy`, `pandas`, `scipy`, `matplotlib`
-- Genomics I/O:
+- Genomics I/O (all pip-installable):
   - **[pybigtools](https://github.com/jackh726/bigtools)** — threaded bigWig reader (Huey 2023)
   - **[pyranges](https://github.com/pyranges/pyranges)** — genomic interval DataFrames (Stovner & Sætrom 2020)
-  - **[cgranges](https://github.com/lh3/cgranges)** — C-level interval overlap index (Heng Li)
-  - `cooler` — Hi-C `.mcool` I/O
   - **[lightmotif](https://github.com/althonos/lightmotif)** — SIMD-accelerated PSSM scanning (Larralde 2023)
   - `cooler` — Hi-C `.mcool` I/O
+- **Optional speedup** — **[cgranges](https://github.com/lh3/cgranges)** (Heng Li), a C interval-overlap index. It is **not on PyPI**; genomeblocks uses a pure-Python fallback when it's absent, so overlap ops work without it. Install it (conda, or `pip install git+https://github.com/lh3/cgranges`) for the fast path on large sets.
 
-Everything except `graph-tool` is pip-installable and declared in
-`pyproject.toml`. TMM normalization (`tmm()`) is **vendored** — the edgeR
-algorithm ships inside `genomeblocks.signal`, so there is no external
+Everything except `graph-tool` and the optional `cgranges` is pip-installable
+and declared in `pyproject.toml`. TMM normalization (`tmm()`) is **vendored** —
+the edgeR algorithm ships inside `genomeblocks.signal`, so there is no external
 normalization dependency. Because `graph-tool` is a compiled C++/Boost library,
 the recommended path is conda. See the [Credits page](credits) for full
 citations of every upstream tool.
@@ -115,9 +114,12 @@ print(loci.slop(100))        # Loci(n=2)  with ±100 bp
 | `tmm()` | — (edgeR TMM vendored) | — |
 | `Architecture.add_mcool()` | `cooler` | ✅ (auto) |
 | BigWig signal (fast path) | `pybigtools` | ✅ (auto; falls back to pure Python) |
+| Interval overlap (fast path) | `cgranges` | ❌ conda / from source; falls back to pure Python |
 | `pyranges`-backed ops (`Loci.nearest`, `Genes.nearest_genes`) | `pyranges` | ✅ (auto) |
 | BAM tracks in `browser` / `coverage()` | `pysam` | ✅ `pip install genomeblocks[bam]` |
 | Motif logos (`motifs_draw`) | `logomaker` | ✅ (install separately) |
 
-Everything marked ✅ is declared in `pyproject.toml` and installed by pip; the
-only hard conda requirement is `graph-tool`.
+Everything marked ✅ is declared in `pyproject.toml` and installed by pip. The
+`graph-tool` and `cgranges` fast paths need conda/source — but only
+`graph-tool` is truly required (for `Architecture`); `cgranges` is a pure
+speedup with a built-in pure-Python fallback.

@@ -1,9 +1,61 @@
 """Loci container and interval operations."""
+import bisect
 from typing import Iterable, Optional, Union, List, Dict
 
 # Local imports are delayed to avoid circular imports
 from .locus import Locus
-import cgranges as cr
+
+
+def _get_cgranges():
+    """Return the ``cgranges`` C extension if importable, else ``None``.
+
+    ``cgranges`` (Heng Li) is a compiled C interval index and is *not* on PyPI —
+    it must be built from source (``pip install
+    git+https://github.com/lh3/cgranges``) or installed via conda. When it's
+    missing we fall back to :class:`_PyIntervalIndex`, so ``pip install
+    genomeblocks`` works out of the box; install cgranges for the fast path.
+    """
+    try:
+        import cgranges
+        return cgranges
+    except ImportError:
+        return None
+
+
+class _PyIntervalIndex:
+    """Pure-Python stand-in for ``cgranges`` — same subset of the API we use.
+
+    ``add(chrom, start, end, label)`` / ``index()`` / ``overlap(chrom, start,
+    end)`` yielding ``(start, end, label)`` for each overlapping interval
+    (half-open). Correct but not as fast as the C extension on large sets;
+    install ``cgranges`` when performance matters.
+    """
+    __slots__ = ("_by_chrom", "_sorted")
+
+    def __init__(self):
+        self._by_chrom: Dict[str, list] = {}
+        self._sorted: Dict[str, tuple] = {}
+
+    def add(self, chrom, start, end, label):
+        self._by_chrom.setdefault(chrom, []).append((int(start), int(end), label))
+
+    def index(self):
+        for chrom, ivs in self._by_chrom.items():
+            ivs.sort(key=lambda t: t[0])
+            self._sorted[chrom] = (ivs, [t[0] for t in ivs])
+
+    def overlap(self, chrom, start, end):
+        data = self._sorted.get(chrom)
+        if data is None:
+            return
+        ivs, starts = data
+        qs, qe = int(start), int(end)
+        hi = bisect.bisect_left(starts, qe)   # intervals with start >= end can't overlap
+        for k in range(hi):
+            s, e, label = ivs[k]
+            if e > qs:                        # start < qe already guaranteed
+                yield (s, e, label)
+
 
 class Loci(list):
 
@@ -11,17 +63,18 @@ class Loci(list):
         super().__init__(iterable)
         self.filename = filename
         self._uids: Optional[dict] = None
-        self._cgr: Optional[cr.cgranges] = None
+        self._cgr = None
 
     def _build_cgr(self) -> None:
-        idx = cr.cgranges()
+        cg = _get_cgranges()
+        idx = cg.cgranges() if cg is not None else _PyIntervalIndex()
         for i, l in enumerate(self):
             idx.add(l.chrom, int(l.start), int(l.end), i)
         idx.index()
         self._cgr = idx
 
     @property
-    def cgr(self) -> cr.cgranges:
+    def cgr(self):
         if self._cgr is None: self._build_cgr()
         return self._cgr
 
