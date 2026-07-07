@@ -13,7 +13,6 @@ signal_draw, motifs_draw) to keep the processing modules dependency-light.
 """
 
 from importlib import import_module
-from types import ModuleType
 from typing import Dict
 
 # Mapping of public name -> (module_path, attribute_name)
@@ -42,8 +41,9 @@ _EXPORTS: Dict[str, tuple[str, str]] = {
 	'tmm': ('.signal', 'tmm'),
 	# bam (per-base pileup coverage for the browser)
 	'coverage': ('.bam', 'coverage'),
-	# browser
-	'browser': ('.browser', 'browser'),
+	# browser (function lives in the browserview module so the public
+	# ``browser`` name never collides with a submodule of the same name)
+	'browser': ('.browserview', 'browser'),
 }
 
 

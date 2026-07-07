@@ -40,7 +40,7 @@ tracks. Each value's type is inferred from its extension or Python type:
 | `*.bedpe` path / `list[Pair]` | arc track |
 
 ```python
-from genomeblocks.browser import browser
+from genomeblocks import browser
 
 region = "chr19:50,792,009-50,923,669"
 tracks = {

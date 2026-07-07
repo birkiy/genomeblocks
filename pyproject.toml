@@ -38,6 +38,7 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest", "pysam"]
 bam = ["pysam"]
+viz = ["logomaker"]        # motif-logo plotting in genomeblocks.motifs_draw
 
 [tool.setuptools.packages.find]
 include = ["genomeblocks*"]

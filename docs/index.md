@@ -60,9 +60,13 @@ Regulatory-genomics analyses usually end up as a cocktail of bedtools, PyRanges,
     <span class="mod-name"><code>motifs</code><span class="mod-tag">Annotation</span></span>
     <small>JASPAR motif scanning over a FASTA genome; TF family lookups and enrichment helpers.</small>
   </li>
+  <li class="navy">
+    <span class="mod-name"><code>Atlas</code><span class="mod-tag">Annotation</span></span>
+    <small>GIGGLE-style enrichment of a region set against thousands of BED tracks (ChIP-Atlas scale) via one sparse index.</small>
+  </li>
   <li class="purple">
     <span class="mod-name"><code>Architecture</code><span class="mod-tag">Networks</span></span>
-    <small>A chromatin-contact graph (graph-tool) built from BEDPE loops or mcool matrices; spreading, cliques, O/E, hub discovery.</small>
+    <small>A chromatin-contact graph (graph-tool) built from BEDPE loops or mcool matrices; distance-decay O/E normalization, gene annotation, hub discovery.</small>
   </li>
   <li class="purple">
     <span class="mod-name"><code>bedpe</code><span class="mod-tag">Networks</span></span>
@@ -139,7 +143,9 @@ counts = genes.annotations(se & cre).groupby("annotation").size()
 | [User Guide → BEDPE](guide/bedpe) | Loops & paired intervals. |
 | [User Guide → Motifs](guide/motifs) | TF motif scanning. |
 | [API Reference](api/) | Full method signatures. |
+| [User Guide → Atlas](guide/atlas) | GIGGLE-style enrichment against BED collections. |
 | [Tools → Venn diagram](tools/venn) | Drop 2–3 BED / narrowPeak files in the browser and get a live overlap Venn. |
+| [Release Notes](release-notes) | What's in v1.0 and the fixes it ships. |
 | [Credits](credits) | Upstream tools & citations. |
 
 ---

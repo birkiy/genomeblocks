@@ -1,5 +1,5 @@
 """Motif scanning utilities."""
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, List, Optional
 import os
 
 from .loci import Loci

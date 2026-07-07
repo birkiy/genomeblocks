@@ -4,7 +4,7 @@ matplotlib.use("Agg")
 import numpy as np
 import pytest
 
-from genomeblocks.browser import _detect_track_type, _parse_region, browser
+from genomeblocks.browserview import _detect_track_type, _parse_region, browser
 from genomeblocks import Loci
 from genomeblocks.locus import Locus
 

@@ -41,6 +41,33 @@ def test_ordering_within_chrom():
     assert Locus("chr1", 100, 200) < Locus("chr1", 300, 400)
 
 
+def test_cross_chrom_ordering_is_consistent():
+    # Regression: __gt__/__ge__ used to return `chrom < chrom` across
+    # chromosomes, so `a > b` and `b > a` could both be True/False.
+    a = Locus("chr1", 100, 200)
+    b = Locus("chr2", 100, 200)
+    assert a < b and b > a
+    assert not (a > b) and not (b < a)
+    assert a <= b and b >= a
+    assert not (a >= b) and not (b <= a)
+
+
+def test_locus_is_hashable_by_uid():
+    # Regression: Locus was unhashable (dataclass eq without __hash__), so it
+    # could not go in a set / dict key despite being value-like.
+    a = Locus("chr1", 100, 200, "+")
+    b = Locus("chr1", 100, 200, "+")
+    c = Locus("chr1", 100, 200, "-")
+    assert hash(a) == hash(b)
+    assert len({a, b, c}) == 2          # a and b collapse; strand differs for c
+
+
+def test_ne_against_non_locus():
+    a = Locus("chr1", 100, 200)
+    assert a != "chr1:100-200(.)"       # different type → not equal
+    assert not (a == "chr1:100-200(.)")
+
+
 def test_copy_is_independent():
     a = Locus("chr1", 100, 200, "+")
     b = a.copy()

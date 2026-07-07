@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from genomeblocks import tmm
-from genomeblocks.signal import _even_ranges, plan_workers, _tmm_norm_factors
+from genomeblocks.signal import _even_ranges, _tmm_norm_factors
 from genomeblocks.signal_draw import _bcast, _resolve_groups   # plotting helpers
 
 
@@ -24,11 +24,6 @@ def test_even_ranges_partition():
     for (a, b), (c, d) in zip(rngs, rngs[1:]):
         assert b == c
     assert sum(b - a for a, b in rngs) == 10
-
-
-def test_plan_workers_returns_chunks():
-    chunks = plan_workers(2, 100)
-    assert isinstance(chunks, list) and len(chunks) >= 1
 
 
 def test_resolve_groups_from_masks():

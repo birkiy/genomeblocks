@@ -30,21 +30,27 @@ cube = loci.signal(
     span=False,         # True → use the full Locus span rather than center±flank
     dtype=np.float32,
     progress=True,
-    max_bw_parallel=6,
-    max_workers=None,   # None → cpu_count()
+    workers=1,          # 1 = sequential (fastest for typical jobs); >1 = multiprocessing
     backend=None,       # None → auto-detect pybigtools; 'bigwig' forces pure-Python
+    exact=True,         # pybigtools base-accurate binning (False = ~3× faster, approximate)
 )
 print(cube.shape)       # (n_loci, n_tracks, n_bins)
 ```
 
 Returns a dense `numpy.ndarray` — immediately suitable for `tmm()`, plotting, or clustering.
 
-### Threading model
+### Execution model
 
-- Work is split by (track-chunk, loci-chunk).
-- Up to `max_bw_parallel` bigWig files open concurrently per thread group.
-- Each worker opens its own bigWig handles — no cross-thread file sharing.
-- `pybigtools` releases the GIL for reads + decompression, so wall-clock scales with `--cores`.
+- **Default (`workers=1`) is sequential.** A single native-Rust pass with
+  `pybigtools` reaches tens of thousands of region-tracks/s — fastest for the
+  typical heatmap / browser / per-locus workload.
+- **`workers > 1` uses multiprocessing, not threading.** `pybigtools`
+  serialises concurrent Python threads, so scaling comes from a
+  `ProcessPoolExecutor` whose children write directly into one shared-memory
+  cube. Work is split by (track-chunk, loci-chunk); each child opens its own
+  bigWig handles.
+- `workers` is capped at `min(workers, n_tracks·⌈n_loci/1000⌉, cpu_count()//2)`
+  — half the cores are left free for the OS and each worker's own Rust pool.
 
 ### Backends
 
@@ -62,7 +68,7 @@ from genomeblocks import tmm
 cube_n = tmm(cube)
 ```
 
-Per-track TMM normalization factors computed over per-region means (via `conorm.tmm_norm_factors`), then scaled to library size in per-million. Useful when pooling biological replicates or comparing cell types.
+Per-track TMM normalization factors computed over per-region means, then scaled to library size in per-million. Useful when pooling biological replicates or comparing cell types. The edgeR TMM algorithm (Robinson & Oshlack, 2010) is vendored directly in `genomeblocks.signal` — no external normalization dependency.
 
 ---
 
@@ -131,7 +137,7 @@ processing functions `signal` / `tmm` stay in `genomeblocks.signal`.
 
 ## Sizing considerations
 
-Memory for the cube is `n_loci × n_tracks × n_bins × dtype_size`. The extractor refuses to allocate more than half of `/`-free space as a safety check. If you need to scan a million CREs × 50 tracks × 200 bins, chunk by loci and stream to disk (`np.save` per chunk).
+Memory for the cube is `n_loci × n_tracks × n_bins × dtype_size`. The extractor refuses to allocate more than half of **available RAM** as a safety check (raising `MemoryError`). If you need to scan a million CREs × 50 tracks × 200 bins, chunk by loci and stream to disk (`np.save` per chunk).
 
 ---
 

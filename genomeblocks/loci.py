@@ -1,6 +1,5 @@
 """Loci container and interval operations."""
 from typing import Iterable, Optional, Union, List, Dict
-from collections import defaultdict
 
 # Local imports are delayed to avoid circular imports
 from .locus import Locus

@@ -1,7 +1,8 @@
 from __future__ import annotations
+import os
 import shutil
 from os import cpu_count
-from typing import List, Tuple, Sequence, Dict
+from typing import List, Tuple, Sequence
 
 import numpy as np
 from tqdm import tqdm
@@ -98,6 +99,19 @@ def _detect_backend():
 _bw_open, _bw_backend = _detect_backend()
 
 
+def _available_ram_bytes() -> int:
+    """Best-effort available physical RAM in bytes.
+
+    Uses POSIX ``sysconf`` (Linux/macOS); if the keys are unavailable, falls
+    back to free space on ``/`` so the guard still returns *something* rather
+    than crashing the extraction.
+    """
+    try:
+        return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_AVPHYS_PAGES")
+    except (ValueError, AttributeError, OSError):
+        return shutil.disk_usage("/").free
+
+
 def _even_ranges(total: int, n_chunks: int) -> List[Tuple[int, int]]:
     """Split [0, total) into *n_chunks* non-empty contiguous ranges.
 
@@ -117,26 +131,21 @@ def _even_ranges(total: int, n_chunks: int) -> List[Tuple[int, int]]:
     return ranges
 
 
-def plan_workers(n_tracks: int, n_loci: int, *, cores: int | None = None,
-                max_bw_parallel: int = 6) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
-    """
-    Plan the distribution of work across multiple threads.
+def _resolve_opener(backend: str | None):
+    """Return ``(opener, backend_name)`` for a requested backend.
 
-    Args:
-        n_tracks: Number of bigwig tracks
-        n_loci: Number of genomic loci
-        cores: Number of CPU cores to use (default: all available)
-        max_bw_parallel: Maximum number of bigwig files to process in parallel
-
-    Returns:
-        List of work chunks as [((track_start,track_end), (loci_start,loci_end)), ...]
+    Pure resolution — does **not** mutate module state, so concurrent
+    ``signal()`` calls with different backends don't race on globals.
+    ``backend=None`` uses the auto-detected default.
     """
-    c = cores or cpu_count() or 1
-    t_chunks = min(n_tracks, max_bw_parallel, c)
-    l_per_t = max(1, c // max(1, t_chunks))
-    t_ranges = _even_ranges(n_tracks, t_chunks)
-    l_ranges = _even_ranges(n_loci, l_per_t)
-    return [(tr, lr) for tr in t_ranges for lr in l_ranges]
+    if backend is None:
+        return _bw_open, _bw_backend
+    if backend == 'pybigtools':
+        return _open_pybigtools, 'pybigtools'
+    if backend == 'bigwig':
+        from . import bigwig as _bw_mod
+        return _bw_mod.open, 'bigwig'
+    raise ValueError(f"Unknown backend: {backend!r}")
 
 
 def _extract_chunk(cube: np.ndarray, hs: list, ch: dict,
@@ -259,27 +268,17 @@ def signal(
     Returns:
         ndarray of shape ``(n_loci, n_tracks, n_bins)``.
     """
-    global _bw_open, _bw_backend
-    if backend is not None:
-        if backend == 'pybigtools':
-            _bw_open = _open_pybigtools
-            backend_name = 'pybigtools'
-        elif backend == 'bigwig':
-            from . import bigwig as _bw_mod
-            _bw_open = _bw_mod.open
-            backend_name = 'bigwig'
-        else:
-            raise ValueError(f"Unknown backend: {backend!r}")
-    else:
-        backend_name = _bw_backend
+    opener, backend_name = _resolve_opener(backend)
 
     n_loci, n_tracks = len(loci), len(bigwigs)
     if n_loci == 0:
         raise ValueError("No loci provided.")
 
     bytes_need = n_loci * n_tracks * n_bins * np.dtype(dtype).itemsize
-    if bytes_need > 0.5 * shutil.disk_usage("/").free:
-        raise MemoryError("Cube may exceed safe RAM; try disk-chunk mode.")
+    if bytes_need > 0.5 * _available_ram_bytes():
+        raise MemoryError(
+            f"Signal cube needs ~{bytes_need / 1e9:.1f} GB, over half of "
+            f"available RAM; extract in loci chunks and stream to disk.")
 
     # flatten loci into pickle-friendly columns (needed for MP, cheap for seq)
     chrom_list = [loc.chrom for loc in loci]
@@ -304,7 +303,7 @@ def signal(
     if workers <= 1:
         _run_sequential(cube, bigwigs, chrom_list, starts, ends,
                         n_bins, flank, agg, span, exact,
-                        progress=progress)
+                        opener=opener, progress=progress)
     else:
         _run_multiprocess(cube, list(bigwigs), chrom_list, starts, ends,
                           n_bins, flank, agg, span, exact,
@@ -314,10 +313,10 @@ def signal(
 
 
 def _run_sequential(cube, bigwigs, chrom_list, starts, ends,
-                    n_bins, flank, agg, span, exact, *, progress):
+                    n_bins, flank, agg, span, exact, *, opener, progress):
     if not bigwigs:
         return
-    hs = [_bw_open(p) for p in bigwigs]
+    hs = [opener(p) for p in bigwigs]
     try:
         ch = hs[0].chroms()
         n_loci = len(chrom_list)

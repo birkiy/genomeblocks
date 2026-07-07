@@ -222,7 +222,7 @@ def _run_render_smoke(loci, bigwigs, cube, *, n_bins, flank, out_dir):
 
     # 1) Browser: 1 region × 2 bigwig tracks ------------------------------
     try:
-        from genomeblocks.browser import browser
+        from genomeblocks import browser
         locus = loci[0]
         region = (locus.chrom, locus.start - flank, locus.end + flank)
         tracks = {f"bw_{i}": bigwigs[i] for i in range(min(2, len(bigwigs)))}

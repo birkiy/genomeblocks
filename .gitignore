@@ -220,4 +220,11 @@ to-add/
 /meta.yaml          # root build artifact only (not conda-recipe/*/meta.yaml)
 
 # Example data downloaded by each example's download_data.sh
+examples/*/data/.DS_Store
+
+# macOS Finder metadata (any dir)
+.DS_Store
+**/.DS_Store
+
+# Example data — fetched per-example via download_data.sh, never committed
 examples/*/data/

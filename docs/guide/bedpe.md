@@ -83,6 +83,36 @@ df = pairs_to_frame(hits)                       # pandas DataFrame
 
 ---
 
+## Counting raw pairs into windows
+
+For a `.allValidPairs` (HiC-Pro), `.pairs` (pairtools/4DN), or juicer-medium
+contact file, count how many pairs land in each window of a `Loci` — in a
+single streaming pass, no matrix materialized:
+
+```python
+# per-window counts, broken down by partner chromosome (whole-genome in one pass)
+counts = windows.count_pairs("sample.allValidPairs", format="auto")
+
+# only contacts whose partner is on chr8 → a single 'count' column
+counts = windows.count_pairs("sample.allValidPairs", target_chrom="chr8")
+```
+
+For window-to-window contact matrices, `count_pairs_2d` returns a
+`scipy.sparse` matrix (symmetric when `loci_b` is omitted):
+
+```python
+M = windows.count_pairs_2d("sample.allValidPairs")        # (n, n) csr_matrix
+from genomeblocks.bedpe import pair_2d_to_frame, pair_2d_block
+long_df = pair_2d_to_frame(M, windows, windows)           # non-zero cells → DataFrame
+block, wa, wb = pair_2d_block(M, windows, windows, "chr8", "chr8")  # dense sub-block
+```
+
+Windows on a given chromosome must be non-overlapping (e.g. from
+`Loci.tile_genome`). Format is auto-detected; override with
+`columns=(c1, p1, c2, p2)` for non-standard layouts.
+
+---
+
 ## Integration points
 
 - **`Architecture.make(loci, bedpe, r=...)`** consumes a BEDPE file path directly — it calls `read_bedpe` under the hood, so you never import this module yourself.

@@ -23,15 +23,16 @@ class Locus:
     def center(l) -> int: return (l.start + l.end) // 2
 
     def __eq__(s, o: object) -> bool: return isinstance(o, Locus) and s.uid == o.uid
-    def __ne__(s, o: object) -> bool: return isinstance(o, Locus) and s.uid != o.uid
+    def __ne__(s, o: object) -> bool: return not s.__eq__(o)
+    def __hash__(s) -> int: return hash(s.uid)
     def __lt__(s, o: "Locus") -> bool: return NotImplemented if not isinstance(o, Locus) else \
         s.start < o.start if s.chrom == o.chrom else s.chrom < o.chrom
     def __le__(s, o: "Locus") -> bool: return NotImplemented if not isinstance(o, Locus) else \
         s.start <= o.start if s.chrom == o.chrom else s.chrom < o.chrom
     def __gt__(s, o: "Locus") -> bool: return NotImplemented if not isinstance(o, Locus) else \
-        s.start > o.start if s.chrom == o.chrom else s.chrom < o.chrom
+        s.start > o.start if s.chrom == o.chrom else s.chrom > o.chrom
     def __ge__(s, o: "Locus") -> bool: return NotImplemented if not isinstance(o, Locus) else \
-        s.start >= o.start if s.chrom == o.chrom else s.chrom < o.chrom
+        s.start >= o.start if s.chrom == o.chrom else s.chrom > o.chrom
 
     def distance_to(s, o: "Locus") -> int: return abs(s.center - o.center) if s.chrom == o.chrom else NotImplemented
     def overlaps(s, o: "Locus") -> bool: return (s.chrom == o.chrom) and not (s.end <= o.start or s.start >= o.end)

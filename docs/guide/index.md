@@ -19,3 +19,4 @@ Task-oriented walkthroughs for each subsystem. Each page assumes the concepts in
 | [Browser](browser) | IGV-like SVG region plots. |
 | [BEDPE](bedpe) | Paired-end intervals / loop files. |
 | [Motifs](motifs) | JASPAR motif scanning over FASTA genomes. |
+| [Atlas](atlas) | GIGGLE-style enrichment against large BED collections (ChIP-Atlas). |

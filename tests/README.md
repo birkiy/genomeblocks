@@ -18,14 +18,15 @@ environment that has it.
 
 | file | module under test |
 | --- | --- |
-| `test_locus.py` | `Locus` — uid, distance, overlap, ordering |
+| `test_locus.py` | `Locus` — uid, distance, overlap, ordering (incl. cross-chrom), hashability |
 | `test_loci.py` | `Loci` — `make`, set algebra (`& - + \| ^`), sort/merge/slop, overlap, nearest |
 | `test_bedpe.py` | `read_bedpe`, `Pair`, `Loci.pair_to_bed` |
 | `test_genes.py` | GTF parsing, region-class annotation, nearest gene |
-| `test_architecture.py` | build, `strength` / `elbow` / `annotate` / `prime_hubs`, `normalize`, subgraph/copy/set-ops/pickle |
-| `test_signal.py` | `tmm`, `_bcast`, `_resolve_groups`, `_even_ranges`, `plan_workers` |
+| `test_architecture.py` | build, `strength` / `elbow` / `annotate` / `prime_hubs`, `normalize`, subgraph/copy/set-ops/pickle (incl. property value-type preservation) |
+| `test_signal.py` | `tmm`, `_bcast`, `_resolve_groups`, `_even_ranges` |
 | `test_signal_draw.py` | `plot_heatmap` / `plot_profiles` with `groups` |
 | `test_browser.py` | track detection, bigwig-list averaging, `bw_share`, scalar `bw_ymax` |
 | `test_motifs.py` | `bootstrap_enrichment` LFC |
 | `test_atlas.py` | `Atlas.make` / `search`, header-less `attach_meta` |
-| `test_api.py` | public surface; removed names (Tags, make_spread, …) stay gone; import order |
+| `test_functional.py` | **end-to-end**: synthetic bigWig → both signal backends, motif scan, `Atlas`, `Loci→Genes→Architecture`, headless `browser()`; plus v1 regressions |
+| `test_api.py` | public surface; removed names (Tags, make_spread, …) stay gone; `browser` export is the callable; import order |

@@ -34,30 +34,32 @@ docs/
 ├── installation.md
 ├── quickstart.md
 ├── concepts.md
-├── examples.md
+├── release-notes.md
+├── credits.md
 ├── guide/
 │   ├── index.md         # user guide hub
 │   ├── loci.md
-│   ├── tags.md
 │   ├── genes.md
 │   ├── architecture.md
 │   ├── signal.md
 │   ├── browser.md
 │   ├── bedpe.md
-│   └── motifs.md
+│   ├── motifs.md
+│   └── atlas.md
 ├── api/
 │   ├── index.md
 │   ├── locus.md
 │   ├── loci.md
-│   ├── tags.md
 │   ├── genes.md
 │   ├── architecture.md
 │   ├── signal.md
-│   ├── browser.md
+│   ├── browser.md      # documents the browserview module
 │   ├── bedpe.md
-│   └── motifs.md
+│   ├── motifs.md
+│   └── atlas.md
+├── walkthrough/         # AR & FOXA1 real-data example
+├── tools/               # in-browser Venn tool
 └── assets/
-    └── custom.scss
 ```
 
 Each page uses `just-the-docs` front matter:

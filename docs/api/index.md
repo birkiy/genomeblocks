@@ -17,6 +17,7 @@ Signatures and short descriptions for every public name, grouped by module. Use 
 | [`genomeblocks.genes`](genes) | `Gene`, `Transcript`, `Genes` |
 | [`genomeblocks.architecture`](architecture) | `Architecture` |
 | [`genomeblocks.signal`](signal) | `signal`, `tmm` (plotting: `plot_heatmap`, `plot_profiles`, `compare_heatmap` in `signal_draw`) |
-| [`genomeblocks.browser`](browser) | `browser` |
-| [`genomeblocks.bedpe`](bedpe) | `Pair`, `read_bedpe`, `pair_to_bed`, `pairs_to_frame`, `pairs_to_bedpe` |
-| [`genomeblocks.motifs`](motifs) | `make_genome`, `scan_motifs` |
+| [`genomeblocks.browserview`](browser) | `browser` (re-exported as `genomeblocks.browser`) |
+| [`genomeblocks.bedpe`](bedpe) | `Pair`, `read_bedpe`, `pair_to_bed`, `pairs_to_frame`, `pairs_to_bedpe`, `count_pairs`, `count_pairs_2d` |
+| [`genomeblocks.motifs`](motifs) | `make_genome`, `scan_motifs` (matrix / masked / differential / archetypes in the module) |
+| [`genomeblocks.atlas`](atlas) | `Atlas` |

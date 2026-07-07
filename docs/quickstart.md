@@ -122,7 +122,7 @@ from genomeblocks import compare_heatmap
 
 bigwigs = ["ATAC.bw", "H3K4me1.bw", "H3K27ac.bw"]
 
-fig, union, S, tags = compare_heatmap(
+fig, union, S, groups = compare_heatmap(
     a=cre,
     b=superenhancers,
     bigwigs=bigwigs,
@@ -162,7 +162,7 @@ fig, _ = browser(
 fig.savefig("browser.svg")
 ```
 
-A full Nanog-locus example is in [`examples/browser_example.py`](https://github.com/birkiy/genomeblocks/blob/main/examples/browser_example.py) and renders into an IGV-like, fully-vectorial SVG.
+A full real-data example is in [`examples/ar_foxa1_lncap/`](https://github.com/birkiy/genomeblocks/tree/main/examples/ar_foxa1_lncap) and the [browser walkthrough](walkthrough/browser); both render into an IGV-like, fully-vectorial SVG.
 
 ---
 

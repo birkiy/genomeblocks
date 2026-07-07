@@ -1,6 +1,6 @@
 """BAM pileup extraction for the region browser.
 
-Kept matplotlib-free (drawing lives in ``browser.py``) and ``pysam`` is
+Kept matplotlib-free (drawing lives in ``browserview.py``) and ``pysam`` is
 imported lazily so ``import genomeblocks`` stays cheap and pysam remains an
 optional dependency — only code paths that actually touch a ``.bam`` pull it
 in, mirroring how ``signal.py`` defers ``pybigtools``.
@@ -12,7 +12,7 @@ tells the drawer which allele is the match (gray) and which are mismatches
 (colored), exactly the IGV coverage-track look.
 """
 from __future__ import annotations
-from typing import Tuple, Union
+from typing import Union
 
 import numpy as np
 
@@ -124,6 +124,6 @@ def coverage(bam: Union[str, "object"], region, *, min_baseq: int = 15
     end)`` tuple, or ``'chr1:1,000-2,000'`` string. Convenience wrapper around
     :func:`pileup_counts` for scripting outside the browser.
     """
-    from .browser import _parse_region
+    from .browserview import _parse_region
     chrom, start, end = _parse_region(region)
     return pileup_counts(bam, chrom, start, end, min_baseq=min_baseq).sum(axis=0)

@@ -63,3 +63,17 @@ def test_signal_first_import_order():
     r = subprocess.run([sys.executable, "-c", "import genomeblocks.signal"],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
+
+
+def test_browser_export_is_the_function_not_the_module():
+    # Regression: the drawing module was renamed to `browserview` so the public
+    # `browser` name is unambiguously the callable, regardless of import order.
+    import types
+    assert callable(gb.browser)
+    assert not isinstance(gb.browser, types.ModuleType)
+
+
+def test_browser_submodule_name_is_gone():
+    import importlib.util
+    assert importlib.util.find_spec("genomeblocks.browser") is None
+    assert importlib.util.find_spec("genomeblocks.browserview") is not None

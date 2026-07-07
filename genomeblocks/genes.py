@@ -1,7 +1,7 @@
 """Transcript/Gene/Genes definitions and GTF parsing helpers."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union, ClassVar, Callable
+from typing import Dict, List, Optional, Union
 
 # local imports delayed where necessary to avoid circular refs
 from .locus import Exon, CDS, UTR, Locus
@@ -159,8 +159,14 @@ def make(cls, filename, gene_name_key='gene_name', gene_type_key='gene_type', ch
                 if feature_type == 'five_prime_UTR': utr_type = "5'"
                 elif feature_type == 'three_prime_UTR': utr_type = "3'"
                 else:
-                    if strand == '+': utr_type = "5'" if end <= genes[gene_id].transcripts[t_id].cds[0].start else "3'"
-                    elif strand == '-': utr_type = "3'" if end <= genes[gene_id].transcripts[t_id].cds[0].start else "5'"
+                    # Generic 'UTR': infer 5'/3' from the CDS start. Guard the
+                    # empty-CDS case (non-coding transcript, or a UTR line that
+                    # precedes its CDS) so parsing never crashes on IndexError.
+                    cds = genes[gene_id].transcripts[t_id].cds
+                    cds_start = cds[0].start if cds else None
+                    if cds_start is None: utr_type = "5'"
+                    elif strand == '+': utr_type = "5'" if end <= cds_start else "3'"
+                    elif strand == '-': utr_type = "3'" if end <= cds_start else "5'"
                     else: utr_type = "5'"  # default fallback
                 u = UTR(chrom, start, end, strand, exon_number=e_number, type=utr_type)
                 genes[gene_id].transcripts[t_id].add_utr(u)

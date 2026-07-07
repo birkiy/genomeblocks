@@ -4,6 +4,22 @@ from typing import Optional
 import graph_tool.all as gt # ignore import
 
 
+def _infer_prop_type(values) -> str:
+    """Best-effort graph-tool value type from a list of Python values.
+
+    Only used as a fallback for pickles that predate the recorded
+    ``*prop_types`` state — current pickles carry the exact value type.
+    """
+    sample_val = next((v for v in values if v is not None), None)
+    if sample_val is None or isinstance(sample_val, str):
+        return "string"
+    if isinstance(sample_val, bool):
+        return "bool"
+    if isinstance(sample_val, (int, float)):
+        return "float"
+    return "string"
+
+
 class Architecture(gt.Graph):
 
     def __init__(s, name: Optional[str]=None):
@@ -70,39 +86,21 @@ class Architecture(gt.Graph):
         new_arch = s.__class__(name=s._name + "_copy")
         new_arch.set_directed(s.is_directed())
         
-        # Create all vertex property maps in the new graph
+        # Create all vertex/edge property maps in the new graph, preserving
+        # each map's exact graph-tool value type. Don't infer the type from a
+        # sampled Python value: graph-tool returns bools as ints, so
+        # isinstance-based inference silently downcast bool props to double
+        # (and dropped every property on an empty graph).
         for vp_name, vp_map in s.vp.items():
             if vp_name == 'uid':
                 continue  # uid is created by default
-            # Infer property type from the first value
-            sample_v = next(s.vertices(), None)
-            if sample_v is not None:
-                sample_val = vp_map[sample_v]
-                if isinstance(sample_val, str):
-                    new_arch.vp[vp_name] = new_arch.new_vertex_property("string")
-                elif isinstance(sample_val, (int, float)):
-                    new_arch.vp[vp_name] = new_arch.new_vertex_property("double")
-                elif isinstance(sample_val, bool):
-                    new_arch.vp[vp_name] = new_arch.new_vertex_property("bool")
-                else:
-                    new_arch.vp[vp_name] = new_arch.new_vertex_property("object")
-        
-        # Create all edge property maps in the new graph
+            new_arch.vp[vp_name] = new_arch.new_vertex_property(vp_map.value_type())
+
         for ep_name, ep_map in s.ep.items():
             if ep_name in ['w', 'n', 'd']:
                 continue  # These are created by default
-            sample_e = next(s.edges(), None)
-            if sample_e is not None:
-                sample_val = ep_map[sample_e]
-                if isinstance(sample_val, str):
-                    new_arch.ep[ep_name] = new_arch.new_edge_property("string")
-                elif isinstance(sample_val, (int, float)):
-                    new_arch.ep[ep_name] = new_arch.new_edge_property("double")
-                elif isinstance(sample_val, bool):
-                    new_arch.ep[ep_name] = new_arch.new_edge_property("bool")
-                else:
-                    new_arch.ep[ep_name] = new_arch.new_edge_property("object")
-        
+            new_arch.ep[ep_name] = new_arch.new_edge_property(ep_map.value_type())
+
         # Add vertices and copy all vertex properties
         for v_old in s.vertices():
             uid = s.vp.uid[v_old]
@@ -199,37 +197,18 @@ class Architecture(gt.Graph):
             print(f"[WARNING] No vertices matched filter criteria")
             return new_arch
         
-        # Create all vertex property maps in the new graph
+        # Create all vertex/edge property maps, preserving exact value types
+        # (see copy() — sampled-value inference downcast bool props to double).
         for vp_name_iter, vp_map in s.vp.items():
             if vp_name_iter == 'uid':
                 continue
-            sample_v = next(iter(include_vertices))
-            sample_val = vp_map[sample_v]
-            if isinstance(sample_val, str):
-                new_arch.vp[vp_name_iter] = new_arch.new_vertex_property("string")
-            elif isinstance(sample_val, (int, float)):
-                new_arch.vp[vp_name_iter] = new_arch.new_vertex_property("double")
-            elif isinstance(sample_val, bool):
-                new_arch.vp[vp_name_iter] = new_arch.new_vertex_property("bool")
-            else:
-                new_arch.vp[vp_name_iter] = new_arch.new_vertex_property("object")
-        
-        # Create all edge property maps
+            new_arch.vp[vp_name_iter] = new_arch.new_vertex_property(vp_map.value_type())
+
         for ep_name, ep_map in s.ep.items():
             if ep_name in ['w', 'n', 'd']:
                 continue
-            sample_e = next(s.edges(), None)
-            if sample_e is not None:
-                sample_val = ep_map[sample_e]
-                if isinstance(sample_val, str):
-                    new_arch.ep[ep_name] = new_arch.new_edge_property("string")
-                elif isinstance(sample_val, (int, float)):
-                    new_arch.ep[ep_name] = new_arch.new_edge_property("double")
-                elif isinstance(sample_val, bool):
-                    new_arch.ep[ep_name] = new_arch.new_edge_property("bool")
-                else:
-                    new_arch.ep[ep_name] = new_arch.new_edge_property("object")
-        
+            new_arch.ep[ep_name] = new_arch.new_edge_property(ep_map.value_type())
+
         # Add filtered vertices with all properties
         for v_old in include_vertices:
             uid = s.vp.uid[v_old]
@@ -440,7 +419,13 @@ class Architecture(gt.Graph):
         eprops = {}
         for name, prop in s.ep.items():
             eprops[name] = [prop[e] for e in edges]
-        
+
+        # Record each map's exact graph-tool value type so restore preserves
+        # bool / int / vector props (reading a bool map yields ints, so
+        # value-based inference on restore would downcast them to float).
+        vprop_types = {name: prop.value_type() for name, prop in s.vp.items()}
+        eprop_types = {name: prop.value_type() for name, prop in s.ep.items()}
+
         return {
             '_name': s._name,
             'directed': s.is_directed(),
@@ -448,6 +433,8 @@ class Architecture(gt.Graph):
             'edge_pairs': edge_pairs,
             'vprops': vprops,
             'eprops': eprops,
+            'vprop_types': vprop_types,
+            'eprop_types': eprop_types,
         }
 
     def __setstate__(s, state):
@@ -465,20 +452,15 @@ class Architecture(gt.Graph):
         # Set the name
         s._name = state.get('_name', 'Architecture')
         
-        # Create vertex property maps first
+        # Create vertex property maps first. Prefer the recorded value type
+        # (added in __getstate__); fall back to value inference for older
+        # pickles that predate vprop_types.
         vprops_data = state.get('vprops', {})
+        vprop_types = state.get('vprop_types', {})
         for name in vprops_data.keys():
-            # Infer type from first non-None value
-            values = vprops_data[name]
-            sample_val = next((v for v in values if v is not None), None)
-            if sample_val is None or isinstance(sample_val, str):
-                prop_type = "string"
-            elif isinstance(sample_val, (int, float)):
-                prop_type = "float"
-            else:
-                prop_type = "string"
+            prop_type = vprop_types.get(name) or _infer_prop_type(vprops_data[name])
             s.vp[name] = s.new_vertex_property(prop_type)
-        
+
         # Add vertices and set their properties
         vertex_uids = state.get('vertex_uids', [])
         vertex_map = []
@@ -492,19 +474,13 @@ class Architecture(gt.Graph):
         # Build UID to vertex mapping for edge creation
         uid_to_vertex = {s.vp.uid[v]: v for v in vertex_map}
         
-        # Create edge property maps
+        # Create edge property maps (recorded value type, else inference)
         eprops_data = state.get('eprops', {})
+        eprop_types = state.get('eprop_types', {})
         for name in eprops_data.keys():
-            values = eprops_data[name]
-            sample_val = next((v for v in values if v is not None), None)
-            if sample_val is None or isinstance(sample_val, str):
-                prop_type = "string"
-            elif isinstance(sample_val, (int, float)):
-                prop_type = "float"
-            else:
-                prop_type = "string"
+            prop_type = eprop_types.get(name) or _infer_prop_type(eprops_data[name])
             s.ep[name] = s.new_edge_property(prop_type)
-        
+
         # Add edges and set their properties
         edge_pairs = state.get('edge_pairs', [])
         for i, (uid1, uid2) in enumerate(edge_pairs):

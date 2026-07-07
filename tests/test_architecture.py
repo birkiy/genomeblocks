@@ -108,6 +108,21 @@ def test_copy_is_deep(arch):
     assert any(arch.ep.w[e] != 99.0 for e in arch.edges())
 
 
+def test_copy_preserves_property_value_types(arch):
+    # Regression: type was inferred from a sampled Python value, but graph-tool
+    # returns bools as ints — so bool props were silently copied as "double".
+    arch.vp["is_hub"] = arch.new_vertex_property("bool")
+    arch.vp["rank"] = arch.new_vertex_property("int32_t")
+    for v in arch.vertices():
+        arch.vp["is_hub"][v] = True
+        arch.vp["rank"][v] = 3
+    c = arch.copy()
+    assert c.vp["is_hub"].value_type() == "bool"
+    assert c.vp["rank"].value_type() == "int32_t"
+    assert bool(c.vp["is_hub"][c.vertex(0)]) is True
+    assert int(c.vp["rank"][c.vertex(0)]) == 3
+
+
 def test_set_operations(arch):
     assert (arch | arch).n_loci == arch.n_loci
     assert (arch & arch).n_loci == arch.n_loci
@@ -121,3 +136,14 @@ def test_pickle_roundtrip(arch, cre):
     assert cre[0].uid in g2
     e = g2.edge(g2.index[cre[0].uid], g2.index[cre[1].uid])
     assert g2.ep.w[e] == 5.0
+
+
+def test_pickle_preserves_bool_property_type(arch):
+    # Regression: __getstate__ read bool maps as ints, so __setstate__ rebuilt
+    # them as float. Value types are now recorded and restored.
+    arch.vp["is_hub"] = arch.new_vertex_property("bool")
+    for v in arch.vertices():
+        arch.vp["is_hub"][v] = True
+    g2 = pickle.loads(pickle.dumps(arch))
+    assert g2.vp["is_hub"].value_type() == "bool"
+    assert bool(g2.vp["is_hub"][g2.vertex(0)]) is True

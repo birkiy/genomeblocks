@@ -13,7 +13,7 @@ pysam = pytest.importorskip("pysam")
 
 from matplotlib.colors import to_rgba
 
-from genomeblocks.browser import _detect_track_type, browser
+from genomeblocks.browserview import _detect_track_type, browser
 from genomeblocks import bam as bammod
 from genomeblocks import coverage
 

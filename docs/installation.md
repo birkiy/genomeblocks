@@ -25,11 +25,15 @@ nav_order: 2
   - **[pyranges](https://github.com/pyranges/pyranges)** — genomic interval DataFrames (Stovner & Sætrom 2020)
   - **[cgranges](https://github.com/lh3/cgranges)** — C-level interval overlap index (Heng Li)
   - `cooler` — Hi-C `.mcool` I/O
-- Optional:
   - **[lightmotif](https://github.com/althonos/lightmotif)** — SIMD-accelerated PSSM scanning (Larralde 2023)
-  - `conorm` — TMM normalization
+  - `cooler` — Hi-C `.mcool` I/O
 
-Because `graph-tool` is a compiled C++/Boost library, the recommended path is conda. See the [Credits page](credits) for full citations of every upstream tool.
+Everything except `graph-tool` is pip-installable and declared in
+`pyproject.toml`. TMM normalization (`tmm()`) is **vendored** — the edgeR
+algorithm ships inside `genomeblocks.signal`, so there is no external
+normalization dependency. Because `graph-tool` is a compiled C++/Boost library,
+the recommended path is conda. See the [Credits page](credits) for full
+citations of every upstream tool.
 
 ---
 
@@ -57,18 +61,27 @@ pip install -e .
 
 ---
 
-## pip-only (no graph-tool → no Architecture)
+## pip-only install → **no `Architecture`**
 
-If you only need `Loci`, `Genes`, `Signal`, and `Browser`, you can skip graph-tool:
+{: .warning }
+> **`graph-tool` is not on PyPI.** `pip install genomeblocks` gives you every
+> subsystem **except `Architecture`** (the chromatin-contact graph), which
+> imports `graph-tool` at first use. If you need `Architecture`, you must use a
+> conda/mamba environment. This is the single most common install surprise.
 
 ```bash
 pip install genomeblocks
 ```
 
-The lazy-import in `genomeblocks/__init__.py` means `Architecture` will only fail the moment you touch it. All other subsystems work.
+Thanks to the lazy imports in `genomeblocks/__init__.py`, the missing dependency
+only surfaces the moment you touch `Architecture` (or `architecture_draw`) — you
+get a clean `ImportError` for `graph_tool`, not a broken package.
 
-{: .note }
-> Browser, signal extraction, and Genes don't need graph-tool. You'll get a clean import error only if you reference `Architecture`.
+| Works pip-only | Needs conda (`graph-tool`) |
+|---|---|
+| `Loci`, `Locus`, `Genes` | `Architecture` |
+| `signal` / `tmm` / heatmaps | `architecture_draw.draw` |
+| `browser`, `Atlas`, `scan_motifs`, `bedpe` | — |
 
 ---
 
@@ -78,8 +91,8 @@ The lazy-import in `genomeblocks/__init__.py` means `Architecture` will only fai
 import genomeblocks as gb
 print(gb.__all__)
 # ['Architecture', 'Atlas', 'CDS', 'Exon', 'Gene', 'Genes', 'Loci', 'Locus',
-#  'Transcript', 'UTR', 'browser', 'compare_heatmap', 'make_genome',
-#  'scan_motifs', 'tmm']
+#  'Transcript', 'UTR', 'browser', 'compare_heatmap', 'coverage',
+#  'make_genome', 'scan_motifs', 'tmm']
 ```
 
 Try a no-data smoke test:
@@ -95,13 +108,16 @@ print(loci.slop(100))        # Loci(n=2)  with ±100 bp
 
 ## Optional extras
 
-| Feature | Extra dependency |
-|---|---|
-| `Architecture.*` | `graph-tool` (conda) |
-| `scan_motifs()` | `lightmotif` |
-| `tmm()` | `conorm` |
-| `Architecture.add_mcool()` | `cooler` |
-| BigWig signal (fast path) | `pybigtools` (falls back to pure Python) |
-| `pyranges`-backed ops (`Loci.nearest`, `Genes.nearest_genes`) | `pyranges` |
+| Feature | Dependency | On PyPI? |
+|---|---|---|
+| `Architecture.*` | `graph-tool` | ❌ conda only |
+| `scan_motifs()` / motif matrices | `lightmotif` | ✅ (auto) |
+| `tmm()` | — (edgeR TMM vendored) | — |
+| `Architecture.add_mcool()` | `cooler` | ✅ (auto) |
+| BigWig signal (fast path) | `pybigtools` | ✅ (auto; falls back to pure Python) |
+| `pyranges`-backed ops (`Loci.nearest`, `Genes.nearest_genes`) | `pyranges` | ✅ (auto) |
+| BAM tracks in `browser` / `coverage()` | `pysam` | ✅ `pip install genomeblocks[bam]` |
+| Motif logos (`motifs_draw`) | `logomaker` | ✅ (install separately) |
 
-All are declared in `pyproject.toml`; the only one that absolutely needs conda is `graph-tool`.
+Everything marked ✅ is declared in `pyproject.toml` and installed by pip; the
+only hard conda requirement is `graph-tool`.

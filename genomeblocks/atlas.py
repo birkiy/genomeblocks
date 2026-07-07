@@ -28,7 +28,6 @@ import numpy as np
 from scipy.sparse import csc_matrix, csr_matrix
 
 from .loci import Loci
-from .locus import Locus
 
 
 _BED_EXT = (".bed", ".bed.gz", ".narrowPeak", ".narrowPeak.gz",

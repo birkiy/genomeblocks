@@ -38,7 +38,7 @@ import genomeblocks as gb
 from genomeblocks import Loci, Genes, Atlas, make_genome, tmm
 from genomeblocks.signal_draw import plot_heatmap
 from genomeblocks.motifs import scan_motifs_matrix, bootstrap_enrichment
-from genomeblocks.browser import browser
+from genomeblocks import browser
 
 
 @contextmanager

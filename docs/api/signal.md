@@ -28,15 +28,22 @@ signal(
     agg: str = "mean",               # mean / max / min / std / sum / coverage
     dtype = np.float32,
     progress: bool = True,
-    max_bw_parallel: int = 6,
-    max_workers: int | None = None,
+    workers: int = 1,                # 1 = sequential; >1 = multiprocessing
     span: bool = False,              # True: use full locus span, not center±flank
     verbose: bool = True,
     backend: str | None = None,      # 'pybigtools' | 'bigwig' | None (auto)
+    exact: bool = True,              # pybigtools base-accurate binning
 ) -> np.ndarray                      # shape (n_loci, n_tracks, n_bins)
 ```
 
 Also attached as `Loci.signal(...)`.
+
+The default path is **sequential** — a single native pass with `pybigtools`
+is fastest for typical heatmap / browser / per-locus workloads. Pass
+`workers > 1` for scale (many bigWigs × many loci): extraction then runs in a
+`ProcessPoolExecutor` writing into a shared-memory cube. Multiprocessing (not
+threading) is used because `pybigtools` serialises concurrent Python threads;
+`workers` is capped at `min(workers, n_tracks·⌈n_loci/1000⌉, cpu_count()//2)`.
 
 ---
 
@@ -127,16 +134,11 @@ Computes `a - b`, `a & b`, `b - a`; stacks into a `groups`-grouped heatmap.
 
 ---
 
-## `plan_workers(n_tracks, n_loci, *, cores=None, max_bw_parallel=6)`
-
-Returns a list of `((t_lo, t_hi), (l_lo, l_hi))` work chunks used internally by `signal()`. Useful for custom extraction pipelines.
-
----
-
 ## Backend helpers
 
 | Symbol | Purpose |
 |---|---|
+| `_resolve_opener(backend)` | `(opener, backend_name)` for `'pybigtools'` / `'bigwig'` / `None` — pure, no global mutation. |
 | `_open_pybigtools(path)` | Adapter returning a `_PyBigToolsHandle`. |
 | `_PyBigToolsHandle` | Thin wrapper matching the internal reader interface (`chroms()`, `stats(...)`, `values(...)`, `close()`). |
 | `_detect_backend()` | `(opener, backend_name)` — prefers pybigtools, falls back to pure-Python. |

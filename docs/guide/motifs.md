@@ -30,6 +30,14 @@ genome = make_genome("hg38.fa.gz")
 
 Any FASTA (bgzipped or plain) works; a small helper parses it into an in-memory `{chrom: str}` dict. For very large genomes and one-off scans, consider slicing to just the chromosomes present in your `Loci`.
 
+{: .warning }
+> **`lightmotif`'s `jaspar` format is the raw 4-line count format**, *not* the
+> bracketed JASPAR-2016 layout (`A [ … ]`). If your PWM library is in the
+> bracketed form, convert it (one PWM = a header line then four space-separated
+> count rows in `A C G T` order) or load it with `motif_format='jaspar16'`.
+> A ready-to-use, lightmotif-format JASPAR **H14CORE** file lives at
+> `…/motif-db/H14CORE_jaspar_format_lightmotif.txt`.
+
 ---
 
 ## Scanning motifs
@@ -78,25 +86,86 @@ pd.Series(counts).sort_values(ascending=False).head(20)
 
 ---
 
-## Per-locus hits
+## Per-locus × per-motif matrix
 
-`scan_motifs` currently returns *aggregated* counts per motif. If you need per-locus per-motif matrices, iterate explicitly:
+When you need a full `(n_loci × n_motifs)` matrix rather than aggregate counts,
+use `scan_motifs_matrix` — it extracts each window once and distributes the
+motifs across a process pool:
 
 ```python
-import lightmotif, numpy as np
-
-motifs = list(lightmotif.load("motifs.jaspar", format="jaspar"))
-n, m = len(loci), len(motifs)
-mat = np.zeros((n, m), dtype=np.int32)
-
-for mi, mdl in enumerate(motifs):
-    pssm = mdl.counts.normalize(0.1).log_odds()
-    for li, l in enumerate(loci):
-        seq = l.sequence(genome, r=250).upper()
-        if len(seq) != 500: continue
-        seq = lightmotif.stripe(seq)
-        mat[li, mi] = sum(1 for _ in lightmotif.scan(pssm, seq, threshold=13.0))
+mat = loci.scan_motifs_matrix(
+    genome,
+    motif_path="H14CORE_jaspar_format_lightmotif.txt",
+    r=250, threshold=13.0, norm=True,
+    workers=None,             # None → cpu_count() // 2
+)
+# → pandas.DataFrame, rows = locus uids, columns = motif names
 ```
+
+This is the building block for the differential and enrichment helpers below.
+
+---
+
+## Differential enrichment between two sets
+
+Given two matrices (e.g. condition-A vs condition-B CREs), `compare_motifs`
+runs a per-motif Mann-Whitney U test plus a log2 fold change of the means, with
+Benjamini-Hochberg FDR:
+
+```python
+from genomeblocks.motifs import compare_motifs, compare_motifs_to_ref
+
+mat_a = a_cre.scan_motifs_matrix(genome, motif_path)
+mat_b = b_cre.scan_motifs_matrix(genome, motif_path)
+
+diff = compare_motifs(mat_a, mat_b, pseudo=0.1)     # Factor, mean_A, mean_B, LFC, U, p, p_adj
+diff.head()
+```
+
+To ask "which motifs are enriched above a background pool?", use
+`compare_motifs_to_ref` (accepts a single matrix or a `dict` of groups sharing
+one reference). `bootstrap_enrichment` gives the resampled point-estimate
+variant.
+
+---
+
+## Masking an anchor motif
+
+To ask "which co-factors enrich *independent of* CTCF (or any anchor)?", mask
+every anchor match before scanning:
+
+```python
+masked = loci.scan_motifs_matrix_masked(
+    genome, motif_path,
+    anchors=["CTCF"],        # case-insensitive substring against motif names
+    window=10,               # ±bp replaced with random bases around each hit
+    seed=0,
+)
+```
+
+Anchor motifs are excluded from the output by default. **Mask the reference the
+same way** before a differential test, or query sets look depleted for reasons
+unrelated to biology.
+
+---
+
+## Motif archetypes (clustering → consensus PWM)
+
+Collapse a redundant PWM library into consensus archetypes (Sandelin-Wasserman
+similarity → hierarchical clustering → per-cluster consensus), then render
+sequence logos:
+
+```python
+from genomeblocks.motifs import build_archetypes, write_meme
+from genomeblocks.motifs_draw import plot_archetypes, plot_dendrogram
+
+res = build_archetypes(motif_path, cutoff=0.3, workers=None)
+plot_archetypes(res["archetypes"], members=res["members"])   # logo grid
+write_meme(res["archetypes"], "archetypes.meme")             # feed back into scanning
+```
+
+`archetype_from_names(motif_path, names=[...])` builds a single consensus from a
+named subset (e.g. the top hits of a differential test).
 
 ---
 

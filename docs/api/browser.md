@@ -5,8 +5,16 @@ layout: default
 nav_order: 7
 ---
 
-# `genomeblocks.browser`
+# `genomeblocks.browserview`
 {: .no_toc }
+
+The `browser()` function lives in the `genomeblocks.browserview` module and is
+re-exported at the top level as `genomeblocks.browser`. Import it either way:
+
+```python
+from genomeblocks import browser            # the function (recommended)
+from genomeblocks.browserview import browser  # equivalent
+```
 
 ## Table of contents
 {: .no_toc .text-delta }
