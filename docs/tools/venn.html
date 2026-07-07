@@ -29,13 +29,26 @@ permalink: /tools/venn/
   --tool-accent-bg:  var(--mod-navy-bg);
 }
 
-/* Chart canvas area — aspect-ratio locked so layout doesn't jump
-   between the empty-state and the rendered Venn. */
+/* Chart canvas area — a FIXED-height box with the canvas (and the
+   empty-state) absolutely positioned to fill it. This is deliberate:
+   Chart.js runs with maintainAspectRatio:false, so a normal-flow canvas
+   would grow on resize and overflow down over the counts table. Taking
+   it out of flow (inset:0) clips it to this box; the table then stacks
+   cleanly below in normal flow. */
 #gbVenn .gb-venn-canvas-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 11;
-  max-height: 480px;
+  height: 400px;
+  overflow: hidden;
+}
+@media (max-width: 900px) {
+  #gbVenn .gb-venn-canvas-wrap { height: 320px; }
+}
+#gbVenn .gb-venn-canvas-wrap canvas,
+#gbVenn .gb-venn-canvas-wrap .gb-tool-empty {
+  position: absolute;
+  inset: 0;
+  margin: 0;
 }
 #gbVenn .gb-venn-canvas-wrap canvas {
   width: 100% !important;
