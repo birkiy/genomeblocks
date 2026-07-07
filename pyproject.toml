@@ -35,6 +35,12 @@ dependencies = [
     "lightmotif"
 ]
 
+[project.urls]
+Homepage = "https://birkiy.github.io/genomeblocks/"
+Documentation = "https://birkiy.github.io/genomeblocks/"
+Repository = "https://github.com/birkiy/genomeblocks"
+Issues = "https://github.com/birkiy/genomeblocks/issues"
+
 [project.optional-dependencies]
 test = ["pytest", "pysam"]
 bam = ["pysam"]
