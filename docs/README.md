@@ -58,7 +58,6 @@ docs/
 │   ├── motifs.md
 │   └── atlas.md
 ├── walkthrough/         # AR & FOXA1 real-data example
-├── tools/               # in-browser Venn tool
 └── assets/
 ```
 
