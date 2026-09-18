@@ -16,6 +16,17 @@ permalink: /release-notes/
 
 ---
 
+## Unreleased — ATAC-supported isoforms
+
+`Genes.make()` / `Genes.make_ucsc()` take `cre` (peaks: a path, a `Loci`, or a list)
+and/or `bw` (bigwigs), plus `r` (TSS half-window, defaults to `promoter_r`) and `kw`;
+the new `Genes.select_isoforms()` does the same job on an already-parsed object. Each gene is pointed at the longest isoform whose TSS is open
+in your data instead of its longest annotated isoform, which keeps long silent
+isoforms (TGFBR3 and friends) from dragging a gene's body and TSS across the locus.
+Transcripts gain `tss_score` / `tss_support` / `tss`, genes gain `canonical` /
+`canonical_transcript` / `set_span()`, and no transcript is dropped. See the
+[Genes guide](guide/genes#picking-the-isoform-your-cells-actually-use).
+
 ## v1.0.1 — pip-install fix
 
 `1.0.0` listed `cgranges` (Heng Li's C interval index) as a dependency, but

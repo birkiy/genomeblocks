@@ -53,6 +53,64 @@ def gtf_path(tmp_path):
     return str(p)
 
 
+@pytest.fixture
+def gtf_isoforms_path(tmp_path):
+    """A GTF with two multi-isoform genes, one per strand.
+
+    G1 (+, TSS = start): T_long 1000-9000, T_mid 4000-9000, T_short 6000-9000.
+    G2 (-, TSS = end):   T_far  20000-30000, T_near 20000-26000.
+    Only the non-longest isoforms sit under the `atac_bed_path` peaks.
+    """
+    p = tmp_path / "isoforms.gtf"
+    rows = [
+        ("gene",       "G1", None,      1000,  9000, "+"),
+        ("transcript", "G1", "T_long",  1000,  9000, "+"),
+        ("exon",       "G1", "T_long",  1000,  9000, "+"),
+        ("transcript", "G1", "T_mid",   4000,  9000, "+"),
+        ("exon",       "G1", "T_mid",   4000,  9000, "+"),
+        ("transcript", "G1", "T_short", 6000,  9000, "+"),
+        ("exon",       "G1", "T_short", 6000,  9000, "+"),
+        ("gene",       "G2", None,     20000, 30000, "-"),
+        ("transcript", "G2", "T_far",  20000, 30000, "-"),
+        ("exon",       "G2", "T_far",  20000, 30000, "-"),
+        ("transcript", "G2", "T_near", 20000, 26000, "-"),
+        ("exon",       "G2", "T_near", 20000, 26000, "-"),
+    ]
+    lines = []
+    for feat, gid, tid, start, end, strand in rows:
+        attrs = f'gene_id "{gid}"; gene_name "{gid}"; gene_type "protein_coding";'
+        if tid: attrs += f' transcript_id "{tid}"; exon_number "1";'
+        lines.append(f"chr1\tsrc\t{feat}\t{start}\t{end}\t.\t{strand}\t.\t{attrs}")
+    p.write_text("\n".join(lines) + "\n")
+    return str(p)
+
+
+@pytest.fixture
+def atac_bed_path(tmp_path):
+    """Peaks over the TSSs of G1's T_mid / T_short and G2's T_near."""
+    p = tmp_path / "atac.bed"
+    p.write_text(
+        "chr1\t3900\t4100\ta1\t0\t.\n"
+        "chr1\t5950\t6050\ta2\t0\t.\n"
+        "chr1\t25900\t26100\ta3\t0\t.\n"
+    )
+    return str(p)
+
+
+@pytest.fixture
+def atac_bw_path(tmp_path):
+    """A tiny bigwig: weak at T_mid's TSS, strong at T_short's and T_near's."""
+    pybigtools = pytest.importorskip("pybigtools")
+    p = tmp_path / "atac.bw"
+    pybigtools.open(str(p), "w").write(
+        {"chr1": 40000},
+        [("chr1", 3990, 4010, 1.0),
+         ("chr1", 5990, 6010, 4.0),
+         ("chr1", 25990, 26010, 4.0)],
+    )
+    return str(p)
+
+
 # ── in-memory objects ────────────────────────────────────────────────────────
 
 @pytest.fixture

@@ -305,11 +305,19 @@ def _stack_genes(visible_with_tx, gap_frac, span):
 def _select_transcripts(gene, max_per_gene):
     """Pick up to ``max_per_gene`` transcripts to display, longest-first by
     genomic span (end − start). ``max_per_gene=None`` keeps all; ``1``
-    collapses each gene to its longest isoform."""
+    collapses each gene to a single isoform.
+
+    When the gene carries a canonical isoform (``Genes.select_isoforms()``,
+    e.g. the longest ATAC-supported one) that transcript is shown first."""
     tx_list = list((gene.transcripts or {}).values())
     if max_per_gene is None or len(tx_list) <= max_per_gene:
         return tx_list
     tx_list.sort(key=lambda t: t.end - t.start, reverse=True)
+    canon = getattr(gene, 'canonical_transcript', None)
+    if canon is not None:
+        # identity, not ==: Locus equality is by span, which isoforms can share
+        rest = [t for t in tx_list if t is not canon]
+        if len(rest) < len(tx_list): tx_list = [canon, *rest]
     return tx_list[:max_per_gene]
 
 

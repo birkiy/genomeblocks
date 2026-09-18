@@ -23,8 +23,8 @@ GTF/GFF and UCSC RefSeq parsing, plus a small toolkit for assigning CREs to gene
 
 ```
 Genes                       # dict[gene_id → Gene]
- └── Gene                   # Locus with .gene_id, .gene_name, .gene_type, .transcripts, .tss
-      └── Transcript        # Locus with .transcript_id, .exons, .cds, .utr
+ └── Gene                   # Locus with .gene_id, .gene_name, .gene_type, .transcripts, .tss, .canonical
+      └── Transcript        # Locus with .transcript_id, .exons, .cds, .utr, .tss
            ├── Exon         # Locus with .exon_number
            ├── CDS          # Exon subclass
            └── UTR          # Exon subclass with .type ("5'" or "3'")
@@ -63,6 +63,75 @@ genes = Genes.make_ucsc("ncbiRefSeq.txt",
 
 - Alt-contig transcripts (e.g. `chr6_GL000251v2_alt`) are dropped by default. Pass `keep_alt_contigs=True` to keep them under a `gene_name__chrom` key.
 - Transcript-ID collisions within the same gene (e.g. MHC paralogs) get a `__N` suffix — no row is silently dropped.
+
+---
+
+## Picking the isoform your cells actually use
+
+A GTF gene spans the **union** of its isoforms, so `gene.start` / `gene.end` / `gene.tss`
+follow the longest *annotated* transcript. For genes with a long, rarely used isoform
+(TGFBR3 is the classic case) that TSS can sit tens of kilobases away from the promoter
+that is open in your cell type — which then skews promoter annotation, nearest-gene
+calls and the browser view.
+
+Hand `Genes.make()` an ATAC-seq peak file and/or a bigwig and it keeps the isoforms
+whose TSS is actually accessible, then points the gene at the longest of those:
+
+```python
+genes = Genes.make("gencode.v38.annotation.gtf",
+                   promoter_r=1000,
+                   cre="Th17_atac_peaks.narrowPeak",   # path, Loci, Locus, or a list
+                   bw="Th17_atac.bw")                  # bigwig, or a list of them
+```
+
+`cre` takes a `Loci` (or a `Locus`, or a mixed list of paths and `Loci`) just as
+happily as a file path — handy when the peaks are already in memory, reused from
+another step, or filtered first:
+
+```python
+peaks = Loci.make("Th17_atac_peaks.narrowPeak")
+genes = Genes.make("gencode.v38.annotation.gtf", cre=peaks - blacklist)
+```
+
+The TSS half-window is `r`, which defaults to `promoter_r` — one window for both
+promoter annotation and isoform support, unless you override it. Either evidence
+argument works on its own — peaks alone, signal alone, or both (peaks gate first,
+then the signal cut, which also makes the bigwig pass much cheaper). Tuning knobs go
+in `kw`, or call the method directly on an already-parsed object:
+
+```python
+genes.select_isoforms(peaks, ["naive.bw", "th17.bw", "treg.bw"],
+                      r=500,            # default: the object's promoter_r
+                      min_signal=0.0,   # absolute floor a TSS score must exceed
+                      min_frac=0.5,     # ...and ≥50% of the gene's best TSS score
+                      rank="longest",   # or "signal" for the strongest TSS
+                      collapse=True)    # move gene body/TSS onto the chosen isoform
+```
+
+With several bigwigs a TSS keeps its **highest** score, so an isoform open in any one
+of your samples counts as supported.
+
+What you get back:
+
+```python
+g = genes["ENSG00000069702"]        # TGFBR3
+g.canonical                         # 'ENST00000212355' — the chosen transcript key
+g.canonical_transcript.tss_score    # ATAC signal at its TSS window
+g.start, g.end, g.tss               # now follow that isoform (collapse=True)
+[t.tss_support for t in g.transcripts.values()]   # per-isoform support calls
+```
+
+- **Nothing is dropped.** All isoforms stay in `gene.transcripts`; only the gene's own
+  span, its TSS and `canonical` change.
+- Genes with no supported isoform **fall back** to the longest annotated one, so every
+  gene keeps a canonical transcript.
+- Because the gene span moved, `annot`, `get_tss()`, `annotations()` and
+  `nearest_genes()` all follow the supported isoform. `annot['exon'/'utr5'/'utr3']`
+  still pool every isoform.
+- Peaks and bigwigs must use the **same chromosome names** as the annotation (i.e.
+  after `chr_map`); a `[WARN]` is printed if nothing at all comes out supported.
+- In the browser, `browser(..., genes_max_transcripts=1)` draws the canonical isoform
+  rather than the longest one.
 
 ---
 
