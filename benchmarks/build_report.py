@@ -603,6 +603,51 @@ document.addEventListener("DOMContentLoaded", () => {{
     out = REP / "index.html"
     out.write_text(page)
     print(f"[report] {out} ({len(page) / 1e3:.0f} kB)")
+    write_readme(tiles, fixes, env, vtxt)
+
+
+def _plain(s):
+    """HTML snippet -> Markdown-ish text for the README."""
+    s = re.sub(r"<code>(.*?)</code>", r"`\1`", s)
+    s = re.sub(r"<a href='([^']*)'>(.*?)</a>", r"\2", s)
+    s = re.sub(r'<a href="([^"]*)">(.*?)</a>', r"\2", s)
+    s = re.sub(r"<[^>]+>", "", s)
+    return html.unescape(s)
+
+
+def write_readme(tiles, fixes, env, vtxt):
+    figs = [("loci_latency", "One overlap lookup"), ("loci_intersect", "Whole-set intersect"),
+            ("signal_engines", "bigWig → heatmap matrix, one core"), ("signal_scaling", "Throughput vs loci"),
+            ("signal_parallel", "Processes vs threads vs deepTools"), ("atlas_query", "Atlas vs GIGGLE vs per-track loops"),
+            ("motifs_engines", "Motif scanning engines"), ("pairs", "Hi-C pair counting"),
+            ("genes", "Gene-model steps"), ("architecture", "Architecture pipeline"), ("import", "Import cost")]
+    lines = ["# genomeblocks benchmarks", "",
+             "How fast each building block is against the tools people would otherwise use, why, "
+             "and where it is still slow. Open `report/index.html` for the full interactive report "
+             "(charts, mechanism diagrams, every table).", "",
+             f"Machine: {env['cpu']}, {env['cores']} cores, {env['mem_gb']:.0f} GB RAM, Python {env['python']}. "
+             "Medians of 3–5 runs after a warm-up; every comparison is checked for identical output first.", "",
+             "## Headlines", "", "| block | result | context |", "|---|---|---|"]
+    for k, v, d, _h, _c, tag in tiles:
+        lines.append(f"| {tag} | **{v}** {k.lower()} | {d} |")
+    lines += ["", "## Figures", ""]
+    for name, title in figs:
+        if (HERE / "figures" / f"{name}.png").exists():
+            lines += [f"**{title}**", "", f"![{title}](figures/{name}.png)", ""]
+    lines += ["## Where it is slow, and the fix", ""]
+    for t, d in fixes:
+        lines += [f"- **{_plain(t)}** {_plain(d)}", ""]
+    lines += ["## Reproduce", "", "```bash", "cd benchmarks",
+              "python make_data.py            # synthetic hg38-shaped data, ~1.5 GB",
+              "PY=python ./run_all.sh         # every bench (one at a time), then figures",
+              "python build_report.py         # report/index.html + this README", "```", "",
+              "External baselines are found on `PATH` (bedtools, deepTools `computeMatrix`, cooler, bgzip) "
+              "or via `GIGGLE=` / `FIMO=` (GIGGLE built from github.com/ryanlayer/giggle; "
+              "MEME suite from bioconda: `micromamba create -n tools -c conda-forge -c bioconda meme`). "
+              "`Architecture` needs graph-tool (conda-forge).", "",
+              f"Versions: {vtxt}.", ""]
+    (HERE / "README.md").write_text("\n".join(lines))
+    print(f"[readme] {HERE / 'README.md'}")
 
 
 if __name__ == "__main__":
