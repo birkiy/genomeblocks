@@ -86,6 +86,111 @@ def part_motifs(rec):
                 n=M, seconds=t["median"], runs=t["runs"], same=same)
 
 
+def _genome_index(loci):
+    """Windows on one genome-wide axis: chrom -> offset, sorted global
+    starts/ends, and the original loci index of each sorted window."""
+    import numpy as np
+    chroms = sorted({l.chrom for l in loci})
+    cid = {c: i for i, c in enumerate(chroms)}
+    span = np.zeros(len(chroms), np.int64)
+    for l in loci:
+        span[cid[l.chrom]] = max(span[cid[l.chrom]], l.end)
+    off = np.concatenate([[0], np.cumsum(span + 1)[:-1]])
+    gs = np.fromiter((off[cid[l.chrom]] + l.start for l in loci), np.int64, len(loci))
+    ge = np.fromiter((off[cid[l.chrom]] + l.end for l in loci), np.int64, len(loci))
+    order = np.argsort(gs, kind="stable")
+    return cid, off, gs[order], ge[order], order
+
+
+def _locate_global(codes, cats, pos, cid, off, gs, ge, order):
+    """Window index (original loci order) for each (chrom code, pos); -1 if none."""
+    import numpy as np
+    lut = np.array([cid.get(str(c), -1) for c in cats], np.int64)
+    c = lut[codes]
+    ok = c >= 0
+    g = np.where(ok, off[np.maximum(c, 0)] + pos, -1)
+    i = np.searchsorted(gs, g, side="right") - 1
+    ok &= i >= 0
+    ok &= g < ge[np.maximum(i, 0)]
+    return np.where(ok, order[np.maximum(i, 0)], -1)
+
+
+def count_pairs_fast(loci, path, chunksize=2_000_000):
+    """count_pairs (all partners) with integer chrom codes and one global
+    searchsorted per anchor; same output frame as genomeblocks'."""
+    import numpy as np
+    import pandas as pd
+    from genomeblocks.bedpe import read_pairs_chunks
+    cid, off, gs, ge, order = _genome_index(loci)
+    names, acc = {}, []
+    for ch in read_pairs_chunks(path, format="pairs", chunksize=chunksize):
+        for a, b in (("1", "2"), ("2", "1")):
+            ca, cb = ch["chrom" + a], ch["chrom" + b]
+            w = _locate_global(ca.cat.codes.to_numpy(), ca.cat.categories, ch["pos" + a].to_numpy(),
+                               cid, off, gs, ge, order)
+            p_lut = np.array([names.setdefault(str(c), len(names)) for c in cb.cat.categories], np.int64)
+            p = p_lut[cb.cat.codes.to_numpy()]
+            hit = w >= 0
+            acc.append((w[hit], p[hit]))
+    P = len(names)
+    w = np.concatenate([x for x, _ in acc]); p = np.concatenate([y for _, y in acc])
+    mat = np.bincount(w * P + p, minlength=len(loci) * P).reshape(len(loci), P)
+    out = pd.DataFrame({"chrom": [l.chrom for l in loci], "start": [l.start for l in loci],
+                        "end": [l.end for l in loci], "uid": [l.uid for l in loci]})
+    for name in sorted(names):
+        col = mat[:, names[name]]
+        if col.any():
+            out[name] = col
+    return out
+
+
+def count_pairs_2d_fast(loci, path, chunksize=2_000_000):
+    """count_pairs_2d (loci_b=None) the same way: one locate per anchor,
+    then a single sparse COO sum."""
+    import numpy as np
+    import scipy.sparse as sp
+    from genomeblocks.bedpe import read_pairs_chunks
+    cid, off, gs, ge, order = _genome_index(loci)
+    rows, cols = [], []
+    for ch in read_pairs_chunks(path, format="pairs", chunksize=chunksize):
+        w1 = _locate_global(ch["chrom1"].cat.codes.to_numpy(), ch["chrom1"].cat.categories,
+                            ch["pos1"].to_numpy(), cid, off, gs, ge, order)
+        w2 = _locate_global(ch["chrom2"].cat.codes.to_numpy(), ch["chrom2"].cat.categories,
+                            ch["pos2"].to_numpy(), cid, off, gs, ge, order)
+        ok = (w1 >= 0) & (w2 >= 0)
+        rows += [w1[ok], w2[ok]]; cols += [w2[ok], w1[ok]]
+    r = np.concatenate(rows); c = np.concatenate(cols)
+    n = len(loci)
+    m = sp.coo_matrix((np.ones(len(r), np.int64), (r, c)), shape=(n, n))
+    m.sum_duplicates()
+    return m.tocsr()
+
+
+def part_pairs(rec):
+    import numpy as np
+    from common import read_chromsizes
+    from genomeblocks.bedpe import count_pairs, count_pairs_2d
+    path = str(DATA / "hic.pairs")
+    cs = read_chromsizes()
+    w50, w500 = Loci.tile_genome(cs, 50_000), Loci.tile_genome(cs, 500_000)
+    res = {}
+    t = timeit(lambda: res.__setitem__("a", count_pairs(w50, path, format="pairs", verbose=False)), repeat=3)
+    rec.add(part="pairs", op="count_pairs (50 kb x partner chrom)", variant="current", n=5_000_000,
+            seconds=t["median"], runs=t["runs"])
+    t = timeit(lambda: res.__setitem__("b", count_pairs_fast(w50, path)), repeat=3)
+    same = list(res["a"].columns) == list(res["b"].columns) and res["a"].equals(res["b"])
+    rec.add(part="pairs", op="count_pairs (50 kb x partner chrom)", variant="integer codes + global searchsorted",
+            n=5_000_000, seconds=t["median"], runs=t["runs"], same=bool(same))
+    t = timeit(lambda: res.__setitem__("a", count_pairs_2d(w500, path, format="pairs", verbose=False)),
+               repeat=1, warmup=0)
+    rec.add(part="pairs", op="count_pairs_2d (500 kb)", variant="current", n=5_000_000,
+            seconds=t["median"], runs=t["runs"])
+    t = timeit(lambda: res.__setitem__("b", count_pairs_2d_fast(w500, path)), repeat=3)
+    same = (res["a"] != res["b"]).nnz == 0
+    rec.add(part="pairs", op="count_pairs_2d (500 kb)", variant="integer codes + global searchsorted",
+            n=5_000_000, seconds=t["median"], runs=t["runs"], same=bool(same))
+
+
 def part_loci(rec):
     for n in (100_000, 1_000_000):
         L = Loci.make(str(DATA / f"peaks_AB_{n}.bed"))     # 2n unsorted intervals
@@ -105,6 +210,6 @@ def part_loci(rec):
 if __name__ == "__main__":
     import sys
     rec = Recorder("fixes")
-    for part in (sys.argv[1:] or ["loci", "motifs"]):
+    for part in (sys.argv[1:] or ["loci", "motifs", "pairs"]):
         globals()[f"part_{part}"](rec)
     rec.save()

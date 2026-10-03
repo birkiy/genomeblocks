@@ -388,28 +388,52 @@ def build():
     if pa:
         pr_ = {r["engine"]: r for r in pa["rows"]}
         cp = pr_["genomeblocks count_pairs (50 kb x partner chrom)"]
+        ct = pr_["genomeblocks count_pairs (target_chrom=chr1)"]
         nv = pr_["naive per-pair loop (cgranges lookup)"]
         io = pr_["pandas chunked parse only (I/O floor)"]
         cl = pr_.get("cooler cload pairs (500 kb, CLI)")
         c2 = pr_.get("genomeblocks count_pairs_2d (500 kb)")
-        tiles.append(("Hi-C pair counting", f"{fnum(cp['rate'])}/s",
-                      f"read pairs binned per second; {fx(cp['rate'] / nv['rate'])} a per-pair Python loop", "#pairs", "purple", "bedpe"))
-        charts["pairs"] = {"kind": "hbar", "fmt": "num", "log": True, "sort": "desc", "labelW": 330,
-                           "axis": "read pairs per second (log scale)",
-                           "rows": [{"label": k, "value": r["rate"], "hl": k.startswith("genomeblocks")} for k, r in pr_.items()]}
+        fxp = load("fixes")
+        fp = {}
+        if fxp:
+            for r in fxp["rows"]:
+                if r.get("part") == "pairs":
+                    fp[(r["op"], "fast" if r["variant"] != "current" else "cur")] = r
+        f1 = fp.get(("count_pairs (50 kb x partner chrom)", "fast"))
+        f2 = fp.get(("count_pairs_2d (500 kb)", "fast"))
+        rows_ = [{"label": k, "value": r["rate"], "hl": k.startswith("genomeblocks")} for k, r in pr_.items()]
+        if f1:
+            rows_.append({"label": "count_pairs, integer-code fix (proposed)", "value": f1["n"] / f1["seconds"], "hl": True})
+        if f2:
+            rows_.append({"label": "count_pairs_2d, integer-code fix (proposed)", "value": f2["n"] / f2["seconds"], "hl": True})
+        charts["pairs"] = {"kind": "hbar", "fmt": "num", "log": True, "sort": "desc", "labelW": 340,
+                           "axis": "read pairs per second (log scale)", "rows": rows_}
         p_rows = [[k, f"{r['n_pairs']:,}", ftime(r["seconds"]), fnum(r["rate"])] for k, r in sorted(pr_.items(), key=lambda kv: -kv[1]["rate"])]
+        for lab, r in (("count_pairs, integer-code fix", f1), ("count_pairs_2d, integer-code fix", f2)):
+            if r:
+                p_rows.append([lab + (" (same output)" if r.get("same") else " (OUTPUT DIFFERS)"), f"{r['n']:,}",
+                               ftime(r["seconds"]), fnum(r["n"] / r["seconds"])])
+        if f1 and f2 and cl:
+            tiles.append(("Hi-C pair counting, with the fix", f"{fnum(f2['n'] / f2['seconds'])}/s",
+                          f"window × window matrix after a measured fix: {fx(c2['seconds'] / f2['seconds'])} faster than today and "
+                          f"{fx(cl['seconds'] / f2['seconds'])} faster than cooler cload (today it is {fx(c2['seconds'] / cl['seconds'])} slower)",
+                          "#pairs", "warn", "bedpe"))
         secs.append(f"""
 <section id="pairs">
   <span class="tag purple">bedpe · Hi-C pairs</span>
-  <h2>Hi-C pairs: whole chunks at a time</h2>
-  <p class="verdict"><code>count_pairs</code> bins 5M read pairs into 50 kb windows × partner chromosome at <b>{fnum(cp['rate'])} pairs/s</b>, {fx(cp['rate'] / nv['rate'])} faster than a per-pair loop{f' and {fx(c2["rate"] / cl["rate"])} the rate of cooler cload for the 2-D matrix' if cl and c2 else ''}.</p>
-  <p class="sub">The file is read in 2M-row chunks by pandas' C parser. Each chunk is split by chromosome with boolean masks, every position finds its window with one <code>np.searchsorted</code>, and hits are tallied with <code>np.add.at</code>, so no Python code runs per pair. Parsing alone runs at {fnum(io['rate'])} pairs/s, so {1 - cp['rate'] / io['rate']:.0%} of <code>count_pairs</code>' time is the counting and the rest is reading the file.</p>
+  <h2>Hi-C pairs: fast only for one chromosome today, with an easy fix</h2>
+  <p class="verdict">With a target chromosome, <code>count_pairs</code> runs at <b>{fnum(ct['rate'])} pairs/s</b>. Counting against every partner chromosome drops to {fnum(cp['rate'])}/s, no faster than a per-pair Python loop ({fnum(nv['rate'])}/s){f', and <code>count_pairs_2d</code> manages {fnum(c2["rate"])}/s, {fx(c2["seconds"] / cl["seconds"])} slower than cooler cload' if c2 and cl else ''}.</p>
+  <p class="sub">The file is parsed in 2M-row chunks by pandas' C reader at {fnum(io['rate'])} pairs/s, so reading is not the problem. The time goes to converting each chunk's categorical chromosome columns to Python strings and then comparing whole columns against every chromosome name, and in 2-D against every chromosome <em>pair</em> (23 × 23 × 2 full-chunk scans). Using the integer category codes, one <code>searchsorted</code> per anchor over genome-wide coordinates and a single <code>bincount</code> / sparse sum gives the same output{f' in {ftime(f1["seconds"])} ({fx(cp["seconds"] / f1["seconds"])}) and {ftime(f2["seconds"])} for the 2-D matrix ({fx(c2["seconds"] / f2["seconds"])})' if f1 and f2 else ''}.</p>
   {chart("pairs", "Pair counting", "· 5M pairs (naive loop: first 200k), higher is better",
-         f"The naive loop does one cgranges lookup per anchor and agrees exactly with <code>count_pairs</code> on the same pairs ({'match' if nv.get('agrees_with_count_pairs') else 'MISMATCH'}). cooler cload builds a full genome-wide 500 kb matrix; count_pairs_2d produces the same kind of window × window sparse matrix.")}
+         f"The naive loop does one cgranges lookup per anchor and agrees exactly with <code>count_pairs</code> on the same pairs ({'match' if nv.get('agrees_with_count_pairs') else 'MISMATCH'}). The fix rows are drop-in versions in <code>benchmarks/bench_fixes.py</code>, checked for identical output.")}
   {details("Pairs table", table(["engine", "pairs", "median", "pairs/s"], p_rows, num_cols=(1, 2, 3), hl=lambda r: r[0].startswith("genomeblocks")))}
 </section>""")
-        mech.append(("Vectorise the streaming loops", "#pairs",
-                     "Hi-C pairs are read in large chunks and located with <code>searchsorted</code> per chromosome; graph annotation runs as numpy over the edge array. Python never touches individual pairs or edges."))
+        if f1 and f2:
+            fixes.append(("count_pairs / count_pairs_2d compare chromosome strings per chunk",
+                          f"Each chunk's chromosome columns become Python strings and are compared against every chromosome (2-D: every chromosome pair). "
+                          f"With integer category codes and one global <code>searchsorted</code> per anchor: <code>count_pairs</code> {ftime(cp['seconds'])} → {ftime(f1['seconds'])}, "
+                          f"<code>count_pairs_2d</code> {ftime(c2['seconds'])} → {ftime(f2['seconds'])} on 5M pairs, identical output "
+                          f"({'checked' if f1.get('same') and f2.get('same') else 'CHECK FAILED'})."))
 
     # ── genes ──────────────────────────────────────────────────────────────
     ge = load("genes")
@@ -469,6 +493,8 @@ def build():
          f"Gray rows are comparisons: the stage-2 loop genomeblocks used to run, and graph-tool's native <code>incident_edges_op</code>, which computes the same node strengths {fx(stl['seconds'] / stg['seconds'])} faster than <code>strength()</code>'s per-edge Python loop (see <a href='#fixes'>fixes</a>).")}
   {details("Architecture table", table(["step", "median", "size", "check"], a_rows, num_cols=(1, 2)))}
 </section>""")
+        mech.append(("numpy over the graph's edge array", "#architecture",
+                     f"<code>annotate</code> pulls all edges and weights out of graph-tool as one array and picks each CRE's strongest promoter with a sort, {fx(s2l['seconds'] / s2v['seconds'])} faster than visiting neighbours vertex by vertex."))
         fixes.append(("Architecture.strength() and add_mcool() loop in Python",
                       f"<code>strength()</code> walks every edge in Python ({ftime(stl['seconds'])}); <code>gt.incident_edges_op(G, 'out', 'sum', G.ep[key])</code> returns the same sums in {ftime(stg['seconds'])}. <code>add_mcool</code> ({ftime(mc['seconds'])}) does a pandas MultiIndex lookup per edge; joining the edge bin pairs against the pixel table in one merge would follow the pattern <code>annotate</code> already uses."))
 

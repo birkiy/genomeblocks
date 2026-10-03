@@ -65,6 +65,8 @@ def fmt_time(s):
 
 
 def fmt_num(x):
+    if x == 0:
+        return "0"
     for div, suf in ((1e9, "G"), (1e6, "M"), (1e3, "k")):
         if x >= div:
             v = x / div
