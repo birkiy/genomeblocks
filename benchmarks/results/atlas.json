@@ -1,0 +1,564 @@
+{
+ "bench": "atlas",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cores": 4,
+  "mem_gb": 16.876515328,
+  "python": "3.11.16",
+  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "versions": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1",
+   "pandas": "3.0.6",
+   "pybigtools": "0.3.0",
+   "pyBigWig": "0.3.26",
+   "cgranges": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.88",
+   "MOODS": "installed",
+   "graph_tool": "3.9",
+   "intervaltree": "installed",
+   "bedtools": "v2.31.1"
+  }
+ },
+ "meta": {
+  "n_tracks": 500,
+  "query": "/home/user/genomeblocks/benchmarks/data/atlas_query.bed"
+ },
+ "rows": [
+  {
+   "part": "build",
+   "bin_size": 200,
+   "workers": 3,
+   "seconds": 4.808350126999358,
+   "nnz": 25968282,
+   "index_bytes": 190462306,
+   "bed_bytes": 292855603,
+   "n_peaks": 7704965,
+   "n_tracks": 500
+  },
+  {
+   "part": "build",
+   "bin_size": 1000,
+   "workers": 1,
+   "seconds": 6.033611836000091,
+   "nnz": 11255777,
+   "index_bytes": 68403101,
+   "bed_bytes": 292855603,
+   "n_peaks": 7704965,
+   "n_tracks": 500
+  },
+  {
+   "part": "build",
+   "bin_size": 1000,
+   "workers": 3,
+   "seconds": 2.559252423000544,
+   "nnz": 11255777,
+   "index_bytes": 68403101,
+   "bed_bytes": 292855603,
+   "n_peaks": 7704965,
+   "n_tracks": 500
+  },
+  {
+   "part": "build",
+   "bin_size": 5000,
+   "workers": 3,
+   "seconds": 2.101159715999529,
+   "nnz": 8086900,
+   "index_bytes": 42859380,
+   "bed_bytes": 292855603,
+   "n_peaks": 7704965,
+   "n_tracks": 500
+  },
+  {
+   "part": "query",
+   "engine": "Atlas.search (incl. Fisher + DataFrame)",
+   "n_tracks": 10,
+   "seconds": 0.014293236999947112,
+   "runs": [
+    0.024128367000230355,
+    0.018369159000030777,
+    0.012525578000349924,
+    0.01337595200038777,
+    0.014293236999947112
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "Atlas sparse row-sum only",
+   "n_tracks": 10,
+   "seconds": 0.0022152239998831647,
+   "runs": [
+    0.0023970369993548957,
+    0.002421543999844289,
+    0.0020814839999729884,
+    0.0022152239998831647,
+    0.0020509650003077695
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "per-track cgranges loop (prebuilt)",
+   "n_tracks": 10,
+   "seconds": 0.07214154199937184,
+   "runs": [
+    0.06883925300007832,
+    0.08558605399957742,
+    0.07214154199937184
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "pyranges overlap(), per track",
+   "n_tracks": 10,
+   "seconds": 0.38368647699917346,
+   "runs": [
+    0.38368647699917346,
+    0.37677718400027516,
+    0.3972874459996092
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "bedtools intersect -C (CLI)",
+   "n_tracks": 10,
+   "seconds": 0.25555099499979406,
+   "runs": [
+    0.25555099499979406
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "Atlas.search (incl. Fisher + DataFrame)",
+   "n_tracks": 50,
+   "seconds": 0.014998922999438946,
+   "runs": [
+    0.021379505999902904,
+    0.014515724000375485,
+    0.014912675000232412,
+    0.01539218699963385,
+    0.014998922999438946
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "Atlas sparse row-sum only",
+   "n_tracks": 50,
+   "seconds": 0.0024734529997658683,
+   "runs": [
+    0.002491962999556563,
+    0.002502551999896241,
+    0.0024602829998912057,
+    0.0024734529997658683,
+    0.0024130379997586715
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "per-track cgranges loop (prebuilt)",
+   "n_tracks": 50,
+   "seconds": 0.3526979179996488,
+   "runs": [
+    0.3434218550000878,
+    0.3526979179996488,
+    0.3730155499997636
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "pyranges overlap(), per track",
+   "n_tracks": 50,
+   "seconds": 1.9941837809992649,
+   "runs": [
+    2.0984760749997804,
+    1.9941837809992649,
+    1.9120345390001603
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "bedtools intersect -C (CLI)",
+   "n_tracks": 50,
+   "seconds": 1.9807810379998045,
+   "runs": [
+    1.9807810379998045
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "Atlas.search (incl. Fisher + DataFrame)",
+   "n_tracks": 100,
+   "seconds": 0.01541796399942541,
+   "runs": [
+    0.014969642000323802,
+    0.01578891000008298,
+    0.01426760699996521,
+    0.01541796399942541,
+    0.01573086799999146
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "Atlas sparse row-sum only",
+   "n_tracks": 100,
+   "seconds": 0.002813119999700575,
+   "runs": [
+    0.002738226000474242,
+    0.003112485000201559,
+    0.0029866680006307433,
+    0.002813119999700575,
+    0.002626630999657209
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "per-track cgranges loop (prebuilt)",
+   "n_tracks": 100,
+   "seconds": 0.8405680300002132,
+   "runs": [
+    0.8405680300002132,
+    0.8624440290004713,
+    0.7344375119992037
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "pyranges overlap(), per track",
+   "n_tracks": 100,
+   "seconds": 4.273860903000241,
+   "runs": [
+    4.475697687999855,
+    4.273860903000241,
+    4.133159723999597
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "bedtools intersect -C (CLI)",
+   "n_tracks": 100,
+   "seconds": 4.31943249699998,
+   "runs": [
+    4.31943249699998
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "Atlas.search (incl. Fisher + DataFrame)",
+   "n_tracks": 250,
+   "seconds": 0.01761665499998344,
+   "runs": [
+    0.01761665499998344,
+    0.01857530500001303,
+    0.02199572200061084,
+    0.017580450999957975,
+    0.017267868999624625
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "Atlas sparse row-sum only",
+   "n_tracks": 250,
+   "seconds": 0.0033005909999701544,
+   "runs": [
+    0.0035462140003801323,
+    0.0033872320000227774,
+    0.0033005909999701544,
+    0.0032722669993745512,
+    0.0032972829994832864
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "per-track cgranges loop (prebuilt)",
+   "n_tracks": 250,
+   "seconds": 1.857568481999806,
+   "runs": [
+    1.857568481999806
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "pyranges overlap(), per track",
+   "n_tracks": 250,
+   "seconds": 10.83844943799977,
+   "runs": [
+    10.83844943799977
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "bedtools intersect -C (CLI)",
+   "n_tracks": 250,
+   "seconds": 10.99656526599938,
+   "runs": [
+    10.99656526599938
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "Atlas.search (incl. Fisher + DataFrame)",
+   "n_tracks": 500,
+   "seconds": 0.02062255200053187,
+   "runs": [
+    0.02062255200053187,
+    0.02047331099947769,
+    0.02031022299979668,
+    0.022399174000383937,
+    0.022212179000234755
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "Atlas sparse row-sum only",
+   "n_tracks": 500,
+   "seconds": 0.004582600000503589,
+   "runs": [
+    0.004107895999368338,
+    0.004449109000233875,
+    0.004686479000156396,
+    0.004582600000503589,
+    0.005245686999842292
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "per-track cgranges loop (prebuilt)",
+   "n_tracks": 500,
+   "seconds": 3.8915902150001784,
+   "runs": [
+    3.8915902150001784
+   ]
+  },
+  {
+   "part": "query",
+   "engine": "pyranges overlap(), per track",
+   "n_tracks": 500,
+   "seconds": 21.575082530000145,
+   "runs": [
+    21.575082530000145
+   ]
+  },
+  {
+   "part": "giggle",
+   "kind": "build",
+   "n_tracks": 10,
+   "seconds": 0.496681262000493,
+   "runs": [
+    0.496681262000493
+   ],
+   "index_bytes": 3436131
+  },
+  {
+   "part": "giggle",
+   "kind": "query",
+   "engine": "GIGGLE search -s (CLI)",
+   "n_tracks": 10,
+   "seconds": 0.12743459099965548,
+   "runs": [
+    0.13171563600008085,
+    0.13676299800044944,
+    0.12743459099965548,
+    0.10886204600046767,
+    0.11003213399999368
+   ]
+  },
+  {
+   "part": "giggle",
+   "kind": "build",
+   "n_tracks": 50,
+   "seconds": 2.895646157000556,
+   "runs": [
+    2.895646157000556
+   ],
+   "index_bytes": 19858798
+  },
+  {
+   "part": "giggle",
+   "kind": "query",
+   "engine": "GIGGLE search -s (CLI)",
+   "n_tracks": 50,
+   "seconds": 0.31786416199975065,
+   "runs": [
+    0.37864773599994805,
+    0.31786416199975065,
+    0.30423824900026375,
+    0.322797172000719,
+    0.313830171000518
+   ]
+  },
+  {
+   "part": "giggle",
+   "kind": "build",
+   "n_tracks": 100,
+   "seconds": 5.640676408000218,
+   "runs": [
+    5.640676408000218
+   ],
+   "index_bytes": 42505779
+  },
+  {
+   "part": "giggle",
+   "kind": "query",
+   "engine": "GIGGLE search -s (CLI)",
+   "n_tracks": 100,
+   "seconds": 0.4973160869994899,
+   "runs": [
+    0.4974714660002064,
+    0.4973160869994899,
+    0.4883920930005843,
+    0.49701251100032096,
+    0.5480695440001
+   ]
+  },
+  {
+   "part": "giggle",
+   "kind": "build",
+   "n_tracks": 250,
+   "seconds": 13.524849248000464,
+   "runs": [
+    13.524849248000464
+   ],
+   "index_bytes": 102964409
+  },
+  {
+   "part": "giggle",
+   "kind": "query",
+   "engine": "GIGGLE search -s (CLI)",
+   "n_tracks": 250,
+   "seconds": 0.865256158000193,
+   "runs": [
+    0.8502351380002438,
+    0.8904382589998932,
+    0.909179798999503,
+    0.865256158000193,
+    0.8504640640003345
+   ]
+  },
+  {
+   "part": "giggle",
+   "kind": "build",
+   "n_tracks": 500,
+   "seconds": 21.502144613999917,
+   "runs": [
+    21.502144613999917
+   ],
+   "index_bytes": 201325744
+  },
+  {
+   "part": "giggle",
+   "kind": "query",
+   "engine": "GIGGLE search -s (CLI)",
+   "n_tracks": 500,
+   "seconds": 1.2939444459998413,
+   "runs": [
+    1.3212648879998596,
+    1.2939444459998413,
+    1.4526671700004954,
+    1.2859912120002264,
+    1.2651305979998142
+   ]
+  },
+  {
+   "part": "giggle",
+   "kind": "agreement",
+   "n_tracks": 500,
+   "seconds": 0.0,
+   "spearman_overlaps_vs_exact": 0.9999706957116378,
+   "spearman_score_vs_atlas": 0.9901379765519062,
+   "top25_shared_with_atlas": 22
+  },
+  {
+   "part": "load",
+   "kind": "Atlas.load (npz)",
+   "n_tracks": 500,
+   "seconds": 0.2753108050001174,
+   "runs": [
+    0.337400118000005,
+    0.2696266650000325,
+    0.2753108050001174
+   ]
+  },
+  {
+   "part": "load",
+   "kind": "fresh python: import + load + search",
+   "n_tracks": 500,
+   "seconds": 1.6985749189998387,
+   "runs": [
+    1.6542963810006768,
+    1.712697928000125,
+    1.6985749189998387
+   ]
+  },
+  {
+   "part": "accuracy",
+   "bin_size": 200,
+   "spearman_counts": 0.9993327232505657,
+   "top25_overlap": 21,
+   "seconds": 0.0329374259999895,
+   "runs": [
+    0.03168516699952306,
+    0.03340053000010812,
+    0.03034165299959568,
+    0.0329374259999895,
+    0.035998356999698444
+   ],
+   "nnz": 25968282
+  },
+  {
+   "part": "accuracy",
+   "bin_size": 1000,
+   "spearman_counts": 0.9991645776717111,
+   "top25_overlap": 20,
+   "seconds": 0.02089806799995131,
+   "runs": [
+    0.01829923300010705,
+    0.02015586300058203,
+    0.02830645599988202,
+    0.02089806799995131,
+    0.020977295000193408
+   ],
+   "nnz": 11255777
+  },
+  {
+   "part": "accuracy",
+   "bin_size": 5000,
+   "spearman_counts": 0.992682705618932,
+   "top25_overlap": 18,
+   "seconds": 0.018998166000528727,
+   "runs": [
+    0.01908159400045406,
+    0.017619366999497288,
+    0.01845626500016806,
+    0.018998166000528727,
+    0.03033435300039855
+   ],
+   "nnz": 8086900
+  },
+  {
+   "part": "bootstrap",
+   "n_iter": 10,
+   "n_tracks": 500,
+   "seconds": 0.1573915909993957,
+   "runs": [
+    0.1573915909993957,
+    0.18963034599983075,
+    0.15381102099945565
+   ],
+   "per_iter": 0.01573915909993957
+  },
+  {
+   "part": "bootstrap",
+   "n_iter": 100,
+   "n_tracks": 500,
+   "seconds": 1.1942495169996619,
+   "runs": [
+    1.1942495169996619,
+    1.2045316459998503,
+    1.1833857479996368
+   ],
+   "per_iter": 0.011942495169996618
+  }
+ ]
+}
