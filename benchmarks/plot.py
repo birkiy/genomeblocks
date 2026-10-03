@@ -236,14 +236,17 @@ def fig_signal():
 # ── Atlas ────────────────────────────────────────────────────────────────────
 
 ATLAS_COLOR = {"Atlas.search (incl. Fisher + DataFrame)": BLUE,
-               "per-track cgranges loop (prebuilt)": ORANGE,
-               "pyranges.count_overlaps": AQUA,
-               "bedtools intersect -C (CLI)": YELLOW}
+               "GIGGLE search -s (CLI)": ORANGE,
+               "per-track cgranges loop (prebuilt)": AQUA,
+               "pyranges overlap(), per track": YELLOW,
+               "bedtools intersect -C (CLI)": MAGENTA}
 
 
 def fig_atlas():
     rows = load("atlas")["rows"]
     q = [r for r in rows if r["part"] == "query"]
+    q += [{**r, "engine": "GIGGLE search -s (CLI)"} for r in rows
+          if r["part"] == "giggle" and r.get("kind") == "query"]
     fig, ax = plt.subplots(figsize=(8, 4.2))
     for eng, col in ATLAS_COLOR.items():
         pts = sorted((r["n_tracks"], r["seconds"]) for r in q if r["engine"] == eng)

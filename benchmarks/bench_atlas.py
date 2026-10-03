@@ -7,8 +7,9 @@ a single bin x track CSR matrix. Query: 20k peaks.
 Parts:
   build     Atlas.make: time, nnz, resident bytes vs BED bytes
   query     search() time vs number of tracks, against
+              - GIGGLE (C, on-disk index; part "giggle")
               - per-track cgranges loop (Loci indexes prebuilt, reused)
-              - pyranges.count_overlaps (all tracks in one call)
+              - pyranges overlap() per track (vectorised join)
               - bedtools intersect -C (all files in one call)
   accuracy  bin-level counts vs exact interval counts (Spearman), by bin size
   bootstrap Atlas.bootstrap(n=100) per-iteration cost
@@ -16,8 +17,10 @@ Parts:
 from __future__ import annotations
 
 import glob
+import os
 import subprocess
 import time
+from pathlib import Path
 
 import numpy as np
 
@@ -90,10 +93,12 @@ def part_query(rec):
                     warmup=1 if T <= 100 else 0)
         rec.add(part="query", engine="per-track cgranges loop (prebuilt)",
                 n_tracks=T, seconds=tq["median"], runs=tq["runs"])
-        grs = {i: pr.read_bed(p) for i, p in enumerate(TRACKS[:T])}
-        tq = timeit(lambda: pr.count_overlaps(grs, gq), repeat=rep,
+        # pyranges.count_overlaps fails under pandas 3 (pyranges 0.1.4), so
+        # count per track with the vectorised overlap() join instead
+        grs = [pr.read_bed(p) for p in TRACKS[:T]]
+        tq = timeit(lambda: [len(gq.overlap(g)) for g in grs], repeat=rep,
                     warmup=1 if T <= 100 else 0)
-        rec.add(part="query", engine="pyranges.count_overlaps", n_tracks=T,
+        rec.add(part="query", engine="pyranges overlap(), per track", n_tracks=T,
                 seconds=tq["median"], runs=tq["runs"])
         if T <= 250:
             def _bt():
@@ -126,6 +131,96 @@ def part_accuracy(rec):
                 runs=tq["runs"], nnz=int(a.M.nnz))
 
 
+GIGGLE = os.environ.get("GIGGLE", "giggle")
+
+
+def _giggle_inputs():
+    """bgzipped copies of the tracks + query (GIGGLE reads .bed.gz)."""
+    gz = DATA / "atlas_gz"
+    gz.mkdir(exist_ok=True)
+    for p in TRACKS:
+        out = gz / (Path(p).name + ".gz")
+        if not out.exists():
+            with open(out, "wb") as fh:
+                subprocess.run(["bgzip", "-c", p], stdout=fh, check=True)
+    q = DATA / "atlas_query.bed.gz"
+    if not q.exists():
+        with open(q, "wb") as fh:
+            subprocess.run(["bgzip", "-c", QUERY], stdout=fh, check=True)
+    return sorted(gz.glob("track_*.bed.gz")), q
+
+
+def _giggle_search(idx, q, cwd):
+    out = subprocess.run([GIGGLE, "search", "-i", idx, "-q", str(q), "-s"], cwd=cwd,
+                         capture_output=True, text=True, check=True).stdout
+    rows = {}
+    for line in out.splitlines():
+        if line.startswith("#") or not line.strip():
+            continue
+        f = line.split("\t")
+        rows[Path(f[0]).name.replace(".bed.gz", "")] = (int(f[2]), float(f[7]))
+    return rows
+
+
+def part_giggle(rec):
+    """GIGGLE (Layer et al. 2018): build + search at each collection size."""
+    from scipy.stats import spearmanr
+    print("\n== GIGGLE ==")
+    gz, q = _giggle_inputs()
+    base = DATA / "giggle"
+    base.mkdir(exist_ok=True)
+    for T in T_SWEEP:
+        tdir, idir = base / f"t{T}", f"i{T}"
+        tdir.mkdir(exist_ok=True)
+        for p in gz[:T]:
+            link = tdir / p.name
+            if not link.exists():
+                link.symlink_to(p)
+        build = ["bash", "-c", f'{GIGGLE} index -i "t{T}/*.gz" -o {idir} -f -s > /dev/null']
+        tb = timeit(lambda: subprocess.run(build, cwd=base, check=True), repeat=1, warmup=0)
+        size = sum(f.stat().st_size for f in (base / idir).rglob("*") if f.is_file())
+        rec.add(part="giggle", kind="build", n_tracks=T, seconds=tb["median"], runs=tb["runs"],
+                index_bytes=int(size))
+        ts = timeit(lambda: _giggle_search(idir, q, base), repeat=5)
+        rec.add(part="giggle", kind="query", engine="GIGGLE search -s (CLI)", n_tracks=T,
+                seconds=ts["median"], runs=ts["runs"])
+    # agreement at full size: GIGGLE vs exact interval counts and vs Atlas
+    res = _giggle_search(f"i{T_SWEEP[-1]}", q, base)
+    names = [Path(p).name.replace(".bed", "") for p in TRACKS]
+    g_ov = np.array([res[n][0] for n in names])
+    g_sc = np.array([res[n][1] for n in names])
+    Q = Loci.make(QUERY)
+    exact = exact_counts(Q, [Loci.make(p) for p in TRACKS])
+    A = Atlas.load(str(DATA / "atlas_1kb.npz"))
+    df = A.search(Q)
+    a_sc = df.set_index("name").loc[A.track_names, "giggle_score"].to_numpy()
+    top_g = set(np.argsort(-g_sc)[:25]); top_a = set(np.argsort(-a_sc)[:25])
+    rec.add(part="giggle", kind="agreement", n_tracks=len(TRACKS),
+            seconds=0.0, spearman_overlaps_vs_exact=float(spearmanr(g_ov, exact).statistic),
+            spearman_score_vs_atlas=float(spearmanr(g_sc, a_sc).statistic),
+            top25_shared_with_atlas=len(top_g & top_a))
+
+
+def part_load(rec):
+    """Cold, one-shot use (like a CLI call): load the saved index, then search.
+
+    GIGGLE's search is a CLI that opens its on-disk index each call, so this
+    is the like-for-like comparison to it; ``query`` times a loaded Atlas.
+    """
+    import sys
+    print("\n== cold load + search ==")
+    npz = str(DATA / "atlas_1kb.npz")
+    t = timeit(lambda: Atlas.load(npz), repeat=3)
+    rec.add(part="load", kind="Atlas.load (npz)", n_tracks=len(TRACKS), seconds=t["median"],
+            runs=t["runs"])
+    code = ("from genomeblocks import Atlas, Loci; "
+            f"Atlas.load({npz!r}).search(Loci.make({QUERY!r}))")
+    t = timeit(lambda: subprocess.run([sys.executable, "-W", "ignore", "-c", code], check=True),
+               repeat=3)
+    rec.add(part="load", kind="fresh python: import + load + search", n_tracks=len(TRACKS),
+            seconds=t["median"], runs=t["runs"])
+
+
 def part_bootstrap(rec):
     print("\n== bootstrap ==")
     A = Atlas.load(str(DATA / "atlas_1kb.npz"))
@@ -138,7 +233,7 @@ def part_bootstrap(rec):
 
 if __name__ == "__main__":
     import sys
-    parts = sys.argv[1:] or ["build", "query", "accuracy", "bootstrap"]
+    parts = sys.argv[1:] or ["build", "query", "giggle", "load", "accuracy", "bootstrap"]
     rec = Recorder("atlas")
     for p in parts:
         globals()[f"part_{p}"](rec)

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Motif scanning: ``scan_motifs_matrix`` (lightmotif SIMD) vs alternatives.
 
+Engines: genomeblocks (lightmotif), MEME FIMO, MOODS, Biopython, numpy.
+
 Task: count forward-strand hits (log2-odds >= 13, pseudocount 0.1, uniform
 background — genomeblocks' defaults) of JASPAR CORE vertebrate motifs in
 500 bp windows around N loci. Every engine scores the identical PSSMs.
@@ -13,7 +15,10 @@ Parts:
 """
 from __future__ import annotations
 
+import os
+import subprocess
 import sys
+import tempfile
 
 import numpy as np
 
@@ -114,6 +119,43 @@ def eng_numpy(seqs, mats):
     return out
 
 
+FIMO = os.environ.get("FIMO", "fimo")
+
+
+def write_meme(mats, path):
+    """MEME-format motifs holding exactly genomeblocks' probabilities
+    (pseudocount already applied), so FIMO scores the same PSSMs."""
+    with open(path, "w") as f:
+        f.write("MEME version 4\n\nALPHABET= ACGT\n\nstrands: +\n\n"
+                "Background letter frequencies\nA 0.25 C 0.25 G 0.25 T 0.25\n\n")
+        for name, cnt in mats:
+            p = (cnt + PSEUDO) / (cnt + PSEUDO).sum(axis=1, keepdims=True)
+            f.write(f"MOTIF {name}\nletter-probability matrix: alength= 4 w= {len(p)} nsites= 20 E= 0\n")
+            f.write("\n".join(" ".join(f"{x:.8f}" for x in row) for row in p) + "\n\n")
+
+
+def write_fasta(seqs, path):
+    with open(path, "w") as f:
+        f.write("".join(f">s{i}\n{s}\n" for i, s in enumerate(seqs)))
+
+
+def eng_fimo(fa, meme, mats):
+    """MEME-suite FIMO, fastest mode (--text), forward strand, same PSSMs.
+    p-value cut-off 1e-3 is loose enough to keep every score >= THR hit;
+    hits are then counted at score >= THR like the other engines."""
+    out = subprocess.run([FIMO, "--text", "--norc", "--thresh", "1e-3", "--bfile", "--uniform--",
+                          "--motif-pseudo", "0", "--skip-matched-sequence", "--verbosity", "1",
+                          meme, fa], capture_output=True, text=True, check=True).stdout
+    tot = {name: 0 for name, _ in mats}
+    for line in out.splitlines():
+        if line.startswith(("motif_id", "#")) or not line:
+            continue
+        f = line.split("\t")
+        if float(f[6]) >= THR - 1e-6:
+            tot[f[0]] += 1
+    return tot
+
+
 def agreement(ref: dict, other: dict) -> dict:
     keys = sorted(ref)
     a = np.array([ref[k] for k in keys], float)
@@ -141,9 +183,13 @@ def part_engines(rec, genome):
     seqs = [l.sequence(genome, r=R).upper() for l in L]
     mats = motif_counts(M)
     path = subset_file(M)
+    td = tempfile.mkdtemp()
+    fa, meme = os.path.join(td, "seqs.fa"), os.path.join(td, "motifs.meme")
+    write_fasta(seqs, fa); write_meme(mats, meme)
     res = {}
     engines = [
         ("genomeblocks scan_motifs_matrix (lightmotif)", lambda: eng_genomeblocks(L, genome, M, path), 3),
+        ("MEME FIMO --text (CLI)", lambda: eng_fimo(fa, meme, mats), 3),
         ("lightmotif, re-striped per motif", lambda: eng_lightmotif_restripe(seqs, path), 3),
         ("MOODS (C++, all motifs per pass)", lambda: eng_moods(seqs, mats), 3),
         ("numpy sliding window", lambda: eng_numpy(seqs, mats), 1),
@@ -174,6 +220,14 @@ def part_library(rec, genome):
         rec.add(part="library", engine="MOODS (C++, all motifs per pass)",
                 n_seqs=N, n_motifs=len(mats), seconds=t["median"], runs=t["runs"],
                 gbp_motif_per_s=bp / t["median"] / 1e9)
+        if N == 1000:
+            td = tempfile.mkdtemp()
+            fa, meme = os.path.join(td, "seqs.fa"), os.path.join(td, "motifs.meme")
+            write_fasta(seqs, fa); write_meme(mats, meme)
+            t = timeit(lambda: eng_fimo(fa, meme, mats), repeat=1, warmup=0)
+            rec.add(part="library", engine="MEME FIMO --text (CLI)", n_seqs=N,
+                    n_motifs=len(mats), seconds=t["median"], runs=t["runs"],
+                    gbp_motif_per_s=bp / t["median"] / 1e9)
 
 
 def part_workers(rec, genome):

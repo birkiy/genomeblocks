@@ -207,7 +207,29 @@ def part_parallel(rec):
                 rate=n * T / t["median"])
 
 
+def retime_deeptools(workers: int = 4):
+    """Re-time one deepTools point in place (e.g. after it ran on a busy machine)."""
+    import json
+    from common import RESULTS
+    p = RESULTS / "signal.json"
+    d = json.loads(p.read_text())
+    T, n = 16, 5_000
+    bws = [BWS[i % 4] for i in range(T)]
+    L = pick_loci(n)
+    t = timeit(lambda: deeptools(L, bws, workers), repeat=1, warmup=0)
+    for r in d["rows"]:
+        if r["part"] == "parallel" and r["engine"].startswith("deepTools") and r["workers"] == workers:
+            r.update(seconds=t["median"], runs=t["runs"], rate=n * T / t["median"], retimed=True)
+    p.write_text(json.dumps(d, indent=1))
+    print(f"[retimed] deepTools -p {workers}: {t['median']:.1f}s")
+
+
 if __name__ == "__main__":
+    if sys.argv[1:] == ["retime_deeptools"]:
+        import warnings
+        warnings.filterwarnings("ignore")
+        retime_deeptools()
+        sys.exit()
     import warnings
     warnings.filterwarnings("ignore")
     parts = sys.argv[1:] or ["engines", "scaling", "parallel"]

@@ -245,57 +245,91 @@ def build():
         b = [r for r in ar if r["part"] == "build"]
         acc = [r for r in ar if r["part"] == "accuracy"]
         boot = [r for r in ar if r["part"] == "bootstrap"]
+        gg = [r for r in ar if r["part"] == "giggle"]
+        ld = {r["kind"]: r for r in ar if r["part"] == "load"}
         T = max(r["n_tracks"] for r in q)
         aq = {(r["engine"], r["n_tracks"]): r["seconds"] for r in q}
+        for r in gg:
+            if r["kind"] == "query":
+                aq[("GIGGLE search -s (CLI)", r["n_tracks"])] = r["seconds"]
         a500 = aq[("Atlas.search (incl. Fisher + DataFrame)", T)]
         spmv = aq[("Atlas sparse row-sum only", T)]
         loop500 = aq[("per-track cgranges loop (prebuilt)", T)]
-        pr500 = aq.get(("pyranges.count_overlaps", T))
+        pr500 = aq.get(("pyranges overlap(), per track", T))
+        g500 = aq.get(("GIGGLE search -s (CLI)", T))
+        gb_ = {r["n_tracks"]: r for r in gg if r["kind"] == "build"}
+        gag = next((r for r in gg if r["kind"] == "agreement"), None)
+        cold = ld.get("fresh python: import + load + search")
+        aload = ld.get("Atlas.load (npz)")
+        npz = HERE / "data" / "atlas_1kb.npz"
+        npz_mb = npz.stat().st_size / 1e6 if npz.exists() else None
+        imp_ = load("import")
+        imp_loci = None
+        if imp_:
+            imp_loci = next((r["seconds"] for r in imp_["rows"] if r["stmt"].startswith("+ Loci")), None)
         tiles.append(("Enrichment vs 500 peak files", ftime(a500),
-                      f"per 20k-peak query, all tracks at once; {fx(loop500 / a500)} faster than looping over tracks", "#atlas", "navy", "Atlas"))
-        AC = {"Atlas.search (incl. Fisher + DataFrame)": "var(--s1)",
-              "per-track cgranges loop (prebuilt)": "var(--s2)",
-              "pyranges.count_overlaps": "var(--s3)",
-              "bedtools intersect -C (CLI)": "var(--s4)"}
+                      (f"per 20k-peak query with Fisher tests: {fx(g500 / a500)} faster than GIGGLE, " if g500 else "per 20k-peak query, ")
+                      + f"{fx(loop500 / a500)} faster than looping over tracks", "#atlas", "navy", "Atlas"))
+        NAMES = {"Atlas.search (incl. Fisher + DataFrame)": "Atlas.search()",
+                 "GIGGLE search -s (CLI)": "GIGGLE search -s",
+                 "per-track cgranges loop (prebuilt)": "per-track loop (cgranges)",
+                 "pyranges overlap(), per track": "pyranges, per track",
+                 "bedtools intersect -C (CLI)": "bedtools intersect -C"}
+        AC = {"Atlas.search (incl. Fisher + DataFrame)": "var(--s1)", "GIGGLE search -s (CLI)": "var(--s2)",
+              "per-track cgranges loop (prebuilt)": "var(--s3)", "pyranges overlap(), per track": "var(--s4)",
+              "bedtools intersect -C (CLI)": "var(--s5)"}
         charts["atlas_query"] = {"kind": "lines", "xlog": True, "ylog": True, "xfmt": "num", "yfmt": "time",
                                  "xLabel": "tracks in the collection", "yLabel": "time per query", "endLabels": True,
-                                 "series": [{"name": {"Atlas.search (incl. Fisher + DataFrame)": "Atlas.search()",
-                                                      "per-track cgranges loop (prebuilt)": "per-track loop (cgranges)",
-                                                      "pyranges.count_overlaps": "pyranges.count_overlaps",
-                                                      "bedtools intersect -C (CLI)": "bedtools intersect -C"}[e],
-                                             "color": c, "pts": sorted((t, s) for (ee, t), s in aq.items() if ee == e)}
-                                            for e, c in AC.items()]}
+                                 "series": [{"name": NAMES[e], "color": c,
+                                             "pts": sorted((t, s_) for (ee, t), s_ in aq.items() if ee == e)}
+                                            for e, c in AC.items() if any(ee == e for ee, _ in aq)]}
         b1 = next(r for r in b if r["bin_size"] == 1000 and r["workers"] == 3)
         b1s = next((r for r in b if r["bin_size"] == 1000 and r["workers"] == 1), None)
-        build_rows = [[f"{r['bin_size']:,} bp", str(r["workers"]), ftime(r["seconds"]), f"{r['nnz']:,}",
-                       f"{r['index_bytes'] / 1e6:.0f} MB", f"{r['bed_bytes'] / 1e6:.0f} MB"] for r in b]
+        build_rows = [[f"Atlas, {r['bin_size']:,} bp bins", str(r["workers"]), ftime(r["seconds"]),
+                       f"{r['index_bytes'] / 1e6:.0f} MB in RAM" + (f" · {npz_mb:.0f} MB .npz" if r["bin_size"] == 1000 and npz_mb else "")]
+                      for r in b]
+        if T in gb_:
+            build_rows.append(["GIGGLE, exact intervals", "1", ftime(gb_[T]["seconds"]),
+                               f"{gb_[T]['index_bytes'] / 1e6:.0f} MB on disk"])
         acc_rows = [[f"{r['bin_size']:,} bp", f"{r['spearman_counts']:.3f}", f"{r['top25_overlap']}/25",
                      ftime(r["seconds"]), f"{r['nnz']:,}"] for r in acc]
-        q_rows = [[e, str(t), ftime(s)] for (e, t), s in sorted(aq.items(), key=lambda kv: (kv[0][1], kv[1]))]
+        q_rows = [[NAMES.get(e, e), str(t), ftime(s_)] for (e, t), s_ in sorted(aq.items(), key=lambda kv: (kv[0][1], kv[1]))]
         boot_row = next((r for r in boot if r["n_iter"] == 100), None)
         acc1 = next((r for r in acc if r["bin_size"] == 1000), None)
+        giggle_txt = ""
+        if g500:
+            giggle_txt = (f'<p class="sub"><b>About the GIGGLE comparison.</b> <a href="https://github.com/ryanlayer/giggle">GIGGLE</a> '
+                          f'(Layer et al., <i>Nat. Methods</i> 2018, v0.6.3 built from source) is the tool Atlas is modelled on: it indexes exact intervals on disk and '
+                          f'reports the same per-file Fisher statistics. Its search is a command-line call that opens the on-disk index each time ({ftime(g500)} at {T} files). '
+                          + (f'Used the same way, a fresh Python process that imports genomeblocks, loads the saved Atlas ({npz_mb:.0f} MB .npz, {ftime(aload["seconds"])} to load) and searches takes {ftime(cold["seconds"])}, '
+                             f'{"most of it" if imp_loci and imp_loci > cold["seconds"] / 2 else "much of it"} Python start-up and imports. Atlas wins when it stays loaded and answers many queries, as in a notebook, a bootstrap or a web service; '
+                             f'GIGGLE wins for one-off command-line queries.' if cold and aload and npz_mb else '')
+                          + (f' Both agree on what is enriched: GIGGLE and Atlas enrichment scores correlate at Spearman ρ = {gag["spearman_score_vs_atlas"]:.2f} across tracks, '
+                             f'with {gag["top25_shared_with_atlas"]} of the top 25 tracks shared, and GIGGLE\'s exact overlap counts match exact interval counts at ρ = {gag["spearman_overlaps_vs_exact"]:.3f}.' if gag else '')
+                          + '</p>')
         secs.append(f"""
 <section id="atlas">
   <span class="tag navy">Atlas · GIGGLE-style enrichment</span>
   <h2>Enrichment against hundreds of peak files in one sparse operation</h2>
-  <p class="verdict">A 20k-peak query against all {T} tracks takes <b>{ftime(a500)}</b>, Fisher tests included. Intersecting track by track takes {ftime(loop500)}{f' and pyranges.count_overlaps {ftime(pr500)}' if pr500 else ''}.</p>
+  <p class="verdict">A 20k-peak query against all {T} tracks takes <b>{ftime(a500)}</b>, Fisher tests included{f'. GIGGLE takes {ftime(g500)} for the same search' if g500 else ''}; intersecting track by track takes {ftime(loop500)}{f' (pyranges per track: {ftime(pr500)})' if pr500 else ''}.</p>
   {why("Why: the collection is one bin × track matrix", D['atlas'],
-       f"<code>Atlas.make</code> tiles the genome into 1 kb bins and stores one bit per (bin, track) in a single CSR matrix. A query becomes its set of bins; selecting those rows and summing the columns (about {ftime(spmv)} here) gives the overlap count for every track at once, and the Fisher tests are vectorised across tracks. The cost tracks the number of query bins, not the number of files.")}
+       f"<code>Atlas.make</code> tiles the genome into 1 kb bins and stores one bit per (bin, track) in a single CSR matrix held in memory. A query becomes its set of bins; selecting those rows and summing the columns (about {ftime(spmv)} here) gives the overlap count for every track at once, and the Fisher tests are vectorised across tracks. The cost tracks the number of query bins, not the number of files.")}
   {chart("atlas_query", "Query time vs collection size", "· 20k-peak query, log–log, lower is better",
-         "The per-track loop uses prebuilt cgranges indexes (index once, query many), the fairest version of doing it without Atlas. bedtools reads the files on every call, which is how it is used in practice.")}
+         "Atlas is timed with its index loaded. GIGGLE and bedtools are command-line tools and read their inputs on every call, which is how they are used. The per-track loop uses prebuilt cgranges indexes (index once, query many), the fairest way to do this without Atlas.")}
+  {giggle_txt}
   <div class="two">
-    <figure><div class="ttl">Build once <span>· {b1['n_tracks']} BED files, {b1['n_peaks'] / 1e6:.1f}M peaks</span></div>
-      {table(["bin", "workers", "build", "nnz", "index", "BED text"], build_rows, num_cols=(1, 2, 3, 4, 5))}
-      <figcaption>The 1 kb index is {b1['index_bytes'] / b1['bed_bytes']:.1%} the size of the BED text{f'; building it with 3 worker processes is {fx(b1s["seconds"] / b1["seconds"])} faster than with 1' if b1s else ''}. <code>Atlas.save</code> / <code>load</code> make this a one-time cost.</figcaption></figure>
+    <figure><div class="ttl">Build once <span>· {b1['n_tracks']} BED files, {b1['n_peaks'] / 1e6:.1f}M peaks, {b1['bed_bytes'] / 1e6:.0f} MB of text</span></div>
+      {table(["index", "workers", "build", "size"], build_rows, num_cols=(1, 2))}
+      <figcaption>{f'Building the 1 kb index with 3 worker processes is {fx(b1s["seconds"] / b1["seconds"])} faster than with 1. ' if b1s else ''}<code>Atlas.save</code> / <code>load</code> make the build a one-time cost.</figcaption></figure>
     <figure><div class="ttl">What binning costs in accuracy <span>· vs exact interval overlaps</span></div>
       {table(["bin", "Spearman ρ", "top-25 shared", "query", "nnz"], acc_rows, num_cols=(1, 2, 3, 4))}
-      <figcaption>Atlas counts shared bins, not intervals. Per-track overlap counts still rank almost identically to exact interval counts{f' (ρ = {acc1["spearman_counts"]:.3f} at 1 kb)' if acc1 else ''}. Smaller bins track more closely at a larger index.</figcaption></figure>
+      <figcaption>Atlas counts shared bins, not intervals. Per-track overlap counts still rank almost identically to exact interval counts{f' (ρ = {acc1["spearman_counts"]:.3f} at 1 kb)' if acc1 else ''}; "top-25 shared" compares the 25 most-enriched tracks by each method. Smaller bins track more closely at a larger index.</figcaption></figure>
   </div>
-  {f'<p class="sub">A 100-iteration shuffled-null bootstrap (<code>Atlas.bootstrap</code>) over all {T} tracks takes {ftime(boot_row["seconds"])}, {ftime(boot_row["per_iter"])} per iteration.</p>' if boot_row else ''}
+  {f'<p class="sub">A 100-iteration shuffled-null bootstrap (<code>Atlas.bootstrap</code>) over all {T} tracks takes {ftime(boot_row["seconds"])}, {ftime(boot_row["per_iter"])} per iteration. With a command-line tool each iteration would be a separate search.</p>' if boot_row else ''}
   {details("Query timings", table(["engine", "tracks", "median"], q_rows, num_cols=(1, 2), hl=lambda r: r[0].startswith("Atlas.search")))}
 </section>""")
         mech.append(("One matrix for the whole collection", "#atlas",
-                     "Atlas turns hundreds of peak files into one sparse bin × track matrix, so a query is a single row-sum over all tracks instead of one intersect per file."))
+                     "Atlas turns hundreds of peak files into one sparse bin × track matrix kept in memory, so a query is a single row-sum over all tracks instead of one intersect per file."))
 
     # ── motifs ─────────────────────────────────────────────────────────────
     mo = load("motifs")
@@ -307,11 +341,14 @@ def build():
         mmoods = me["MOODS (C++, all motifs per pass)"]
         mnp = me["numpy sliding window"]
         mrs = me["lightmotif, re-striped per motif"]
+        mfi = me.get("MEME FIMO --text (CLI)")
+        min_r = min(r["pearson_r"] for r in me.values())
         lib = [r for r in mr if r["part"] == "library"]
         wk = sorted([r for r in mr if r["part"] == "workers"], key=lambda r: r["workers"])
         st = {r["step"]: r["seconds"] for r in mr if r["part"] == "stripe"}
-        tiles.append(("Motif scanning", fx(mbio["seconds"] / mgb["seconds"]),
-                      f"faster than Biopython, {fx(mmoods['seconds'] / mgb['seconds'])} vs MOODS (C++); "
+        tiles.append(("Motif scanning", fx((mfi or mbio)["seconds"] / mgb["seconds"]),
+                      (f"faster than MEME FIMO, " if mfi else "") +
+                      f"{fx(mbio['seconds'] / mgb['seconds'])} faster than Biopython; "
                       f"{mgb['gbp_motif_per_s']:.1f} Gbp·motif/s on one core", "#motifs", "green", "motifs"))
         charts["motifs_engines"] = {"kind": "hbar", "fmt": "time", "log": True, "sort": "asc", "labelW": 300,
                                     "axis": "time for 1,000 × 500 bp windows × 100 motifs (log scale)",
@@ -334,13 +371,13 @@ def build():
 <section id="motifs">
   <span class="tag green">motifs · PWM scanning</span>
   <h2>Motif scanning: SIMD scoring, sequences prepared once</h2>
-  <p class="verdict"><code>scan_motifs_matrix</code> counts JASPAR hits {fx(mbio['seconds'] / mgb['seconds'])} faster than Biopython and {fx(mnp['seconds'] / mgb['seconds'])} faster than a vectorised numpy scorer. MOODS, a dedicated C++ scanner, takes {fx(mmoods['seconds'] / mgb['seconds'])} the time.</p>
+  <p class="verdict"><code>scan_motifs_matrix</code> counts JASPAR hits {f"<b>{fx(mfi['seconds'] / mgb['seconds'])} faster than MEME FIMO</b>, " if mfi else ""}{fx(mbio['seconds'] / mgb['seconds'])} faster than Biopython and {fx(mnp['seconds'] / mgb['seconds'])} faster than a vectorised numpy scorer. MOODS, a dedicated C++ scanner that scores every motif in one pass per sequence, is {fx(mgb['seconds'] / mmoods['seconds'])} faster still; see <a href='#fixes'>fixes</a> for where that gap comes from.</p>
   {why("Why: SIMD scoring, and the sequence layout is built once", D['motifs'],
        f"<a href='https://github.com/althonos/lightmotif'>lightmotif</a> scores PSSMs with AVX2 over a <em>striped</em> sequence layout. genomeblocks stripes each window once and reuses it for all 1,019 motifs; motifs are then split across worker processes. Striping one sequence costs about {stripe_frac:.1f}× one motif scan, so re-striping per motif would cost {fx(mrs['seconds'] / mgb['seconds'])} the time.")}
   {chart("motifs_engines", "Engines", "· forward strand, log2-odds ≥ 13, same PSSMs, lower is better",
-         f"All engines report the same hits (Pearson r = 1.0 across motifs). Throughput is in Gbp·motif/s: sequence length × motifs scored per second.")}
+         f"Every engine scores the same probability matrices (pseudocount 0.1, uniform background, forward strand) and reports the same hits per motif (Pearson r ≥ {min_r:.4f}; FIMO differs by a handful of hits that sit exactly at the score cut-off, float32 vs float64 rounding)." + (" FIMO runs in its fastest mode (<code>--text</code>, no q-values); its time includes reading the FASTA and computing a p-value for every candidate, which is part of what FIMO is for." if mfi else ""))}
   {('<div class="two">' + chart("motifs_workers", "Worker processes", "· 5,000 windows × 1,019 motifs", f"{fx(w1 / w4)} with 4 processes. Each worker receives the sequences once (pool initializer) and scans a share of the motifs.") +
-    '<figure><div class="ttl">Full JASPAR library <span>· 1,019 motifs, 1 core</span></div>' + table(["engine", "windows", "time", "Gbp·motif/s"], lib_rows, num_cols=(1, 2, 3)) + '<figcaption>MOODS scans all motifs in one pass with a multi-matrix lookahead filter, which is its strength on large libraries.</figcaption></figure></div>') if wk else ''}
+    '<figure><div class="ttl">Full JASPAR library <span>· 1,019 motifs, 1 core</span></div>' + table(["engine", "windows", "time", "Gbp·motif/s"], lib_rows, num_cols=(1, 2, 3)) + '<figcaption>Throughput is sequence length × motifs scored per second. MOODS checks all motifs in one pass per sequence with a lookahead filter.</figcaption></figure></div>') if wk else ''}
   {details("Engine table", table(["engine", "time", "Gbp·motif/s", "hits", "r vs genomeblocks"], eng_rows, num_cols=(1, 2, 3, 4), hl=lambda r: r[0].startswith("genomeblocks")))}
 </section>""")
         mech.append(("SIMD motif scoring, layout built once", "#motifs",
@@ -459,7 +496,20 @@ def build():
     fxr = load("fixes")
     if fxr:
         f = {(r["op"], r["variant"], r["n"]): r for r in fxr["rows"]}
-        n = max(r["n"] for r in fxr["rows"])
+        n = max(r["n"] for r in fxr["rows"] if r.get("part", "loci") == "loci")
+        mot = [r for r in fxr["rows"] if r.get("part") == "motifs"]
+        if mot:
+            Mx = max(r["n"] for r in mot)
+            cur = next(r for r in mot if r["n"] == Mx and r["variant"].startswith("current"))
+            new = next(r for r in mot if r["n"] == Mx and r["variant"].startswith("concatenated"))
+            mo_ = load("motifs")
+            moods_lib = next((r for r in (mo_["rows"] if mo_ else []) if r["part"] == "library"
+                              and r["engine"].startswith("MOODS") and r["n_seqs"] == 1000), None)
+            fixes.append(("scan_motifs_matrix makes one Python-level scan per window × motif",
+                          f"For 1,000 windows × {Mx:,} motifs that is {1000 * Mx:,} calls into lightmotif, each on only 500 bp, so call overhead dominates ({ftime(cur['seconds'])}). "
+                          f"Concatenating the windows, striping once, and scoring each motif over the whole block with <code>pssm.calculate(striped).threshold(t)</code> "
+                          f"(hits split back per window with <code>np.bincount</code>, edge-crossing hits dropped) gives {'identical counts in every cell' if new.get('same') else 'DIFFERENT counts'} in {ftime(new['seconds'])} "
+                          f"({fx(cur['seconds'] / new['seconds'])})" + (f", which also beats MOODS on the same task ({ftime(moods_lib['seconds'])})." if moods_lib and new['seconds'] < moods_lib['seconds'] else (f"; MOODS takes {ftime(moods_lib['seconds'])}." if moods_lib else ".")))))
         sc_ = f[("sort", "current (__lt__)", n)]; sk = f[("sort", "key=(chrom, start)", n)]
         mc_ = f[("merge", "current", n)]; mk_ = f[("merge", "key sort + single pass", n)]
         fixes.insert(1, ("Loci.sort() / merge() compare dataclasses in Python",

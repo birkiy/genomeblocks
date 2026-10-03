@@ -58,9 +58,16 @@ class Recorder:
               flush=True)
 
     def save(self, **meta):
-        out = {"bench": self.name, "env": env_info(), "meta": meta,
-               "rows": self.rows}
+        """Write results. When every row carries a ``part``, rows of other
+        parts already on disk are kept, so one part can be re-run alone."""
         p = RESULTS / f"{self.name}.json"
+        rows = self.rows
+        if p.exists() and rows and all("part" in r for r in rows):
+            old = json.loads(p.read_text())
+            mine = {r["part"] for r in rows}
+            rows = [r for r in old["rows"] if r.get("part") not in mine] + rows
+            meta = {**old.get("meta", {}), **meta}
+        out = {"bench": self.name, "env": env_info(), "meta": meta, "rows": rows}
         p.write_text(json.dumps(out, indent=1, default=float))
         print(f"[saved] {p}")
 
