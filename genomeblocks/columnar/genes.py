@@ -267,6 +267,27 @@ class Genes:
         ok = dist >= 0
         return pd.DataFrame({"Name": L.uid[ok], "Name_b": names[ok], "Distance": dist[ok]})
 
+    # ── persistence ───────────────────────────────────────────────────────
+    def save(self, path: str):
+        """``path/`` gets genes / transcripts / features parquet tables + meta.json."""
+        import json
+        import os
+        os.makedirs(path, exist_ok=True)
+        for name in ("genes", "transcripts", "features"):
+            getattr(self, name).save(os.path.join(path, f"{name}.parquet"))
+        with open(os.path.join(path, "meta.json"), "w") as f:
+            json.dump({"promoter_r": self.promoter_r, "filename": self.filename}, f)
+
+    @classmethod
+    def load(cls, path: str, *, genome: Optional[Genome] = None) -> "Genes":
+        import json
+        import os
+        g = genome or default_genome()
+        t = [Loci.load(os.path.join(path, f"{n}.parquet"), genome=g)
+             for n in ("genes", "transcripts", "features")]
+        meta = json.load(open(os.path.join(path, "meta.json")))
+        return cls(*t, promoter_r=meta["promoter_r"], filename=meta.get("filename"))
+
     # ── display ───────────────────────────────────────────────────────────
     def counts(self) -> dict:
         k = self.features.cols["kind"]

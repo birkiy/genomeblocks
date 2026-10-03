@@ -186,3 +186,21 @@ pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overfl
 .chart .bar.fast { fill: var(--s1); }
 .chart .bar.slow { fill: var(--s8); }
 .chart .mid { stroke: var(--ink-2); stroke-width: 1.2; }
+
+/* prototype report: dumbbell + stacked bars */
+.chart .conn { stroke: var(--muted); stroke-width: 2; opacity: .55; }
+.chart .dot.sa { fill: var(--s2); }
+.chart .dot.sb { fill: var(--s1); }
+.chart .vlabel.bad { fill: var(--s8); }
+.legend i.key { height: 10px; width: 10px; border-radius: 50%; }
+.legend i.key.sa { background: var(--s2); }
+.legend i.key.sb { background: var(--s1); }
+.chart .seg { stroke: none; }
+.chart .seg.k1, .legend i.key.k1 { fill: var(--s1); background: var(--s1); }
+.chart .seg.k2, .legend i.key.k2 { fill: var(--s2); background: var(--s2); }
+.chart .seg.k3, .legend i.key.k3 { fill: var(--s3); background: var(--s3); }
+.chart .seg.k4, .legend i.key.k4 { fill: var(--s4); background: var(--s4); }
+.chart .seg.k5, .legend i.key.k5 { fill: var(--bar-other); background: var(--bar-other); }
+.legend i.key.k1, .legend i.key.k2, .legend i.key.k3, .legend i.key.k4, .legend i.key.k5 { border-radius: 3px; }
+.why svg .heat { stroke: var(--surface); stroke-width: 1; }
+.why svg .strip { stroke: var(--surface); stroke-width: 2; }

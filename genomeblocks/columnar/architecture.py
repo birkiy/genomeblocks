@@ -267,13 +267,17 @@ class Architecture:
             return x.row
         return int(x)
 
+    def neighbor_rows(self, x):
+        """(partner rows, edge ids) of one CRE — cis and trans — as arrays."""
+        i = self._row(x)
+        indptr, nb, eid = self._adj()
+        return nb[indptr[i]:indptr[i + 1]], eid[indptr[i]:indptr[i + 1]]
+
     def neighbors(self, x):
         """All partners of one CRE (row / uid / Locus) — cis and trans — as a DataFrame."""
         import pandas as pd
         i = self._row(x)
-        indptr, nb, eid = self._adj()
-        sl = slice(indptr[i], indptr[i + 1])
-        j, e = nb[sl], eid[sl]
+        j, e = self.neighbor_rows(i)
         L = self.loci
         d = {"row": j, "uid": L.uid[j], "chrom": L.chroms[j], "cis": L.codes[j] == L.codes[i]}
         d.update({k: v[e] for k, v in self.ep.items()})
@@ -285,9 +289,9 @@ class Architecture:
             i, j = sorted((self._row(key[0]), self._row(key[1])))
             e = self._edge_id(i, j)
             return None if e < 0 else {k: float(v[e]) for k, v in self.ep.items()}
-        nb = self.neighbors(key)
-        w = nb["w"] if "w" in nb else np.zeros(len(nb))
-        return dict(zip(nb["uid"], w))
+        j, e = self.neighbor_rows(key)
+        w = self.ep["w"][e] if "w" in self.ep else np.zeros(len(e))
+        return dict(zip(self.loci.uid[j].tolist(), w.tolist()))
 
     def _edge_id(self, i, j) -> int:
         if self._keys is None:

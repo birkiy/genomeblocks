@@ -16,6 +16,7 @@ Outputs (in ``$GB_BENCH_DATA`` or ``benchmarks/data``):
   genes.gtf                 GENCODE-shaped GTF (20k genes, ~70k transcripts)
   hic.pairs                 5M Hi-C read pairs (4DN .pairs) with distance decay
   loops.bedpe               50k chromatin loops anchored near A peaks
+  loops_<n>.bedpe           12.5k / 200k / 1M loops (scaling)
   loops_trans.bedpe         loops.bedpe + 2.5k inter-chromosomal loops (5%)
   hic_trans_5kb.cool        hic.pairs + ~40 read pairs at each inter-chromosomal loop
   genome.fa                 chr21 + chr22, random sequence at 41% GC
@@ -343,7 +344,7 @@ def pairs(n=5_000_000):
             df.to_csv(f, sep="\t", header=False, index=False)
 
 
-def loops(n=50_000):
+def loops(n=50_000, out="loops.bedpe"):
     a = pd.read_csv(DATA / "peaks_A_100000.bed", sep="\t", header=None,
                     usecols=[0, 1, 2], names=["chrom", "start", "end"])
     rng = np.random.default_rng(5)
@@ -362,7 +363,13 @@ def loops(n=50_000):
         x, y = max(0, x + jit[0]), max(0, y + jit[1])
         rows.append(f"{chroms[i]}\t{max(0, x - 2500)}\t{x + 2500}\t{chroms[i]}"
                     f"\t{max(0, y - 2500)}\t{y + 2500}\tL{len(rows)}\t{rng.integers(2, 60)}")
-    (DATA / "loops.bedpe").write_text("\n".join(rows) + "\n")
+    (DATA / out).write_text("\n".join(rows) + "\n")
+
+
+def loops_scale():
+    """Loop sets of other sizes for the Architecture scaling benchmark."""
+    for n in (12_500, 200_000, 1_000_000):
+        loops(n, f"loops_{n}.bedpe")
 
 
 def loops_trans(n=2_500):
@@ -441,7 +448,7 @@ def motifs():
 
 STEPS = {"chromsizes": chromsizes, "peaks": peaks, "bw": bigwigs,
          "atlas": atlas, "gtf": gtf, "pairs": pairs, "loops": loops,
-         "loops_trans": loops_trans, "hic_trans": hic_trans,
+         "loops_trans": loops_trans, "loops_scale": loops_scale, "hic_trans": hic_trans,
          "genome": genome, "motifs": motifs}
 
 if __name__ == "__main__":

@@ -343,3 +343,11 @@ def test_classic_lookups_and_legacy_export(mixed):
     O = A.to_legacy()
     assert O.n_links == A.n_links and O.n_loci == A.n_loci
     assert set(O.index) == set(A.loci.uid[A.degree > 0])
+
+
+def test_genes_save_load(tmp_path, genes_pair, L):
+    G, _ = genes_pair
+    G.save(str(tmp_path / "genes"))
+    H = gbc.Genes.load(str(tmp_path / "genes"))
+    assert np.array_equal(H.labels(L), G.labels(L))
+    assert H["GENE_chr1_3"].gene_id == G["GENE_chr1_3"].gene_id
