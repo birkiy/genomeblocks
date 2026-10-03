@@ -16,6 +16,8 @@ Outputs (in ``$GB_BENCH_DATA`` or ``benchmarks/data``):
   genes.gtf                 GENCODE-shaped GTF (20k genes, ~70k transcripts)
   hic.pairs                 5M Hi-C read pairs (4DN .pairs) with distance decay
   loops.bedpe               50k chromatin loops anchored near A peaks
+  loops_trans.bedpe         loops.bedpe + 2.5k inter-chromosomal loops (5%)
+  hic_trans_5kb.cool        hic.pairs + ~40 read pairs at each inter-chromosomal loop
   genome.fa                 chr21 + chr22, random sequence at 41% GC
   jaspar.txt                JASPAR CORE vertebrates (jaspar16 format)
 
@@ -26,6 +28,7 @@ Usage:
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 import time
 
 import numpy as np
@@ -362,6 +365,52 @@ def loops(n=50_000):
     (DATA / "loops.bedpe").write_text("\n".join(rows) + "\n")
 
 
+def loops_trans(n=2_500):
+    """loops.bedpe plus ``n`` inter-chromosomal loops between A peaks."""
+    a = pd.read_csv(DATA / "peaks_A_100000.bed", sep="\t", header=None,
+                    usecols=[0, 1, 2], names=["chrom", "start", "end"])
+    rng = np.random.default_rng(7)
+    centres = ((a["start"] + a["end"]) // 2).to_numpy()
+    chroms = a["chrom"].to_numpy()
+    rows = []
+    while len(rows) < n:
+        i, j = rng.integers(0, len(a), 2)
+        if chroms[i] == chroms[j]:
+            continue
+        x, y = centres[i], centres[j]
+        rows.append(f"{chroms[i]}\t{max(0, x - 2500)}\t{x + 2500}\t{chroms[j]}"
+                    f"\t{max(0, y - 2500)}\t{y + 2500}\tT{len(rows)}\t{rng.integers(2, 20)}")
+    cis = (DATA / "loops.bedpe").read_text()
+    (DATA / "loops_trans.bedpe").write_text(cis + "\n".join(rows) + "\n")
+
+
+def hic_trans():
+    """hic.pairs plus ~40 contacts at each inter-chromosomal loop, binned at 5 kb,
+    so the trans loops carry real Hi-C weight (the random trans background is
+    far too sparse to hit any one pixel)."""
+    import shutil
+    import subprocess
+    rng = np.random.default_rng(8)
+    t = pd.read_csv(DATA / "loops_trans.bedpe", sep="\t", header=None, usecols=range(6))
+    t = t[t[0] != t[3]]
+    k = rng.poisson(40, len(t))
+    i = np.repeat(np.arange(len(t)), k)
+    x = ((t[1].to_numpy() + t[2].to_numpy()) // 2)[i] + rng.normal(0, 1500, len(i)).astype(np.int64)
+    y = ((t[4].to_numpy() + t[5].to_numpy()) // 2)[i] + rng.normal(0, 1500, len(i)).astype(np.int64)
+    extra = pd.DataFrame({"id": [f"t{n}" for n in range(len(i))], "c1": t[0].to_numpy()[i],
+                          "p1": np.maximum(x, 1), "c2": t[3].to_numpy()[i], "p2": np.maximum(y, 1),
+                          "s1": "+", "s2": "-"})
+    out = DATA / "hic_trans.pairs"
+    shutil.copyfile(DATA / "hic.pairs", out)
+    extra.to_csv(out, sep="\t", header=False, index=False, mode="a")
+    cooler = Path(sys.executable).parent / "cooler"
+    subprocess.run([str(cooler), "cload", "pairs", "-c1", "2", "-p1", "3", "-c2", "4", "-p2", "5",
+                    f"{DATA / 'hg38.chrom.sizes'}:5000", str(out), str(DATA / "hic_trans_5kb.cool")],
+                   check=True)
+    out.unlink()
+    print(f"            hic_trans_5kb.cool: +{len(i):,} trans read pairs", flush=True)
+
+
 # ── genome FASTA + motifs ────────────────────────────────────────────────────
 
 def genome():
@@ -392,6 +441,7 @@ def motifs():
 
 STEPS = {"chromsizes": chromsizes, "peaks": peaks, "bw": bigwigs,
          "atlas": atlas, "gtf": gtf, "pairs": pairs, "loops": loops,
+         "loops_trans": loops_trans, "hic_trans": hic_trans,
          "genome": genome, "motifs": motifs}
 
 if __name__ == "__main__":
