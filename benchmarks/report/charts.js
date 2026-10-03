@@ -184,5 +184,39 @@
     }
   }
 
-  window.Charts = { hbar, lines };
+  // ── diverging bars around 1× (log scale): right = faster, left = slower ──
+  // spec: {rows:[{label, value (ratio new/old speed), tip?}], axis, labelW}
+  function diverge(host, spec) {
+    const rows = spec.rows.slice().sort((a, b) => b.value - a.value);
+    const W = 760, labelW = spec.labelW || 300, rowH = 30, top = 6, axisH = 34;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": spec.aria || "" }, null);
+    const m = Math.max(...rows.map(r => Math.abs(Math.log10(r.value))), Math.log10(3));
+    const lim = Math.pow(10, Math.ceil(m * 2) / 2);
+    const x0 = labelW + 70, x1 = W - 70;
+    const sx = scale(1 / lim, lim, x0, x1, true);
+    const plotB = top + rows.length * rowH;
+    const ticks = [1 / lim, 1 / Math.sqrt(lim), 1, Math.sqrt(lim), lim].filter((v, i, a) => a.indexOf(v) === i);
+    const tl = v => v >= 1 ? (v === 1 ? "same" : `${(+v.toPrecision(2))}× faster`) : `${(+(1 / v).toPrecision(2))}× slower`;
+    for (const t of ticks) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: t === 1 ? "mid" : "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, tl(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      txt(svg, labelW - 12, y + 4, r.label, "rlabel", "end");
+      const a = sx(1), b = sx(Math.min(Math.max(r.value, 1 / lim), lim));
+      const fast = r.value >= 1;
+      el("rect", { x: Math.min(a, b), y: y - 8, width: Math.max(2, Math.abs(b - a)), height: 16, rx: 3,
+                   class: "bar " + (fast ? "fast" : "slow") }, svg);
+      const lab = Math.abs(r.value - 1) < 0.05 ? "same" : tl(r.value);
+      txt(svg, fast ? Math.max(a, b) + 6 : Math.min(a, b) - 6, y + 4, lab, "vlabel", fast ? "start" : "end");
+      const hit = el("rect", { x: 0, y: y - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      bindTip(hit, lab, r.tip || r.label);
+    });
+    host.appendChild(svg);
+  }
+
+  window.Charts = { hbar, lines, diverge };
 })();

@@ -182,3 +182,7 @@ pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overfl
   .scroll > svg.chart, .scroll > svg { min-width: 600px; }
   .tile .v { font-size: 30px; }
 }
+.why svg .rowhl { fill: none; stroke: var(--s1); stroke-width: 2; }
+.chart .bar.fast { fill: var(--s1); }
+.chart .bar.slow { fill: var(--s8); }
+.chart .mid { stroke: var(--ink-2); stroke-width: 1.2; }

@@ -1,0 +1,706 @@
+<title>Objects or Columns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
+<style>/* Layout: one reading column (~920px) under a sticky section bar; each module
+   section = verdict line -> "why" diagram -> chart -> data table. */
+:root {
+  --bg: #f6f4e8;          /* parchment page (brand n-50) */
+  --surface: #fbfaf4;     /* cards, chart surface (brand n-0) */
+  --ink: #1e1e1e;         /* brand n-900 */
+  --ink-2: #52514b;       /* brand n-500 */
+  --muted: #868377;       /* brand n-400 */
+  --rule: #e1dcc5;        /* brand n-100 */
+  --grid: #e9e5d2;
+  --brand: #003552;       /* deep navy */
+  --brand-subtle: #e8eff4;
+  --code-bg: #eeece2;
+  --mod-green: #0f7a3a; --mod-green-bg: #eafaf0;
+  --mod-purple: #5325a3; --mod-purple-bg: #f1ecfb;
+  --mod-navy: #003552; --mod-navy-bg: #e8eff4;
+  --warn: #8a5300; --warn-bg: #fdf1dc;
+  /* chart series (validated categorical order, light steps) */
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+  --bar-other: #c9c5b2;
+  --font: "Nunito", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1b1a; --surface: #232220; --ink: #f2f0e6; --ink-2: #c7c3b1; --muted: #9a968a;
+    --rule: #3a3935; --grid: #302f2c; --brand: #8cc3e8; --brand-subtle: #1d2a33;
+    --code-bg: #2d2c29;
+    --mod-green: #5fd38e; --mod-green-bg: #18291f; --mod-purple: #b79cf0; --mod-purple-bg: #251d36;
+    --mod-navy: #8cc3e8; --mod-navy-bg: #1d2a33; --warn: #f4c06a; --warn-bg: #33281a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --bar-other: #55534c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b1a; --surface: #232220; --ink: #f2f0e6; --ink-2: #c7c3b1; --muted: #9a968a;
+  --rule: #3a3935; --grid: #302f2c; --brand: #8cc3e8; --brand-subtle: #1d2a33;
+  --code-bg: #2d2c29;
+  --mod-green: #5fd38e; --mod-green-bg: #18291f; --mod-purple: #b79cf0; --mod-purple-bg: #251d36;
+  --mod-navy: #8cc3e8; --mod-navy-bg: #1d2a33; --warn: #f4c06a; --warn-bg: #33281a;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --bar-other: #55534c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px;
+       line-height: 1.6; margin: 0; }
+.wrap { max-width: 960px; margin: 0 auto; padding-inline: 20px; padding-block: 8px 64px; }
+h1, h2, h3 { line-height: 1.22; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 42px); font-weight: 800; letter-spacing: -0.01em; color: var(--brand); }
+h2 { font-size: 26px; font-weight: 800; color: var(--ink); }
+h3 { font-size: 17px; font-weight: 800; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--brand); }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--code-bg);
+       padding: 1px 5px; border-radius: 5px; }
+.eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+           color: var(--muted); }
+
+/* header + nav */
+header.top { display: grid; gap: 12px; padding-block: 36px 22px; }
+header.top .lede { font-size: 18.5px; color: var(--ink-2); max-width: 62ch; }
+nav.sections { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+               border-bottom: 1px solid var(--rule); padding-block: 10px; margin-bottom: 8px;
+               display: flex; gap: 6px; flex-wrap: wrap; }
+nav.sections a { text-decoration: none; font-size: 13.5px; font-weight: 700; color: var(--ink-2);
+                 padding: 4px 11px; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface); }
+nav.sections a:hover, nav.sections a:focus-visible { color: var(--brand); border-color: var(--brand); outline: none; }
+
+section { display: grid; gap: 18px; padding-block: 40px 8px; border-top: 1px solid var(--rule);
+          scroll-margin-top: 64px; }
+section:first-of-type { border-top: 0; }
+.verdict { font-size: 19px; font-weight: 700; color: var(--ink); max-width: 62ch; }
+.verdict b { color: var(--brand); }
+.sub { color: var(--ink-2); }
+
+/* stat tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+        padding: 14px 16px; display: grid; gap: 4px; align-content: start; text-decoration: none; color: inherit; }
+.tiles.two-up { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+.tile:hover, .tile:focus-visible { border-color: var(--brand); outline: none; }
+.tile .k { font-size: 13px; font-weight: 700; color: var(--muted); }
+.tile .v { font-size: 34px; font-weight: 800; line-height: 1.1; color: var(--brand); }
+.tile .d { font-size: 14px; color: var(--ink-2); line-height: 1.4; }
+.tag { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em;
+       text-transform: uppercase; border-radius: 999px; padding: 1px 9px; width: fit-content; }
+.tag.green { color: var(--mod-green); background: var(--mod-green-bg); }
+.tag.purple { color: var(--mod-purple); background: var(--mod-purple-bg); }
+.tag.navy { color: var(--mod-navy); background: var(--mod-navy-bg); }
+.tag.warn { color: var(--warn); background: var(--warn-bg); }
+
+/* figure cards */
+figure { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+         padding: 16px 16px 12px; display: grid; gap: 10px; min-width: 0; }
+figure .ttl { font-weight: 800; font-size: 15.5px; }
+figure .ttl span { font-weight: 600; color: var(--muted); }
+figcaption { font-size: 14px; color: var(--ink-2); max-width: 75ch; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { font-family: var(--font); fill: var(--ink-2); font-size: 12.5px; }
+.chart .tick { fill: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.chart .axis-label { fill: var(--muted); font-size: 12px; font-weight: 600; }
+.chart .rlabel { fill: var(--ink-2); font-size: 13px; }
+.chart .rlabel.hl { fill: var(--ink); font-weight: 800; }
+.chart .vlabel { fill: var(--ink-2); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chart .endlabel { fill: var(--ink-2); font-size: 12.5px; font-weight: 600; }
+.chart .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .baseline { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.chart .bar { fill: var(--bar-other); }
+.chart .bar.hl { fill: var(--s1); }
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot { stroke: var(--surface); stroke-width: 2; }
+.chart .leader { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover, .chart .hit:focus-visible { fill: var(--ink); fill-opacity: 0.04; outline: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.legend > span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
+.tip { position: absolute; z-index: 20; pointer-events: none; background: var(--ink); color: var(--bg);
+       border-radius: 8px; padding: 6px 10px; display: grid; gap: 1px; font-size: 12.5px;
+       box-shadow: 0 4px 14px rgba(0,0,0,.18); max-width: 320px; }
+.tip strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.tip span { opacity: 0.82; }
+
+/* why diagrams */
+.why { display: grid; gap: 10px; background: var(--brand-subtle); border-radius: var(--radius);
+       padding: 16px 18px; }
+.why h3 { color: var(--brand); }
+.why svg { width: 100%; height: auto; display: block; color: var(--ink); }
+.why svg text { font-family: var(--font); font-size: 13px; fill: currentColor; }
+.why svg .small { font-size: 11.5px; fill: var(--ink-2); }
+.why svg .bad { fill: var(--s8); }
+.why svg .good { fill: var(--s1); }
+.why svg .box { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.2; }
+.why svg .box.hl { stroke: var(--s1); stroke-width: 2; }
+.why svg .box.bad { fill: var(--surface); stroke: var(--s8); stroke-width: 1.6; }
+.why svg .arrow { stroke: var(--ink-2); stroke-width: 1.5; fill: none; }
+.why svg .arrow.hl { stroke: var(--s1); stroke-width: 2; }
+.why svg .arrow.bad { stroke: var(--s8); }
+.why svg .cell { fill: var(--surface); stroke: var(--rule); }
+.why svg .cell.on { fill: var(--s1); stroke: var(--s1); }
+.why svg .cell.q { fill: var(--s4); stroke: var(--s4); }
+.why svg .head { font-weight: 800; }
+
+/* tables */
+details { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); }
+details > summary { cursor: pointer; padding: 10px 14px; font-weight: 700; font-size: 14px; color: var(--ink-2); }
+details > summary:focus-visible { outline: 2px solid var(--brand); border-radius: var(--radius); }
+.tbl { overflow-x: auto; padding: 0 14px 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.hl td { font-weight: 700; }
+
+/* lists */
+.mech { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+.mech > div { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+              padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.mech p { font-size: 14.5px; color: var(--ink-2); }
+.fixes { display: grid; gap: 10px; }
+.fix { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--s4);
+       border-radius: var(--radius); padding: 12px 16px; display: grid; gap: 4px; }
+.fix .t { font-weight: 800; }
+.fix p { font-size: 14.5px; color: var(--ink-2); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.two > * { min-width: 0; }
+ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto;
+      font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* phones: diagrams and charts keep a legible size and scroll sideways */
+.scroll { overflow-x: auto; min-width: 0; }
+@media (max-width: 640px) {
+  .scroll > svg.chart, .scroll > svg { min-width: 600px; }
+  .tile .v { font-size: 30px; }
+}
+.why svg .rowhl { fill: none; stroke: var(--s1); stroke-width: 2; }
+.chart .bar.fast { fill: var(--s1); }
+.chart .bar.slow { fill: var(--s8); }
+.chart .mid { stroke: var(--ink-2); stroke-width: 1.2; }
+</style>
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">genomeblocks · how data is stored · measured on a working prototype</span>
+  <h1>Objects or columns</h1>
+  <p class="lede">What "column data" means, how it compares with pandas-style tables, what happens to annotate and every other function if Loci switches to it, and what the current objects give us.</p>
+</header>
+<nav class="sections" aria-label="Sections"><a href="#answers">Answers</a><a href="#what">What it is</a><a href="#pandas">vs pandas</a><a href="#api">Your code</a><a href="#functions">Functions</a><a href="#objects">Objects</a><a href="#genes">Genes</a><a href="#plan">Plan</a></nav>
+
+<section id="answers">
+  <h2>Short answers</h2>
+  <div class="tiles two-up">
+    <a class="tile" href="#what"><span class="tag green">what</span><span class="k">What is column data?</span>
+      <span class="v">9× smaller</span><span class="d">Each field of every peak lives in its own array (all starts together, all ends together). One peak is one row across those arrays: 25 bytes per peak instead of 222.</span></a>
+    <a class="tile" href="#pandas"><span class="tag navy">pandas?</span><span class="k">Is it a pandas-like frame?</span>
+      <span class="v">Same idea</span><span class="d">pandas, polars and Arrow are column stores too. They differ in what they wrap around the arrays. pandas is too slow to read row by row (14 µs–50 µs per row), so it fits as an export, not as the storage.</span></a>
+    <a class="tile" href="#functions"><span class="tag purple">functions</span><span class="k">What happens to annotate &amp; co?</span>
+      <span class="v">14/14 identical</span><span class="d">Every function tested gives the same output on columns without a code change. Whole-set work gets 9–30× faster; four per-peak loops get 1.2–2× slower until they are vectorised.</span></a>
+    <a class="tile" href="#objects"><span class="tag warn">objects</span><span class="k">What do objects give us?</span>
+      <span class="v">18×</span><span class="d">faster plain Python loops over peaks (3.6 ms vs 65 ms per 100k), nested gene models, per-item fields and methods, and code anyone can read. Views keep the code; vectorising keeps the speed.</span></a>
+  </div>
+</section>
+
+<section id="what">
+  <span class="tag green">What it is</span>
+  <h2>Same peaks, two ways to store them</h2>
+  <p class="verdict">Objects keep each peak together in its own box. Columns keep each <em>field</em> together: all chromosomes in one array, all starts in the next, all ends in the next. Nothing about a peak changes; only where its four numbers sit in memory.</p>
+  <div class="why"><h3>Four peaks, objects vs columns</h3><div class="scroll"><svg viewBox="0 0 760 330" role="img" aria-label="The same four peaks stored two ways. Objects: a list of pointers to four separate Locus objects, each carrying its own Python overhead, about 222 bytes per peak. Columns: four arrays side by side, one value per peak in each, about 25 bytes per peak; one peak is one row across the arrays.">
+  <defs>
+    <marker id="cl1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">Objects (today)</text>
+  <text x="20" y="40" class="small">a list of pointers; every peak is its own Python object</text>
+  <rect x="20" y="56" width="58" height="176" rx="6" class="box"/>
+  <text x="49" y="74" text-anchor="middle" class="small">Loci</text>
+  <g class="small">
+    <rect x="30" y="84" width="38" height="28" rx="4" class="cell"/><text x="49" y="102" text-anchor="middle">[0]</text>
+    <rect x="30" y="118" width="38" height="28" rx="4" class="cell"/><text x="49" y="136" text-anchor="middle">[1]</text>
+    <rect x="30" y="152" width="38" height="28" rx="4" class="cell"/><text x="49" y="170" text-anchor="middle">[2]</text>
+    <rect x="30" y="186" width="38" height="28" rx="4" class="cell"/><text x="49" y="204" text-anchor="middle">[3]</text>
+  </g>
+  <line x1="68" y1="98" x2="104" y2="74" class="arrow" marker-end="url(#cl1)"/>
+  <line x1="68" y1="132" x2="194" y2="142" class="arrow" marker-end="url(#cl1)"/>
+  <line x1="68" y1="166" x2="104" y2="210" class="arrow" marker-end="url(#cl1)"/>
+  <line x1="68" y1="200" x2="194" y2="276" class="arrow" marker-end="url(#cl1)"/>
+  <g class="small">
+    <rect x="106" y="52" width="178" height="58" rx="6" class="box"/>
+    <text x="114" y="68">Locus</text><text x="114" y="83">chr1 · 9,800 · 10,100 · .</text><text x="114" y="98" class="bad">+ header, dict, int objects</text>
+    <rect x="196" y="118" width="178" height="58" rx="6" class="box"/>
+    <text x="204" y="134">Locus</text><text x="204" y="149">chr1 · 15,200 · 15,640 · +</text><text x="204" y="164" class="bad">+ header, dict, int objects</text>
+    <rect x="106" y="186" width="178" height="58" rx="6" class="box"/>
+    <text x="114" y="202">Locus</text><text x="114" y="217">chr2 · 3,100 · 3,350 · .</text><text x="114" y="232" class="bad">+ header, dict, int objects</text>
+    <rect x="196" y="252" width="178" height="58" rx="6" class="box"/>
+    <text x="204" y="268">Locus</text><text x="204" y="283">chr2 · 8,800 · 9,420 · -</text><text x="204" y="298" class="bad">+ header, dict, int objects</text>
+  </g>
+  <text x="20" y="276" class="bad head">≈ 222 bytes</text>
+  <text x="20" y="292" class="small">per peak</text>
+  <text x="20" y="306" class="small">(1M peaks)</text>
+
+  <line x1="392" y1="16" x2="392" y2="318" stroke="currentColor" opacity=".18"/>
+
+  <text x="416" y="22" class="head">Columns (proposed)</text>
+  <text x="416" y="40" class="small">one array per field; peak i is row i of every array</text>
+  <g class="small">
+    <text x="440" y="66" text-anchor="middle">chrom</text>
+    <text x="512" y="66" text-anchor="middle">start</text>
+    <text x="590" y="66" text-anchor="middle">end</text>
+    <text x="656" y="66" text-anchor="middle">strand</text>
+    <rect x="416" y="76" width="48" height="30" class="cell"/><text x="440" y="96" text-anchor="middle">0</text>
+    <rect x="416" y="106" width="48" height="30" class="cell"/><text x="440" y="126" text-anchor="middle">0</text>
+    <rect x="416" y="136" width="48" height="30" class="cell"/><text x="440" y="156" text-anchor="middle">1</text>
+    <rect x="416" y="166" width="48" height="30" class="cell"/><text x="440" y="186" text-anchor="middle">1</text>
+    <rect x="476" y="76" width="72" height="30" class="cell"/><text x="512" y="96" text-anchor="middle">9,800</text>
+    <rect x="476" y="106" width="72" height="30" class="cell"/><text x="512" y="126" text-anchor="middle">15,200</text>
+    <rect x="476" y="136" width="72" height="30" class="cell"/><text x="512" y="156" text-anchor="middle">3,100</text>
+    <rect x="476" y="166" width="72" height="30" class="cell"/><text x="512" y="186" text-anchor="middle">8,800</text>
+    <rect x="554" y="76" width="72" height="30" class="cell"/><text x="590" y="96" text-anchor="middle">10,100</text>
+    <rect x="554" y="106" width="72" height="30" class="cell"/><text x="590" y="126" text-anchor="middle">15,640</text>
+    <rect x="554" y="136" width="72" height="30" class="cell"/><text x="590" y="156" text-anchor="middle">3,350</text>
+    <rect x="554" y="166" width="72" height="30" class="cell"/><text x="590" y="186" text-anchor="middle">9,420</text>
+    <rect x="632" y="76" width="48" height="30" class="cell"/><text x="656" y="96" text-anchor="middle">.</text>
+    <rect x="632" y="106" width="48" height="30" class="cell"/><text x="656" y="126" text-anchor="middle">+</text>
+    <rect x="632" y="136" width="48" height="30" class="cell"/><text x="656" y="156" text-anchor="middle">.</text>
+    <rect x="632" y="166" width="48" height="30" class="cell"/><text x="656" y="186" text-anchor="middle">-</text>
+  </g>
+  <rect x="412" y="134" width="272" height="34" rx="5" class="rowhl"/>
+  <text x="690" y="148" class="small good">row 2</text>
+  <text x="690" y="163" class="small good">= 1 peak</text>
+  <g class="small">
+    <text x="416" y="222">chrom names: 0 → chr1, 1 → chr2</text>
+    <text x="416" y="240">each array is one block of memory, values side by side</text>
+  </g>
+  <text x="416" y="270" class="good head">≈ 25 bytes</text>
+  <text x="416" y="286" class="small">per peak (measured, 1M peaks): 9× less</text>
+</svg></div><p class="sub">Measured on 1M peaks: 222 bytes per peak as objects (the Python object header, its attribute dict, and separate integer objects for start and end), 25 bytes as columns. Loading 1M peaks takes 2.0 s as objects and 302 ms as columns.</p></div>
+  <p class="sub">Why columns are faster for whole-set work: an operation such as "which of these peaks overlap that set" runs as a few calls over whole arrays, compiled code walking memory in order, instead of one Python step per peak. Summing every start: 3.6 ms as a Python loop over objects, 159 µs as one numpy call over the column.</p>
+</section>
+
+<section id="pandas">
+  <span class="tag navy">pandas, polars, Arrow</span>
+  <h2>Is that a DataFrame?</h2>
+  <p class="verdict">A DataFrame is already column data. pandas, polars, Arrow and the proposed <code>Loci</code> all hold arrays; what differs is what each adds around them, and how fast one row can be read.</p>
+  <div class="why"><h3>Same arrays, different wrappers</h3><div class="scroll"><svg viewBox="0 0 760 250" role="img" aria-label="pandas, polars, Arrow and the proposed genomeblocks Loci all keep data as columns. They differ in what they wrap around the columns: pandas adds a row index and general table tools, Arrow is a standard layout that polars and DuckDB read without copying, and genomeblocks would add an interval index, genomic methods and Locus views. Converting between them can reuse the same memory.">
+  <defs>
+    <marker id="cl3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <rect x="290" y="96" width="180" height="62" rx="8" class="box hl"/>
+  <text x="380" y="120" text-anchor="middle" class="head">column arrays</text>
+  <text x="380" y="138" text-anchor="middle" class="small">start · end · chrom · …</text>
+  <text x="380" y="152" text-anchor="middle" class="small">the same idea in all four</text>
+  <rect x="20" y="20" width="230" height="78" rx="8" class="box"/>
+  <text x="32" y="42" class="head">pandas DataFrame</text>
+  <text x="32" y="60" class="small">+ row index and column labels</text>
+  <text x="32" y="75" class="small">+ general table tools (groupby, join…)</text>
+  <text x="32" y="90" class="small">one row at a time: 14–49 µs</text>
+  <rect x="20" y="156" width="230" height="78" rx="8" class="box"/>
+  <text x="32" y="178" class="head">Arrow / polars</text>
+  <text x="32" y="196" class="small">+ a standard memory layout shared</text>
+  <text x="32" y="211" class="small">by polars, DuckDB, Spark, R arrow</text>
+  <text x="32" y="226" class="small">one row at a time: 1.1–1.5 µs</text>
+  <rect x="510" y="86" width="230" height="84" rx="8" class="box hl"/>
+  <text x="522" y="108" class="head">genomeblocks Loci (proposed)</text>
+  <text x="522" y="126" class="small">+ interval index (cgranges)</text>
+  <text x="522" y="141" class="small">+ genomic methods (&amp;, merge, signal…)</text>
+  <text x="522" y="156" class="small">+ Locus views: one row ≈ 1 µs</text>
+  <line x1="250" y1="66" x2="288" y2="104" class="arrow" marker-end="url(#cl3)"/>
+  <line x1="250" y1="190" x2="288" y2="150" class="arrow" marker-end="url(#cl3)"/>
+  <line x1="470" y1="127" x2="508" y2="127" class="arrow hl" marker-end="url(#cl3)"/>
+  <text x="380" y="190" text-anchor="middle" class="small">hand-over between them</text>
+  <text x="380" y="205" text-anchor="middle" class="small">reuses the arrays (≤ 1 ms per 100k peaks)</text>
+</svg></div><p class="sub">Arrow is the common format: polars, DuckDB and R's arrow package read it without copying, and pandas can too. A columnar Loci built on plain numpy arrays can hand its arrays to any of them almost for free, and genomeblocks keeps its own genomics layer on top.</p></div>
+  <figure><div class="ttl">Reading one peak at a time <span>· 10,000 random rows from 100k peaks, lower is better</span></div><div class="scroll" id="c-rows"></div><figcaption>Genomics code reads single peaks constantly (graph building, annotation, plotting). Views over numpy columns read a row as fast as today's objects; pandas is 14–50× slower per row, which is why it would make a poor storage layer for genomeblocks even though it is columnar.</figcaption></figure>
+</section>
+
+<section id="api">
+  <span class="tag green">Your code</span>
+  <h2>Code that uses Loci does not change</h2>
+  <p class="verdict"><code>loci[i]</code> and <code>for peak in loci</code> still hand you a <code>Locus</code>. It is a small view onto row i that reads and writes the columns.</p>
+  <div class="why"><h3>What loci[2] returns</h3><div class="scroll"><svg viewBox="0 0 760 210" role="img" aria-label="loci[2] returns a small LocusView that only remembers which Loci and which row it belongs to. Reading peak.start looks up row 2 of the start column; writing peak.end stores the new value in row 2 of the end column.">
+  <defs>
+    <marker id="cl2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="24" class="head">peak = loci[2]</text>
+  <rect x="20" y="40" width="170" height="74" rx="8" class="box hl"/>
+  <text x="105" y="62" text-anchor="middle">LocusView</text>
+  <text x="105" y="80" text-anchor="middle" class="small">owner = loci</text>
+  <text x="105" y="96" text-anchor="middle" class="small">row = 2</text>
+  <text x="105" y="134" text-anchor="middle" class="small">isinstance(peak, Locus) → True</text>
+  <text x="105" y="150" text-anchor="middle" class="small">every Locus method works</text>
+  <g class="small">
+    <text x="420" y="34" text-anchor="middle">chrom</text><text x="492" y="34" text-anchor="middle">start</text><text x="570" y="34" text-anchor="middle">end</text><text x="636" y="34" text-anchor="middle">strand</text>
+    <rect x="396" y="42" width="48" height="26" class="cell"/><rect x="456" y="42" width="72" height="26" class="cell"/><rect x="534" y="42" width="72" height="26" class="cell"/><rect x="612" y="42" width="48" height="26" class="cell"/>
+    <rect x="396" y="68" width="48" height="26" class="cell"/><rect x="456" y="68" width="72" height="26" class="cell"/><rect x="534" y="68" width="72" height="26" class="cell"/><rect x="612" y="68" width="48" height="26" class="cell"/>
+    <rect x="396" y="94" width="48" height="26" class="cell"/><text x="420" y="112" text-anchor="middle">1</text>
+    <rect x="456" y="94" width="72" height="26" class="cell"/><text x="492" y="112" text-anchor="middle">3,100</text>
+    <rect x="534" y="94" width="72" height="26" class="cell"/><text x="570" y="112" text-anchor="middle">3,350</text>
+    <rect x="612" y="94" width="48" height="26" class="cell"/><text x="636" y="112" text-anchor="middle">.</text>
+    <rect x="396" y="120" width="48" height="26" class="cell"/><rect x="456" y="120" width="72" height="26" class="cell"/><rect x="534" y="120" width="72" height="26" class="cell"/><rect x="612" y="120" width="48" height="26" class="cell"/>
+  </g>
+  <rect x="392" y="92" width="272" height="30" rx="5" class="rowhl"/>
+  <line x1="190" y1="70" x2="388" y2="104" class="arrow hl" marker-end="url(#cl2)"/>
+  <text x="250" y="70" class="small">peak.start → reads 3,100</text>
+  <line x1="190" y1="100" x2="388" y2="112" class="arrow hl" marker-end="url(#cl2)"/>
+  <text x="236" y="122" class="small">peak.end = 9,100 → writes here</text>
+  <text x="396" y="176" class="small">nothing is copied: a view costs ≈ 1 µs to make, like reading a Locus today,</text>
+  <text x="396" y="192" class="small">and edits through it change the stored peak</text>
+</svg></div><p class="sub">The view is a real Locus subclass, so isinstance checks, uid, distance_to, overlaps, sequence and printing all behave as today. Editing it edits the stored peak.</p></div>
+  <pre># unchanged, works on both storages
+cre = Loci.make("atac.narrowPeak").slop(100).sort().merge()
+for peak in cre[:5]:
+    print(peak.uid, peak.length)
+arch = Architecture.make(cre, "loops.bedpe", r=2500)
+
+# new with columns: whole arrays, and free hand-over to other tools
+cre.starts, cre.ends               # numpy arrays
+cre.to_polars(); cre.to_arrow()    # no per-row copy</pre>
+</section>
+
+<section id="functions">
+  <span class="tag purple">Every function</span>
+  <h2>What happens to annotate and the others</h2>
+  <p class="verdict">I swapped in a columnar <code>Loci</code> and ran genomeblocks' own functions on it without changing them. All 14 gave identical output.</p>
+  <figure><div class="ttl">Today&#x27;s code, columnar input <span>· per-peak loops pay about 1 µs to make each view</span></div><div class="scroll" id="c-unchanged"></div><figcaption>Most functions run at the same speed. The four slower ones loop over peaks in Python and read fields through views; a plain loop costs 65 ms instead of 3.6 ms per 100k peaks. Each has an array version, below.</figcaption></figure>
+  <figure><div class="ttl">With the hot loops written for columns <span>· identical output, higher is better</span></div><div class="scroll" id="c-vector"></div><figcaption>Genes.annotations is the instructive case. Its labelling takes 32 ms on columns, but converting today's object-based gene index to arrays costs 652 ms on every call, so the gain only shows once the gene index is stored as columns too. The speed comes when the whole path is columnar.</figcaption></figure>
+  <details><summary>Per-function table (measured)</summary><div class="tbl"><table><thead><tr><th class="">function</th><th class="">what it does with peaks</th><th class="n">objects</th><th class="">columns, today&#x27;s code</th><th class="">columns, vectorised</th><th class="">same output</th><th class="">change needed</th></tr></thead><tbody><tr><td class="">A &amp; B</td><td class="">one index lookup per peak</td><td class="n">83 ms</td><td class="">—</td><td class="">8.9 ms (9.4× faster)</td><td class="">yes</td><td class="">vectorise (done in prototype)</td></tr><tr><td class="">A - B</td><td class="">one index lookup per peak</td><td class="n">102 ms</td><td class="">—</td><td class="">10 ms (9.8× faster)</td><td class="">yes</td><td class="">vectorise (done in prototype)</td></tr><tr><td class="">merge (200k)</td><td class="">sorts and copies Locus objects</td><td class="n">1.6 s</td><td class="">—</td><td class="">52 ms (30× faster)</td><td class="">yes</td><td class="">vectorise (done in prototype)</td></tr><tr><td class="">make → slop → sort → merge</td><td class="">builds a new Locus per peak at every step</td><td class="n">3.4 s</td><td class="">—</td><td class="">136 ms (25× faster)</td><td class="">yes</td><td class="">vectorise (done in prototype)</td></tr><tr><td class="">Genes.annotations (100k CREs)</td><td class="">5 index lookups per CRE</td><td class="n">873 ms</td><td class="">1.8 s (2.0× slower)</td><td class="">829 ms (1.1× faster)</td><td class="">yes</td><td class="">vectorise; needs the gene index as columns too</td></tr><tr><td class="">Genes.nearest_genes (100k)</td><td class="">hands frames to pyranges</td><td class="n">748 ms</td><td class="">878 ms (1.2× slower)</td><td class="">—</td><td class="">yes</td><td class="">none; build frames from the columns</td></tr><tr><td class="">Atlas.search (20k peaks, 500 tracks)</td><td class="">bins each peak in a Python loop</td><td class="n">27 ms</td><td class="">50 ms (1.9× slower)</td><td class="">—</td><td class="">yes</td><td class="">vectorise the binning (prototype: 18×)</td></tr><tr><td class="">Atlas: peaks → bin ranges</td><td class="">the loop above</td><td class="n">13 ms</td><td class="">—</td><td class="">677 µs (19× faster)</td><td class="">yes</td><td class="">vectorise (done in prototype)</td></tr><tr><td class="">signal (5k loci, 1 bigWig)</td><td class="">copies chrom/start/end into arrays first</td><td class="n">411 ms</td><td class="">428 ms (same)</td><td class="">—</td><td class="">yes</td><td class="">none; read the columns directly</td></tr><tr><td class="">scan_motifs_matrix (1k windows × 100)</td><td class="">slices the genome string per peak</td><td class="n">173 ms</td><td class="">184 ms (1.1× slower)</td><td class="">—</td><td class="">yes</td><td class="">none</td></tr><tr><td class="">pair_to_bed (50k loops)</td><td class="">index lookups per loop anchor</td><td class="n">209 ms</td><td class="">165 ms (1.3× faster)</td><td class="">—</td><td class="">yes</td><td class="">none</td></tr><tr><td class="">count_pairs (200k pairs, 62k windows)</td><td class="">copies windows into per-chromosome arrays</td><td class="n">1.1 s</td><td class="">1.3 s (1.2× slower)</td><td class="">—</td><td class="">yes</td><td class="">none; use the columns directly</td></tr><tr><td class="">Architecture.make (50k loops)</td><td class="">index lookups per loop, a Locus per hit</td><td class="n">2.1 s</td><td class="">2.9 s (1.4× slower)</td><td class="">—</td><td class="">yes</td><td class="">optional: map anchors in one call</td></tr><tr><td class="">Architecture.annotate</td><td class="">calls annotations + nearest_genes</td><td class="n">2.3 s</td><td class="">2.8 s (1.2× slower)</td><td class="">—</td><td class="">yes</td><td class="">follows Genes.annotations</td></tr></tbody></table></div></details>
+  <details><summary>Functions not timed (read from the code)</summary><div class="tbl"><table><thead><tr><th class="">function</th><th class="">what it does with peaks</th><th class="">on columns</th><th class="">change needed</th></tr></thead><tbody><tr><td class="">liftover</td><td class="">one pyliftover call per peak</td><td class="">works through views, same speed</td><td class="">none</td></tr><tr><td class="">browser / architecture_draw / signal_draw</td><td class="">draw or group a few hundred peaks</td><td class="">works through views</td><td class="">none</td></tr><tr><td class="">tile / tile_genome</td><td class="">build a Locus per tile</td><td class="">one arange per chromosome</td><td class="">vectorise</td></tr><tr><td class="">to_frame / to_pyranges / to_bed</td><td class="">a dict or string per row</td><td class="">frames straight from the columns</td><td class="">vectorise</td></tr><tr><td class="">Genes internals (Transcript.exons, annot)</td><td class="">Loci of Exon / CDS / UTR objects</td><td class="">linked tables + views</td><td class="">the larger change</td></tr><tr><td class="">Loci slicing (loci[a:b])</td><td class="">returns a plain list today</td><td class="">returns a Loci</td><td class="">fix</td></tr></tbody></table></div></details>
+</section>
+
+<section id="objects">
+  <span class="tag warn">Objects</span>
+  <h2>What objects give us</h2>
+  <div class="mech">
+    <div><h3>Fast plain loops</h3><p>A Python loop over objects is the fastest per-peak code: 3.6 ms for 100k vs 65 ms through views. Anything written as "for peak in loci" is quickest on objects.</p></div>
+    <div><h3>Nested structure</h3><p>Gene → Transcript → Exon/CDS/UTR is a tree. Objects model it directly (<code>g.transcripts[t].exons</code>); columns need linked tables and an index to walk it.</p></div>
+    <div><h3>Per-item fields and methods</h3><p><code>Exon.exon_number</code>, <code>UTR.type</code>, <code>Transcript.tss_score</code>, <code>Gene.canonical</code>; <code>sequence()</code>, <code>distance_to()</code>. Columns can hold extra fields, but each needs declaring.</p></div>
+    <div><h3>Identity and editing</h3><p>An object is a thing you can edit, put in a set or use as a dict key. Views edit too, but <code>loci[0] is loci[0]</code> becomes False: two views of one row are equal, not identical.</p></div>
+    <div><h3>Mixed types in one container</h3><p>Today a Loci can hold Genes, Transcripts and plain peaks at once (the annotation index does). Columns need one schema per container.</p></div>
+    <div><h3>Easy to read and debug</h3><p>No numpy knowledge needed; printing a peak shows a peak. This is a real advantage for users writing their own code.</p></div>
+  </div>
+  <p class="sub"><b>What objects cost:</b> 9× the memory, a Python step per peak for every bulk operation, and a full conversion each time data goes to pandas, pyranges or a faster engine. With views, the convenience stays where it is used (one peak at a time) and the cost goes away where it hurts (whole sets).</p>
+</section>
+
+<section id="genes">
+  <span class="tag navy">Genes</span>
+  <h2>Genes: a tree, stored as linked tables</h2>
+  <div class="why"><h3>Gene models as columns</h3><div class="scroll"><svg viewBox="0 0 760 268" role="img" aria-label="Today a gene is a tree of objects: Gene holds Transcripts, each holding Exon, CDS and UTR objects. As columns it becomes three linked tables: genes, transcripts with a gene column, and exons with a transcript column. gene.transcripts becomes the rows of the transcripts table whose gene column equals that gene.">
+  <defs>
+    <marker id="cl4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">Today: a tree of objects</text>
+  <rect x="20" y="36" width="104" height="34" rx="6" class="box"/><text x="72" y="58" text-anchor="middle">Gene GENE1</text>
+  <rect x="44" y="92" width="118" height="30" rx="6" class="box"/><text x="103" y="112" text-anchor="middle" class="small">Transcript T1</text>
+  <rect x="44" y="176" width="118" height="30" rx="6" class="box"/><text x="103" y="196" text-anchor="middle" class="small">Transcript T2</text>
+  <rect x="190" y="84" width="84" height="22" rx="5" class="box"/><text x="232" y="99" text-anchor="middle" class="small">Exon 1</text>
+  <rect x="190" y="112" width="84" height="22" rx="5" class="box"/><text x="232" y="127" text-anchor="middle" class="small">Exon 2</text>
+  <rect x="190" y="140" width="84" height="22" rx="5" class="box"/><text x="232" y="155" text-anchor="middle" class="small">CDS 2</text>
+  <rect x="190" y="180" width="84" height="22" rx="5" class="box"/><text x="232" y="195" text-anchor="middle" class="small">Exon 1</text>
+  <line x1="56" y1="70" x2="70" y2="90" class="arrow" marker-end="url(#cl4)"/>
+  <line x1="40" y1="70" x2="62" y2="174" class="arrow" marker-end="url(#cl4)"/>
+  <line x1="162" y1="104" x2="188" y2="96" class="arrow" marker-end="url(#cl4)"/>
+  <line x1="162" y1="108" x2="188" y2="122" class="arrow" marker-end="url(#cl4)"/>
+  <line x1="162" y1="112" x2="188" y2="148" class="arrow" marker-end="url(#cl4)"/>
+  <line x1="162" y1="190" x2="188" y2="191" class="arrow" marker-end="url(#cl4)"/>
+  <text x="20" y="236" class="small">≈ 1 million objects for 20k genes</text>
+  <text x="20" y="252" class="small">easy to walk, slow to build (5.6 s)</text>
+
+  <line x1="300" y1="16" x2="300" y2="256" stroke="currentColor" opacity=".18"/>
+
+  <text x="324" y="22" class="head">As columns: linked tables</text>
+  <g class="small">
+    <text x="324" y="46" class="head">genes</text>
+    <rect x="324" y="54" width="120" height="22" class="cell"/><text x="332" y="69">0 · GENE1 · chr2</text>
+    <rect x="324" y="76" width="120" height="22" class="cell"/><text x="332" y="91">1 · GENE2 · chr5</text>
+    <text x="474" y="46" class="head">transcripts</text>
+    <rect x="474" y="54" width="118" height="22" class="cell"/><text x="482" y="69">0 · T1 · gene 0</text>
+    <rect x="474" y="76" width="118" height="22" class="cell"/><text x="482" y="91">1 · T2 · gene 0</text>
+    <rect x="474" y="98" width="118" height="22" class="cell"/><text x="482" y="113">2 · T3 · gene 1</text>
+    <text x="622" y="46" class="head">exons</text>
+    <rect x="622" y="54" width="118" height="22" class="cell"/><text x="630" y="69">tx 0 · exon 1</text>
+    <rect x="622" y="76" width="118" height="22" class="cell"/><text x="630" y="91">tx 0 · exon 2</text>
+    <rect x="622" y="98" width="118" height="22" class="cell"/><text x="630" y="113">tx 0 · CDS 2</text>
+    <rect x="622" y="120" width="118" height="22" class="cell"/><text x="630" y="135">tx 1 · exon 1</text>
+  </g>
+  <rect x="470" y="52" width="126" height="48" rx="5" class="rowhl"/>
+  <line x1="444" y1="65" x2="468" y2="70" class="arrow hl" marker-end="url(#cl4)"/>
+  <text x="324" y="172" class="small">gene.transcripts = transcript rows whose gene column is 0</text>
+  <text x="324" y="188" class="small">(rows kept grouped, so this is a slice, not a search)</text>
+  <text x="324" y="214" class="small good">parse 0.55 s · annotation index 0.15 s</text>
+  <text x="324" y="230" class="small">Gene / Transcript views keep g.transcripts[...].exons working</text>
+</svg></div><p class="sub">Parsing the GTF into tables takes 550 ms instead of 5.6 s, and the annotation index builds from them in 150 ms instead of 4.0 s. Gene and Transcript views would keep <code>g.transcripts[t].exons</code> working, the same way LocusView keeps <code>loci[i]</code> working.</p></div>
+</section>
+
+<section id="plan">
+  <span class="tag navy">Recommendation</span>
+  <h2>Columns for storage, objects as views</h2>
+  <div class="fixes">
+    <div class="fix"><span class="t">1 · Columnar Loci with LocusView</span><p>Same public API; 14/14 functions already give identical output. Set operations, sort, merge, slop, make and the to_ conversions move to arrays.</p></div>
+    <div class="fix"><span class="t">2 · Rewrite the four per-peak hot loops</span><p>Genes.annotations, Atlas binning, count_pairs grouping and signal's array copy read the columns directly, so nothing gets slower.</p></div>
+    <div class="fix"><span class="t">3 · Genes as linked tables</span><p>Gene / Transcript views on top, so annotate and nearest_genes become array work end to end.</p></div>
+    <div class="fix"><span class="t">Watch for</span><p>Code that relies on <code>loci[i] is loci[i]</code> (identity), and users who subclass Locus to add their own fields; both need a note in the release.</p></div>
+  </div>
+</section>
+
+<section id="method">
+  <span class="tag navy">Method</span>
+  <h2>How this was measured</h2>
+  <ul class="plain">
+    <li>Prototype: <code>benchmarks/prototypes/columnar.py</code> (ColumnarLoci + LocusView, about 250 lines). Bench: <code>bench_columnar.py</code>. genomeblocks itself was not modified.</li>
+    <li>Same machine and synthetic hg38-shaped data as the <a href="https://claude.ai/artifact/4hL67NF3y68wJSdsySs1Eo">benchmark report</a>; medians of 3–5 runs after a warm-up; memory with <code>tracemalloc</code>.</li>
+    <li>Every pair of outputs was compared: same intervals, same tables, same signal cube, same motif matrix, same graph edges and vertex labels.</li>
+  </ul>
+</section>
+</div>
+<script>/* Tiny SVG chart kit for the benchmark report: horizontal bars (emphasis)
+   and multi-series log/linear line charts. Colours come from CSS tokens so
+   both themes work; every label goes in via textContent. */
+(function () {
+  const NS = "http://www.w3.org/2000/svg";
+  const tip = document.createElement("div");
+  tip.className = "tip"; tip.hidden = true; tip.setAttribute("role", "status");
+  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(tip));
+
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs || {}) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function txt(parent, x, y, s, cls, anchor) {
+    const t = el("text", { x, y, class: cls || "", "text-anchor": anchor || "start" }, parent);
+    t.textContent = s;
+    return t;
+  }
+  function showTip(evt, value, label) {
+    tip.replaceChildren();
+    const v = document.createElement("strong"); v.textContent = value;
+    const l = document.createElement("span"); l.textContent = label;
+    tip.append(v, l);
+    tip.hidden = false;
+    const r = (evt.target.getBoundingClientRect ? evt.target.getBoundingClientRect() : null);
+    const x = evt.clientX || (r ? r.left + r.width / 2 : 0);
+    const y = evt.clientY || (r ? r.top : 0);
+    const w = tip.offsetWidth;
+    tip.style.left = Math.min(window.innerWidth - w - 12, Math.max(12, x + 14)) + "px";
+    tip.style.top = (y + window.scrollY - 12 - tip.offsetHeight) + "px";
+  }
+  function hideTip() { tip.hidden = true; }
+  function bindTip(node, value, label) {
+    node.setAttribute("tabindex", "0");
+    node.setAttribute("aria-label", label + ": " + value);
+    node.addEventListener("pointermove", e => showTip(e, value, label));
+    node.addEventListener("focus", e => showTip(e, value, label));
+    node.addEventListener("pointerleave", hideTip);
+    node.addEventListener("blur", hideTip);
+  }
+
+  // ── scales & ticks ────────────────────────────────────────────────────────
+  function scale(d0, d1, r0, r1, log) {
+    if (log) {
+      const a = Math.log10(d0), b = Math.log10(d1);
+      return v => r0 + (Math.log10(v) - a) / (b - a) * (r1 - r0);
+    }
+    return v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+  }
+  function logTicks(lo, hi) {
+    const out = [];
+    for (let p = Math.floor(Math.log10(lo)); p <= Math.ceil(Math.log10(hi)); p++) {
+      const v = Math.pow(10, p);
+      if (v >= lo * 0.999 && v <= hi * 1.001) out.push(v);
+    }
+    return out;
+  }
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo, step0 = span / (n || 5);
+    const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= (n || 5));
+    const out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  // ── horizontal emphasis bars ──────────────────────────────────────────────
+  // spec: {rows:[{label, value, hl, tip?}], log, fmt, axis, sort:'asc'|'desc'|null}
+  function hbar(host, spec) {
+    const rows = spec.rows.slice();
+    if (spec.sort === "asc") rows.sort((a, b) => a.value - b.value);
+    if (spec.sort === "desc") rows.sort((a, b) => b.value - a.value);
+    const W = 760, labelW = spec.labelW || 290, rowH = 30, top = 6, axisH = 34;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img",
+                            "aria-label": spec.aria || "" }, null);
+    const vals = rows.map(r => r.value);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const x0 = labelW, x1 = W - 92;
+    let sx, ticks;
+    if (spec.log) {
+      lo = Math.pow(10, Math.floor(Math.log10(lo) - 0.15));
+      hi = Math.pow(10, Math.ceil(Math.log10(hi) + 0.05));
+      sx = scale(lo, hi, x0, x1, true); ticks = logTicks(lo, hi);
+    } else {
+      lo = 0; ticks = niceTicks(0, hi * 1.02, 5); hi = ticks[ticks.length - 1];
+      sx = scale(0, hi, x0, x1, false);
+    }
+    const base = spec.log ? x0 : sx(0);
+    const plotB = top + rows.length * rowH;
+    for (const t of ticks) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, spec.fmt(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    el("line", { x1: base, x2: base, y1: top, y2: plotB, class: "baseline" }, svg);
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      const lab = txt(svg, labelW - 12, y + 4, r.label, r.hl ? "rlabel hl" : "rlabel", "end");
+      const xe = Math.max(sx(r.value), base + 2);
+      const h = 16, rad = 4;
+      const w = xe - base;
+      const p = `M${base},${y - h / 2} h${Math.max(0, w - rad)} a${rad},${rad} 0 0 1 ${rad},${rad}` +
+                ` v${h - 2 * rad} a${rad},${rad} 0 0 1 -${rad},${rad} h-${Math.max(0, w - rad)} z`;
+      el("path", { d: p, class: r.hl ? "bar hl" : "bar" }, svg);
+      txt(svg, xe + 6, y + 4, spec.fmt(r.value, true), "vlabel");
+      const hit = el("rect", { x: 0, y: y - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      bindTip(hit, spec.fmt(r.value, true), r.tip || r.label);
+      void lab;
+    });
+    host.appendChild(svg);
+  }
+
+  // ── multi-series lines ────────────────────────────────────────────────────
+  // spec: {series:[{name, color, pts:[[x,y],...]}], xlog, ylog, xfmt, yfmt,
+  //        xLabel, yLabel, legend:true}
+  function lines(host, spec) {
+    const W = spec.W || 760, H = spec.H || 330;
+    const m = { l: 74, r: spec.endLabels ? 190 : 24, t: 14, b: 46 };
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img",
+                            "aria-label": spec.aria || "" }, null);
+    const xs = spec.series.flatMap(s => s.pts.map(p => p[0]));
+    const ys = spec.series.flatMap(s => s.pts.map(p => p[1]));
+    let xlo = Math.min(...xs), xhi = Math.max(...xs), ylo = Math.min(...ys), yhi = Math.max(...ys);
+    let xt, yt;
+    if (spec.xlog) { xt = logTicks(xlo, xhi); }
+    else { xt = spec.xticks || niceTicks(xlo, xhi, 6); }
+    if (spec.ylog) {
+      ylo = Math.pow(10, Math.floor(Math.log10(ylo))); yhi = Math.pow(10, Math.ceil(Math.log10(yhi)));
+      yt = logTicks(ylo, yhi);
+    } else {
+      ylo = 0; yt = niceTicks(0, yhi * 1.05, 5); yhi = yt[yt.length - 1];
+    }
+    const sx = scale(xlo, xhi, m.l, W - m.r, !!spec.xlog);
+    const sy = scale(ylo, yhi, H - m.b, m.t, !!spec.ylog);
+    for (const t of yt) {
+      el("line", { x1: m.l, x2: W - m.r, y1: sy(t), y2: sy(t), class: "grid" }, svg);
+      txt(svg, m.l - 8, sy(t) + 4, spec.yfmt(t), "tick", "end");
+    }
+    for (const t of xt) txt(svg, sx(t), H - m.b + 17, spec.xfmt(t), "tick", "middle");
+    el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, class: "baseline" }, svg);
+    if (spec.xLabel) txt(svg, (m.l + W - m.r) / 2, H - 8, spec.xLabel, "axis-label", "middle");
+    if (spec.yLabel) {
+      const t = txt(svg, 0, 0, spec.yLabel, "axis-label", "middle");
+      t.setAttribute("transform", `translate(14 ${(m.t + H - m.b) / 2}) rotate(-90)`);
+    }
+    const ends = [];
+    spec.series.forEach(s => {
+      const d = s.pts.map((p, i) => (i ? "L" : "M") + sx(p[0]).toFixed(1) + "," + sy(p[1]).toFixed(1)).join(" ");
+      el("path", { d, class: "line", style: `stroke:${s.color}` }, svg);
+      s.pts.forEach(p => {
+        const c = el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 4, class: "dot", style: `fill:${s.color}` }, svg);
+        const hit = el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 12, class: "hit" }, svg);
+        bindTip(hit, spec.yfmt(p[1], true), `${s.name} · ${spec.xfmt(p[0], true)}`);
+        void c;
+      });
+      const last = s.pts[s.pts.length - 1];
+      ends.push({ y: sy(last[1]), x: sx(last[0]), name: s.name, color: s.color });
+    });
+    if (spec.endLabels) {
+      // de-collide end labels with leader lines
+      ends.sort((a, b) => a.y - b.y);
+      let prev = -1e9;
+      ends.forEach(e => { e.ly = Math.max(e.y, prev + 15); prev = e.ly; });
+      ends.forEach(e => {
+        const lx = W - m.r + 14;
+        el("line", { x1: e.x + 5, y1: e.y, x2: lx - 3, y2: e.ly, class: "leader" }, svg);
+        txt(svg, lx, e.ly + 4, e.name, "endlabel");
+      });
+    }
+    host.appendChild(svg);
+    if (spec.legend !== false) {
+      const lg = document.createElement("div");
+      lg.className = "legend";
+      spec.series.forEach(s => {
+        const i = document.createElement("span");
+        const k = document.createElement("i"); k.style.background = s.color;
+        const t = document.createElement("span"); t.textContent = s.name;
+        i.append(k, t); lg.appendChild(i);
+      });
+      host.appendChild(lg);
+    }
+  }
+
+  // ── diverging bars around 1× (log scale): right = faster, left = slower ──
+  // spec: {rows:[{label, value (ratio new/old speed), tip?}], axis, labelW}
+  function diverge(host, spec) {
+    const rows = spec.rows.slice().sort((a, b) => b.value - a.value);
+    const W = 760, labelW = spec.labelW || 300, rowH = 30, top = 6, axisH = 34;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": spec.aria || "" }, null);
+    const m = Math.max(...rows.map(r => Math.abs(Math.log10(r.value))), Math.log10(3));
+    const lim = Math.pow(10, Math.ceil(m * 2) / 2);
+    const x0 = labelW + 70, x1 = W - 70;
+    const sx = scale(1 / lim, lim, x0, x1, true);
+    const plotB = top + rows.length * rowH;
+    const ticks = [1 / lim, 1 / Math.sqrt(lim), 1, Math.sqrt(lim), lim].filter((v, i, a) => a.indexOf(v) === i);
+    const tl = v => v >= 1 ? (v === 1 ? "same" : `${(+v.toPrecision(2))}× faster`) : `${(+(1 / v).toPrecision(2))}× slower`;
+    for (const t of ticks) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: t === 1 ? "mid" : "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, tl(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      txt(svg, labelW - 12, y + 4, r.label, "rlabel", "end");
+      const a = sx(1), b = sx(Math.min(Math.max(r.value, 1 / lim), lim));
+      const fast = r.value >= 1;
+      el("rect", { x: Math.min(a, b), y: y - 8, width: Math.max(2, Math.abs(b - a)), height: 16, rx: 3,
+                   class: "bar " + (fast ? "fast" : "slow") }, svg);
+      const lab = Math.abs(r.value - 1) < 0.05 ? "same" : tl(r.value);
+      txt(svg, fast ? Math.max(a, b) + 6 : Math.min(a, b) - 6, y + 4, lab, "vlabel", fast ? "start" : "end");
+      const hit = el("rect", { x: 0, y: y - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      bindTip(hit, lab, r.tip || r.label);
+    });
+    host.appendChild(svg);
+  }
+
+  window.Charts = { hbar, lines, diverge };
+})();
+</script>
+<script>
+const DATA = {"unchanged": {"kind": "diverge", "labelW": 300, "axis": "today's code given columnar Loci, vs object Loci", "rows": [{"label": "Genes.annotations (100k CREs)", "value": 0.49277823094197815, "tip": "Genes.annotations (100k CREs): 873 ms \u2192 1.8 s"}, {"label": "Genes.nearest_genes (100k)", "value": 0.852227410687511, "tip": "Genes.nearest_genes (100k): 748 ms \u2192 878 ms"}, {"label": "Atlas.search (20k peaks, 500 tracks)", "value": 0.530495572802626, "tip": "Atlas.search (20k peaks, 500 tracks): 27 ms \u2192 50 ms"}, {"label": "signal (5k loci, 1 bigWig)", "value": 0.9607870665088538, "tip": "signal (5k loci, 1 bigWig): 411 ms \u2192 428 ms"}, {"label": "scan_motifs_matrix (1k windows \u00d7 100)", "value": 0.9386098458661017, "tip": "scan_motifs_matrix (1k windows \u00d7 100): 173 ms \u2192 184 ms"}, {"label": "pair_to_bed (50k loops)", "value": 1.2650774337329338, "tip": "pair_to_bed (50k loops): 209 ms \u2192 165 ms"}, {"label": "count_pairs (200k pairs, 62k windows)", "value": 0.8444701719433522, "tip": "count_pairs (200k pairs, 62k windows): 1.1 s \u2192 1.3 s"}, {"label": "Architecture.make (50k loops)", "value": 0.7329279438447074, "tip": "Architecture.make (50k loops): 2.1 s \u2192 2.9 s"}, {"label": "Architecture.annotate", "value": 0.8439913291931583, "tip": "Architecture.annotate: 2.3 s \u2192 2.8 s"}]}, "vector": {"kind": "hbar", "fmt": "x", "log": true, "sort": "desc", "labelW": 330, "axis": "speed-up over today's object code (log scale)", "rows": [{"label": "A & B", "value": 9.357789148217538, "hl": true}, {"label": "A - B", "value": 9.779669379314477, "hl": true}, {"label": "merge (200k)", "value": 29.753110475606515, "hl": true}, {"label": "make \u2192 slop \u2192 sort \u2192 merge", "value": 24.876187827457073, "hl": true}, {"label": "Atlas: peaks \u2192 bin ranges", "value": 18.72346662827614, "hl": true}, {"label": "Genes.annotations (gene index also columns)", "value": 8.880890505021396, "hl": true}, {"label": "Loci.make (1M peaks)", "value": 6.58834738462701, "hl": true}]}, "rows": {"kind": "hbar", "fmt": "us", "log": true, "sort": null, "labelW": 300, "axis": "time to read one row (log scale)", "rows": [{"label": "Locus objects: loci[i].start", "value": 7.779802000072778e-07, "hl": true}, {"label": "columns via LocusView: loci[i].start", "value": 8.468496999967101e-07, "hl": true}, {"label": "raw numpy column: starts[i]", "value": 1.8225180000399633e-07, "hl": false}, {"label": "polars: df.row(i)", "value": 1.209186200003387e-06, "hl": false}, {"label": "Arrow: table['Start'][i]", "value": 1.6071718000034707e-06, "hl": false}, {"label": "pandas: df.at[i, 'Start']", "value": 1.3600042899997789e-05, "hl": false}, {"label": "pandas: df.iloc[i]['Start']", "value": 4.9947615999997194e-05, "hl": false}]}};
+const F = {
+  time: (s) => { s = +(+s).toPrecision(6); if (s === 0) return "0"; if (s < 1e-3) return (s < 1e-5 ? (s*1e6).toFixed(1) : (s*1e6).toFixed(0)) + " µs";
+                 if (s < 1) return (s < 0.01 ? (s*1e3).toFixed(1) : (s*1e3).toFixed(0)) + " ms";
+                 if (s < 120) return (s < 10 ? s.toFixed(1) : s.toFixed(0)) + " s"; return (s/60).toFixed(1) + " min"; },
+  us: (s) => { const u = s * 1e6; return (u < 10 ? u.toFixed(2) : u.toFixed(0)) + " µs"; },
+  x: (v) => (v < 10 ? v.toFixed(1) : v.toFixed(0)) + "×",
+};
+document.addEventListener("DOMContentLoaded", () => {
+  for (const [id, s] of Object.entries(DATA)) {
+    const host = document.getElementById("c-" + id); if (!host) continue;
+    if (s.kind === "hbar") Charts.hbar(host, {...s, fmt: F[s.fmt]});
+    else if (s.kind === "diverge") Charts.diverge(host, s);
+    else Charts.lines(host, {...s, xfmt: F[s.xfmt], yfmt: F[s.yfmt]});
+  }
+});
+</script>
