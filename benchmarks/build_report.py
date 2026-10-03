@@ -40,7 +40,8 @@ def fnum(x):
     for div, suf in ((1e9, "G"), (1e6, "M"), (1e3, "k")):
         if x >= div:
             v = x / div
-            return (f"{v:.0f}" if v >= 10 else f"{v:.1f}").rstrip("0").rstrip(".") + suf
+            t = f"{v:.0f}" if v >= 10 else f"{v:.1f}"
+            return (t[:-2] if t.endswith(".0") else t) + suf
     return f"{x:.0f}" if x >= 10 else f"{x:.1f}"
 
 
@@ -67,7 +68,7 @@ def details(summary, inner):
 
 def chart(cid, title, sub, caption):
     return (f'<figure><div class="ttl">{esc(title)} <span>{esc(sub)}</span></div>'
-            f'<div id="{cid}"></div><figcaption>{caption}</figcaption></figure>')
+            f'<div class="scroll" id="c-{cid}"></div><figcaption>{caption}</figcaption></figure>')
 
 
 def diagrams():
@@ -79,7 +80,7 @@ def diagrams():
 
 
 def why(title, svg, caption):
-    return f'<div class="why"><h3>{esc(title)}</h3>{svg}<p class="sub">{caption}</p></div>'
+    return f'<div class="why"><h3>{esc(title)}</h3><div class="scroll">{svg}</div><p class="sub">{caption}</p></div>'
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -142,12 +143,10 @@ def build():
        "<code>Loci.cgr</code> builds a <a href='https://github.com/lh3/cgranges'>cgranges</a> index (C, implicit interval tree) the first time it is needed and caches it on the object. Data-frame libraries are built for whole-table joins; asked about one interval, they filter or re-index whole tables, which costs milliseconds per question. genomeblocks leans on cheap single lookups everywhere: <code>Architecture.make</code> anchors every loop with two of them, and <code>Genes.annotations</code>, <code>pair_to_bed</code> and <code>select_isoforms</code> do the same per locus.")}
   {chart("loci_latency", "One overlap lookup", "· 200 queries against 100k indexed peaks, lower is better",
          "Blue bars are genomeblocks. The pure-Python fallback is the index you get from <code>pip install genomeblocks</code>, because cgranges is not on PyPI (see <a href='#fixes'>fixes</a>).")}
-  <div class="two">
-    {chart("loci_tools", "Whole-set A & B", "· log–log, lower is better",
+  {chart("loci_tools", "Whole-set A & B", "· log–log, lower is better",
            f"All {n_isect} runs return the same intervals{'' if agree else ' (MISMATCH, check log)'}. At 1k peaks genomeblocks is fastest ({ftime(isect[('genomeblocks (cgranges)', 1_000)])} vs {ftime(min(t for (e, n), t in isect.items() if n == 1_000 and not e.startswith('genomeblocks')))} for the next tool); at 10k it ties with bioframe. From 100k on, fully vectorised pyranges and bioframe pull ahead, by {fx(isect[('genomeblocks (cgranges)', 1_000_000)] / isect[('pyranges', 1_000_000)])} at 1M, because genomeblocks still steps through Python <code>Locus</code> objects one by one.")}
     {chart("loci_index", "Which index genomeblocks gets", "· log–log, lower is better",
            f"The pure-Python fallback grows quadratically ({fx(fb_slope)} slower for 10× more peaks). A bounded scan (a few lines, see <a href='#fixes'>fixes</a>) makes it {fx(fb / bd)} faster at 100k, matching cgranges.")}
-  </div>
   {details("All intersect timings", table(["n per set", "engine", "median"], rows, num_cols=(0, 2), hl=lambda r: r[1].startswith("genomeblocks (cgranges)")))}
   {details("Merge and BED parsing", table(["operation", "n", "engine", "median"], mm_rows, num_cols=(1, 3), hl=lambda r: r[2] == "genomeblocks"))}
 </section>""")
@@ -219,12 +218,10 @@ def build():
        f"bigWig data sits in zlib-compressed blocks. pyBigWig's <code>stats(nBins=200)</code> queries each bin separately, so the same block is located and inflated up to 200 times per region. genomeblocks asks pybigtools for all 200 bins in one call; the block is inflated once, binned in Rust, and the result is written into a preallocated float32 cube. The bins step matters too: fetching per-base values and binning in numpy runs at {fnum(ptv)}/s (pybigtools) or {fnum(pbv)}/s (pyBigWig).")}
   {chart("signal_engines", "Engines, one track", "· 5,000 peaks (300 for the pyBigWig stats rows), higher is better",
          "Same windows, same bins. Every engine returns the same matrix as genomeblocks: identical values for the pybigtools and pure-Python paths, float32 rounding for pyBigWig, and Pearson r = 0.998 for deepTools. <code>exact=False</code> gives identical values and speed here because 30 bp bins are finer than these files' first zoom level (336 bp), so both read full-resolution data.")}
-  <div class="two">
-    {chart("signal_scaling", "Throughput vs number of loci", "· 1 track, 1 core",
+  {chart("signal_scaling", "Throughput vs number of loci", "· 1 track, 1 core",
            f"Throughput rises from {fnum(sc_lo)} to {fnum(sc_hi)} regions/s as peaks get denser: genome-sorted neighbours share compressed blocks, and one open pybigtools handle per track reuses them. The pure-Python reader and per-base loops stay flat.")}
     {chart("signal_parallel", "Workers", "· 16 tracks × 5,000 loci",
            f"Processes writing into one shared-memory cube scale {fx(p4 / p1)} on 4 cores (identical output each time). The same chunks on 4 threads add only {fx(t4 / p1)}, because pybigtools calls do not run in parallel across Python threads; that is why <code>signal()</code> uses processes." + (f" deepTools with 4 processes reaches {fnum(dt4)}/s." if dt4 else ""))}
-  </div>
   {details("Engine table (rate, correctness vs genomeblocks)", table(["engine", "loci", "regions/s", "median", "Pearson r", "max |Δ|"], eng_rows, num_cols=(1, 2, 3, 4, 5), hl=lambda r: r[0].startswith("genomeblocks signal()")))}
   {details("Parallel table", table(["engine", "workers", "region-tracks/s", "median"], par_rows, num_cols=(1, 2, 3), hl=lambda r: r[0].startswith("genomeblocks")))}
 </section>""")
@@ -292,7 +289,7 @@ def build():
             build_rows.append(["GIGGLE, exact intervals", "1", ftime(gb_[T]["seconds"]),
                                f"{gb_[T]['index_bytes'] / 1e6:.0f} MB on disk"])
         acc_rows = [[f"{r['bin_size']:,} bp", f"{r['spearman_counts']:.3f}", f"{r['top25_overlap']}/25",
-                     ftime(r["seconds"]), f"{r['nnz']:,}"] for r in acc]
+                     ftime(r["seconds"])] for r in acc]
         q_rows = [[NAMES.get(e, e), str(t), ftime(s_)] for (e, t), s_ in sorted(aq.items(), key=lambda kv: (kv[0][1], kv[1]))]
         boot_row = next((r for r in boot if r["n_iter"] == 100), None)
         acc1 = next((r for r in acc if r["bin_size"] == 1000), None)
@@ -322,7 +319,7 @@ def build():
       {table(["index", "workers", "build", "size"], build_rows, num_cols=(1, 2))}
       <figcaption>{f'Building the 1 kb index with 3 worker processes is {fx(b1s["seconds"] / b1["seconds"])} faster than with 1. ' if b1s else ''}<code>Atlas.save</code> / <code>load</code> make the build a one-time cost.</figcaption></figure>
     <figure><div class="ttl">What binning costs in accuracy <span>· vs exact interval overlaps</span></div>
-      {table(["bin", "Spearman ρ", "top-25 shared", "query", "nnz"], acc_rows, num_cols=(1, 2, 3, 4))}
+      {table(["bin", "Spearman ρ", "top-25", "query"], acc_rows, num_cols=(1, 2, 3))}
       <figcaption>Atlas counts shared bins, not intervals. Per-track overlap counts still rank almost identically to exact interval counts{f' (ρ = {acc1["spearman_counts"]:.3f} at 1 kb)' if acc1 else ''}; "top-25 shared" compares the 25 most-enriched tracks by each method. Smaller bins track more closely at a larger index.</figcaption></figure>
   </div>
   {f'<p class="sub">A 100-iteration shuffled-null bootstrap (<code>Atlas.bootstrap</code>) over all {T} tracks takes {ftime(boot_row["seconds"])}, {ftime(boot_row["per_iter"])} per iteration. With a command-line tool each iteration would be a separate search.</p>' if boot_row else ''}
@@ -376,8 +373,8 @@ def build():
        f"<a href='https://github.com/althonos/lightmotif'>lightmotif</a> scores PSSMs with AVX2 over a <em>striped</em> sequence layout. genomeblocks stripes each window once and reuses it for all 1,019 motifs; motifs are then split across worker processes. Striping one sequence costs about {stripe_frac:.1f}× one motif scan, so re-striping per motif would cost {fx(mrs['seconds'] / mgb['seconds'])} the time.")}
   {chart("motifs_engines", "Engines", "· forward strand, log2-odds ≥ 13, same PSSMs, lower is better",
          f"Every engine scores the same probability matrices (pseudocount 0.1, uniform background, forward strand) and reports the same hits per motif (Pearson r ≥ {min_r:.4f}; FIMO differs by a handful of hits that sit exactly at the score cut-off, float32 vs float64 rounding)." + (" FIMO runs in its fastest mode (<code>--text</code>, no q-values); its time includes reading the FASTA and computing a p-value for every candidate, which is part of what FIMO is for." if mfi else ""))}
-  {('<div class="two">' + chart("motifs_workers", "Worker processes", "· 5,000 windows × 1,019 motifs", f"{fx(w1 / w4)} with 4 processes. Each worker receives the sequences once (pool initializer) and scans a share of the motifs.") +
-    '<figure><div class="ttl">Full JASPAR library <span>· 1,019 motifs, 1 core</span></div>' + table(["engine", "windows", "time", "Gbp·motif/s"], lib_rows, num_cols=(1, 2, 3)) + '<figcaption>Throughput is sequence length × motifs scored per second. MOODS checks all motifs in one pass per sequence with a lookahead filter.</figcaption></figure></div>') if wk else ''}
+  {(chart("motifs_workers", "Worker processes", "· 5,000 windows × 1,019 motifs", f"{fx(w1 / w4)} with 4 processes. Each worker receives the sequences once (pool initializer) and scans a share of the motifs.") +
+    '<figure><div class="ttl">Full JASPAR library <span>· 1,019 motifs, 1 core</span></div>' + table(["engine", "windows", "time", "Gbp·motif/s"], lib_rows, num_cols=(1, 2, 3)) + '<figcaption>Throughput is sequence length × motifs scored per second. MOODS checks all motifs in one pass per sequence with a lookahead filter.</figcaption></figure>') if wk else ''}
   {details("Engine table", table(["engine", "time", "Gbp·motif/s", "hits", "r vs genomeblocks"], eng_rows, num_cols=(1, 2, 3, 4), hl=lambda r: r[0].startswith("genomeblocks")))}
 </section>""")
         mech.append(("SIMD motif scoring, layout built once", "#motifs",
@@ -543,7 +540,7 @@ def build():
                           f"For 1,000 windows × {Mx:,} motifs that is {1000 * Mx:,} calls into lightmotif, each on only 500 bp, so call overhead dominates ({ftime(cur['seconds'])}). "
                           f"Concatenating the windows, striping once, and scoring each motif over the whole block with <code>pssm.calculate(striped).threshold(t)</code> "
                           f"(hits split back per window with <code>np.bincount</code>, edge-crossing hits dropped) gives {'identical counts in every cell' if new.get('same') else 'DIFFERENT counts'} in {ftime(new['seconds'])} "
-                          f"({fx(cur['seconds'] / new['seconds'])})" + (f", which also beats MOODS on the same task ({ftime(moods_lib['seconds'])})." if moods_lib and new['seconds'] < moods_lib['seconds'] else (f". MOODS still takes only {ftime(moods_lib['seconds'])}: the rest of the gap is the scoring itself, since lightmotif scores every position for every motif while MOODS skips most positions with a lookahead filter." if moods_lib else ".")))))
+                          f"({fx(cur['seconds'] / new['seconds'])})" + (f", which also beats MOODS on the same task ({ftime(moods_lib['seconds'])})." if moods_lib and new['seconds'] < moods_lib['seconds'] else (f". MOODS still takes only {ftime(moods_lib['seconds'])}: the rest of the gap is the scoring itself, since lightmotif scores every position for every motif while MOODS skips most positions with a lookahead filter." if moods_lib else "."))))
         sc_ = f[("sort", "current (__lt__)", n)]; sk = f[("sort", "key=(chrom, start)", n)]
         mc_ = f[("merge", "current", n)]; mk_ = f[("merge", "key sort + single pass", n)]
         fixes.insert(1, ("Loci.sort() / merge() compare dataclasses in Python",
@@ -617,7 +614,7 @@ python build_report.py         # this page → report/index.html</pre>
 <script>
 const DATA = {json.dumps(charts)};
 const F = {{
-  time: (s) => {{ s = +(+s).toPrecision(6); if (s < 1e-3) return (s < 1e-5 ? (s*1e6).toFixed(1) : (s*1e6).toFixed(0)) + " µs";
+  time: (s) => {{ s = +(+s).toPrecision(6); if (s === 0) return "0"; if (s < 1e-3) return (s < 1e-5 ? (s*1e6).toFixed(1) : (s*1e6).toFixed(0)) + " µs";
                  if (s < 1) return (s < 0.01 ? (s*1e3).toFixed(1) : (s*1e3).toFixed(0)) + " ms";
                  if (s < 120) return (s < 10 ? s.toFixed(1) : s.toFixed(0)) + " s"; return (s/60).toFixed(1) + " min"; }},
   num: (x) => {{ for (const [d, u] of [[1e9, "G"], [1e6, "M"], [1e3, "k"]]) if (x >= d) {{ const v = x / d;
@@ -627,7 +624,7 @@ const F = {{
 }};
 document.addEventListener("DOMContentLoaded", () => {{
   for (const [id, s] of Object.entries(DATA)) {{
-    const host = document.getElementById(id); if (!host) continue;
+    const host = document.getElementById("c-" + id); if (!host) continue;
     if (s.kind === "hbar") Charts.hbar(host, {{...s, fmt: F[s.fmt]}});
     else Charts.lines(host, {{...s, xfmt: F[s.xfmt], yfmt: F[s.yfmt]}});
   }}
@@ -663,7 +660,7 @@ def write_readme(tiles, fixes, env, vtxt):
              "Medians of 3–5 runs after a warm-up; every comparison is checked for identical output first.", "",
              "## Headlines", "", "| block | result | context |", "|---|---|---|"]
     for k, v, d, _h, _c, tag in tiles:
-        lines.append(f"| {tag} | **{v}** {k.lower()} | {d} |")
+        lines.append(f"| {tag} | **{v}** · {k} | {d} |")
     lines += ["", "## Figures", ""]
     for name, title in figs:
         if (HERE / "figures" / f"{name}.png").exists():

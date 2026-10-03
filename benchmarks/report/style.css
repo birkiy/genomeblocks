@@ -81,7 +81,7 @@ section:first-of-type { border-top: 0; }
 .sub { color: var(--ink-2); }
 
 /* stat tiles */
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
 .tile { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
         padding: 14px 16px; display: grid; gap: 4px; align-content: start; text-decoration: none; color: inherit; }
 .tile:hover, .tile:focus-visible { border-color: var(--brand); outline: none; }
@@ -174,3 +174,10 @@ ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
 pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto;
       font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* phones: diagrams and charts keep a legible size and scroll sideways */
+.scroll { overflow-x: auto; min-width: 0; }
+@media (max-width: 640px) {
+  .scroll > svg.chart, .scroll > svg { min-width: 600px; }
+  .tile .v { font-size: 30px; }
+}
