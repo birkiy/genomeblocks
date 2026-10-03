@@ -1,0 +1,164 @@
+<!-- @loci -->
+<svg viewBox="0 0 760 236" role="img" aria-label="pyranges and bioframe rebuild frames and an index on every lookup; genomeblocks builds one C interval index per Loci on first use and reuses it, so each later lookup is a few microseconds.">
+  <defs>
+    <marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">pyranges / bioframe: every lookup</text>
+  <rect x="20" y="40" width="96" height="40" rx="8" class="box"/>
+  <text x="68" y="65" text-anchor="middle">query</text>
+  <line x1="116" y1="60" x2="160" y2="60" class="arrow" marker-end="url(#ah1)"/>
+  <rect x="162" y="40" width="190" height="40" rx="8" class="box bad"/>
+  <text x="257" y="58" text-anchor="middle">build frames + index</text>
+  <text x="257" y="73" text-anchor="middle" class="small">again, for this one query</text>
+  <line x1="352" y1="60" x2="392" y2="60" class="arrow" marker-end="url(#ah1)"/>
+  <rect x="394" y="40" width="70" height="40" rx="8" class="box"/>
+  <text x="429" y="65" text-anchor="middle">hits</text>
+  <text x="490" y="58" class="bad head">≈ 1–6 ms</text>
+  <text x="490" y="74" class="small">per query</text>
+
+  <text x="20" y="128" class="head">genomeblocks: Loci.cgr</text>
+  <rect x="20" y="146" width="150" height="62" rx="8" class="box hl"/>
+  <text x="95" y="171" text-anchor="middle">cgranges index</text>
+  <text x="95" y="188" text-anchor="middle" class="small">built once, cached</text>
+  <text x="95" y="201" text-anchor="middle" class="small">on the Loci</text>
+  <rect x="300" y="140" width="96" height="22" rx="6" class="box"/>
+  <text x="348" y="155" text-anchor="middle" class="small">query 1</text>
+  <rect x="300" y="166" width="96" height="22" rx="6" class="box"/>
+  <text x="348" y="181" text-anchor="middle" class="small">query 2</text>
+  <rect x="300" y="192" width="96" height="22" rx="6" class="box"/>
+  <text x="348" y="207" text-anchor="middle" class="small">… query 1,000,000</text>
+  <line x1="298" y1="151" x2="172" y2="165" class="arrow hl" marker-end="url(#ah1)"/>
+  <line x1="298" y1="177" x2="172" y2="177" class="arrow hl" marker-end="url(#ah1)"/>
+  <line x1="298" y1="203" x2="172" y2="189" class="arrow hl" marker-end="url(#ah1)"/>
+  <text x="236" y="140" text-anchor="middle" class="small">O(log n) lookups</text>
+  <text x="430" y="172" class="good head">≈ 2 µs</text>
+  <text x="430" y="188" class="small">per query: cheap enough to call inside</text>
+  <text x="430" y="202" class="small">per-locus loops (graph building, annotation,</text>
+  <text x="430" y="216" class="small">loop anchoring, isoform choice)</text>
+</svg>
+<!-- @signal -->
+<svg viewBox="0 0 760 262" role="img" aria-label="pyBigWig stats with 200 bins finds and inflates the same compressed block once per bin; genomeblocks asks pybigtools for all 200 bins in one call, inflates each block once, bins in Rust, and writes straight into a preallocated float32 cube.">
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">pyBigWig stats(nBins=200)</text>
+  <rect x="20" y="36" width="320" height="26" rx="5" class="box"/>
+  <g class="small">
+    <line x1="52" y1="36" x2="52" y2="62" stroke="currentColor" opacity=".35"/><line x1="84" y1="36" x2="84" y2="62" stroke="currentColor" opacity=".35"/>
+    <line x1="116" y1="36" x2="116" y2="62" stroke="currentColor" opacity=".35"/><line x1="148" y1="36" x2="148" y2="62" stroke="currentColor" opacity=".35"/>
+    <line x1="180" y1="36" x2="180" y2="62" stroke="currentColor" opacity=".35"/><line x1="212" y1="36" x2="212" y2="62" stroke="currentColor" opacity=".35"/>
+    <line x1="244" y1="36" x2="244" y2="62" stroke="currentColor" opacity=".35"/><line x1="276" y1="36" x2="276" y2="62" stroke="currentColor" opacity=".35"/>
+    <line x1="308" y1="36" x2="308" y2="62" stroke="currentColor" opacity=".35"/>
+  </g>
+  <text x="180" y="54" text-anchor="middle" class="small">6 kb window · 200 bins</text>
+  <path d="M36,62 C 60,120 150,120 170,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <path d="M100,62 C 120,110 160,120 176,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <path d="M196,62 C 196,100 186,120 182,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <path d="M260,62 C 240,110 200,120 188,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <path d="M324,62 C 300,120 210,120 194,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <text x="290" y="112" class="small">1 lookup per bin</text>
+  <rect x="110" y="152" width="140" height="44" rx="8" class="box bad"/>
+  <text x="180" y="171" text-anchor="middle">zlib data block</text>
+  <text x="180" y="187" text-anchor="middle" class="small">inflated 200×</text>
+  <text x="20" y="232" class="bad head">≈ 30 regions / s</text>
+
+  <line x1="380" y1="20" x2="380" y2="246" stroke="currentColor" opacity=".18"/>
+
+  <text x="404" y="22" class="head">genomeblocks signal() → pybigtools</text>
+  <rect x="404" y="36" width="320" height="26" rx="5" class="box hl"/>
+  <text x="564" y="54" text-anchor="middle" class="small">6 kb window · 200 bins</text>
+  <line x1="564" y1="62" x2="564" y2="88" class="arrow hl" marker-end="url(#ah2)"/>
+  <text x="572" y="80" class="small">1 call: values(bins=200)</text>
+  <rect x="494" y="90" width="140" height="36" rx="8" class="box hl"/>
+  <text x="564" y="106" text-anchor="middle">data block</text>
+  <text x="564" y="120" text-anchor="middle" class="small">inflated once, reused</text>
+  <line x1="564" y1="126" x2="564" y2="148" class="arrow hl" marker-end="url(#ah2)"/>
+  <rect x="494" y="150" width="140" height="30" rx="8" class="box hl"/>
+  <text x="564" y="170" text-anchor="middle">binning in Rust</text>
+  <line x1="564" y1="180" x2="564" y2="200" class="arrow hl" marker-end="url(#ah2)"/>
+  <rect x="444" y="202" width="240" height="26" rx="5" class="box"/>
+  <text x="564" y="220" text-anchor="middle" class="small">cube[locus, track, 0:200]  (float32, preallocated)</text>
+  <text x="404" y="252" class="good head">≈ 10–37k regions / s, one core</text>
+</svg>
+<!-- @atlas -->
+<svg viewBox="0 0 760 270" role="img" aria-label="Instead of intersecting the query with each of 500 peak files in turn, Atlas stores all files as one sparse genome-bin by track matrix; a query selects its bin rows and one column sum gives the overlap count for every track at once.">
+  <defs>
+    <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">Per-track loop</text>
+  <rect x="20" y="40" width="92" height="34" rx="8" class="box"/>
+  <text x="66" y="62" text-anchor="middle">query</text>
+  <g>
+    <rect x="160" y="34" width="120" height="24" rx="6" class="box"/><text x="220" y="50" text-anchor="middle" class="small">intersect track 1</text>
+    <rect x="160" y="64" width="120" height="24" rx="6" class="box"/><text x="220" y="80" text-anchor="middle" class="small">intersect track 2</text>
+    <rect x="160" y="94" width="120" height="24" rx="6" class="box"/><text x="220" y="110" text-anchor="middle" class="small">…</text>
+    <rect x="160" y="124" width="120" height="24" rx="6" class="box bad"/><text x="220" y="140" text-anchor="middle" class="small">intersect track 500</text>
+  </g>
+  <line x1="112" y1="57" x2="158" y2="46" class="arrow" marker-end="url(#ah3)"/>
+  <line x1="112" y1="57" x2="158" y2="76" class="arrow" marker-end="url(#ah3)"/>
+  <line x1="112" y1="57" x2="158" y2="136" class="arrow bad" marker-end="url(#ah3)"/>
+  <text x="20" y="182" class="small">work grows with every track</text>
+  <text x="20" y="198" class="small">added to the collection</text>
+
+  <line x1="310" y1="20" x2="310" y2="256" stroke="currentColor" opacity=".18"/>
+
+  <text x="334" y="22" class="head">Atlas: one sparse matrix</text>
+  <text x="430" y="44" text-anchor="middle" class="small">tracks →</text>
+  <g>
+    <!-- 6 bin rows x 8 track columns; query bins = rows 2 and 4 -->
+    <rect x="380" y="52" width="16" height="16" class="cell on"/><rect x="398" y="52" width="16" height="16" class="cell"/><rect x="416" y="52" width="16" height="16" class="cell"/><rect x="434" y="52" width="16" height="16" class="cell on"/><rect x="452" y="52" width="16" height="16" class="cell"/><rect x="470" y="52" width="16" height="16" class="cell"/><rect x="488" y="52" width="16" height="16" class="cell"/><rect x="506" y="52" width="16" height="16" class="cell"/>
+    <rect x="380" y="70" width="16" height="16" class="cell q"/><rect x="398" y="70" width="16" height="16" class="cell on"/><rect x="416" y="70" width="16" height="16" class="cell"/><rect x="434" y="70" width="16" height="16" class="cell on"/><rect x="452" y="70" width="16" height="16" class="cell"/><rect x="470" y="70" width="16" height="16" class="cell on"/><rect x="488" y="70" width="16" height="16" class="cell"/><rect x="506" y="70" width="16" height="16" class="cell on"/>
+    <rect x="380" y="88" width="16" height="16" class="cell"/><rect x="398" y="88" width="16" height="16" class="cell"/><rect x="416" y="88" width="16" height="16" class="cell on"/><rect x="434" y="88" width="16" height="16" class="cell"/><rect x="452" y="88" width="16" height="16" class="cell"/><rect x="470" y="88" width="16" height="16" class="cell"/><rect x="488" y="88" width="16" height="16" class="cell on"/><rect x="506" y="88" width="16" height="16" class="cell"/>
+    <rect x="380" y="106" width="16" height="16" class="cell q"/><rect x="398" y="106" width="16" height="16" class="cell on"/><rect x="416" y="106" width="16" height="16" class="cell"/><rect x="434" y="106" width="16" height="16" class="cell"/><rect x="452" y="106" width="16" height="16" class="cell on"/><rect x="470" y="106" width="16" height="16" class="cell on"/><rect x="488" y="106" width="16" height="16" class="cell"/><rect x="506" y="106" width="16" height="16" class="cell"/>
+    <rect x="380" y="124" width="16" height="16" class="cell on"/><rect x="398" y="124" width="16" height="16" class="cell"/><rect x="416" y="124" width="16" height="16" class="cell"/><rect x="434" y="124" width="16" height="16" class="cell"/><rect x="452" y="124" width="16" height="16" class="cell"/><rect x="470" y="124" width="16" height="16" class="cell"/><rect x="488" y="124" width="16" height="16" class="cell on"/><rect x="506" y="124" width="16" height="16" class="cell"/>
+    <rect x="380" y="142" width="16" height="16" class="cell"/><rect x="398" y="142" width="16" height="16" class="cell"/><rect x="416" y="142" width="16" height="16" class="cell"/><rect x="434" y="142" width="16" height="16" class="cell on"/><rect x="452" y="142" width="16" height="16" class="cell"/><rect x="470" y="142" width="16" height="16" class="cell"/><rect x="488" y="142" width="16" height="16" class="cell"/><rect x="506" y="142" width="16" height="16" class="cell"/>
+  </g>
+  <text x="372" y="60" text-anchor="end" class="small">1 kb</text>
+  <text x="372" y="74" text-anchor="end" class="small">genome</text>
+  <text x="372" y="88" text-anchor="end" class="small">bins ↓</text>
+  <text x="532" y="83" class="small">← query bin</text>
+  <text x="532" y="119" class="small">← query bin</text>
+  <line x1="451" y1="164" x2="451" y2="186" class="arrow hl" marker-end="url(#ah3)"/>
+  <text x="460" y="180" class="small">sum the query rows (one sparse op)</text>
+  <g>
+    <rect x="380" y="190" width="16" height="20" class="box hl"/><text x="388" y="205" text-anchor="middle" class="small">0</text>
+    <rect x="398" y="190" width="16" height="20" class="box hl"/><text x="406" y="205" text-anchor="middle" class="small">2</text>
+    <rect x="416" y="190" width="16" height="20" class="box hl"/><text x="424" y="205" text-anchor="middle" class="small">0</text>
+    <rect x="434" y="190" width="16" height="20" class="box hl"/><text x="442" y="205" text-anchor="middle" class="small">1</text>
+    <rect x="452" y="190" width="16" height="20" class="box hl"/><text x="460" y="205" text-anchor="middle" class="small">1</text>
+    <rect x="470" y="190" width="16" height="20" class="box hl"/><text x="478" y="205" text-anchor="middle" class="small">2</text>
+    <rect x="488" y="190" width="16" height="20" class="box hl"/><text x="496" y="205" text-anchor="middle" class="small">0</text>
+    <rect x="506" y="190" width="16" height="20" class="box hl"/><text x="514" y="205" text-anchor="middle" class="small">1</text>
+  </g>
+  <text x="334" y="236" class="small">overlap count for every track at once,</text>
+  <text x="334" y="251" class="small">then a vectorised Fisher test across all tracks</text>
+  <text x="560" y="205" class="good head">all 500 tracks</text>
+  <text x="560" y="221" class="small">in one pass</text>
+</svg>
+<!-- @motifs -->
+<svg viewBox="0 0 760 200" role="img" aria-label="Each 500 bp sequence is converted once into lightmotif's striped SIMD layout; that striped copy is then scanned by every motif in the library, so the conversion cost is paid once rather than once per motif.">
+  <defs>
+    <marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <rect x="20" y="70" width="120" height="44" rx="8" class="box"/>
+  <text x="80" y="89" text-anchor="middle">sequence</text>
+  <text x="80" y="105" text-anchor="middle" class="small">500 bp window</text>
+  <line x1="140" y1="92" x2="196" y2="92" class="arrow hl" marker-end="url(#ah4)"/>
+  <text x="168" y="84" text-anchor="middle" class="small">once</text>
+  <rect x="198" y="62" width="170" height="60" rx="8" class="box hl"/>
+  <text x="283" y="86" text-anchor="middle">stripe()</text>
+  <text x="283" y="103" text-anchor="middle" class="small">positions interleaved</text>
+  <text x="283" y="116" text-anchor="middle" class="small">into SIMD lanes</text>
+  <rect x="470" y="20" width="160" height="30" rx="6" class="box"/><text x="550" y="40" text-anchor="middle" class="small">scan motif 1</text>
+  <rect x="470" y="58" width="160" height="30" rx="6" class="box"/><text x="550" y="78" text-anchor="middle" class="small">scan motif 2</text>
+  <rect x="470" y="96" width="160" height="30" rx="6" class="box"/><text x="550" y="116" text-anchor="middle" class="small">…</text>
+  <rect x="470" y="134" width="160" height="30" rx="6" class="box"/><text x="550" y="154" text-anchor="middle" class="small">scan motif 1,019</text>
+  <line x1="368" y1="88" x2="468" y2="36" class="arrow hl" marker-end="url(#ah4)"/>
+  <line x1="368" y1="90" x2="468" y2="73" class="arrow hl" marker-end="url(#ah4)"/>
+  <line x1="368" y1="94" x2="468" y2="111" class="arrow hl" marker-end="url(#ah4)"/>
+  <line x1="368" y1="96" x2="468" y2="149" class="arrow hl" marker-end="url(#ah4)"/>
+  <text x="418" y="190" text-anchor="middle" class="small">reused by every motif</text>
+  <text x="648" y="74" class="small">motifs split</text>
+  <text x="648" y="89" class="small">across a</text>
+  <text x="648" y="104" class="small">process pool</text>
+</svg>

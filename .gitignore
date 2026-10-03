@@ -228,3 +228,6 @@ examples/*/data/.DS_Store
 
 # Example data — fetched per-example via download_data.sh, never committed
 examples/*/data/
+
+# benchmark datasets (regenerate with benchmarks/make_data.py)
+benchmarks/data/
