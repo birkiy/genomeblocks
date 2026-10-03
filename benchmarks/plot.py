@@ -311,7 +311,7 @@ def fig_genes():
 
 
 def fig_import():
-    rows = load("import")["rows"][1:]
+    rows = [r for r in load("import")["rows"][1:] if not r["stmt"].startswith("breakdown")]
     fig, ax = plt.subplots(figsize=(8, 2.9))
     emphasis_bars(ax, [r["stmt"] for r in rows], [max(r["seconds"], 1e-4) for r in rows],
                   [r["stmt"] == "import genomeblocks" for r in rows], fmt_time, log=False,

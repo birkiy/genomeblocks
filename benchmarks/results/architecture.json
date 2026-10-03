@@ -1,0 +1,114 @@
+{
+ "bench": "architecture",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cores": 4,
+  "mem_gb": 16.876515328,
+  "python": "3.11.16",
+  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "versions": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1",
+   "pandas": "3.0.6",
+   "pybigtools": "0.3.0",
+   "pyBigWig": "0.3.26",
+   "cgranges": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.88",
+   "MOODS": "installed",
+   "graph_tool": "3.9",
+   "intervaltree": "installed",
+   "bedtools": "v2.31.1"
+  }
+ },
+ "meta": {},
+ "rows": [
+  {
+   "step": "make (50k loops -> graph)",
+   "seconds": 1.6102953310000885,
+   "runs": [
+    1.6102953310000885,
+    1.6944444010000552,
+    1.5760461029999533
+   ],
+   "n_vertices": 73237,
+   "n_edges": 114367
+  },
+  {
+   "step": "add_mcool (5 kb)",
+   "seconds": 17.861973764999675,
+   "runs": [
+    17.861973764999675
+   ],
+   "n_edges": 114367
+  },
+  {
+   "step": "normalize (power-law O/E)",
+   "seconds": 1.1410531060000721,
+   "runs": [
+    1.242206860999886,
+    1.1410531060000721,
+    1.1251874469999166
+   ],
+   "n_edges": 114367
+  },
+  {
+   "step": "annotate (total)",
+   "seconds": 1.693488372000047,
+   "runs": [
+    1.693488372000047,
+    1.7005710959997486,
+    1.5568270220001068
+   ],
+   "n_vertices": 73237
+  },
+  {
+   "step": "annotate stage 2: vectorised (genomeblocks)",
+   "seconds": 0.07000582599994232,
+   "runs": [
+    0.0762471060002099,
+    0.0705535800002508,
+    0.07000582599994232,
+    0.0678235999998833,
+    0.06738007700005255
+   ],
+   "n_edges": 114367
+  },
+  {
+   "step": "annotate stage 2: per-vertex loop",
+   "seconds": 13.52929154100002,
+   "runs": [
+    13.255323339999904,
+    13.681566541999928,
+    13.52929154100002
+   ],
+   "n_edges": 114367,
+   "same_result": false
+  },
+  {
+   "step": "strength: per-edge Python loop (genomeblocks)",
+   "seconds": 0.5073618510000415,
+   "runs": [
+    0.5004571089998535,
+    0.5073618510000415,
+    0.5343693419999909
+   ],
+   "n_edges": 114367
+  },
+  {
+   "step": "strength: graph-tool incident_edges_op",
+   "seconds": 0.0024263050004265097,
+   "runs": [
+    0.0023948250000103144,
+    0.0026320060001125967,
+    0.0023693560001447622,
+    0.002501895000023069,
+    0.0024263050004265097
+   ],
+   "n_edges": 114367,
+   "same_result": true
+  }
+ ]
+}

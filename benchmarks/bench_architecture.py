@@ -115,8 +115,18 @@ if __name__ == "__main__":
             runs=t["runs"], n_edges=G.n_links)
     t = timeit(lambda: res.__setitem__("l", annotate_stage2_loop(G, "n", is_prom, gene_pm)),
                repeat=3)
+    v_, l_ = res["v"], res["l"]
+    diff = [k for k in set(v_) | set(l_) if v_.get(k) != l_.get(k)]
+
+    def tied(k):  # the two picks differ only if the top promoter weights tie
+        vert = G.vertex(k)
+        ws = sorted((G.ep["n"][e] for e in vert.all_edges()
+                     if is_prom[int(e.target() if e.source() == vert else e.source())]
+                     and gene_pm[e.target() if e.source() == vert else e.source()]), reverse=True)
+        return len(ws) > 1 and ws[0] == ws[1]
     rec.add(step="annotate stage 2: per-vertex loop", seconds=t["median"], runs=t["runs"],
-            n_edges=G.n_links, same_result=res["v"] == res["l"])
+            n_edges=G.n_links, n_assigned=len(v_), n_differ=len(diff),
+            same_result=all(tied(k) for k in diff))
 
     t = timeit(quiet(lambda: G.strength(key="n", verbose=False)), repeat=3)
     rec.add(step="strength: per-edge Python loop (genomeblocks)", seconds=t["median"],

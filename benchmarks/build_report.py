@@ -482,7 +482,7 @@ def build():
         for row in charts["architecture"]["rows"]:
             row["hl"] = "per-vertex loop" not in row["label"] and "incident_edges_op" not in row["label"]
         a_rows = [[k, ftime(r["seconds"]), f"{r.get('n_edges', r.get('n_vertices', '')):,}" if isinstance(r.get('n_edges', r.get('n_vertices')), int) else "",
-                   "" if "same_result" not in r else ("same result" if r["same_result"] else "differs")] for k, r in rr.items()]
+                   "" if "same_result" not in r else (("same result" + (f" ({r['n_differ']} of {r['n_assigned']:,} differ, only at tied weights)" if r.get("n_differ") else "")) if r["same_result"] else "differs")] for k, r in rr.items()]
         secs.append(f"""
 <section id="architecture">
   <span class="tag purple">Architecture · contact graphs</span>
@@ -503,7 +503,15 @@ def build():
     if im:
         ir = im["rows"]
         base = ir[0]["seconds"]
-        imp = {r["stmt"]: r["seconds"] for r in ir[1:]}
+        imp = {r["stmt"]: r["seconds"] for r in ir[1:] if not r["stmt"].startswith("breakdown")}
+        brk = {r["stmt"].split(": ", 1)[1]: r["seconds"] for r in ir if r["stmt"].startswith("breakdown")}
+        if brk:
+            heavy = [(m, brk[m]) for m in ("genomeblocks.signal_draw", "genomeblocks.bedpe", "genomeblocks.atlas") if m in brk]
+            fixes.append(("Touching Loci imports matplotlib, pandas and scipy",
+                          f"<code>import genomeblocks</code> is lazy ({ftime(max(imp['import genomeblocks'], 0))}), but <code>from genomeblocks import Loci</code> takes "
+                          f"{ftime(imp['+ Loci (pulls signal, motifs, atlas, bedpe)'])} because <code>loci.py</code> imports every module that attaches methods, and those import their heavy dependencies at module level: "
+                          + ", ".join(f"<code>{m.split('.')[1]}</code> {ftime(t_)}" for m, t_ in heavy)
+                          + " (cumulative, <code>python -X importtime</code>). Moving <code>matplotlib.pyplot</code>, <code>pandas</code> and <code>scipy.sparse</code> imports inside the functions that use them keeps the method attachment and removes most of that cost."))
         charts["import"] = {"kind": "hbar", "fmt": "time", "log": False, "sort": None, "labelW": 330,
                             "axis": "seconds on top of a bare interpreter start-up",
                             "rows": [{"label": k, "value": max(v, 1e-4), "hl": k == "import genomeblocks"} for k, v in imp.items()]}
