@@ -351,3 +351,30 @@ def test_genes_save_load(tmp_path, genes_pair, L):
     H = gbc.Genes.load(str(tmp_path / "genes"))
     assert np.array_equal(H.labels(L), G.labels(L))
     assert H["GENE_chr1_3"].gene_id == G["GENE_chr1_3"].gene_id
+
+
+def test_igv_html_embeds_tracks(tmp_path, mixed, world):
+    import base64
+    import gzip
+    import json
+    import re
+    from genomeblocks.columnar.genes import Genes
+    from genomeblocks.columnar.igv import igv_html
+    A = mixed
+    G = Genes.make(str(world / "genes.gtf"))
+    hub = int(np.argmax(A.vp.strength))
+    region = f"{A.loci.chroms[hub]}:{A.loci.starts[hub]}-{A.loci.ends[hub]}"
+    out = tmp_path / "share.html"
+    sizes = igv_html(str(out), regions=[region], loci={"CREs": A.loci}, genes=G,
+                     architecture=A, title="test")
+    page = out.read_text()
+    cfg = json.loads(re.search(r"const CONFIG = (\{.*?\});\n", page, re.S).group(1))
+    names = [t["name"] for t in cfg["tracks"]]
+    assert names == ["CREs", "loops (n)", "genes"] and sizes["total"] == len(page)
+    text = lambda t: gzip.decompress(base64.b64decode(t["url"].split(",", 1)[1])).decode()
+    assert len(text(cfg["tracks"][0]).splitlines()) == len(A.loci)
+    loops = text(cfg["tracks"][1]).splitlines()
+    assert loops and all(len(l.split("\t")) == 8 for l in loops)
+    genes = text(cfg["tracks"][2]).splitlines()
+    assert len(genes) == len(G.genes) and all(len(l.split("\t")) == 12 for l in genes)
+    assert cfg["reference"]["format"] == "chromsizes" and "const SIZES = \"chr1" in page
