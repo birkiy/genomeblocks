@@ -1,0 +1,592 @@
+<title>genomeblocks Backends</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
+<style>/* Layout: one reading column (~920px) under a sticky section bar; each module
+   section = verdict line -> "why" diagram -> chart -> data table. */
+:root {
+  --bg: #f6f4e8;          /* parchment page (brand n-50) */
+  --surface: #fbfaf4;     /* cards, chart surface (brand n-0) */
+  --ink: #1e1e1e;         /* brand n-900 */
+  --ink-2: #52514b;       /* brand n-500 */
+  --muted: #868377;       /* brand n-400 */
+  --rule: #e1dcc5;        /* brand n-100 */
+  --grid: #e9e5d2;
+  --brand: #003552;       /* deep navy */
+  --brand-subtle: #e8eff4;
+  --code-bg: #eeece2;
+  --mod-green: #0f7a3a; --mod-green-bg: #eafaf0;
+  --mod-purple: #5325a3; --mod-purple-bg: #f1ecfb;
+  --mod-navy: #003552; --mod-navy-bg: #e8eff4;
+  --warn: #8a5300; --warn-bg: #fdf1dc;
+  /* chart series (validated categorical order, light steps) */
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+  --bar-other: #c9c5b2;
+  --font: "Nunito", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1b1a; --surface: #232220; --ink: #f2f0e6; --ink-2: #c7c3b1; --muted: #9a968a;
+    --rule: #3a3935; --grid: #302f2c; --brand: #8cc3e8; --brand-subtle: #1d2a33;
+    --code-bg: #2d2c29;
+    --mod-green: #5fd38e; --mod-green-bg: #18291f; --mod-purple: #b79cf0; --mod-purple-bg: #251d36;
+    --mod-navy: #8cc3e8; --mod-navy-bg: #1d2a33; --warn: #f4c06a; --warn-bg: #33281a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --bar-other: #55534c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b1a; --surface: #232220; --ink: #f2f0e6; --ink-2: #c7c3b1; --muted: #9a968a;
+  --rule: #3a3935; --grid: #302f2c; --brand: #8cc3e8; --brand-subtle: #1d2a33;
+  --code-bg: #2d2c29;
+  --mod-green: #5fd38e; --mod-green-bg: #18291f; --mod-purple: #b79cf0; --mod-purple-bg: #251d36;
+  --mod-navy: #8cc3e8; --mod-navy-bg: #1d2a33; --warn: #f4c06a; --warn-bg: #33281a;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --bar-other: #55534c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px;
+       line-height: 1.6; margin: 0; }
+.wrap { max-width: 960px; margin: 0 auto; padding-inline: 20px; padding-block: 8px 64px; }
+h1, h2, h3 { line-height: 1.22; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 42px); font-weight: 800; letter-spacing: -0.01em; color: var(--brand); }
+h2 { font-size: 26px; font-weight: 800; color: var(--ink); }
+h3 { font-size: 17px; font-weight: 800; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--brand); }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--code-bg);
+       padding: 1px 5px; border-radius: 5px; }
+.eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+           color: var(--muted); }
+
+/* header + nav */
+header.top { display: grid; gap: 12px; padding-block: 36px 22px; }
+header.top .lede { font-size: 18.5px; color: var(--ink-2); max-width: 62ch; }
+nav.sections { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+               border-bottom: 1px solid var(--rule); padding-block: 10px; margin-bottom: 8px;
+               display: flex; gap: 6px; flex-wrap: wrap; }
+nav.sections a { text-decoration: none; font-size: 13.5px; font-weight: 700; color: var(--ink-2);
+                 padding: 4px 11px; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface); }
+nav.sections a:hover, nav.sections a:focus-visible { color: var(--brand); border-color: var(--brand); outline: none; }
+
+section { display: grid; gap: 18px; padding-block: 40px 8px; border-top: 1px solid var(--rule);
+          scroll-margin-top: 64px; }
+section:first-of-type { border-top: 0; }
+.verdict { font-size: 19px; font-weight: 700; color: var(--ink); max-width: 62ch; }
+.verdict b { color: var(--brand); }
+.sub { color: var(--ink-2); }
+
+/* stat tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+        padding: 14px 16px; display: grid; gap: 4px; align-content: start; text-decoration: none; color: inherit; }
+.tiles.two-up { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+.tile:hover, .tile:focus-visible { border-color: var(--brand); outline: none; }
+.tile .k { font-size: 13px; font-weight: 700; color: var(--muted); }
+.tile .v { font-size: 34px; font-weight: 800; line-height: 1.1; color: var(--brand); }
+.tile .d { font-size: 14px; color: var(--ink-2); line-height: 1.4; }
+.tag { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em;
+       text-transform: uppercase; border-radius: 999px; padding: 1px 9px; width: fit-content; }
+.tag.green { color: var(--mod-green); background: var(--mod-green-bg); }
+.tag.purple { color: var(--mod-purple); background: var(--mod-purple-bg); }
+.tag.navy { color: var(--mod-navy); background: var(--mod-navy-bg); }
+.tag.warn { color: var(--warn); background: var(--warn-bg); }
+
+/* figure cards */
+figure { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+         padding: 16px 16px 12px; display: grid; gap: 10px; min-width: 0; }
+figure .ttl { font-weight: 800; font-size: 15.5px; }
+figure .ttl span { font-weight: 600; color: var(--muted); }
+figcaption { font-size: 14px; color: var(--ink-2); max-width: 75ch; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { font-family: var(--font); fill: var(--ink-2); font-size: 12.5px; }
+.chart .tick { fill: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.chart .axis-label { fill: var(--muted); font-size: 12px; font-weight: 600; }
+.chart .rlabel { fill: var(--ink-2); font-size: 13px; }
+.chart .rlabel.hl { fill: var(--ink); font-weight: 800; }
+.chart .vlabel { fill: var(--ink-2); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chart .endlabel { fill: var(--ink-2); font-size: 12.5px; font-weight: 600; }
+.chart .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .baseline { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.chart .bar { fill: var(--bar-other); }
+.chart .bar.hl { fill: var(--s1); }
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot { stroke: var(--surface); stroke-width: 2; }
+.chart .leader { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover, .chart .hit:focus-visible { fill: var(--ink); fill-opacity: 0.04; outline: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.legend > span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
+.tip { position: absolute; z-index: 20; pointer-events: none; background: var(--ink); color: var(--bg);
+       border-radius: 8px; padding: 6px 10px; display: grid; gap: 1px; font-size: 12.5px;
+       box-shadow: 0 4px 14px rgba(0,0,0,.18); max-width: 320px; }
+.tip strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.tip span { opacity: 0.82; }
+
+/* why diagrams */
+.why { display: grid; gap: 10px; background: var(--brand-subtle); border-radius: var(--radius);
+       padding: 16px 18px; }
+.why h3 { color: var(--brand); }
+.why svg { width: 100%; height: auto; display: block; color: var(--ink); }
+.why svg text { font-family: var(--font); font-size: 13px; fill: currentColor; }
+.why svg .small { font-size: 11.5px; fill: var(--ink-2); }
+.why svg .bad { fill: var(--s8); }
+.why svg .good { fill: var(--s1); }
+.why svg .box { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.2; }
+.why svg .box.hl { stroke: var(--s1); stroke-width: 2; }
+.why svg .box.bad { fill: var(--surface); stroke: var(--s8); stroke-width: 1.6; }
+.why svg .arrow { stroke: var(--ink-2); stroke-width: 1.5; fill: none; }
+.why svg .arrow.hl { stroke: var(--s1); stroke-width: 2; }
+.why svg .arrow.bad { stroke: var(--s8); }
+.why svg .cell { fill: var(--surface); stroke: var(--rule); }
+.why svg .cell.on { fill: var(--s1); stroke: var(--s1); }
+.why svg .cell.q { fill: var(--s4); stroke: var(--s4); }
+.why svg .head { font-weight: 800; }
+
+/* tables */
+details { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); }
+details > summary { cursor: pointer; padding: 10px 14px; font-weight: 700; font-size: 14px; color: var(--ink-2); }
+details > summary:focus-visible { outline: 2px solid var(--brand); border-radius: var(--radius); }
+.tbl { overflow-x: auto; padding: 0 14px 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.hl td { font-weight: 700; }
+
+/* lists */
+.mech { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+.mech > div { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+              padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.mech p { font-size: 14.5px; color: var(--ink-2); }
+.fixes { display: grid; gap: 10px; }
+.fix { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--s4);
+       border-radius: var(--radius); padding: 12px 16px; display: grid; gap: 4px; }
+.fix .t { font-weight: 800; }
+.fix p { font-size: 14.5px; color: var(--ink-2); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.two > * { min-width: 0; }
+ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto;
+      font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* phones: diagrams and charts keep a legible size and scroll sideways */
+.scroll { overflow-x: auto; min-width: 0; }
+@media (max-width: 640px) {
+  .scroll > svg.chart, .scroll > svg { min-width: 600px; }
+  .tile .v { font-size: 30px; }
+}
+</style>
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">genomeblocks · design proposal · measured prototypes</span>
+  <h1>Interchangeable backends for genomeblocks</h1>
+  <p class="lede">Can genomeblocks run on cgranges or pyranges, MOODS or lightmotif, and talk to the rest of the Python genomics stack? Each answer below comes from a working prototype checked against today's output.</p>
+</header>
+<nav class="sections" aria-label="Sections"><a href="#answers">Answers</a><a href="#idea">The idea</a><a href="#intervals">Intervals</a><a href="#genes">Genes</a><a href="#motifs">Motifs</a><a href="#interop">Interop</a><a href="#plan">Plan</a><a href="#method">Method</a></nav>
+
+<section id="answers">
+  <h2>Short answers</h2>
+  <div class="tiles two-up">
+    <a class="tile" href="#intervals"><span class="tag green">intervals</span><span class="k">cgranges + pyranges as backends?</span>
+      <span class="v">21×</span><span class="d">faster A &amp; B at 1M with a numpy engine written from scratch, beating pyranges (321 ms). The decision costs 0.9 µs; converting objects costs more than the engine saves (2.2 s). Columns first, then engines.</span></a>
+    <a class="tile" href="#genes"><span class="tag navy">Genes.make</span><span class="k">Does fixing sort/merge help?</span>
+      <span class="v">10×</span><span class="d">faster parsing with polars into a table. The sort/merge fix speeds the first annotation call 2.5× but leaves make untouched; a table-based index is 26× faster.</span></a>
+    <a class="tile" href="#motifs"><span class="tag green">motifs</span><span class="k">MOODS as the backend?</span>
+      <span class="v">5.2×</span><span class="d">faster than today on one core, identical matrix (0 of 5,095,000 cells differ). A MOODS-style scanner written in numba is correct but 2.6× slower than today.</span></a>
+    <a class="tile" href="#interop"><span class="tag warn">interop</span><span class="k">Compatible with other tools?</span>
+      <span class="v">5 gaps</span><span class="d">GFF3 fails, .gz is not read, GTF starts are 1 bp off other tools, extra BED columns are dropped, and no zero-copy path to pandas, polars, Arrow, AnnData.</span></a>
+  </div>
+</section>
+
+<section id="idea">
+  <span class="tag navy">The idea</span>
+  <h2>Store columns, plug in engines</h2>
+  <p class="verdict">Any backend can be swapped in cheaply once genomeblocks keeps its data as columns instead of Python objects. The switch is a 0.9 µs decision; the conversion around it is what costs.</p>
+  <div class="why"><h3>Where the time goes when an engine is swapped in</h3><div class="scroll"><svg viewBox="0 0 760 250" role="img" aria-label="Today a fast engine must convert Locus objects to arrays and back on every call, which costs more than the engine saves. With columnar storage the engine reads the arrays directly and Locus objects are only built when you look at one.">
+  <defs>
+    <marker id="bk1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">Today: objects in, objects out</text>
+  <rect x="20" y="38" width="130" height="50" rx="8" class="box"/>
+  <text x="85" y="59" text-anchor="middle">Loci</text>
+  <text x="85" y="76" text-anchor="middle" class="small">1M Locus objects</text>
+  <line x1="150" y1="63" x2="206" y2="63" class="arrow bad" marker-end="url(#bk1)"/>
+  <text x="178" y="54" text-anchor="middle" class="small bad">0.8 s</text>
+  <rect x="208" y="38" width="120" height="50" rx="8" class="box"/>
+  <text x="268" y="59" text-anchor="middle">arrays</text>
+  <text x="268" y="76" text-anchor="middle" class="small">built per call</text>
+  <line x1="328" y1="63" x2="384" y2="63" class="arrow" marker-end="url(#bk1)"/>
+  <rect x="386" y="38" width="130" height="50" rx="8" class="box hl"/>
+  <text x="451" y="59" text-anchor="middle">fast engine</text>
+  <text x="451" y="76" text-anchor="middle" class="small">0.09 s</text>
+  <line x1="516" y1="63" x2="572" y2="63" class="arrow bad" marker-end="url(#bk1)"/>
+  <text x="544" y="54" text-anchor="middle" class="small bad">1.2 s</text>
+  <rect x="574" y="38" width="130" height="50" rx="8" class="box"/>
+  <text x="639" y="59" text-anchor="middle">Loci</text>
+  <text x="639" y="76" text-anchor="middle" class="small">objects again</text>
+  <text x="20" y="112" class="small">the conversions cost more than the faster engine saves, so switching engines does not pay</text>
+
+  <line x1="20" y1="128" x2="740" y2="128" stroke="currentColor" opacity=".15"/>
+
+  <text x="20" y="152" class="head">Proposed: columns are the storage</text>
+  <rect x="20" y="168" width="200" height="56" rx="8" class="box hl"/>
+  <text x="120" y="189" text-anchor="middle">Loci = columns</text>
+  <text x="120" y="206" text-anchor="middle" class="small">chrom · start · end · strand</text>
+  <text x="120" y="219" text-anchor="middle" class="small">+ extra BED columns</text>
+  <line x1="220" y1="196" x2="296" y2="196" class="arrow hl" marker-end="url(#bk1)"/>
+  <text x="258" y="187" text-anchor="middle" class="small">no copy</text>
+  <rect x="298" y="172" width="130" height="48" rx="8" class="box hl"/>
+  <text x="363" y="193" text-anchor="middle">any engine</text>
+  <text x="363" y="210" text-anchor="middle" class="small">0.09 s</text>
+  <line x1="428" y1="196" x2="504" y2="196" class="arrow hl" marker-end="url(#bk1)"/>
+  <rect x="506" y="172" width="198" height="48" rx="8" class="box"/>
+  <text x="605" y="193" text-anchor="middle">Locus objects</text>
+  <text x="605" y="210" text-anchor="middle" class="small">made only when you look at one</text>
+</svg></div><p class="sub">Measured on 1M peaks: <code>Loci</code> → arrays takes 825 ms, arrays → <code>Locus</code> objects 1.2 s, while the numpy engine needs 90 ms for the whole A &amp; B. Keeping the columns as the storage removes both conversions and makes pandas, polars, Arrow and pyranges views nearly free (6.7 ms for a 1M-row pandas frame).</p></div>
+  <div class="why"><h3>Proposed shape</h3><div class="scroll"><svg viewBox="0 0 760 330" role="img" aria-label="Proposed architecture: one columnar core in the middle; on the left, interchangeable engines per kind of work chosen by user or an auto policy; on the right, zero-copy adapters to other Python tools.">
+  <defs>
+    <marker id="bk2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">engines (pick per kind)</text>
+  <g>
+    <rect x="20" y="36" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="54">intervals</text><text x="32" y="71" class="small">numpy* · cgranges · pyranges</text>
+    <rect x="20" y="88" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="106">bigWig</text><text x="32" y="123" class="small">pybigtools* · pyBigWig · pure Python</text>
+    <rect x="20" y="140" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="158">motifs</text><text x="32" y="175" class="small">lightmotif* · MOODS · FIMO</text>
+    <rect x="20" y="192" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="210">annotation files</text><text x="32" y="227" class="small">Python · polars*</text>
+    <rect x="20" y="244" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="262">Hi-C pairs</text><text x="32" y="279" class="small">numpy* · cooler</text>
+  </g>
+  <text x="20" y="312" class="small">* default when installed; "auto" picks per call (≈1 µs)</text>
+  <line x1="242" y1="58" x2="296" y2="150" class="arrow"/>
+  <line x1="242" y1="110" x2="296" y2="158" class="arrow"/>
+  <line x1="242" y1="162" x2="296" y2="166" class="arrow"/>
+  <line x1="242" y1="214" x2="296" y2="174" class="arrow"/>
+  <line x1="242" y1="266" x2="296" y2="182" class="arrow"/>
+
+  <rect x="298" y="110" width="170" height="110" rx="10" class="box hl"/>
+  <text x="383" y="138" text-anchor="middle" class="head">columnar core</text>
+  <text x="383" y="160" text-anchor="middle" class="small">Loci · Genes · signal cube</text>
+  <text x="383" y="176" text-anchor="middle" class="small">numpy / Arrow columns</text>
+  <text x="383" y="198" text-anchor="middle" class="small">same public API</text>
+  <text x="383" y="212" text-anchor="middle" class="small">(Locus objects on demand)</text>
+
+  <line x1="468" y1="150" x2="526" y2="58" class="arrow hl" marker-end="url(#bk2)"/>
+  <line x1="468" y1="158" x2="526" y2="110" class="arrow hl" marker-end="url(#bk2)"/>
+  <line x1="468" y1="166" x2="526" y2="162" class="arrow hl" marker-end="url(#bk2)"/>
+  <line x1="468" y1="174" x2="526" y2="214" class="arrow hl" marker-end="url(#bk2)"/>
+  <line x1="468" y1="182" x2="526" y2="266" class="arrow hl" marker-end="url(#bk2)"/>
+  <text x="740" y="22" class="head" text-anchor="end">adapters (in and out)</text>
+  <g>
+    <rect x="528" y="36" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="54">data frames</text><text x="540" y="71" class="small">pandas · polars · Arrow</text>
+    <rect x="528" y="88" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="106">interval libraries</text><text x="540" y="123" class="small">pyranges · bioframe · BedTool</text>
+    <rect x="528" y="140" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="158">single-cell / arrays</text><text x="540" y="175" class="small">AnnData (peaks) · xarray (signal)</text>
+    <rect x="528" y="192" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="210">files</text><text x="540" y="227" class="small">BED.gz · GTF/GFF3 · BEDPE</text>
+    <rect x="528" y="244" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="262">graphs</text><text x="540" y="279" class="small">GraphML · networkx · igraph</text>
+  </g>
+</svg></div>
+    <p class="sub">Each kind of work has a small protocol (for intervals: <code>overlaps_any</code>, <code>merge</code>, <code>index</code>). Users pin a backend globally, for a block of code, or per call; <code>auto</code> picks by operation and size. Third-party packages can register engines through an entry point, so genomeblocks never has to import them up front.</p></div>
+  <pre>import genomeblocks as gb
+
+gb.backends.available()        # {'intervals': ['numpy', 'cgranges', 'pyranges'], 'motifs': ['lightmotif', 'moods', 'fimo'], ...}
+gb.set_backend(motifs="moods")                        # global default
+with gb.backend(intervals="pyranges"):                # scoped; contextvars, so thread-safe
+    active = atac &amp; chip
+m = cre.scan_motifs_matrix(genome, "jaspar.txt", backend="fimo")   # one call
+
+# out to other tools without copying
+cre.to_polars();  cre.to_arrow();  cre.to_pyranges();  Loci.from_frame(df, chrom="Chromosome")</pre>
+</section>
+
+<section id="intervals">
+  <span class="tag green">Intervals</span>
+  <h2>cgranges, pyranges, or our own?</h2>
+  <p class="verdict">Both, by job: a numpy engine of about a hundred lines for whole-set operations (A &amp; B in <b>90 ms</b> at 1M vs 1.9 s today and 321 ms in pyranges), and cgranges kept for single lookups that return hits (1.8 µs each). pyranges becomes an adapter, not a dependency.</p>
+  <p class="sub">The numpy engine places every chromosome on one genome-wide axis, sorts B once, keeps a running maximum of its ends, and answers each A interval with one <code>searchsorted</code>: an interval overlaps something in B exactly when the largest end among B intervals starting before its end lies past its start. Merge is one sort plus the same running maximum. Results are identical to today's.</p>
+  <figure><div class="ttl">A &amp; B <span>· log–log, lower is better</span></div><div class="scroll" id="c-iv_and"></div><figcaption>Converting objects on every call is slower than today at 100k and 1M; the same engine on columns is the fastest at every size.</figcaption></figure>
+  <figure><div class="ttl">Sort + merge <span>· log–log, lower is better</span></div><div class="scroll" id="c-iv_merge"></div><figcaption>Today's merge takes 23 s for 2M intervals; numpy on columns takes 400 ms, pyranges 244 ms.</figcaption></figure>
+  <div class="two">
+    <figure><div class="ttl">What a backend choice costs <span>· per call</span></div>
+      <div class="tbl"><table><thead><tr><th class="">decision</th><th class="n">time</th></tr></thead><tbody><tr><td class="">auto policy (operation + size)</td><td class="n">0.9 µs</td></tr><tr><td class="">user-pinned backend</td><td class="n">0.3 µs</td></tr></tbody></table></div>
+      <figcaption>Negligible next to any operation; even A &amp; B on 1k peaks takes about 1 ms.</figcaption></figure>
+    <figure><div class="ttl">One lookup <span>· against 100k peaks</span></div>
+      <div class="tbl"><table><thead><tr><th class="">engine</th><th class="n">per query</th></tr></thead><tbody><tr><td class="">cgranges</td><td class="n">1.8 µs</td></tr><tr><td class="">numpy (one searchsorted per query)</td><td class="n">3.0 µs</td></tr><tr><td class="">numpy, all 200 queries in one call</td><td class="n">5.3 µs</td></tr></tbody></table></div>
+      <figcaption>cgranges stays the lookup engine: fastest, and it returns the overlapping intervals, not just yes/no.</figcaption></figure>
+  </div>
+  <details><summary>Conversion costs</summary><div class="tbl"><table><thead><tr><th class="">conversion</th><th class="n">n</th><th class="n">time</th></tr></thead><tbody><tr><td class="">Loci -&gt; numpy arrays</td><td class="n">100,000</td><td class="n">75 ms</td></tr><tr><td class="">numpy arrays -&gt; Loci objects</td><td class="n">100,000</td><td class="n">154 ms</td></tr><tr><td class="">Loci.to_frame() (pandas)</td><td class="n">100,000</td><td class="n">153 ms</td></tr><tr><td class="">Loci.to_pyranges()</td><td class="n">100,000</td><td class="n">217 ms</td></tr><tr><td class="">numpy arrays -&gt; pandas frame</td><td class="n">100,000</td><td class="n">1.7 ms</td></tr><tr><td class="">Loci -&gt; numpy arrays</td><td class="n">1,000,000</td><td class="n">825 ms</td></tr><tr><td class="">numpy arrays -&gt; Loci objects</td><td class="n">1,000,000</td><td class="n">1.2 s</td></tr><tr><td class="">Loci.to_frame() (pandas)</td><td class="n">1,000,000</td><td class="n">1.6 s</td></tr><tr><td class="">numpy arrays -&gt; pandas frame</td><td class="n">1,000,000</td><td class="n">6.7 ms</td></tr></tbody></table></div></details>
+</section>
+
+<section id="genes">
+  <span class="tag navy">Genes</span>
+  <h2>Would fixing sort and merge make Genes.make faster?</h2>
+  <p class="verdict">No. <code>Genes.make</code> never sorts or merges; its 5.6 s go to splitting lines and building about a million objects. The sort/merge fix speeds up the <em>first annotation call</em>, which builds the promoter/exon/UTR index lazily: 4.0 s → 1.6 s.</p>
+  <p class="sub">Breakdown: reading the file takes 111 ms, splitting every line 2.4 s, attribute parsing brings it to 2.5 s, and object creation (a Gene, Transcript and Exon/CDS/UTR dataclass per line, plus three Loci per transcript) the rest. A faster pure-Python parser does not help (7.8 s), and pausing the garbage collector saves only 10%. What does: parse into a table with polars (550 ms, Rust CSV reader and regex), build the annotation index straight from the table (150 ms), and create Gene objects only when one is accessed. Building every object from the table still costs 3.8 s, which is the price of the object model.</p>
+  <figure><div class="ttl">Parsing an 877k-line GTF <span>· same file</span></div><div class="scroll" id="c-genes_parse"></div><figcaption>pyranges.read_gtf and pandas are not faster than today. The polars table holds every attribute genomeblocks uses; 'same objects' rows are checked to produce identical Gene/Transcript/Exon trees.</figcaption></figure>
+  <figure><div class="ttl">Building the annotation index <span>· promoters, exons, 5′/3′ UTRs; identical output</span></div><div class="scroll" id="c-genes_annot"></div><figcaption>This runs once, on the first annotations() / nearest_genes() call.</figcaption></figure>
+</section>
+
+<section id="motifs">
+  <span class="tag green">Motifs</span>
+  <h2>MOODS as a backend, or a MOODS-like scanner?</h2>
+  <p class="verdict">MOODS as a backend: yes. It produced the identical 1,019-motif count matrix in <b>1.7 s</b> on one core vs 8.9 s today (5.2×); with 4 workers 1.2 s vs 3.4 s.</p>
+  <p class="sub">Writing our own: I built a MOODS-style lookahead scanner in numba (columns scored most-informative first, positions abandoned once the threshold is out of reach). It returns the identical matrix and skips 84% of the column work, yet takes 23 s on one core (6.4 s on 4). A full-width SIMD scan (lightmotif) beats branchy pruning in a simple compiled loop; MOODS wins because its filter checks all motifs at once from one window hash per position, which would mean reimplementing MOODS. Wrapping it is the better trade. MOODS is pip-installable (<code>MOODS-python</code>) and dual-licensed GPLv3 / Biopython License, so it can be an optional extra of an MIT package. FIMO stays the choice when you need p-values and MEME-suite compatibility.</p>
+  <figure><div class="ttl">Backends, same task <span>· 5,000 × 500 bp windows, 1,019 JASPAR motifs, identical output</span></div><div class="scroll" id="c-motif_backends"></div><figcaption>The 4-worker MOODS run spends most of its time starting processes and shipping sequences at this size; one core is already the fast path.</figcaption></figure>
+</section>
+
+<section id="interop">
+  <span class="tag warn">Interop</span>
+  <h2>Working with other tools today</h2>
+  <p class="verdict">Inputs and outputs exist for the core formats, but five gaps stop genomeblocks from slotting in next to other tools; one of them silently shifts gene coordinates by 1 bp.</p>
+  <div class="tbl" style="padding:0"><table><thead><tr><th class="">tool / format</th><th class="">today</th><th class="">problem found</th><th class="">proposed</th></tr></thead><tbody><tr><td class="">pandas DataFrame</td><td class="">to_frame / from_frame</td><td class="">to_frame builds a dict per row (1.6 s per 1M); from_frame drops strand</td><td class="">6.7 ms per 1M from columns</td></tr><tr><td class="">pyranges</td><td class="">to_pyranges</td><td class="">goes through to_frame; no from_pyranges</td><td class="">zero-copy both ways</td></tr><tr><td class="">polars / Arrow</td><td class="">none</td><td class=""></td><td class="">zero-copy columns</td></tr><tr><td class="">bioframe</td><td class="">none (works via to_frame)</td><td class="">column names differ (Chr/Start/End)</td><td class="">chrom/start/end frames</td></tr><tr><td class="">pybedtools BedTool</td><td class="">none (via to_bed file)</td><td class=""></td><td class="">to_bedtool / from_bedtool</td></tr><tr><td class="">BED / narrowPeak</td><td class="">Loci.make, to_bed</td><td class="">no .gz; name, score, signal, summit dropped; to_bed() without a path returns None</td><td class="">keep extra columns; gzip; return text</td></tr><tr><td class="">GTF / GFF3</td><td class="">Genes.make, make_ucsc</td><td class="">GFF3 fails (KeyError &#x27;gene_id&#x27;); no .gz; GTF starts kept 1-based (1 bp off BED and pyranges)</td><td class="">GFF3 attributes; 0-based starts</td></tr><tr><td class="">AnnData / MuData</td><td class="">none</td><td class=""></td><td class="">peaks as var names (&#x27;chr:start-end&#x27;) ↔ Loci</td></tr><tr><td class="">xarray</td><td class="">none (signal cube is a bare array)</td><td class=""></td><td class="">cube with loci / track / bin coordinates</td></tr><tr><td class="">graphs</td><td class="">Architecture is a graph-tool Graph</td><td class="">GraphML/GML already work through graph-tool&#x27;s save()</td><td class="">edge-list export for networkx / igraph</td></tr><tr><td class="">cooler, bigWig, BAM, MEME</td><td class="">add_mcool, signal, browser, write_meme</td><td class=""></td><td class="">keep</td></tr></tbody></table></div>
+  <p class="sub">The 1 bp GTF offset: genomeblocks stores GTF starts as written (1-based), pyranges converts them to 0-based like BED. The same gene reads 43,925,015 in genomeblocks and 43,925,014 in pyranges, so gene and exon starts are off by one against BED peaks. A related quirk: minus-strand TSS windows come out 1 bp shifted because the TSS is stored as <code>Locus(end, end - 1)</code>.</p>
+</section>
+
+<section id="plan">
+  <span class="tag navy">Plan</span>
+  <h2>A path that keeps the public API</h2>
+  <div class="fixes">
+    <div class="fix"><span class="t">1 · Fixes that need no redesign</span><p>Bounded scan in the pip fallback index (47×), GFF3 attributes, gzip input, 0-based GTF starts, <code>to_bed()</code> returning text, numpy integer indexing, <code>signal()</code> honouring <code>workers</code>, pybigtools <code>fillna</code>, lazy plotting imports, key-based sort (2.5× on the annotation index).</p></div>
+    <div class="fix"><span class="t">2 · Columnar Loci</span><p>Back <code>Loci</code> with columns (chrom codes, start, end, strand, extra BED columns) and create <code>Locus</code> objects on access. Indexing, iteration and set operators keep working; whole-set operations move to the numpy engine; pandas, polars, Arrow and pyranges become views. The main risk is code that mutates a <code>Locus</code> in place, which the 113-test suite can catch.</p></div>
+    <div class="fix"><span class="t">3 · Backend registry</span><p><code>set_backend</code> / <code>backend()</code> / per-call <code>backend=</code> with an <code>auto</code> policy: intervals (numpy, cgranges), bigWig (pybigtools, pyBigWig, pure Python), motifs (lightmotif, MOODS, FIMO), annotation files (Python, polars), Hi-C (numpy, cooler). Optional extras such as <code>pip install genomeblocks[moods,polars]</code>.</p></div>
+    <div class="fix"><span class="t">4 · Columnar Genes</span><p>Feature table as storage, annotation index built from it (150 ms), Gene / Transcript objects on demand. Parse time drops from 5.6 s toward 550 ms.</p></div>
+    <div class="fix"><span class="t">5 · Adapters</span><p><code>to_/from_</code> for pandas, polars, Arrow, pyranges, bioframe and BedTool; AnnData peak names; an xarray view of the signal cube; edge lists for networkx / igraph.</p></div>
+  </div>
+</section>
+
+<section id="method">
+  <span class="tag navy">Method</span>
+  <h2>How this was measured</h2>
+  <ul class="plain">
+    <li>Same machine and synthetic hg38-shaped data as the <a href="https://claude.ai/artifact/4hL67NF3y68wJSdsySs1Eo">benchmark report</a>; medians of 3–5 runs after a warm-up.</li>
+    <li>Every prototype is checked for identical output before its time counts: same intervals, same merged blocks, same Gene/Transcript/Exon trees, same annotation index, same motif count matrix.</li>
+    <li>Prototypes live in <code>benchmarks/prototypes/</code> (numpy interval engine, backend registry, numba lookahead scanner); benches in <code>bench_backends.py</code>, <code>bench_genes_make.py</code>, <code>bench_motif_backends.py</code>.</li>
+  </ul>
+</section>
+</div>
+<script>/* Tiny SVG chart kit for the benchmark report: horizontal bars (emphasis)
+   and multi-series log/linear line charts. Colours come from CSS tokens so
+   both themes work; every label goes in via textContent. */
+(function () {
+  const NS = "http://www.w3.org/2000/svg";
+  const tip = document.createElement("div");
+  tip.className = "tip"; tip.hidden = true; tip.setAttribute("role", "status");
+  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(tip));
+
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs || {}) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function txt(parent, x, y, s, cls, anchor) {
+    const t = el("text", { x, y, class: cls || "", "text-anchor": anchor || "start" }, parent);
+    t.textContent = s;
+    return t;
+  }
+  function showTip(evt, value, label) {
+    tip.replaceChildren();
+    const v = document.createElement("strong"); v.textContent = value;
+    const l = document.createElement("span"); l.textContent = label;
+    tip.append(v, l);
+    tip.hidden = false;
+    const r = (evt.target.getBoundingClientRect ? evt.target.getBoundingClientRect() : null);
+    const x = evt.clientX || (r ? r.left + r.width / 2 : 0);
+    const y = evt.clientY || (r ? r.top : 0);
+    const w = tip.offsetWidth;
+    tip.style.left = Math.min(window.innerWidth - w - 12, Math.max(12, x + 14)) + "px";
+    tip.style.top = (y + window.scrollY - 12 - tip.offsetHeight) + "px";
+  }
+  function hideTip() { tip.hidden = true; }
+  function bindTip(node, value, label) {
+    node.setAttribute("tabindex", "0");
+    node.setAttribute("aria-label", label + ": " + value);
+    node.addEventListener("pointermove", e => showTip(e, value, label));
+    node.addEventListener("focus", e => showTip(e, value, label));
+    node.addEventListener("pointerleave", hideTip);
+    node.addEventListener("blur", hideTip);
+  }
+
+  // ── scales & ticks ────────────────────────────────────────────────────────
+  function scale(d0, d1, r0, r1, log) {
+    if (log) {
+      const a = Math.log10(d0), b = Math.log10(d1);
+      return v => r0 + (Math.log10(v) - a) / (b - a) * (r1 - r0);
+    }
+    return v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+  }
+  function logTicks(lo, hi) {
+    const out = [];
+    for (let p = Math.floor(Math.log10(lo)); p <= Math.ceil(Math.log10(hi)); p++) {
+      const v = Math.pow(10, p);
+      if (v >= lo * 0.999 && v <= hi * 1.001) out.push(v);
+    }
+    return out;
+  }
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo, step0 = span / (n || 5);
+    const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= (n || 5));
+    const out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  // ── horizontal emphasis bars ──────────────────────────────────────────────
+  // spec: {rows:[{label, value, hl, tip?}], log, fmt, axis, sort:'asc'|'desc'|null}
+  function hbar(host, spec) {
+    const rows = spec.rows.slice();
+    if (spec.sort === "asc") rows.sort((a, b) => a.value - b.value);
+    if (spec.sort === "desc") rows.sort((a, b) => b.value - a.value);
+    const W = 760, labelW = spec.labelW || 290, rowH = 30, top = 6, axisH = 34;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img",
+                            "aria-label": spec.aria || "" }, null);
+    const vals = rows.map(r => r.value);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const x0 = labelW, x1 = W - 92;
+    let sx, ticks;
+    if (spec.log) {
+      lo = Math.pow(10, Math.floor(Math.log10(lo) - 0.15));
+      hi = Math.pow(10, Math.ceil(Math.log10(hi) + 0.05));
+      sx = scale(lo, hi, x0, x1, true); ticks = logTicks(lo, hi);
+    } else {
+      lo = 0; ticks = niceTicks(0, hi * 1.02, 5); hi = ticks[ticks.length - 1];
+      sx = scale(0, hi, x0, x1, false);
+    }
+    const base = spec.log ? x0 : sx(0);
+    const plotB = top + rows.length * rowH;
+    for (const t of ticks) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, spec.fmt(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    el("line", { x1: base, x2: base, y1: top, y2: plotB, class: "baseline" }, svg);
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      const lab = txt(svg, labelW - 12, y + 4, r.label, r.hl ? "rlabel hl" : "rlabel", "end");
+      const xe = Math.max(sx(r.value), base + 2);
+      const h = 16, rad = 4;
+      const w = xe - base;
+      const p = `M${base},${y - h / 2} h${Math.max(0, w - rad)} a${rad},${rad} 0 0 1 ${rad},${rad}` +
+                ` v${h - 2 * rad} a${rad},${rad} 0 0 1 -${rad},${rad} h-${Math.max(0, w - rad)} z`;
+      el("path", { d: p, class: r.hl ? "bar hl" : "bar" }, svg);
+      txt(svg, xe + 6, y + 4, spec.fmt(r.value, true), "vlabel");
+      const hit = el("rect", { x: 0, y: y - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      bindTip(hit, spec.fmt(r.value, true), r.tip || r.label);
+      void lab;
+    });
+    host.appendChild(svg);
+  }
+
+  // ── multi-series lines ────────────────────────────────────────────────────
+  // spec: {series:[{name, color, pts:[[x,y],...]}], xlog, ylog, xfmt, yfmt,
+  //        xLabel, yLabel, legend:true}
+  function lines(host, spec) {
+    const W = spec.W || 760, H = spec.H || 330;
+    const m = { l: 74, r: spec.endLabels ? 190 : 24, t: 14, b: 46 };
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img",
+                            "aria-label": spec.aria || "" }, null);
+    const xs = spec.series.flatMap(s => s.pts.map(p => p[0]));
+    const ys = spec.series.flatMap(s => s.pts.map(p => p[1]));
+    let xlo = Math.min(...xs), xhi = Math.max(...xs), ylo = Math.min(...ys), yhi = Math.max(...ys);
+    let xt, yt;
+    if (spec.xlog) { xt = logTicks(xlo, xhi); }
+    else { xt = spec.xticks || niceTicks(xlo, xhi, 6); }
+    if (spec.ylog) {
+      ylo = Math.pow(10, Math.floor(Math.log10(ylo))); yhi = Math.pow(10, Math.ceil(Math.log10(yhi)));
+      yt = logTicks(ylo, yhi);
+    } else {
+      ylo = 0; yt = niceTicks(0, yhi * 1.05, 5); yhi = yt[yt.length - 1];
+    }
+    const sx = scale(xlo, xhi, m.l, W - m.r, !!spec.xlog);
+    const sy = scale(ylo, yhi, H - m.b, m.t, !!spec.ylog);
+    for (const t of yt) {
+      el("line", { x1: m.l, x2: W - m.r, y1: sy(t), y2: sy(t), class: "grid" }, svg);
+      txt(svg, m.l - 8, sy(t) + 4, spec.yfmt(t), "tick", "end");
+    }
+    for (const t of xt) txt(svg, sx(t), H - m.b + 17, spec.xfmt(t), "tick", "middle");
+    el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, class: "baseline" }, svg);
+    if (spec.xLabel) txt(svg, (m.l + W - m.r) / 2, H - 8, spec.xLabel, "axis-label", "middle");
+    if (spec.yLabel) {
+      const t = txt(svg, 0, 0, spec.yLabel, "axis-label", "middle");
+      t.setAttribute("transform", `translate(14 ${(m.t + H - m.b) / 2}) rotate(-90)`);
+    }
+    const ends = [];
+    spec.series.forEach(s => {
+      const d = s.pts.map((p, i) => (i ? "L" : "M") + sx(p[0]).toFixed(1) + "," + sy(p[1]).toFixed(1)).join(" ");
+      el("path", { d, class: "line", style: `stroke:${s.color}` }, svg);
+      s.pts.forEach(p => {
+        const c = el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 4, class: "dot", style: `fill:${s.color}` }, svg);
+        const hit = el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 12, class: "hit" }, svg);
+        bindTip(hit, spec.yfmt(p[1], true), `${s.name} · ${spec.xfmt(p[0], true)}`);
+        void c;
+      });
+      const last = s.pts[s.pts.length - 1];
+      ends.push({ y: sy(last[1]), x: sx(last[0]), name: s.name, color: s.color });
+    });
+    if (spec.endLabels) {
+      // de-collide end labels with leader lines
+      ends.sort((a, b) => a.y - b.y);
+      let prev = -1e9;
+      ends.forEach(e => { e.ly = Math.max(e.y, prev + 15); prev = e.ly; });
+      ends.forEach(e => {
+        const lx = W - m.r + 14;
+        el("line", { x1: e.x + 5, y1: e.y, x2: lx - 3, y2: e.ly, class: "leader" }, svg);
+        txt(svg, lx, e.ly + 4, e.name, "endlabel");
+      });
+    }
+    host.appendChild(svg);
+    if (spec.legend !== false) {
+      const lg = document.createElement("div");
+      lg.className = "legend";
+      spec.series.forEach(s => {
+        const i = document.createElement("span");
+        const k = document.createElement("i"); k.style.background = s.color;
+        const t = document.createElement("span"); t.textContent = s.name;
+        i.append(k, t); lg.appendChild(i);
+      });
+      host.appendChild(lg);
+    }
+  }
+
+  window.Charts = { hbar, lines };
+})();
+</script>
+<script>
+const DATA = {"iv_and": {"kind": "lines", "xlog": true, "ylog": true, "xfmt": "num", "yfmt": "time", "xLabel": "peaks per set (n)", "yLabel": "time for A & B", "endLabels": true, "series": [{"name": "today", "color": "var(--s8)", "pts": [[1000, 0.0010148940000362927], [10000, 0.010481545999937225], [100000, 0.10537360700004683], [1000000, 1.9085752380000258]]}, {"name": "numpy, converting", "color": "var(--s4)", "pts": [[1000, 0.0012840759999335205], [10000, 0.010899139999992258], [100000, 0.18887539900003958], [1000000, 2.241962294000018]]}, {"name": "numpy on columns", "color": "var(--s1)", "pts": [[1000, 0.00021588199990674184], [10000, 0.0007982989999391066], [100000, 0.006025353000040923], [1000000, 0.08950961699997606]]}, {"name": "pyranges", "color": "var(--s2)", "pts": [[1000, 0.06667454699993414], [10000, 0.07605341300006785], [100000, 0.08667461100003493], [1000000, 0.320859139999925]]}, {"name": "pyranges via Loci", "color": "var(--s5)", "pts": [[1000, 0.09237516200005302], [10000, 0.1268970309999986], [100000, 0.5373563309999554]]}]}, "iv_merge": {"kind": "lines", "xlog": true, "ylog": true, "xfmt": "num", "yfmt": "time", "xLabel": "intervals merged", "yLabel": "time for sort + merge", "endLabels": true, "series": [{"name": "today", "color": "var(--s8)", "pts": [[2000, 0.0036840730000449184], [20000, 0.09015550300000541], [200000, 1.3009766960000206], [2000000, 23.087811227999964]]}, {"name": "numpy, converting", "color": "var(--s4)", "pts": [[2000, 0.0013397630000326899], [20000, 0.013683414000070115], [200000, 0.2906175159999975], [2000000, 5.211383580000074]]}, {"name": "numpy on columns", "color": "var(--s1)", "pts": [[2000, 0.0004008250000424596], [20000, 0.002229334999924504], [200000, 0.02693886700001258], [2000000, 0.4001334740000857]]}, {"name": "pyranges", "color": "var(--s2)", "pts": [[2000, 0.0729856989999007], [20000, 0.05726664200005871], [200000, 0.07053079199999956], [2000000, 0.24438185899998643]]}]}, "genes_parse": {"kind": "hbar", "fmt": "time", "log": false, "sort": "asc", "labelW": 330, "axis": "seconds to parse an 877k-line GTF", "rows": [{"label": "Genes.make (current)", "value": 5.6479817299999695, "hl": true}, {"label": "Genes.make, garbage collector paused", "value": 5.086794906000023, "hl": false}, {"label": "fast Python parser, same objects", "value": 7.801481451999962, "hl": false}, {"label": "pandas read_csv + str.extract \u2192 table", "value": 5.020917321999946, "hl": false}, {"label": "pyranges.read_gtf \u2192 table", "value": 6.783758570000032, "hl": false}, {"label": "polars read_csv + str.extract \u2192 table", "value": 0.5495236669999031, "hl": true}, {"label": "polars table, then the same objects", "value": 3.8056168410000737, "hl": true}]}, "genes_annot": {"kind": "hbar", "fmt": "time", "log": true, "sort": "asc", "labelW": 330, "axis": "seconds to build the promoter / exon / UTR index (log scale)", "rows": [{"label": "current (Loci.sort/merge)", "value": 3.9808201900000313, "hl": true}, {"label": "key-sort fix (same Loci objects)", "value": 1.5695037030000094, "hl": false}, {"label": "numpy merge (from Gene objects)", "value": 1.3497049190000325, "hl": false}, {"label": "numpy merge (from columnar table)", "value": 0.1504402719999689, "hl": true}]}, "motif_backends": {"kind": "hbar", "fmt": "time", "log": false, "sort": null, "labelW": 300, "axis": "seconds for 5,000 windows \u00d7 1,019 motifs", "rows": [{"label": "lightmotif (today) \u00b7 1 core", "value": 8.897235486, "hl": false}, {"label": "lightmotif (today) \u00b7 4 workers", "value": 3.4401926620000722, "hl": false}, {"label": "MOODS backend \u00b7 1 core", "value": 1.6985919700000522, "hl": true}, {"label": "MOODS backend \u00b7 4 workers", "value": 1.1508390429999054, "hl": true}, {"label": "lookahead prototype (numba) \u00b7 1 core", "value": 22.99984386999995, "hl": false}, {"label": "lookahead prototype (numba) \u00b7 4 workers", "value": 6.370038659999864, "hl": false}]}};
+const F = {
+  time: (s) => { s = +(+s).toPrecision(6); if (s === 0) return "0"; if (s < 1e-3) return (s < 1e-5 ? (s*1e6).toFixed(1) : (s*1e6).toFixed(0)) + " µs";
+                 if (s < 1) return (s < 0.01 ? (s*1e3).toFixed(1) : (s*1e3).toFixed(0)) + " ms";
+                 if (s < 120) return (s < 10 ? s.toFixed(1) : s.toFixed(0)) + " s"; return (s/60).toFixed(1) + " min"; },
+  num: (x) => { for (const [d, u] of [[1e9, "G"], [1e6, "M"], [1e3, "k"]]) if (x >= d) { const v = x / d;
+                 return (v >= 10 ? v.toFixed(0) : v.toFixed(1)).replace(/\.0$/, "") + u; }
+                 return x >= 10 ? x.toFixed(0) : (+x.toFixed(1)).toString(); },
+  int: (x) => String(Math.round(x)),
+};
+document.addEventListener("DOMContentLoaded", () => {
+  for (const [id, s] of Object.entries(DATA)) {
+    const host = document.getElementById("c-" + id); if (!host) continue;
+    if (s.kind === "hbar") Charts.hbar(host, {...s, fmt: F[s.fmt]});
+    else Charts.lines(host, {...s, xfmt: F[s.xfmt], yfmt: F[s.yfmt]});
+  }
+});
+</script>

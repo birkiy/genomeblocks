@@ -84,6 +84,7 @@ section:first-of-type { border-top: 0; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
 .tile { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
         padding: 14px 16px; display: grid; gap: 4px; align-content: start; text-decoration: none; color: inherit; }
+.tiles.two-up { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
 .tile:hover, .tile:focus-visible { border-color: var(--brand); outline: none; }
 .tile .k { font-size: 13px; font-weight: 700; color: var(--muted); }
 .tile .v { font-size: 34px; font-weight: 800; line-height: 1.1; color: var(--brand); }
