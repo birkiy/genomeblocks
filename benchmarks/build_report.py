@@ -139,12 +139,12 @@ def build():
   <h2>Interval lookups: microseconds, because the index is kept</h2>
   <p class="verdict">One overlap lookup takes <b>{ftime(cg)}</b>. pyranges needs {ftime(lat['pyranges'])} and bioframe {ftime(lat['bioframe'])} for the same question.</p>
   {why("Why: the index lives on the Loci", D['loci'],
-       "<code>Loci.cgr</code> builds a <a href='https://github.com/lh3/cgranges'>cgranges</a> index (C, implicit interval tree) the first time it is needed and caches it on the object. Data-frame libraries are built for whole-table joins, so a single-interval query pays their set-up cost every time. genomeblocks leans on cheap single lookups everywhere: <code>Architecture.make</code> anchors every loop with two of them, and <code>Genes.annotations</code>, <code>pair_to_bed</code> and <code>select_isoforms</code> do the same per locus.")}
+       "<code>Loci.cgr</code> builds a <a href='https://github.com/lh3/cgranges'>cgranges</a> index (C, implicit interval tree) the first time it is needed and caches it on the object. Data-frame libraries are built for whole-table joins; asked about one interval, they filter or re-index whole tables, which costs milliseconds per question. genomeblocks leans on cheap single lookups everywhere: <code>Architecture.make</code> anchors every loop with two of them, and <code>Genes.annotations</code>, <code>pair_to_bed</code> and <code>select_isoforms</code> do the same per locus.")}
   {chart("loci_latency", "One overlap lookup", "· 200 queries against 100k indexed peaks, lower is better",
          "Blue bars are genomeblocks. The pure-Python fallback is the index you get from <code>pip install genomeblocks</code>, because cgranges is not on PyPI (see <a href='#fixes'>fixes</a>).")}
   <div class="two">
     {chart("loci_tools", "Whole-set A & B", "· log–log, lower is better",
-           f"All {n_isect} runs return the same intervals{'' if agree else ' (MISMATCH, check log)'}. Up to ~10k peaks genomeblocks is fastest. From 100k on, fully vectorised pyranges and bioframe pull ahead, by {fx(isect[('genomeblocks (cgranges)', 1_000_000)] / isect[('pyranges', 1_000_000)])} at 1M, because genomeblocks still steps through Python <code>Locus</code> objects one by one.")}
+           f"All {n_isect} runs return the same intervals{'' if agree else ' (MISMATCH, check log)'}. At 1k peaks genomeblocks is fastest ({ftime(isect[('genomeblocks (cgranges)', 1_000)])} vs {ftime(min(t for (e, n), t in isect.items() if n == 1_000 and not e.startswith('genomeblocks')))} for the next tool); at 10k it ties with bioframe. From 100k on, fully vectorised pyranges and bioframe pull ahead, by {fx(isect[('genomeblocks (cgranges)', 1_000_000)] / isect[('pyranges', 1_000_000)])} at 1M, because genomeblocks still steps through Python <code>Locus</code> objects one by one.")}
     {chart("loci_index", "Which index genomeblocks gets", "· log–log, lower is better",
            f"The pure-Python fallback grows quadratically ({fx(fb_slope)} slower for 10× more peaks). A bounded scan (a few lines, see <a href='#fixes'>fixes</a>) makes it {fx(fb / bd)} faster at 100k, matching cgranges.")}
   </div>
@@ -154,7 +154,7 @@ def build():
     mech.append(("Keep the interval index", "#loci",
                  f"A cgranges index is built once per <code>Loci</code> and reused. Single lookups cost {ftime(cg)}, so per-locus loops stay cheap."))
     fixes.append(("pip installs get a quadratic overlap index",
-                  f"cgranges is not on PyPI, so pip users get <code>_PyIntervalIndex</code>. Its <code>overlap()</code> walks every interval that starts before the query end (<code>range(hi)</code> from 0), so each lookup is O(n) and <code>A &amp; B</code> is O(n·m): {ftime(fb)} at 100k peaks, about 10 min projected at 1M. Tracking the longest interval per chromosome and starting the walk at <code>bisect_left(starts, qs - max_len)</code> gives identical results in {ftime(bd)} ({fx(fb / bd)} faster). The benchmark's <code>BoundedPyIndex</code> is a drop-in."))
+                  f"cgranges is not on PyPI, so pip users get <code>_PyIntervalIndex</code>. Its <code>overlap()</code> walks every interval that starts before the query end (<code>range(hi)</code> from 0), so each lookup is O(n) and <code>A &amp; B</code> is O(n·m): {ftime(fb)} at 100k peaks, roughly {ftime(fb * 100)} projected at 1M. Tracking the longest interval per chromosome and starting the walk at <code>bisect_left(starts, qs - max_len)</code> gives identical results in {ftime(bd)} ({fx(fb / bd)} faster). The benchmark's <code>BoundedPyIndex</code> is a drop-in."))
 
     # ── signal ─────────────────────────────────────────────────────────────
     sg = load("signal")["rows"]
@@ -539,11 +539,11 @@ def build():
             mo_ = load("motifs")
             moods_lib = next((r for r in (mo_["rows"] if mo_ else []) if r["part"] == "library"
                               and r["engine"].startswith("MOODS") and r["n_seqs"] == 1000), None)
-            fixes.append(("scan_motifs_matrix makes one Python-level scan per window × motif",
+            fixes.append(("scan_motifs_matrix: one Python-level scan per window × motif",
                           f"For 1,000 windows × {Mx:,} motifs that is {1000 * Mx:,} calls into lightmotif, each on only 500 bp, so call overhead dominates ({ftime(cur['seconds'])}). "
                           f"Concatenating the windows, striping once, and scoring each motif over the whole block with <code>pssm.calculate(striped).threshold(t)</code> "
                           f"(hits split back per window with <code>np.bincount</code>, edge-crossing hits dropped) gives {'identical counts in every cell' if new.get('same') else 'DIFFERENT counts'} in {ftime(new['seconds'])} "
-                          f"({fx(cur['seconds'] / new['seconds'])})" + (f", which also beats MOODS on the same task ({ftime(moods_lib['seconds'])})." if moods_lib and new['seconds'] < moods_lib['seconds'] else (f"; MOODS takes {ftime(moods_lib['seconds'])}." if moods_lib else ".")))))
+                          f"({fx(cur['seconds'] / new['seconds'])})" + (f", which also beats MOODS on the same task ({ftime(moods_lib['seconds'])})." if moods_lib and new['seconds'] < moods_lib['seconds'] else (f". MOODS still takes only {ftime(moods_lib['seconds'])}: the rest of the gap is the scoring itself, since lightmotif scores every position for every motif while MOODS skips most positions with a lookahead filter." if moods_lib else ".")))))
         sc_ = f[("sort", "current (__lt__)", n)]; sk = f[("sort", "key=(chrom, start)", n)]
         mc_ = f[("merge", "current", n)]; mk_ = f[("merge", "key sort + single pass", n)]
         fixes.insert(1, ("Loci.sort() / merge() compare dataclasses in Python",

@@ -1,5 +1,5 @@
 <!-- @loci -->
-<svg viewBox="0 0 760 236" role="img" aria-label="pyranges and bioframe rebuild frames and an index on every lookup; genomeblocks builds one C interval index per Loci on first use and reuses it, so each later lookup is a few microseconds.">
+<svg viewBox="0 0 760 236" role="img" aria-label="pyranges and bioframe filter or re-index whole tables on every single-interval lookup; genomeblocks builds one C interval index per Loci on first use and reuses it, so each later lookup is a few microseconds.">
   <defs>
     <marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
   </defs>
@@ -8,7 +8,7 @@
   <text x="68" y="65" text-anchor="middle">query</text>
   <line x1="116" y1="60" x2="160" y2="60" class="arrow" marker-end="url(#ah1)"/>
   <rect x="162" y="40" width="190" height="40" rx="8" class="box bad"/>
-  <text x="257" y="58" text-anchor="middle">build frames + index</text>
+  <text x="257" y="58" text-anchor="middle">filter / re-index tables</text>
   <text x="257" y="73" text-anchor="middle" class="small">again, for this one query</text>
   <line x1="352" y1="60" x2="392" y2="60" class="arrow" marker-end="url(#ah1)"/>
   <rect x="394" y="40" width="70" height="40" rx="8" class="box"/>
@@ -59,7 +59,7 @@
   <text x="290" y="112" class="small">1 lookup per bin</text>
   <rect x="110" y="152" width="140" height="44" rx="8" class="box bad"/>
   <text x="180" y="171" text-anchor="middle">zlib data block</text>
-  <text x="180" y="187" text-anchor="middle" class="small">inflated 200×</text>
+  <text x="180" y="187" text-anchor="middle" class="small">re-read for every bin</text>
   <text x="20" y="232" class="bad head">≈ 30 regions / s</text>
 
   <line x1="380" y1="20" x2="380" y2="246" stroke="currentColor" opacity=".18"/>
