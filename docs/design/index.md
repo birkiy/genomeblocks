@@ -3,6 +3,7 @@ title: Design
 layout: default
 nav_order: 8
 has_children: true
+has_toc: false
 permalink: /design/
 ---
 
@@ -43,7 +44,7 @@ entry points to `Loci` when imported (`loci.signal(...)`,
 
 **Heavy dependencies load on first call.** pandas, scipy, matplotlib, cooler,
 graph-tool, lightmotif and pybigtools are imported inside the functions that
-use them. `import genomeblocks` is a few milliseconds and
+use them. `import genomeblocks` imports no submodule, and
 `from genomeblocks import Loci` loads numpy and little else.
 
 **Processing and plotting are separate modules.** `signal_draw`,
