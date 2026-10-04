@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from genomeblocks.motifs import bootstrap_enrichment
 
@@ -35,3 +36,39 @@ def test_bootstrap_enrichment_single_group_no_diff_column():
                                seed=0, verbose=False)
     assert "LFC_A" in enr.columns
     assert "LFC" not in enr.columns               # only emitted for exactly 2 groups
+
+
+def test_block_scan_matches_per_window_scan():
+    # Windows are scanned as one concatenated block; per-window counts must
+    # equal scanning each window alone (no hit may straddle two windows), and
+    # windows lightmotif can't stripe count 0.
+    lightmotif = pytest.importorskip("lightmotif")
+    import random
+    from genomeblocks.motifs import _Block
+    rng = random.Random(3)
+    core = "TGACTCA"
+    seqs = []
+    for i in range(60):
+        s = "".join(rng.choice("ACGT") for _ in range(100))
+        if i % 3 == 0:
+            s = s[:40] + core + s[47:]               # a hit inside the window
+        if i % 5 == 0:
+            s = s[:-4] + core[:4]                    # half a hit at the right edge...
+        if i % 5 == 1:
+            s = core[4:] + s[3:]                     # ...completed by the next window
+        seqs.append(s)
+    seqs[7] = seqs[7][:50] + "X" + seqs[7][51:]      # invalid character
+    motif = lightmotif.create([core] * 50)          # simple consensus PWM
+    pssm = motif.counts.normalize(0.1).log_odds()
+
+    got = _Block(seqs).counts(pssm, len(core), threshold=5.0)
+    want = []
+    for s in seqs:
+        try:
+            st = lightmotif.stripe(s)
+        except ValueError:
+            want.append(0)
+            continue
+        want.append(sum(1 for _ in lightmotif.scan(pssm, st, threshold=5.0)))
+    assert got.tolist() == want
+    assert got[7] == 0 and sum(want) > 0

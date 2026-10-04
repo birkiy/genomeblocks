@@ -39,25 +39,14 @@ def scan_motifs(s, genome, motif_path, motif_format='jaspar', r=250, threshold=1
     if not isinstance(genome, dict): genome = make_genome(genome)
     n_motif = len([_ for _ in lightmotif.load(motif_path, format=motif_format)])
     M = {}
-    # extract every sequence once; stripe once; reuse across motifs
-    striped = []
-    for l in s:
-        seq = l.sequence(genome, r=r).upper()
-        if len(seq) != (2 * r):
-            continue
-        try:
-            striped.append(lightmotif.stripe(seq))
-        except ValueError:
-            # skip sequences with invalid characters (e.g. N at boundaries)
-            continue
+    # extract every sequence once and stripe them as one block (sequences
+    # with invalid characters are skipped); reuse it across motifs
+    block = _Block([q for _, q in _extract_sequences(s, genome, r)])
     iterator = lightmotif.load(motif_path, format=motif_format)
     if verbose: iterator = tqdm(iterator, total=n_motif)
     for m in iterator:
         pssm = m.counts.normalize(0.1).log_odds()
-        hits = 0
-        for sseq in striped:
-            for _ in lightmotif.scan(pssm, sseq, threshold=threshold):
-                hits += 1
+        hits = int(block.counts(pssm, len(m.counts), threshold).sum())
         M[m.name] = hits / len(m.counts) if norm else hits
     return M
 
@@ -73,29 +62,66 @@ def _extract_sequences(loci, genome, r: int):
     return out
 
 
+class _Block:
+    """Windows striped once as one concatenated sequence.
+
+    Scanning a 500-bp window is mostly call overhead, so each motif is scanned
+    once over the whole block and the hits are split back per window. A hit
+    that would straddle two windows is dropped, so per-window counts equal
+    scanning each window on its own. Windows lightmotif cannot stripe
+    (invalid characters) are left out and count 0, as before.
+    """
+
+    def __init__(self, seqs):
+        import numpy as np
+        import lightmotif
+        self.n = len(seqs)
+        keep = list(range(self.n))
+        try:
+            striped = lightmotif.stripe("".join(seqs)) if seqs else None
+        except ValueError:                            # find the bad windows
+            keep = []
+            for i, q in enumerate(seqs):
+                try:
+                    lightmotif.stripe(q)
+                    keep.append(i)
+                except ValueError:
+                    pass
+            striped = lightmotif.stripe("".join(seqs[i] for i in keep)) if keep else None
+        self.striped = striped
+        self.rows = np.asarray(keep, dtype=np.int64)  # window -> input row
+        self.offsets = np.concatenate([[0], np.cumsum([len(seqs[i]) for i in keep])]).astype(np.int64)
+
+    def counts(self, pssm, width: int, threshold: float):
+        """Hits of ``pssm`` per input window (int array, length ``n``)."""
+        import numpy as np
+        import lightmotif
+        out = np.zeros(self.n, dtype=np.int64)
+        if self.striped is None:
+            return out
+        pos = np.fromiter((h.position for h in lightmotif.scan(pssm, self.striped, threshold=threshold)),
+                          dtype=np.int64)
+        k = np.searchsorted(self.offsets, pos, side="right") - 1
+        ok = (k < len(self.rows)) & (pos + width <= self.offsets[np.minimum(k + 1, len(self.rows))])
+        np.add.at(out, self.rows[k[ok]], 1)
+        return out
+
+
 _WORKER_STATE: dict = {}
 
 
 def _worker_init(seqs, motif_path, motif_format, threshold, norm):
-    """Pool initializer: cache sequences (pre-striped) and motif list per worker."""
+    """Pool initializer: cache the striped window block and motif list per worker."""
     import lightmotif
-    striped = []
-    for seq in seqs:
-        try:
-            striped.append(lightmotif.stripe(seq))
-        except ValueError:
-            striped.append(None)
-    motifs_list = list(lightmotif.load(motif_path, format=motif_format))
-    _WORKER_STATE['striped'] = striped
-    _WORKER_STATE['motifs'] = motifs_list
+    _WORKER_STATE['block'] = _Block(seqs)
+    _WORKER_STATE['motifs'] = list(lightmotif.load(motif_path, format=motif_format))
     _WORKER_STATE['threshold'] = threshold
     _WORKER_STATE['norm'] = norm
 
 
 def _scan_motif_indices(indices):
     """Worker task: scan a batch of motif indices against the cached sequences."""
-    import lightmotif
-    striped = _WORKER_STATE['striped']
+    block = _WORKER_STATE['block']
     motifs_list = _WORKER_STATE['motifs']
     threshold = _WORKER_STATE['threshold']
     norm = _WORKER_STATE['norm']
@@ -104,16 +130,8 @@ def _scan_motif_indices(indices):
         motif = motifs_list[idx]
         pssm = motif.counts.normalize(0.1).log_odds()
         width = len(motif.counts)
-        counts = []
-        for sseq in striped:
-            if sseq is None:
-                counts.append(0)
-                continue
-            n = 0
-            for _ in lightmotif.scan(pssm, sseq, threshold=threshold):
-                n += 1
-            counts.append(n / width if norm else n)
-        out.append((motif.name, counts))
+        n = block.counts(pssm, width, threshold)
+        out.append((motif.name, (n / width).tolist() if norm else n.tolist()))
     return out
 
 
