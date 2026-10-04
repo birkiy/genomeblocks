@@ -1,0 +1,227 @@
+{
+ "bench": "fixes",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cores": 4,
+  "mem_gb": 16.876515328,
+  "python": "3.11.16",
+  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "versions": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1",
+   "pandas": "3.0.6",
+   "pybigtools": "0.3.0",
+   "pyBigWig": "0.3.26",
+   "cgranges": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.88",
+   "MOODS": "installed",
+   "graph_tool": "3.9",
+   "intervaltree": "installed",
+   "bedtools": "v2.31.1"
+  }
+ },
+ "meta": {},
+ "rows": [
+  {
+   "part": "loci",
+   "op": "sort",
+   "variant": "current (__lt__)",
+   "n": 200000,
+   "seconds": 0.619294908000029,
+   "runs": [
+    0.6469249530000525,
+    0.619294908000029,
+    0.6151194369999757
+   ]
+  },
+  {
+   "part": "loci",
+   "op": "sort",
+   "variant": "key=(chrom, start)",
+   "n": 200000,
+   "seconds": 0.4264009889998306,
+   "runs": [
+    0.42504270500012353,
+    0.4264009889998306,
+    0.4303547019999314
+   ],
+   "same": true
+  },
+  {
+   "part": "loci",
+   "op": "merge",
+   "variant": "current",
+   "n": 200000,
+   "seconds": 1.1582602660000703,
+   "runs": [
+    1.198254089999864,
+    1.1582602660000703,
+    1.1186895609998828
+   ]
+  },
+  {
+   "part": "loci",
+   "op": "merge",
+   "variant": "key sort + single pass",
+   "n": 200000,
+   "seconds": 0.3848984470000687,
+   "runs": [
+    0.42068358200003786,
+    0.3848984470000687,
+    0.3842497989999174
+   ],
+   "same": true
+  },
+  {
+   "part": "loci",
+   "op": "sort",
+   "variant": "current (__lt__)",
+   "n": 2000000,
+   "seconds": 12.708488000000216,
+   "runs": [
+    13.042910366999877,
+    12.708488000000216,
+    12.296283527000014
+   ]
+  },
+  {
+   "part": "loci",
+   "op": "sort",
+   "variant": "key=(chrom, start)",
+   "n": 2000000,
+   "seconds": 7.420307875999697,
+   "runs": [
+    7.743801893000182,
+    6.533787799000038,
+    7.420307875999697
+   ],
+   "same": true
+  },
+  {
+   "part": "loci",
+   "op": "merge",
+   "variant": "current",
+   "n": 2000000,
+   "seconds": 15.371029077000003,
+   "runs": [
+    15.459884138999769,
+    15.371029077000003,
+    14.795850953999889
+   ]
+  },
+  {
+   "part": "loci",
+   "op": "merge",
+   "variant": "key sort + single pass",
+   "n": 2000000,
+   "seconds": 5.437781155999801,
+   "runs": [
+    5.335831829999734,
+    5.437781155999801,
+    5.72976468700017
+   ],
+   "same": true
+  },
+  {
+   "part": "motifs",
+   "op": "scan 1,000 windows \u00d7 100 motifs",
+   "variant": "current (scan() per window \u00d7 motif)",
+   "n": 100,
+   "seconds": 0.15637320599989835,
+   "runs": [
+    0.15637320599989835,
+    0.16059815000016897,
+    0.15434421500003737
+   ]
+  },
+  {
+   "part": "motifs",
+   "op": "scan 1,000 windows \u00d7 100 motifs",
+   "variant": "concatenated, 1 call per motif",
+   "n": 100,
+   "seconds": 0.10544554000034623,
+   "runs": [
+    0.10544554000034623,
+    0.10669023099990227,
+    0.1020159279996733
+   ],
+   "same": true
+  },
+  {
+   "part": "motifs",
+   "op": "scan 1,000 windows \u00d7 1019 motifs",
+   "variant": "current (scan() per window \u00d7 motif)",
+   "n": 1019,
+   "seconds": 1.5359233340000173,
+   "runs": [
+    1.5359233340000173,
+    1.5727890409998508,
+    1.5212814739998066
+   ]
+  },
+  {
+   "part": "motifs",
+   "op": "scan 1,000 windows \u00d7 1019 motifs",
+   "variant": "concatenated, 1 call per motif",
+   "n": 1019,
+   "seconds": 1.0481422299999394,
+   "runs": [
+    1.0430994389998887,
+    1.0481422299999394,
+    1.0634762610002326
+   ],
+   "same": true
+  },
+  {
+   "part": "pairs",
+   "op": "count_pairs (50 kb x partner chrom)",
+   "variant": "current",
+   "n": 5000000,
+   "seconds": 13.445686046999981,
+   "runs": [
+    13.445686046999981,
+    13.330444230000012,
+    13.702125463999892
+   ]
+  },
+  {
+   "part": "pairs",
+   "op": "count_pairs (50 kb x partner chrom)",
+   "variant": "integer codes + global searchsorted",
+   "n": 5000000,
+   "seconds": 4.036991673000102,
+   "runs": [
+    4.036991673000102,
+    4.332363523999902,
+    4.000939993999964
+   ],
+   "same": true
+  },
+  {
+   "part": "pairs",
+   "op": "count_pairs_2d (500 kb)",
+   "variant": "current",
+   "n": 5000000,
+   "seconds": 94.11756830600007,
+   "runs": [
+    94.11756830600007
+   ]
+  },
+  {
+   "part": "pairs",
+   "op": "count_pairs_2d (500 kb)",
+   "variant": "integer codes + global searchsorted",
+   "n": 5000000,
+   "seconds": 6.413879913000073,
+   "runs": [
+    6.731089045000317,
+    6.251218597999923,
+    6.413879913000073
+   ],
+   "same": true
+  }
+ ]
+}

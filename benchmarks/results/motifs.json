@@ -1,0 +1,258 @@
+{
+ "bench": "motifs",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cores": 4,
+  "mem_gb": 16.876515328,
+  "python": "3.11.16",
+  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "versions": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1",
+   "pandas": "3.0.6",
+   "pybigtools": "0.3.0",
+   "pyBigWig": "0.3.26",
+   "cgranges": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.88",
+   "MOODS": "installed",
+   "graph_tool": "3.9",
+   "intervaltree": "installed",
+   "bedtools": "v2.31.1"
+  }
+ },
+ "meta": {
+  "r": 250,
+  "threshold": 13.0,
+  "pseudocount": 0.1
+ },
+ "rows": [
+  {
+   "part": "engines",
+   "engine": "genomeblocks scan_motifs_matrix (lightmotif)",
+   "n_seqs": 1000,
+   "n_motifs": 100,
+   "seconds": 0.1752093199997944,
+   "runs": [
+    0.14428382799997053,
+    0.1752093199997944,
+    0.18932463800001642
+   ],
+   "gbp_motif_per_s": 0.2853729470558911,
+   "total_hits": 993,
+   "ref_hits": 993,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "MEME FIMO --text (CLI)",
+   "n_seqs": 1000,
+   "n_motifs": 100,
+   "seconds": 4.475028052000198,
+   "runs": [
+    4.475028052000198,
+    4.4170077789999596,
+    4.598360468999999
+   ],
+   "gbp_motif_per_s": 0.011173114317719541,
+   "total_hits": 996,
+   "ref_hits": 993,
+   "pearson_r": 0.9999050343839163
+  },
+  {
+   "part": "engines",
+   "engine": "lightmotif, re-striped per motif",
+   "n_seqs": 1000,
+   "n_motifs": 100,
+   "seconds": 0.2950625220000802,
+   "runs": [
+    0.28179933699993853,
+    0.2950625220000802,
+    0.32697007900014796
+   ],
+   "gbp_motif_per_s": 0.1694556111737783,
+   "total_hits": 993,
+   "ref_hits": 993,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "MOODS (C++, all motifs per pass)",
+   "n_seqs": 1000,
+   "n_motifs": 100,
+   "seconds": 0.06543491999991602,
+   "runs": [
+    0.06543491999991602,
+    0.09627851200002624,
+    0.05374871899994105
+   ],
+   "gbp_motif_per_s": 0.7641179969359506,
+   "total_hits": 993,
+   "ref_hits": 993,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "numpy sliding window",
+   "n_seqs": 1000,
+   "n_motifs": 100,
+   "seconds": 5.676212059000136,
+   "runs": [
+    5.676212059000136
+   ],
+   "gbp_motif_per_s": 0.008808691338569808,
+   "total_hits": 993,
+   "ref_hits": 993,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "Biopython PSSM.search",
+   "n_seqs": 1000,
+   "n_motifs": 100,
+   "seconds": 9.17123314599985,
+   "runs": [
+    9.17123314599985
+   ],
+   "gbp_motif_per_s": 0.005451829563596706,
+   "total_hits": 993,
+   "ref_hits": 993,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "library",
+   "engine": "genomeblocks scan_motifs_matrix (lightmotif)",
+   "n_seqs": 1000,
+   "n_motifs": 1019,
+   "seconds": 1.638792149999972,
+   "runs": [
+    1.5629534949998742,
+    1.638792149999972,
+    1.6818382129999918
+   ],
+   "gbp_motif_per_s": 0.3108997074461265
+  },
+  {
+   "part": "library",
+   "engine": "MOODS (C++, all motifs per pass)",
+   "n_seqs": 1000,
+   "n_motifs": 1019,
+   "seconds": 0.5737723229999574,
+   "runs": [
+    0.5737723229999574,
+    0.5592980189999253,
+    0.5746201500001007
+   ],
+   "gbp_motif_per_s": 0.8879828802757324
+  },
+  {
+   "part": "library",
+   "engine": "MEME FIMO --text (CLI)",
+   "n_seqs": 1000,
+   "n_motifs": 1019,
+   "seconds": 46.224765644999934,
+   "runs": [
+    46.224765644999934
+   ],
+   "gbp_motif_per_s": 0.011022230029523402
+  },
+  {
+   "part": "library",
+   "engine": "genomeblocks scan_motifs_matrix (lightmotif)",
+   "n_seqs": 5000,
+   "n_motifs": 1019,
+   "seconds": 7.207187916000294,
+   "runs": [
+    6.87704784799962,
+    7.207187916000294,
+    7.525486179999916
+   ],
+   "gbp_motif_per_s": 0.35346657110805046
+  },
+  {
+   "part": "library",
+   "engine": "MOODS (C++, all motifs per pass)",
+   "n_seqs": 5000,
+   "n_motifs": 1019,
+   "seconds": 2.190792809999948,
+   "runs": [
+    2.190792809999948
+   ],
+   "gbp_motif_per_s": 1.1628210519825746
+  },
+  {
+   "part": "workers",
+   "workers": 1,
+   "n_seqs": 5000,
+   "n_motifs": 1019,
+   "seconds": 7.416982147999988,
+   "runs": [
+    7.37474773699978,
+    7.473117541999727,
+    7.416982147999988
+   ]
+  },
+  {
+   "part": "workers",
+   "workers": 2,
+   "n_seqs": 5000,
+   "n_motifs": 1019,
+   "seconds": 4.297942429000159,
+   "runs": [
+    4.364651224000227,
+    4.297942429000159,
+    4.165829616999872
+   ]
+  },
+  {
+   "part": "workers",
+   "workers": 3,
+   "n_seqs": 5000,
+   "n_motifs": 1019,
+   "seconds": 3.2196761919999517,
+   "runs": [
+    3.1276457660001142,
+    3.2196761919999517,
+    3.241434822999963
+   ]
+  },
+  {
+   "part": "workers",
+   "workers": 4,
+   "n_seqs": 5000,
+   "n_motifs": 1019,
+   "seconds": 2.4668634189997647,
+   "runs": [
+    2.5273963390000063,
+    2.4668634189997647,
+    2.4343719389999023
+   ]
+  },
+  {
+   "part": "stripe",
+   "step": "stripe 2000 seqs",
+   "seconds": 0.002786556000046403,
+   "runs": [
+    0.003340328999911435,
+    0.002754429000106029,
+    0.002795224999772472,
+    0.002786556000046403,
+    0.002750383000147849
+   ]
+  },
+  {
+   "part": "stripe",
+   "step": "scan 2000 striped seqs, 1 motif",
+   "seconds": 0.004235423999944032,
+   "runs": [
+    0.004226969000228564,
+    0.004476541999792971,
+    0.004690732999733882,
+    0.004235423999944032,
+    0.0041857989999698475
+   ]
+  }
+ ]
+}

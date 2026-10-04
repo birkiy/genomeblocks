@@ -1,0 +1,461 @@
+{
+ "bench": "signal",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cores": 4,
+  "mem_gb": 16.876515328,
+  "python": "3.11.16",
+  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "versions": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1",
+   "pandas": "3.0.6",
+   "pybigtools": "0.3.0",
+   "pyBigWig": "0.3.26",
+   "cgranges": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.88",
+   "MOODS": "installed",
+   "graph_tool": "3.9",
+   "intervaltree": "installed",
+   "bedtools": "v2.31.1"
+  }
+ },
+ "meta": {
+  "flank": 3000,
+  "n_bins": 200,
+  "tracks": [
+   "/home/user/genomeblocks/benchmarks/data/signal_0.bw",
+   "/home/user/genomeblocks/benchmarks/data/signal_1.bw",
+   "/home/user/genomeblocks/benchmarks/data/signal_2.bw",
+   "/home/user/genomeblocks/benchmarks/data/signal_3.bw"
+  ]
+ },
+ "rows": [
+  {
+   "part": "engines",
+   "engine": "genomeblocks \u00b7 pybigtools (exact)",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 0.40022684200016556,
+   "runs": [
+    0.37895683300007477,
+    0.40022684200016556,
+    0.40822759299999234
+   ],
+   "rate": 12492.915205317318,
+   "max_abs_diff": 0.0,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 0.394850993999853,
+   "runs": [
+    0.3949679500001366,
+    0.39280537500007995,
+    0.394850993999853
+   ],
+   "rate": 12663.004718184555,
+   "max_abs_diff": 0.0,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "genomeblocks \u00b7 pure-Python reader",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 1.9874373369998466,
+   "runs": [
+    1.9598465520000445,
+    2.1660600789998625,
+    1.9874373369998466
+   ],
+   "rate": 2515.802590056899,
+   "max_abs_diff": 0.0,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "pybigtools values() + numpy binning",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 0.7139307479999388,
+   "runs": [
+    0.7139307479999388,
+    0.7495627299999796,
+    0.6722307779998573
+   ],
+   "rate": 7003.480399194725,
+   "max_abs_diff": 0.0,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "pyBigWig values() + numpy binning",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 1.1998108939999383,
+   "runs": [
+    1.149666292999882,
+    1.2172008099998948,
+    1.1998108939999383
+   ],
+   "rate": 4167.32338821409,
+   "max_abs_diff": 5.7220458984375e-06,
+   "pearson_r": 0.9999999999999929
+  },
+  {
+   "part": "engines",
+   "engine": "pyBigWig stats(nBins) exact",
+   "n_loci": 300,
+   "n_tracks": 1,
+   "seconds": 9.517672424000011,
+   "runs": [
+    9.517672424000011
+   ],
+   "rate": 31.520311546288582,
+   "max_abs_diff": 0.0,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "pyBigWig stats(nBins) zoom",
+   "n_loci": 300,
+   "n_tracks": 1,
+   "seconds": 9.864019258000098,
+   "runs": [
+    9.864019258000098
+   ],
+   "rate": 30.41356592615008,
+   "max_abs_diff": 0.0,
+   "pearson_r": 1.0
+  },
+  {
+   "part": "engines",
+   "engine": "deepTools computeMatrix (-p 1)",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 28.932276584999954,
+   "runs": [
+    28.932276584999954,
+    28.733671433000154,
+    29.119778546000134
+   ],
+   "rate": 172.8173718134669,
+   "max_abs_diff": 3.816044330596924,
+   "pearson_r": 0.9979652115680452
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pybigtools (exact)",
+   "n_loci": 1000,
+   "n_tracks": 1,
+   "seconds": 0.10429870399980246,
+   "runs": [
+    0.10625230300001931,
+    0.10211987999991834,
+    0.10429870399980246
+   ],
+   "rate": 9587.846844212887
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
+   "n_loci": 1000,
+   "n_tracks": 1,
+   "seconds": 0.10783447600010732,
+   "runs": [
+    0.1338584059999448,
+    0.1033770699998513,
+    0.10783447600010732
+   ],
+   "rate": 9273.472057294597
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pure-Python reader",
+   "n_loci": 1000,
+   "n_tracks": 1,
+   "seconds": 0.38425026000004436,
+   "runs": [
+    0.38425026000004436,
+    0.38692852000008315,
+    0.377527801000042
+   ],
+   "rate": 2602.470587787981
+  },
+  {
+   "part": "scaling",
+   "engine": "pyBigWig values() + numpy binning",
+   "n_loci": 1000,
+   "n_tracks": 1,
+   "seconds": 0.25155192800002624,
+   "runs": [
+    0.25155192800002624
+   ],
+   "rate": 3975.322343782218
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pybigtools (exact)",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 0.3795880440000019,
+   "runs": [
+    0.37808176199996524,
+    0.3795880440000019,
+    0.4256294629999502
+   ],
+   "rate": 13172.17462202254
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 0.3937092159999338,
+   "runs": [
+    0.4408787400000165,
+    0.39095066699997005,
+    0.3937092159999338
+   ],
+   "rate": 12699.7281160948
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pure-Python reader",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 2.01877067800001,
+   "runs": [
+    2.01877067800001,
+    2.2712786729998697,
+    1.9827984709997963
+   ],
+   "rate": 2476.7548164279287
+  },
+  {
+   "part": "scaling",
+   "engine": "pyBigWig values() + numpy binning",
+   "n_loci": 5000,
+   "n_tracks": 1,
+   "seconds": 1.2024074089999885,
+   "runs": [
+    1.2024074089999885
+   ],
+   "rate": 4158.324343791571
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pybigtools (exact)",
+   "n_loci": 20000,
+   "n_tracks": 1,
+   "seconds": 0.8026377720000255,
+   "runs": [
+    0.8026377720000255,
+    0.8199974859999202,
+    0.8009809200000291
+   ],
+   "rate": 24917.840522460938
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
+   "n_loci": 20000,
+   "n_tracks": 1,
+   "seconds": 0.8436717229999431,
+   "runs": [
+    0.8274959499999568,
+    0.8436717229999431,
+    0.855392110999901
+   ],
+   "rate": 23705.90296529513
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pure-Python reader",
+   "n_loci": 20000,
+   "n_tracks": 1,
+   "seconds": 7.995024085000068,
+   "runs": [
+    7.368657277000011,
+    8.015050595000048,
+    7.995024085000068
+   ],
+   "rate": 2501.5559412163834
+  },
+  {
+   "part": "scaling",
+   "engine": "pyBigWig values() + numpy binning",
+   "n_loci": 20000,
+   "n_tracks": 1,
+   "seconds": 4.806911908000075,
+   "runs": [
+    4.806911908000075
+   ],
+   "rate": 4160.675373874501
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pybigtools (exact)",
+   "n_loci": 50000,
+   "n_tracks": 1,
+   "seconds": 1.3538031360001241,
+   "runs": [
+    1.3538031360001241
+   ],
+   "rate": 36932.99171083869
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
+   "n_loci": 50000,
+   "n_tracks": 1,
+   "seconds": 1.3574697850001485,
+   "runs": [
+    1.3574697850001485
+   ],
+   "rate": 36833.23235072561
+  },
+  {
+   "part": "scaling",
+   "engine": "genomeblocks \u00b7 pure-Python reader",
+   "n_loci": 50000,
+   "n_tracks": 1,
+   "seconds": 20.168499185999963,
+   "runs": [
+    20.168499185999963
+   ],
+   "rate": 2479.1135690804244
+  },
+  {
+   "part": "scaling",
+   "engine": "pyBigWig values() + numpy binning",
+   "n_loci": 50000,
+   "n_tracks": 1,
+   "seconds": 12.275137376999965,
+   "runs": [
+    12.275137376999965
+   ],
+   "rate": 4073.2741691091337
+  },
+  {
+   "part": "parallel",
+   "engine": "genomeblocks \u00b7 processes",
+   "workers": 1,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 8.181315055000141,
+   "runs": [
+    8.181315055000141,
+    8.42230665299985,
+    8.130811938999841
+   ],
+   "rate": 9778.379082358737,
+   "identical": true
+  },
+  {
+   "part": "parallel",
+   "engine": "genomeblocks \u00b7 processes",
+   "workers": 2,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 4.0250790210000105,
+   "runs": [
+    3.909276487999932,
+    4.158814138000025,
+    4.0250790210000105
+   ],
+   "rate": 19875.386193070168,
+   "identical": true
+  },
+  {
+   "part": "parallel",
+   "engine": "genomeblocks \u00b7 processes (cap lifted)",
+   "workers": 3,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 2.9687235359999704,
+   "runs": [
+    2.9879975830001513,
+    2.8547379500000716,
+    2.9687235359999704
+   ],
+   "rate": 26947.608637142155,
+   "identical": true
+  },
+  {
+   "part": "parallel",
+   "engine": "genomeblocks \u00b7 processes (cap lifted)",
+   "workers": 4,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 1.8937962820000394,
+   "runs": [
+    1.970859216000008,
+    1.7970946469999944,
+    1.8937962820000394
+   ],
+   "rate": 42243.19202671153,
+   "identical": true
+  },
+  {
+   "part": "parallel",
+   "engine": "threads (same chunks)",
+   "workers": 2,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 6.569239975000073,
+   "runs": [
+    6.569239975000073,
+    6.492838981999967,
+    6.59560839400001
+   ],
+   "rate": 12177.968882922276
+  },
+  {
+   "part": "parallel",
+   "engine": "threads (same chunks)",
+   "workers": 4,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 6.911259136999888,
+   "runs": [
+    6.911259136999888,
+    6.974444467000012,
+    6.4622389080000175
+   ],
+   "rate": 11575.31477465729
+  },
+  {
+   "part": "parallel",
+   "engine": "deepTools computeMatrix",
+   "workers": 1,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 435.2238284329999,
+   "runs": [
+    435.2238284329999
+   ],
+   "rate": 183.81346510377367
+  },
+  {
+   "part": "parallel",
+   "engine": "deepTools computeMatrix",
+   "workers": 4,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 122.50267089099998,
+   "runs": [
+    122.50267089099998
+   ],
+   "rate": 653.0469859810822,
+   "retimed": true
+  }
+ ]
+}

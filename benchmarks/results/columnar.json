@@ -1,0 +1,631 @@
+{
+ "bench": "columnar",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+  "cores": 4,
+  "mem_gb": 16.876515328,
+  "python": "3.11.16",
+  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "versions": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1",
+   "pandas": "3.0.6",
+   "pybigtools": "0.3.0",
+   "pyBigWig": "0.3.26",
+   "cgranges": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.88",
+   "MOODS": "installed",
+   "graph_tool": "3.9",
+   "intervaltree": "installed",
+   "bedtools": "v2.31.1"
+  }
+ },
+ "meta": {},
+ "rows": [
+  {
+   "part": "memory",
+   "storage": "objects (Loci of Locus)",
+   "n": 1000000,
+   "bytes": 221840778,
+   "per_interval": 221.840778,
+   "seconds": 0.0
+  },
+  {
+   "part": "memory",
+   "storage": "columns (ColumnarLoci)",
+   "n": 1000000,
+   "bytes": 25288017,
+   "per_interval": 25.288017,
+   "seconds": 0.0
+  },
+  {
+   "part": "memory",
+   "storage": "objects: Loci.make time",
+   "n": 1000000,
+   "seconds": 1.987472673999946,
+   "runs": [
+    1.7764803420000135,
+    1.987472673999946,
+    1.996662041000036
+   ]
+  },
+  {
+   "part": "memory",
+   "storage": "columns: make time",
+   "n": 1000000,
+   "seconds": 0.30166482700008146,
+   "runs": [
+    0.2958660950000649,
+    0.30166482700008146,
+    0.3331327500000043
+   ]
+  },
+  {
+   "part": "access",
+   "pattern": "loop: for l in loci: total += l.start",
+   "storage": "objects",
+   "seconds": 0.0036259219999692505,
+   "runs": [
+    0.0036259219999692505,
+    0.0035887110000203393,
+    0.004247329999998328
+   ]
+  },
+  {
+   "part": "access",
+   "pattern": "loop: for l in loci: total += l.start",
+   "storage": "columns via LocusView",
+   "seconds": 0.06476773999997931,
+   "runs": [
+    0.06476773999997931,
+    0.04712675500002206,
+    0.06862490200001048
+   ]
+  },
+  {
+   "part": "access",
+   "pattern": "random access: loci[i].end",
+   "storage": "objects",
+   "seconds": 0.08252332600000045,
+   "runs": [
+    0.08073380799999086,
+    0.08252332600000045,
+    0.08519291900006465
+   ]
+  },
+  {
+   "part": "access",
+   "pattern": "random access: loci[i].end",
+   "storage": "columns via LocusView",
+   "seconds": 0.0863463310000725,
+   "runs": [
+    0.08624174600004153,
+    0.0863463310000725,
+    0.08666320400004679
+   ]
+  },
+  {
+   "part": "access",
+   "pattern": "build the uid -> index map",
+   "storage": "objects",
+   "seconds": 0.05879453099998955,
+   "runs": [
+    0.05879453099998955,
+    0.0575631079999539,
+    0.05936494100001255
+   ]
+  },
+  {
+   "part": "access",
+   "pattern": "build the uid -> index map",
+   "storage": "columns via LocusView",
+   "seconds": 0.06747546199994758,
+   "runs": [
+    0.06747546199994758,
+    0.06850914500000727,
+    0.06494637200000852
+   ]
+  },
+  {
+   "part": "access",
+   "pattern": "loop: for l in loci: total += l.start",
+   "storage": "columns, vectorised",
+   "seconds": 0.00015857699997923191,
+   "runs": [
+    0.0001620169999796417,
+    0.00016937800000960124,
+    0.00015816799998447095,
+    0.00015689600002133375,
+    0.00015857699997923191
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "A & B",
+   "storage": "objects",
+   "seconds": 0.08317587600004117,
+   "runs": [
+    0.08317587600004117,
+    0.08291877900001055,
+    0.09814677999997912
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "A & B",
+   "storage": "columns, vectorised",
+   "seconds": 0.008888410999929874,
+   "runs": [
+    0.008888410999929874,
+    0.008863575999953355,
+    0.009620519000009153
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "A - B",
+   "storage": "objects",
+   "seconds": 0.10168563799993535,
+   "runs": [
+    0.10168563799993535,
+    0.1487319610000668,
+    0.09388604600007966
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "A - B",
+   "storage": "columns, vectorised",
+   "seconds": 0.010397656000009192,
+   "runs": [
+    0.009180526000022837,
+    0.010397656000009192,
+    0.01041051000004245
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "merge (200k)",
+   "storage": "objects",
+   "seconds": 1.560534428999972,
+   "runs": [
+    1.680866884000011,
+    1.560534428999972,
+    1.560199541999964
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "merge (200k)",
+   "storage": "columns, vectorised",
+   "seconds": 0.05244945499998721,
+   "runs": [
+    0.061163868999983606,
+    0.05217423299995971,
+    0.05244945499998721
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "make \u2192 slop \u2192 sort \u2192 merge",
+   "storage": "objects",
+   "seconds": 3.3762968610000144,
+   "runs": [
+    3.3762968610000144,
+    3.413617037999984,
+    2.983068579000019
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "make \u2192 slop \u2192 sort \u2192 merge",
+   "storage": "columns, vectorised",
+   "seconds": 0.13572404600006394,
+   "runs": [
+    0.13395504599998276,
+    0.13572404600006394,
+    0.13617688900001212
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "Genes.annotations (100k CREs)",
+   "storage": "objects",
+   "seconds": 0.8732855030000337,
+   "runs": [
+    0.8539507529999355,
+    0.9752096459999393,
+    0.8732855030000337
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "Genes.annotations (100k CREs)",
+   "storage": "columns, today's code",
+   "seconds": 1.772167373000002,
+   "runs": [
+    1.772167373000002,
+    1.9638349810001046,
+    1.6288293719999274
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "Genes.annotations (100k CREs)",
+   "storage": "columns, vectorised",
+   "seconds": 0.8289213020000261,
+   "runs": [
+    1.1091805889999478,
+    0.8289213020000261,
+    0.750034530999983
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "Genes.nearest_genes (100k)",
+   "storage": "objects",
+   "seconds": 0.748072384000011,
+   "runs": [
+    0.8167476070000248,
+    0.748072384000011,
+    0.7375572770000645
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "Genes.nearest_genes (100k)",
+   "storage": "columns, today's code",
+   "seconds": 0.8777849370000013,
+   "runs": [
+    0.7721184449999328,
+    0.8777849370000013,
+    1.1606614910000417
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "Atlas.search (20k peaks, 500 tracks)",
+   "storage": "objects",
+   "seconds": 0.026632639000013114,
+   "runs": [
+    0.026945965999971122,
+    0.026380033999998886,
+    0.026632639000013114,
+    0.025617185999976755,
+    0.0374657910000451
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "Atlas.search (20k peaks, 500 tracks)",
+   "storage": "columns, today's code",
+   "seconds": 0.05020332000003691,
+   "runs": [
+    0.09000134899997647,
+    0.049435614000003625,
+    0.06767690300000595,
+    0.05020332000003691,
+    0.049259329000051366
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "Atlas: peaks \u2192 bin ranges",
+   "storage": "objects",
+   "seconds": 0.012684718000059547,
+   "runs": [
+    0.011786171000039758,
+    0.012150211000061972,
+    0.012684718000059547,
+    0.018000776000008045,
+    0.014919060000011086
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "Atlas: peaks \u2192 bin ranges",
+   "storage": "columns, vectorised",
+   "seconds": 0.0006774769999537966,
+   "runs": [
+    0.000702302999911808,
+    0.0006595749999860345,
+    0.0006989620000013019,
+    0.0006745370000089679,
+    0.0006774769999537966
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "signal (5k loci, 1 bigWig)",
+   "storage": "objects",
+   "seconds": 0.41143753899996227,
+   "runs": [
+    0.4182362099999182,
+    0.41143753899996227,
+    0.4028872680000859
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "signal (5k loci, 1 bigWig)",
+   "storage": "columns, today's code",
+   "seconds": 0.42822968099994796,
+   "runs": [
+    0.42822968099994796,
+    0.4098891379999259,
+    0.4515679270000419
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "scan_motifs_matrix (1k windows \u00d7 100)",
+   "storage": "objects",
+   "seconds": 0.17298973300000853,
+   "runs": [
+    0.14348253399998612,
+    0.181076628000028,
+    0.17298973300000853
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "scan_motifs_matrix (1k windows \u00d7 100)",
+   "storage": "columns, today's code",
+   "seconds": 0.18430419599997094,
+   "runs": [
+    0.19178774900001372,
+    0.18430419599997094,
+    0.15489002200001778
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "pair_to_bed (50k loops)",
+   "storage": "objects",
+   "seconds": 0.20932999599995128,
+   "runs": [
+    0.2688663510000424,
+    0.20932999599995128,
+    0.18232084199996734
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "pair_to_bed (50k loops)",
+   "storage": "columns, today's code",
+   "seconds": 0.1654681290000326,
+   "runs": [
+    0.17382077000002027,
+    0.1654681290000326,
+    0.15572079899993696
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "count_pairs (200k pairs, 62k windows)",
+   "storage": "objects",
+   "seconds": 1.0918681870000455,
+   "runs": [
+    1.096477166999989,
+    1.0039995820000058,
+    1.0918681870000455
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "count_pairs (200k pairs, 62k windows)",
+   "storage": "columns, today's code",
+   "seconds": 1.292962407999994,
+   "runs": [
+    1.2455217250000032,
+    1.292962407999994,
+    1.3027900519999775
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "Architecture.make (50k loops)",
+   "storage": "objects",
+   "seconds": 2.1193324319999647,
+   "runs": [
+    2.1193324319999647,
+    2.215709161999939,
+    2.040002146000006
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "Architecture.make (50k loops)",
+   "storage": "columns, today's code",
+   "seconds": 2.891597256999944,
+   "runs": [
+    2.9649165480000192,
+    2.7856510539999135,
+    2.891597256999944
+   ],
+   "same": true
+  },
+  {
+   "part": "functions",
+   "function": "Architecture.annotate",
+   "storage": "objects",
+   "seconds": 2.3460822320000716,
+   "runs": [
+    2.3460822320000716,
+    2.302117863000035,
+    2.444036346999951
+   ]
+  },
+  {
+   "part": "functions",
+   "function": "Architecture.annotate",
+   "storage": "columns, today's code",
+   "seconds": 2.7797468420000087,
+   "runs": [
+    2.7332869750000555,
+    2.803952276000018,
+    2.7797468420000087
+   ],
+   "same": true
+  },
+  {
+   "part": "annot_breakdown",
+   "step": "convert the gene index (objects) to arrays",
+   "seconds": 0.6516634930000009,
+   "runs": [
+    0.6337357040000597,
+    0.7097061690000146,
+    0.6516634930000009
+   ]
+  },
+  {
+   "part": "annot_breakdown",
+   "step": "label 100k CREs (5 vectorised overlap tests)",
+   "seconds": 0.031784390999973766,
+   "runs": [
+    0.029784263999999894,
+    0.03003362399999787,
+    0.031784390999973766,
+    0.03335458900005506,
+    0.033350368000014896
+   ]
+  },
+  {
+   "part": "annot_breakdown",
+   "step": "uid strings for the output table",
+   "seconds": 0.0665487100000064,
+   "runs": [
+    0.07995986799994625,
+    0.06093536900004892,
+    0.07088978499996301,
+    0.06551455199996781,
+    0.0665487100000064
+   ]
+  },
+  {
+   "part": "row_access",
+   "way": "Locus objects: loci[i].start",
+   "seconds": 7.779802000072778e-07,
+   "runs": [
+    7.779802000072778e-07,
+    7.586464999917552e-07,
+    8.063781999908315e-07
+   ]
+  },
+  {
+   "part": "row_access",
+   "way": "columns via LocusView: loci[i].start",
+   "seconds": 8.468496999967101e-07,
+   "runs": [
+    8.468496999967101e-07,
+    8.185322000031192e-07,
+    8.984211000097275e-07
+   ]
+  },
+  {
+   "part": "row_access",
+   "way": "raw numpy column: starts[i]",
+   "seconds": 1.8225180000399633e-07,
+   "runs": [
+    2.954119000037281e-07,
+    1.8225180000399633e-07,
+    1.801207999960752e-07
+   ]
+  },
+  {
+   "part": "row_access",
+   "way": "polars: df.row(i)",
+   "seconds": 1.209186200003387e-06,
+   "runs": [
+    1.209186200003387e-06,
+    1.2001628000007258e-06,
+    1.5629959000079908e-06
+   ]
+  },
+  {
+   "part": "row_access",
+   "way": "Arrow: table['Start'][i]",
+   "seconds": 1.6071718000034707e-06,
+   "runs": [
+    1.580146900005275e-06,
+    1.6135727000005317e-06,
+    1.6071718000034707e-06
+   ]
+  },
+  {
+   "part": "row_access",
+   "way": "pandas: df.at[i, 'Start']",
+   "seconds": 1.3600042899997789e-05,
+   "runs": [
+    1.3282206700000643e-05,
+    1.3689039900009448e-05,
+    1.3600042899997789e-05
+   ]
+  },
+  {
+   "part": "row_access",
+   "way": "pandas: df.iloc[i]['Start']",
+   "seconds": 4.9947615999997194e-05,
+   "runs": [
+    4.9947615999997194e-05,
+    4.9679587000002814e-05,
+    5.001251039999488e-05
+   ]
+  },
+  {
+   "part": "row_access",
+   "way": "columns \u2192 Arrow table",
+   "seconds": 0.0001508049999756622,
+   "runs": [
+    0.00014793599996210105,
+    0.00013734399999520974,
+    0.0001730239999915284,
+    0.0001508049999756622,
+    0.00015148099998896214
+   ],
+   "n": 100000
+  },
+  {
+   "part": "row_access",
+   "way": "columns \u2192 polars frame",
+   "seconds": 0.00022621999994498765,
+   "runs": [
+    0.00026580600001580024,
+    0.00022621999994498765,
+    0.00030375400001503294,
+    0.00020599000004040136,
+    0.00021242600007553847
+   ],
+   "n": 100000
+  },
+  {
+   "part": "row_access",
+   "way": "columns \u2192 pandas frame",
+   "seconds": 0.0009564060000002428,
+   "runs": [
+    0.0009564060000002428,
+    0.000943677000009302,
+    0.0009338859999843407,
+    0.0009937790000549285,
+    0.0010033500000190543
+   ],
+   "n": 100000
+  }
+ ]
+}

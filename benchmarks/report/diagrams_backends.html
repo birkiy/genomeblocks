@@ -1,0 +1,93 @@
+<!-- @tax -->
+<svg viewBox="0 0 760 250" role="img" aria-label="Today a fast engine must convert Locus objects to arrays and back on every call, which costs more than the engine saves. With columnar storage the engine reads the arrays directly and Locus objects are only built when you look at one.">
+  <defs>
+    <marker id="bk1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">Today: objects in, objects out</text>
+  <rect x="20" y="38" width="130" height="50" rx="8" class="box"/>
+  <text x="85" y="59" text-anchor="middle">Loci</text>
+  <text x="85" y="76" text-anchor="middle" class="small">1M Locus objects</text>
+  <line x1="150" y1="63" x2="206" y2="63" class="arrow bad" marker-end="url(#bk1)"/>
+  <text x="178" y="54" text-anchor="middle" class="small bad">0.8 s</text>
+  <rect x="208" y="38" width="120" height="50" rx="8" class="box"/>
+  <text x="268" y="59" text-anchor="middle">arrays</text>
+  <text x="268" y="76" text-anchor="middle" class="small">built per call</text>
+  <line x1="328" y1="63" x2="384" y2="63" class="arrow" marker-end="url(#bk1)"/>
+  <rect x="386" y="38" width="130" height="50" rx="8" class="box hl"/>
+  <text x="451" y="59" text-anchor="middle">fast engine</text>
+  <text x="451" y="76" text-anchor="middle" class="small">0.09 s</text>
+  <line x1="516" y1="63" x2="572" y2="63" class="arrow bad" marker-end="url(#bk1)"/>
+  <text x="544" y="54" text-anchor="middle" class="small bad">1.2 s</text>
+  <rect x="574" y="38" width="130" height="50" rx="8" class="box"/>
+  <text x="639" y="59" text-anchor="middle">Loci</text>
+  <text x="639" y="76" text-anchor="middle" class="small">objects again</text>
+  <text x="20" y="112" class="small">the conversions cost more than the faster engine saves, so switching engines does not pay</text>
+
+  <line x1="20" y1="128" x2="740" y2="128" stroke="currentColor" opacity=".15"/>
+
+  <text x="20" y="152" class="head">Proposed: columns are the storage</text>
+  <rect x="20" y="168" width="200" height="56" rx="8" class="box hl"/>
+  <text x="120" y="189" text-anchor="middle">Loci = columns</text>
+  <text x="120" y="206" text-anchor="middle" class="small">chrom · start · end · strand</text>
+  <text x="120" y="219" text-anchor="middle" class="small">+ extra BED columns</text>
+  <line x1="220" y1="196" x2="296" y2="196" class="arrow hl" marker-end="url(#bk1)"/>
+  <text x="258" y="187" text-anchor="middle" class="small">no copy</text>
+  <rect x="298" y="172" width="130" height="48" rx="8" class="box hl"/>
+  <text x="363" y="193" text-anchor="middle">any engine</text>
+  <text x="363" y="210" text-anchor="middle" class="small">0.09 s</text>
+  <line x1="428" y1="196" x2="504" y2="196" class="arrow hl" marker-end="url(#bk1)"/>
+  <rect x="506" y="172" width="198" height="48" rx="8" class="box"/>
+  <text x="605" y="193" text-anchor="middle">Locus objects</text>
+  <text x="605" y="210" text-anchor="middle" class="small">made only when you look at one</text>
+</svg>
+<!-- @arch -->
+<svg viewBox="0 0 760 330" role="img" aria-label="Proposed architecture: one columnar core in the middle; on the left, interchangeable engines per kind of work chosen by user or an auto policy; on the right, zero-copy adapters to other Python tools.">
+  <defs>
+    <marker id="bk2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">engines (pick per kind)</text>
+  <g>
+    <rect x="20" y="36" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="54">intervals</text><text x="32" y="71" class="small">numpy* · cgranges · pyranges</text>
+    <rect x="20" y="88" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="106">bigWig</text><text x="32" y="123" class="small">pybigtools* · pyBigWig · pure Python</text>
+    <rect x="20" y="140" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="158">motifs</text><text x="32" y="175" class="small">lightmotif* · MOODS · FIMO</text>
+    <rect x="20" y="192" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="210">annotation files</text><text x="32" y="227" class="small">Python · polars*</text>
+    <rect x="20" y="244" width="220" height="44" rx="8" class="box"/>
+    <text x="32" y="262">Hi-C pairs</text><text x="32" y="279" class="small">numpy* · cooler</text>
+  </g>
+  <text x="20" y="312" class="small">* default when installed; "auto" picks per call (≈1 µs)</text>
+  <line x1="242" y1="58" x2="296" y2="150" class="arrow"/>
+  <line x1="242" y1="110" x2="296" y2="158" class="arrow"/>
+  <line x1="242" y1="162" x2="296" y2="166" class="arrow"/>
+  <line x1="242" y1="214" x2="296" y2="174" class="arrow"/>
+  <line x1="242" y1="266" x2="296" y2="182" class="arrow"/>
+
+  <rect x="298" y="110" width="170" height="110" rx="10" class="box hl"/>
+  <text x="383" y="138" text-anchor="middle" class="head">columnar core</text>
+  <text x="383" y="160" text-anchor="middle" class="small">Loci · Genes · signal cube</text>
+  <text x="383" y="176" text-anchor="middle" class="small">numpy / Arrow columns</text>
+  <text x="383" y="198" text-anchor="middle" class="small">same public API</text>
+  <text x="383" y="212" text-anchor="middle" class="small">(Locus objects on demand)</text>
+
+  <line x1="468" y1="150" x2="526" y2="58" class="arrow hl" marker-end="url(#bk2)"/>
+  <line x1="468" y1="158" x2="526" y2="110" class="arrow hl" marker-end="url(#bk2)"/>
+  <line x1="468" y1="166" x2="526" y2="162" class="arrow hl" marker-end="url(#bk2)"/>
+  <line x1="468" y1="174" x2="526" y2="214" class="arrow hl" marker-end="url(#bk2)"/>
+  <line x1="468" y1="182" x2="526" y2="266" class="arrow hl" marker-end="url(#bk2)"/>
+  <text x="740" y="22" class="head" text-anchor="end">adapters (in and out)</text>
+  <g>
+    <rect x="528" y="36" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="54">data frames</text><text x="540" y="71" class="small">pandas · polars · Arrow</text>
+    <rect x="528" y="88" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="106">interval libraries</text><text x="540" y="123" class="small">pyranges · bioframe · BedTool</text>
+    <rect x="528" y="140" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="158">single-cell / arrays</text><text x="540" y="175" class="small">AnnData (peaks) · xarray (signal)</text>
+    <rect x="528" y="192" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="210">files</text><text x="540" y="227" class="small">BED.gz · GTF/GFF3 · BEDPE</text>
+    <rect x="528" y="244" width="212" height="44" rx="8" class="box"/>
+    <text x="540" y="262">graphs</text><text x="540" y="279" class="small">GraphML · networkx · igraph</text>
+  </g>
+</svg>

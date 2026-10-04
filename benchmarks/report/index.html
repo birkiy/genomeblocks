@@ -1,0 +1,668 @@
+<title>genomeblocks Benchmarks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
+<style>/* Layout: one reading column (~920px) under a sticky section bar; each module
+   section = verdict line -> "why" diagram -> chart -> data table. */
+:root {
+  --bg: #f6f4e8;          /* parchment page (brand n-50) */
+  --surface: #fbfaf4;     /* cards, chart surface (brand n-0) */
+  --ink: #1e1e1e;         /* brand n-900 */
+  --ink-2: #52514b;       /* brand n-500 */
+  --muted: #868377;       /* brand n-400 */
+  --rule: #e1dcc5;        /* brand n-100 */
+  --grid: #e9e5d2;
+  --brand: #003552;       /* deep navy */
+  --brand-subtle: #e8eff4;
+  --code-bg: #eeece2;
+  --mod-green: #0f7a3a; --mod-green-bg: #eafaf0;
+  --mod-purple: #5325a3; --mod-purple-bg: #f1ecfb;
+  --mod-navy: #003552; --mod-navy-bg: #e8eff4;
+  --warn: #8a5300; --warn-bg: #fdf1dc;
+  /* chart series (validated categorical order, light steps) */
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+  --bar-other: #c9c5b2;
+  --font: "Nunito", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1b1a; --surface: #232220; --ink: #f2f0e6; --ink-2: #c7c3b1; --muted: #9a968a;
+    --rule: #3a3935; --grid: #302f2c; --brand: #8cc3e8; --brand-subtle: #1d2a33;
+    --code-bg: #2d2c29;
+    --mod-green: #5fd38e; --mod-green-bg: #18291f; --mod-purple: #b79cf0; --mod-purple-bg: #251d36;
+    --mod-navy: #8cc3e8; --mod-navy-bg: #1d2a33; --warn: #f4c06a; --warn-bg: #33281a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --bar-other: #55534c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b1a; --surface: #232220; --ink: #f2f0e6; --ink-2: #c7c3b1; --muted: #9a968a;
+  --rule: #3a3935; --grid: #302f2c; --brand: #8cc3e8; --brand-subtle: #1d2a33;
+  --code-bg: #2d2c29;
+  --mod-green: #5fd38e; --mod-green-bg: #18291f; --mod-purple: #b79cf0; --mod-purple-bg: #251d36;
+  --mod-navy: #8cc3e8; --mod-navy-bg: #1d2a33; --warn: #f4c06a; --warn-bg: #33281a;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --bar-other: #55534c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px;
+       line-height: 1.6; margin: 0; }
+.wrap { max-width: 960px; margin: 0 auto; padding-inline: 20px; padding-block: 8px 64px; }
+h1, h2, h3 { line-height: 1.22; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 42px); font-weight: 800; letter-spacing: -0.01em; color: var(--brand); }
+h2 { font-size: 26px; font-weight: 800; color: var(--ink); }
+h3 { font-size: 17px; font-weight: 800; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--brand); }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--code-bg);
+       padding: 1px 5px; border-radius: 5px; }
+.eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+           color: var(--muted); }
+
+/* header + nav */
+header.top { display: grid; gap: 12px; padding-block: 36px 22px; }
+header.top .lede { font-size: 18.5px; color: var(--ink-2); max-width: 62ch; }
+nav.sections { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+               border-bottom: 1px solid var(--rule); padding-block: 10px; margin-bottom: 8px;
+               display: flex; gap: 6px; flex-wrap: wrap; }
+nav.sections a { text-decoration: none; font-size: 13.5px; font-weight: 700; color: var(--ink-2);
+                 padding: 4px 11px; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface); }
+nav.sections a:hover, nav.sections a:focus-visible { color: var(--brand); border-color: var(--brand); outline: none; }
+
+section { display: grid; gap: 18px; padding-block: 40px 8px; border-top: 1px solid var(--rule);
+          scroll-margin-top: 64px; }
+section:first-of-type { border-top: 0; }
+.verdict { font-size: 19px; font-weight: 700; color: var(--ink); max-width: 62ch; }
+.verdict b { color: var(--brand); }
+.sub { color: var(--ink-2); }
+
+/* stat tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+        padding: 14px 16px; display: grid; gap: 4px; align-content: start; text-decoration: none; color: inherit; }
+.tiles.two-up { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+.tile:hover, .tile:focus-visible { border-color: var(--brand); outline: none; }
+.tile .k { font-size: 13px; font-weight: 700; color: var(--muted); }
+.tile .v { font-size: 34px; font-weight: 800; line-height: 1.1; color: var(--brand); }
+.tile .d { font-size: 14px; color: var(--ink-2); line-height: 1.4; }
+.tag { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em;
+       text-transform: uppercase; border-radius: 999px; padding: 1px 9px; width: fit-content; }
+.tag.green { color: var(--mod-green); background: var(--mod-green-bg); }
+.tag.purple { color: var(--mod-purple); background: var(--mod-purple-bg); }
+.tag.navy { color: var(--mod-navy); background: var(--mod-navy-bg); }
+.tag.warn { color: var(--warn); background: var(--warn-bg); }
+
+/* figure cards */
+figure { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+         padding: 16px 16px 12px; display: grid; gap: 10px; min-width: 0; }
+figure .ttl { font-weight: 800; font-size: 15.5px; }
+figure .ttl span { font-weight: 600; color: var(--muted); }
+figcaption { font-size: 14px; color: var(--ink-2); max-width: 75ch; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { font-family: var(--font); fill: var(--ink-2); font-size: 12.5px; }
+.chart .tick { fill: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.chart .axis-label { fill: var(--muted); font-size: 12px; font-weight: 600; }
+.chart .rlabel { fill: var(--ink-2); font-size: 13px; }
+.chart .rlabel.hl { fill: var(--ink); font-weight: 800; }
+.chart .vlabel { fill: var(--ink-2); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chart .endlabel { fill: var(--ink-2); font-size: 12.5px; font-weight: 600; }
+.chart .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .baseline { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.chart .bar { fill: var(--bar-other); }
+.chart .bar.hl { fill: var(--s1); }
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot { stroke: var(--surface); stroke-width: 2; }
+.chart .leader { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover, .chart .hit:focus-visible { fill: var(--ink); fill-opacity: 0.04; outline: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.legend > span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
+.tip { position: absolute; z-index: 20; pointer-events: none; background: var(--ink); color: var(--bg);
+       border-radius: 8px; padding: 6px 10px; display: grid; gap: 1px; font-size: 12.5px;
+       box-shadow: 0 4px 14px rgba(0,0,0,.18); max-width: 320px; }
+.tip strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.tip span { opacity: 0.82; }
+
+/* why diagrams */
+.why { display: grid; gap: 10px; background: var(--brand-subtle); border-radius: var(--radius);
+       padding: 16px 18px; }
+.why h3 { color: var(--brand); }
+.why svg { width: 100%; height: auto; display: block; color: var(--ink); }
+.why svg text { font-family: var(--font); font-size: 13px; fill: currentColor; }
+.why svg .small { font-size: 11.5px; fill: var(--ink-2); }
+.why svg .bad { fill: var(--s8); }
+.why svg .good { fill: var(--s1); }
+.why svg .box { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.2; }
+.why svg .box.hl { stroke: var(--s1); stroke-width: 2; }
+.why svg .box.bad { fill: var(--surface); stroke: var(--s8); stroke-width: 1.6; }
+.why svg .arrow { stroke: var(--ink-2); stroke-width: 1.5; fill: none; }
+.why svg .arrow.hl { stroke: var(--s1); stroke-width: 2; }
+.why svg .arrow.bad { stroke: var(--s8); }
+.why svg .cell { fill: var(--surface); stroke: var(--rule); }
+.why svg .cell.on { fill: var(--s1); stroke: var(--s1); }
+.why svg .cell.q { fill: var(--s4); stroke: var(--s4); }
+.why svg .head { font-weight: 800; }
+
+/* tables */
+details { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); }
+details > summary { cursor: pointer; padding: 10px 14px; font-weight: 700; font-size: 14px; color: var(--ink-2); }
+details > summary:focus-visible { outline: 2px solid var(--brand); border-radius: var(--radius); }
+.tbl { overflow-x: auto; padding: 0 14px 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.hl td { font-weight: 700; }
+
+/* lists */
+.mech { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+.mech > div { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+              padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.mech p { font-size: 14.5px; color: var(--ink-2); }
+.fixes { display: grid; gap: 10px; }
+.fix { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--s4);
+       border-radius: var(--radius); padding: 12px 16px; display: grid; gap: 4px; }
+.fix .t { font-weight: 800; }
+.fix p { font-size: 14.5px; color: var(--ink-2); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.two > * { min-width: 0; }
+ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto;
+      font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* phones: diagrams and charts keep a legible size and scroll sideways */
+.scroll { overflow-x: auto; min-width: 0; }
+@media (max-width: 640px) {
+  .scroll > svg.chart, .scroll > svg { min-width: 600px; }
+  .tile .v { font-size: 30px; }
+}
+</style>
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">genomeblocks 1.0.1 · benchmark report · 4-core Xeon @ 2.10GHz</span>
+  <h1>How fast is genomeblocks, and why</h1>
+  <p class="lede">Every building block timed against the tools people would otherwise use, on hg38-shaped data: what is fast, the mechanism behind each result, and the places that are still slow, with measured fixes.</p>
+</header>
+<nav class="sections" aria-label="Sections"><a href="#summary">Summary</a><a href="#loci">Loci</a><a href="#signal">signal</a><a href="#atlas">Atlas</a><a href="#motifs">motifs</a><a href="#pairs">Hi-C pairs</a><a href="#genes">Genes</a><a href="#architecture">Architecture</a><a href="#fixes">Fixes</a><a href="#method">Method</a></nav>
+<section id="summary">
+  <p class="verdict">Blue = genomeblocks, gray = alternatives. Every result is the median of 3–5 runs after a warm-up.</p>
+  <div class="tiles"><a class="tile" href="#loci"><span class="tag green">Loci</span><span class="k">Overlap lookup</span><span class="v">2.3 µs</span><span class="d">per query on 100k indexed peaks: 494× faster than pyranges, 2,776× faster than bioframe</span></a><a class="tile" href="#signal"><span class="tag green">signal</span><span class="k">Heatmap matrix from bigWigs</span><span class="v">72×</span><span class="d">faster than deepTools computeMatrix on one core (12k vs 173 regions/s); 396× faster than pyBigWig&#x27;s binned stats()</span></a><a class="tile" href="#atlas"><span class="tag navy">Atlas</span><span class="k">Enrichment vs 500 peak files</span><span class="v">21 ms</span><span class="d">per 20k-peak query with Fisher tests: 63× faster than GIGGLE, 189× faster than looping over tracks</span></a><a class="tile" href="#motifs"><span class="tag green">motifs</span><span class="k">Motif scanning</span><span class="v">26×</span><span class="d">faster than MEME FIMO, 52× faster than Biopython; 0.3 Gbp·motif/s on one core</span></a><a class="tile" href="#pairs"><span class="tag warn">bedpe</span><span class="k">Hi-C pair counting, with the fix</span><span class="v">780k/s</span><span class="d">window × window matrix after a measured fix: 15× faster than today and 1.2× faster than cooler cload (today it is 12× slower)</span></a><a class="tile" href="#architecture"><span class="tag purple">Architecture</span><span class="k">Graph annotation step</span><span class="v">185×</span><span class="d">faster than the per-vertex loop it replaced (74 ms vs 14 s on 114,367 edges)</span></a></div>
+  <h2 style="margin-top:12px">Where the speed comes from</h2>
+  <div class="mech"><div><h3><a href="#loci">Keep the interval index</a></h3><p>A cgranges index is built once per <code>Loci</code> and reused. Single lookups cost 2.3 µs, so per-locus loops stay cheap.</p></div><div><h3><a href="#signal">One native call per region</a></h3><p>All bins of a window come from one pybigtools call, so each compressed block is inflated once. Results go straight into a preallocated cube; processes share it through shared memory.</p></div><div><h3><a href="#atlas">One matrix for the whole collection</a></h3><p>Atlas turns hundreds of peak files into one sparse bin × track matrix kept in memory, so a query is a single row-sum over all tracks instead of one intersect per file.</p></div><div><h3><a href="#motifs">SIMD motif scoring, layout built once</a></h3><p>lightmotif scores many positions per instruction. genomeblocks stripes each sequence once and reuses it for every motif, then splits motifs across processes.</p></div><div><h3><a href="#architecture">numpy over the graph&#x27;s edge array</a></h3><p><code>annotate</code> pulls all edges and weights out of graph-tool as one array and picks each CRE's strongest promoter with a sort, 185× faster than visiting neighbours vertex by vertex.</p></div><div><h3><a href="#import">Pay for imports on use</a></h3><p><code>import genomeblocks</code> takes 2.0 ms; graph-tool, matplotlib and pandas load only when the block that needs them is touched.</p></div></div>
+</section>
+
+<section id="loci">
+  <span class="tag green">Loci · interval algebra</span>
+  <h2>Interval lookups: microseconds, because the index is kept</h2>
+  <p class="verdict">One overlap lookup takes <b>2.3 µs</b>. pyranges needs 1.1 ms and bioframe 6.3 ms for the same question.</p>
+  <div class="why"><h3>Why: the index lives on the Loci</h3><div class="scroll"><svg viewBox="0 0 760 236" role="img" aria-label="pyranges and bioframe filter or re-index whole tables on every single-interval lookup; genomeblocks builds one C interval index per Loci on first use and reuses it, so each later lookup is a few microseconds.">
+  <defs>
+    <marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">pyranges / bioframe: every lookup</text>
+  <rect x="20" y="40" width="96" height="40" rx="8" class="box"/>
+  <text x="68" y="65" text-anchor="middle">query</text>
+  <line x1="116" y1="60" x2="160" y2="60" class="arrow" marker-end="url(#ah1)"/>
+  <rect x="162" y="40" width="190" height="40" rx="8" class="box bad"/>
+  <text x="257" y="58" text-anchor="middle">filter / re-index tables</text>
+  <text x="257" y="73" text-anchor="middle" class="small">again, for this one query</text>
+  <line x1="352" y1="60" x2="392" y2="60" class="arrow" marker-end="url(#ah1)"/>
+  <rect x="394" y="40" width="70" height="40" rx="8" class="box"/>
+  <text x="429" y="65" text-anchor="middle">hits</text>
+  <text x="490" y="58" class="bad head">≈ 1–6 ms</text>
+  <text x="490" y="74" class="small">per query</text>
+
+  <text x="20" y="128" class="head">genomeblocks: Loci.cgr</text>
+  <rect x="20" y="146" width="150" height="62" rx="8" class="box hl"/>
+  <text x="95" y="171" text-anchor="middle">cgranges index</text>
+  <text x="95" y="188" text-anchor="middle" class="small">built once, cached</text>
+  <text x="95" y="201" text-anchor="middle" class="small">on the Loci</text>
+  <rect x="300" y="140" width="96" height="22" rx="6" class="box"/>
+  <text x="348" y="155" text-anchor="middle" class="small">query 1</text>
+  <rect x="300" y="166" width="96" height="22" rx="6" class="box"/>
+  <text x="348" y="181" text-anchor="middle" class="small">query 2</text>
+  <rect x="300" y="192" width="96" height="22" rx="6" class="box"/>
+  <text x="348" y="207" text-anchor="middle" class="small">… query n</text>
+  <line x1="298" y1="151" x2="172" y2="165" class="arrow hl" marker-end="url(#ah1)"/>
+  <line x1="298" y1="177" x2="172" y2="177" class="arrow hl" marker-end="url(#ah1)"/>
+  <line x1="298" y1="203" x2="172" y2="189" class="arrow hl" marker-end="url(#ah1)"/>
+  <text x="236" y="140" text-anchor="middle" class="small">O(log n) lookups</text>
+  <text x="430" y="172" class="good head">≈ 2 µs</text>
+  <text x="430" y="188" class="small">per query: cheap enough to call inside</text>
+  <text x="430" y="202" class="small">per-locus loops (graph building, annotation,</text>
+  <text x="430" y="216" class="small">loop anchoring, isoform choice)</text>
+</svg></div><p class="sub"><code>Loci.cgr</code> builds a <a href='https://github.com/lh3/cgranges'>cgranges</a> index (C, implicit interval tree) the first time it is needed and caches it on the object. Data-frame libraries are built for whole-table joins; asked about one interval, they filter or re-index whole tables, which costs milliseconds per question. genomeblocks leans on cheap single lookups everywhere: <code>Architecture.make</code> anchors every loop with two of them, and <code>Genes.annotations</code>, <code>pair_to_bed</code> and <code>select_isoforms</code> do the same per locus.</p></div>
+  <figure><div class="ttl">One overlap lookup <span>· 200 queries against 100k indexed peaks, lower is better</span></div><div class="scroll" id="c-loci_latency"></div><figcaption>Blue bars are genomeblocks. The pure-Python fallback is the index you get from <code>pip install genomeblocks</code>, because cgranges is not on PyPI (see <a href='#fixes'>fixes</a>).</figcaption></figure>
+  <figure><div class="ttl">Whole-set A &amp; B <span>· log–log, lower is better</span></div><div class="scroll" id="c-loci_tools"></div><figcaption>All 32 runs return the same intervals. At 1k peaks genomeblocks is fastest (992 µs vs 1.1 ms for the next tool); at 10k it ties with bioframe. From 100k on, fully vectorised pyranges and bioframe pull ahead, by 5.9× at 1M, because genomeblocks still steps through Python <code>Locus</code> objects one by one.</figcaption></figure>
+    <figure><div class="ttl">Which index genomeblocks gets <span>· log–log, lower is better</span></div><div class="scroll" id="c-loci_index"></div><figcaption>The pure-Python fallback grows quadratically (78× slower for 10× more peaks). A bounded scan (a few lines, see <a href='#fixes'>fixes</a>) makes it 47× faster at 100k, matching cgranges.</figcaption></figure>
+  <details><summary>All intersect timings</summary><div class="tbl"><table><thead><tr><th class="n">n per set</th><th class="">engine</th><th class="n">median</th></tr></thead><tbody><tr><td class="n">1,000</td><td class="">genomeblocks (cgranges, warm index)</td><td class="n">802 µs</td></tr><tr class="hl"><td class="n">1,000</td><td class="">genomeblocks (cgranges)</td><td class="n">992 µs</td></tr><tr><td class="n">1,000</td><td class="">naive double loop</td><td class="n">1.1 ms</td></tr><tr><td class="n">1,000</td><td class="">genomeblocks (fallback, bounded scan)</td><td class="n">1.4 ms</td></tr><tr><td class="n">1,000</td><td class="">genomeblocks (pure-Python fallback)</td><td class="n">1.9 ms</td></tr><tr><td class="n">1,000</td><td class="">bedtools (CLI)</td><td class="n">4.3 ms</td></tr><tr><td class="n">1,000</td><td class="">bioframe</td><td class="n">8.3 ms</td></tr><tr><td class="n">1,000</td><td class="">intervaltree</td><td class="n">15 ms</td></tr><tr><td class="n">1,000</td><td class="">pyranges</td><td class="n">38 ms</td></tr><tr><td class="n">10,000</td><td class="">genomeblocks (cgranges, warm index)</td><td class="n">7.5 ms</td></tr><tr class="hl"><td class="n">10,000</td><td class="">genomeblocks (cgranges)</td><td class="n">9.4 ms</td></tr><tr><td class="n">10,000</td><td class="">bioframe</td><td class="n">9.7 ms</td></tr><tr><td class="n">10,000</td><td class="">bedtools (CLI)</td><td class="n">14 ms</td></tr><tr><td class="n">10,000</td><td class="">genomeblocks (fallback, bounded scan)</td><td class="n">17 ms</td></tr><tr><td class="n">10,000</td><td class="">pyranges</td><td class="n">40 ms</td></tr><tr><td class="n">10,000</td><td class="">naive double loop</td><td class="n">82 ms</td></tr><tr><td class="n">10,000</td><td class="">genomeblocks (pure-Python fallback)</td><td class="n">94 ms</td></tr><tr><td class="n">10,000</td><td class="">intervaltree</td><td class="n">284 ms</td></tr><tr><td class="n">100,000</td><td class="">bioframe</td><td class="n">59 ms</td></tr><tr><td class="n">100,000</td><td class="">pyranges</td><td class="n">65 ms</td></tr><tr><td class="n">100,000</td><td class="">genomeblocks (cgranges, warm index)</td><td class="n">108 ms</td></tr><tr><td class="n">100,000</td><td class="">bedtools (CLI)</td><td class="n">117 ms</td></tr><tr class="hl"><td class="n">100,000</td><td class="">genomeblocks (cgranges)</td><td class="n">149 ms</td></tr><tr><td class="n">100,000</td><td class="">genomeblocks (fallback, bounded scan)</td><td class="n">156 ms</td></tr><tr><td class="n">100,000</td><td class="">genomeblocks (pure-Python fallback)</td><td class="n">7.3 s</td></tr><tr><td class="n">100,000</td><td class="">intervaltree</td><td class="n">14 s</td></tr><tr><td class="n">1,000,000</td><td class="">pyranges</td><td class="n">318 ms</td></tr><tr><td class="n">1,000,000</td><td class="">bioframe</td><td class="n">974 ms</td></tr><tr><td class="n">1,000,000</td><td class="">genomeblocks (cgranges, warm index)</td><td class="n">1.5 s</td></tr><tr class="hl"><td class="n">1,000,000</td><td class="">genomeblocks (cgranges)</td><td class="n">1.9 s</td></tr><tr><td class="n">1,000,000</td><td class="">genomeblocks (fallback, bounded scan)</td><td class="n">1.9 s</td></tr><tr><td class="n">1,000,000</td><td class="">bedtools (CLI)</td><td class="n">2.2 s</td></tr></tbody></table></div></details>
+  <details><summary>Merge and BED parsing</summary><div class="tbl"><table><thead><tr><th class="">operation</th><th class="n">n</th><th class="">engine</th><th class="n">median</th></tr></thead><tbody><tr class="hl"><td class="">sort + merge</td><td class="n">1,000</td><td class="">genomeblocks</td><td class="n">3.0 ms</td></tr><tr><td class="">sort + merge</td><td class="n">1,000</td><td class="">bedtools (CLI)</td><td class="n">9.5 ms</td></tr><tr><td class="">sort + merge</td><td class="n">1,000</td><td class="">bioframe</td><td class="n">19 ms</td></tr><tr><td class="">sort + merge</td><td class="n">1,000</td><td class="">pyranges</td><td class="n">29 ms</td></tr><tr><td class="">sort + merge</td><td class="n">10,000</td><td class="">bioframe</td><td class="n">26 ms</td></tr><tr><td class="">sort + merge</td><td class="n">10,000</td><td class="">pyranges</td><td class="n">31 ms</td></tr><tr class="hl"><td class="">sort + merge</td><td class="n">10,000</td><td class="">genomeblocks</td><td class="n">43 ms</td></tr><tr><td class="">sort + merge</td><td class="n">10,000</td><td class="">bedtools (CLI)</td><td class="n">46 ms</td></tr><tr><td class="">sort + merge</td><td class="n">100,000</td><td class="">pyranges</td><td class="n">45 ms</td></tr><tr><td class="">sort + merge</td><td class="n">100,000</td><td class="">bioframe</td><td class="n">98 ms</td></tr><tr><td class="">sort + merge</td><td class="n">100,000</td><td class="">bedtools (CLI)</td><td class="n">393 ms</td></tr><tr class="hl"><td class="">sort + merge</td><td class="n">100,000</td><td class="">genomeblocks</td><td class="n">1.0 s</td></tr><tr><td class="">sort + merge</td><td class="n">1,000,000</td><td class="">pyranges</td><td class="n">151 ms</td></tr><tr><td class="">sort + merge</td><td class="n">1,000,000</td><td class="">bioframe</td><td class="n">892 ms</td></tr><tr><td class="">sort + merge</td><td class="n">1,000,000</td><td class="">bedtools (CLI)</td><td class="n">4.9 s</td></tr><tr class="hl"><td class="">sort + merge</td><td class="n">1,000,000</td><td class="">genomeblocks</td><td class="n">15 s</td></tr><tr class="hl"><td class="">BED parse</td><td class="n">1,000</td><td class="">genomeblocks</td><td class="n">809 µs</td></tr><tr><td class="">BED parse</td><td class="n">1,000</td><td class="">pandas.read_csv</td><td class="n">1.2 ms</td></tr><tr><td class="">BED parse</td><td class="n">1,000</td><td class="">pyranges</td><td class="n">5.2 ms</td></tr><tr><td class="">BED parse</td><td class="n">10,000</td><td class="">pandas.read_csv</td><td class="n">3.5 ms</td></tr><tr class="hl"><td class="">BED parse</td><td class="n">10,000</td><td class="">genomeblocks</td><td class="n">7.5 ms</td></tr><tr><td class="">BED parse</td><td class="n">10,000</td><td class="">pyranges</td><td class="n">12 ms</td></tr><tr><td class="">BED parse</td><td class="n">100,000</td><td class="">pandas.read_csv</td><td class="n">24 ms</td></tr><tr><td class="">BED parse</td><td class="n">100,000</td><td class="">pyranges</td><td class="n">84 ms</td></tr><tr class="hl"><td class="">BED parse</td><td class="n">100,000</td><td class="">genomeblocks</td><td class="n">142 ms</td></tr><tr><td class="">BED parse</td><td class="n">1,000,000</td><td class="">pandas.read_csv</td><td class="n">230 ms</td></tr><tr><td class="">BED parse</td><td class="n">1,000,000</td><td class="">pyranges</td><td class="n">741 ms</td></tr><tr class="hl"><td class="">BED parse</td><td class="n">1,000,000</td><td class="">genomeblocks</td><td class="n">1.9 s</td></tr></tbody></table></div></details>
+</section>
+<section id="signal">
+  <span class="tag green">signal · bigWig extraction</span>
+  <h2>bigWig → heatmap matrix: one native call per region</h2>
+  <p class="verdict">On one core, <code>Loci.signal()</code> fills a ±3 kb × 200-bin matrix at <b>12k regions/s</b>: 72× faster than deepTools computeMatrix and 396× faster than pyBigWig's binned <code>stats()</code>. With 4 processes it reaches <b>42k region-tracks/s</b>.</p>
+  <div class="why"><h3>Why: inflate each block once, bin in Rust</h3><div class="scroll"><svg viewBox="0 0 760 262" role="img" aria-label="pyBigWig stats with 200 bins finds and inflates the same compressed block once per bin; genomeblocks asks pybigtools for all 200 bins in one call, inflates each block once, bins in Rust, and writes straight into a preallocated float32 cube.">
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">pyBigWig stats(nBins=200)</text>
+  <rect x="20" y="36" width="320" height="26" rx="5" class="box"/>
+  <g class="small">
+    <line x1="52" y1="36" x2="52" y2="62" stroke="currentColor" opacity=".35"/><line x1="84" y1="36" x2="84" y2="62" stroke="currentColor" opacity=".35"/>
+    <line x1="116" y1="36" x2="116" y2="62" stroke="currentColor" opacity=".35"/><line x1="148" y1="36" x2="148" y2="62" stroke="currentColor" opacity=".35"/>
+    <line x1="180" y1="36" x2="180" y2="62" stroke="currentColor" opacity=".35"/><line x1="212" y1="36" x2="212" y2="62" stroke="currentColor" opacity=".35"/>
+    <line x1="244" y1="36" x2="244" y2="62" stroke="currentColor" opacity=".35"/><line x1="276" y1="36" x2="276" y2="62" stroke="currentColor" opacity=".35"/>
+    <line x1="308" y1="36" x2="308" y2="62" stroke="currentColor" opacity=".35"/>
+  </g>
+  <text x="180" y="54" text-anchor="middle" class="small">6 kb window · 200 bins</text>
+  <path d="M36,62 C 60,120 150,120 170,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <path d="M100,62 C 120,110 160,120 176,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <path d="M196,62 C 196,100 186,120 182,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <path d="M260,62 C 240,110 200,120 188,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <path d="M324,62 C 300,120 210,120 194,150" class="arrow bad" marker-end="url(#ah2)"/>
+  <text x="290" y="112" class="small">1 lookup per bin</text>
+  <rect x="110" y="152" width="140" height="44" rx="8" class="box bad"/>
+  <text x="180" y="171" text-anchor="middle">zlib data block</text>
+  <text x="180" y="187" text-anchor="middle" class="small">re-read for every bin</text>
+  <text x="20" y="232" class="bad head">≈ 30 regions / s</text>
+
+  <line x1="380" y1="20" x2="380" y2="246" stroke="currentColor" opacity=".18"/>
+
+  <text x="404" y="22" class="head">genomeblocks signal() → pybigtools</text>
+  <rect x="404" y="36" width="320" height="26" rx="5" class="box hl"/>
+  <text x="564" y="54" text-anchor="middle" class="small">6 kb window · 200 bins</text>
+  <line x1="564" y1="62" x2="564" y2="88" class="arrow hl" marker-end="url(#ah2)"/>
+  <text x="572" y="80" class="small">1 call: values(bins=200)</text>
+  <rect x="494" y="90" width="140" height="36" rx="8" class="box hl"/>
+  <text x="564" y="106" text-anchor="middle">data block</text>
+  <text x="564" y="120" text-anchor="middle" class="small">inflated once, reused</text>
+  <line x1="564" y1="126" x2="564" y2="148" class="arrow hl" marker-end="url(#ah2)"/>
+  <rect x="494" y="150" width="140" height="30" rx="8" class="box hl"/>
+  <text x="564" y="170" text-anchor="middle">binning in Rust</text>
+  <line x1="564" y1="180" x2="564" y2="200" class="arrow hl" marker-end="url(#ah2)"/>
+  <rect x="424" y="202" width="280" height="26" rx="5" class="box"/>
+  <text x="564" y="220" text-anchor="middle" class="small">cube[locus, track, :] · float32, preallocated</text>
+  <text x="404" y="252" class="good head">≈ 10–37k regions / s, one core</text>
+</svg></div><p class="sub">bigWig data sits in zlib-compressed blocks. pyBigWig's <code>stats(nBins=200)</code> queries each bin separately, so the same block is located and inflated up to 200 times per region. genomeblocks asks pybigtools for all 200 bins in one call; the block is inflated once, binned in Rust, and the result is written into a preallocated float32 cube. The bins step matters too: fetching per-base values and binning in numpy runs at 7k/s (pybigtools) or 4.2k/s (pyBigWig).</p></div>
+  <figure><div class="ttl">Engines, one track <span>· 5,000 peaks (300 for the pyBigWig stats rows), higher is better</span></div><div class="scroll" id="c-signal_engines"></div><figcaption>Same windows, same bins. Every engine returns the same matrix as genomeblocks: identical values for the pybigtools and pure-Python paths, float32 rounding for pyBigWig, and Pearson r = 0.998 for deepTools. <code>exact=False</code> gives identical values and speed here because 30 bp bins are finer than these files' first zoom level (336 bp), so both read full-resolution data.</figcaption></figure>
+  <figure><div class="ttl">Throughput vs number of loci <span>· 1 track, 1 core</span></div><div class="scroll" id="c-signal_scaling"></div><figcaption>Throughput rises from 9.6k to 37k regions/s as peaks get denser: genome-sorted neighbours share compressed blocks, and one open pybigtools handle per track reuses them. The pure-Python reader and per-base loops stay flat.</figcaption></figure>
+    <figure><div class="ttl">Workers <span>· 16 tracks × 5,000 loci</span></div><div class="scroll" id="c-signal_parallel"></div><figcaption>Processes writing into one shared-memory cube scale 4.3× on 4 cores (identical output each time). The same chunks on 4 threads add only 1.2×, because pybigtools calls do not run in parallel across Python threads; that is why <code>signal()</code> uses processes. deepTools with 4 processes reaches 653/s.</figcaption></figure>
+  <details><summary>Engine table (rate, correctness vs genomeblocks)</summary><div class="tbl"><table><thead><tr><th class="">engine</th><th class="n">loci</th><th class="n">regions/s</th><th class="n">median</th><th class="n">Pearson r</th><th class="n">max |Δ|</th></tr></thead><tbody><tr><td class="">genomeblocks signal(exact=False)</td><td class="n">5,000</td><td class="n">13k</td><td class="n">395 ms</td><td class="n">1.0000</td><td class="n">0</td></tr><tr class="hl"><td class="">genomeblocks signal()</td><td class="n">5,000</td><td class="n">12k</td><td class="n">400 ms</td><td class="n">1.0000</td><td class="n">0</td></tr><tr><td class="">pybigtools per-base + numpy bins</td><td class="n">5,000</td><td class="n">7k</td><td class="n">714 ms</td><td class="n">1.0000</td><td class="n">0</td></tr><tr><td class="">pyBigWig per-base + numpy bins</td><td class="n">5,000</td><td class="n">4.2k</td><td class="n">1.2 s</td><td class="n">1.0000</td><td class="n">5.7e-06</td></tr><tr><td class="">genomeblocks, pure-Python reader</td><td class="n">5,000</td><td class="n">2.5k</td><td class="n">2.0 s</td><td class="n">1.0000</td><td class="n">0</td></tr><tr><td class="">deepTools computeMatrix -p 1</td><td class="n">5,000</td><td class="n">173</td><td class="n">29 s</td><td class="n">0.9980</td><td class="n">3.8</td></tr><tr><td class="">pyBigWig stats(nBins=200)</td><td class="n">300</td><td class="n">32</td><td class="n">9.5 s</td><td class="n">1.0000</td><td class="n">0</td></tr><tr><td class="">pyBigWig stats(nBins=200), zoom</td><td class="n">300</td><td class="n">30</td><td class="n">9.9 s</td><td class="n">1.0000</td><td class="n">0</td></tr></tbody></table></div></details>
+  <details><summary>Parallel table</summary><div class="tbl"><table><thead><tr><th class="">engine</th><th class="n">workers</th><th class="n">region-tracks/s</th><th class="n">median</th></tr></thead><tbody><tr class="hl"><td class="">genomeblocks · processes</td><td class="n">1</td><td class="n">9.8k</td><td class="n">8.2 s</td></tr><tr class="hl"><td class="">genomeblocks · processes</td><td class="n">2</td><td class="n">20k</td><td class="n">4.0 s</td></tr><tr class="hl"><td class="">genomeblocks · processes (cap lifted)</td><td class="n">3</td><td class="n">27k</td><td class="n">3.0 s</td></tr><tr class="hl"><td class="">genomeblocks · processes (cap lifted)</td><td class="n">4</td><td class="n">42k</td><td class="n">1.9 s</td></tr><tr><td class="">threads (same chunks)</td><td class="n">2</td><td class="n">12k</td><td class="n">6.6 s</td></tr><tr><td class="">threads (same chunks)</td><td class="n">4</td><td class="n">12k</td><td class="n">6.9 s</td></tr><tr><td class="">deepTools computeMatrix</td><td class="n">1</td><td class="n">184</td><td class="n">7.3 min</td></tr><tr><td class="">deepTools computeMatrix</td><td class="n">4</td><td class="n">653</td><td class="n">2.0 min</td></tr></tbody></table></div></details>
+</section>
+<section id="atlas">
+  <span class="tag navy">Atlas · GIGGLE-style enrichment</span>
+  <h2>Enrichment against hundreds of peak files in one sparse operation</h2>
+  <p class="verdict">A 20k-peak query against all 500 tracks takes <b>21 ms</b>, Fisher tests included. GIGGLE takes 1.3 s for the same search; intersecting track by track takes 3.9 s (pyranges per track: 22 s).</p>
+  <div class="why"><h3>Why: the collection is one bin × track matrix</h3><div class="scroll"><svg viewBox="0 0 760 270" role="img" aria-label="Instead of intersecting the query with each of 500 peak files in turn, Atlas stores all files as one sparse genome-bin by track matrix; a query selects its bin rows and one column sum gives the overlap count for every track at once.">
+  <defs>
+    <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">Per-track loop</text>
+  <rect x="20" y="40" width="92" height="34" rx="8" class="box"/>
+  <text x="66" y="62" text-anchor="middle">query</text>
+  <g>
+    <rect x="160" y="34" width="120" height="24" rx="6" class="box"/><text x="220" y="50" text-anchor="middle" class="small">intersect track 1</text>
+    <rect x="160" y="64" width="120" height="24" rx="6" class="box"/><text x="220" y="80" text-anchor="middle" class="small">intersect track 2</text>
+    <rect x="160" y="94" width="120" height="24" rx="6" class="box"/><text x="220" y="110" text-anchor="middle" class="small">…</text>
+    <rect x="160" y="124" width="120" height="24" rx="6" class="box bad"/><text x="220" y="140" text-anchor="middle" class="small">intersect track 500</text>
+  </g>
+  <line x1="112" y1="57" x2="158" y2="46" class="arrow" marker-end="url(#ah3)"/>
+  <line x1="112" y1="57" x2="158" y2="76" class="arrow" marker-end="url(#ah3)"/>
+  <line x1="112" y1="57" x2="158" y2="136" class="arrow bad" marker-end="url(#ah3)"/>
+  <text x="20" y="182" class="small">work grows with every track</text>
+  <text x="20" y="198" class="small">added to the collection</text>
+
+  <line x1="310" y1="20" x2="310" y2="256" stroke="currentColor" opacity=".18"/>
+
+  <text x="334" y="22" class="head">Atlas: one sparse matrix</text>
+  <text x="430" y="44" text-anchor="middle" class="small">tracks →</text>
+  <g>
+    <!-- 6 bin rows x 8 track columns; query bins = rows 2 and 4 -->
+    <rect x="380" y="52" width="16" height="16" class="cell on"/><rect x="398" y="52" width="16" height="16" class="cell"/><rect x="416" y="52" width="16" height="16" class="cell"/><rect x="434" y="52" width="16" height="16" class="cell on"/><rect x="452" y="52" width="16" height="16" class="cell"/><rect x="470" y="52" width="16" height="16" class="cell"/><rect x="488" y="52" width="16" height="16" class="cell"/><rect x="506" y="52" width="16" height="16" class="cell"/>
+    <rect x="380" y="70" width="16" height="16" class="cell q"/><rect x="398" y="70" width="16" height="16" class="cell on"/><rect x="416" y="70" width="16" height="16" class="cell"/><rect x="434" y="70" width="16" height="16" class="cell on"/><rect x="452" y="70" width="16" height="16" class="cell"/><rect x="470" y="70" width="16" height="16" class="cell on"/><rect x="488" y="70" width="16" height="16" class="cell"/><rect x="506" y="70" width="16" height="16" class="cell on"/>
+    <rect x="380" y="88" width="16" height="16" class="cell"/><rect x="398" y="88" width="16" height="16" class="cell"/><rect x="416" y="88" width="16" height="16" class="cell on"/><rect x="434" y="88" width="16" height="16" class="cell"/><rect x="452" y="88" width="16" height="16" class="cell"/><rect x="470" y="88" width="16" height="16" class="cell"/><rect x="488" y="88" width="16" height="16" class="cell on"/><rect x="506" y="88" width="16" height="16" class="cell"/>
+    <rect x="380" y="106" width="16" height="16" class="cell q"/><rect x="398" y="106" width="16" height="16" class="cell on"/><rect x="416" y="106" width="16" height="16" class="cell"/><rect x="434" y="106" width="16" height="16" class="cell"/><rect x="452" y="106" width="16" height="16" class="cell on"/><rect x="470" y="106" width="16" height="16" class="cell on"/><rect x="488" y="106" width="16" height="16" class="cell"/><rect x="506" y="106" width="16" height="16" class="cell"/>
+    <rect x="380" y="124" width="16" height="16" class="cell on"/><rect x="398" y="124" width="16" height="16" class="cell"/><rect x="416" y="124" width="16" height="16" class="cell"/><rect x="434" y="124" width="16" height="16" class="cell"/><rect x="452" y="124" width="16" height="16" class="cell"/><rect x="470" y="124" width="16" height="16" class="cell"/><rect x="488" y="124" width="16" height="16" class="cell on"/><rect x="506" y="124" width="16" height="16" class="cell"/>
+    <rect x="380" y="142" width="16" height="16" class="cell"/><rect x="398" y="142" width="16" height="16" class="cell"/><rect x="416" y="142" width="16" height="16" class="cell"/><rect x="434" y="142" width="16" height="16" class="cell on"/><rect x="452" y="142" width="16" height="16" class="cell"/><rect x="470" y="142" width="16" height="16" class="cell"/><rect x="488" y="142" width="16" height="16" class="cell"/><rect x="506" y="142" width="16" height="16" class="cell"/>
+  </g>
+  <text x="372" y="60" text-anchor="end" class="small">1 kb</text>
+  <text x="372" y="74" text-anchor="end" class="small">genome</text>
+  <text x="372" y="88" text-anchor="end" class="small">bins ↓</text>
+  <text x="532" y="83" class="small">← query bin</text>
+  <text x="532" y="119" class="small">← query bin</text>
+  <line x1="451" y1="164" x2="451" y2="186" class="arrow hl" marker-end="url(#ah3)"/>
+  <text x="460" y="180" class="small">sum the query rows (one sparse op)</text>
+  <g>
+    <rect x="380" y="190" width="16" height="20" class="box hl"/><text x="388" y="205" text-anchor="middle" class="small">0</text>
+    <rect x="398" y="190" width="16" height="20" class="box hl"/><text x="406" y="205" text-anchor="middle" class="small">2</text>
+    <rect x="416" y="190" width="16" height="20" class="box hl"/><text x="424" y="205" text-anchor="middle" class="small">0</text>
+    <rect x="434" y="190" width="16" height="20" class="box hl"/><text x="442" y="205" text-anchor="middle" class="small">1</text>
+    <rect x="452" y="190" width="16" height="20" class="box hl"/><text x="460" y="205" text-anchor="middle" class="small">1</text>
+    <rect x="470" y="190" width="16" height="20" class="box hl"/><text x="478" y="205" text-anchor="middle" class="small">2</text>
+    <rect x="488" y="190" width="16" height="20" class="box hl"/><text x="496" y="205" text-anchor="middle" class="small">0</text>
+    <rect x="506" y="190" width="16" height="20" class="box hl"/><text x="514" y="205" text-anchor="middle" class="small">1</text>
+  </g>
+  <text x="334" y="236" class="small">overlap count for every track at once,</text>
+  <text x="334" y="251" class="small">then a vectorised Fisher test across all tracks</text>
+  <text x="560" y="205" class="good head">all 500 tracks</text>
+  <text x="560" y="221" class="small">in one pass</text>
+</svg></div><p class="sub"><code>Atlas.make</code> tiles the genome into 1 kb bins and stores one bit per (bin, track) in a single CSR matrix held in memory. A query becomes its set of bins; selecting those rows and summing the columns (about 4.6 ms here) gives the overlap count for every track at once, and the Fisher tests are vectorised across tracks. The cost tracks the number of query bins, not the number of files.</p></div>
+  <figure><div class="ttl">Query time vs collection size <span>· 20k-peak query, log–log, lower is better</span></div><div class="scroll" id="c-atlas_query"></div><figcaption>Atlas is timed with its index loaded. GIGGLE and bedtools are command-line tools and read their inputs on every call, which is how they are used. The per-track loop uses prebuilt cgranges indexes (index once, query many), the fairest way to do this without Atlas.</figcaption></figure>
+  <p class="sub"><b>About the GIGGLE comparison.</b> <a href="https://github.com/ryanlayer/giggle">GIGGLE</a> (Layer et al., <i>Nat. Methods</i> 2018, v0.6.3 built from source) is the tool Atlas is modelled on: it indexes exact intervals on disk and reports the same per-file Fisher statistics. Its search is a command-line call that opens the on-disk index each time (1.3 s at 500 files). Used the same way, a fresh Python process that imports genomeblocks, loads the saved Atlas (19 MB .npz, 275 ms to load) and searches takes 1.7 s, much of it Python start-up and imports. Atlas wins when it stays loaded and answers many queries, as in a notebook, a bootstrap or a web service; GIGGLE wins for one-off command-line queries. Both agree on what is enriched: GIGGLE and Atlas enrichment scores correlate at Spearman ρ = 0.99 across tracks, with 22 of the top 25 tracks shared, and GIGGLE's exact overlap counts match exact interval counts at ρ = 1.000.</p>
+  <div class="two">
+    <figure><div class="ttl">Build once <span>· 500 BED files, 7.7M peaks, 293 MB of text</span></div>
+      <div class="tbl"><table><thead><tr><th class="">index</th><th class="n">workers</th><th class="n">build</th><th class="">size</th></tr></thead><tbody><tr><td class="">Atlas, 200 bp bins</td><td class="n">3</td><td class="n">4.8 s</td><td class="">190 MB in RAM</td></tr><tr><td class="">Atlas, 1,000 bp bins</td><td class="n">1</td><td class="n">6.0 s</td><td class="">68 MB in RAM · 19 MB .npz</td></tr><tr><td class="">Atlas, 1,000 bp bins</td><td class="n">3</td><td class="n">2.6 s</td><td class="">68 MB in RAM · 19 MB .npz</td></tr><tr><td class="">Atlas, 5,000 bp bins</td><td class="n">3</td><td class="n">2.1 s</td><td class="">43 MB in RAM</td></tr><tr><td class="">GIGGLE, exact intervals</td><td class="n">1</td><td class="n">22 s</td><td class="">201 MB on disk</td></tr></tbody></table></div>
+      <figcaption>Building the 1 kb index with 3 worker processes is 2.4× faster than with 1. <code>Atlas.save</code> / <code>load</code> make the build a one-time cost.</figcaption></figure>
+    <figure><div class="ttl">What binning costs in accuracy <span>· vs exact interval overlaps</span></div>
+      <div class="tbl"><table><thead><tr><th class="">bin</th><th class="n">Spearman ρ</th><th class="n">top-25</th><th class="n">query</th></tr></thead><tbody><tr><td class="">200 bp</td><td class="n">0.999</td><td class="n">21/25</td><td class="n">33 ms</td></tr><tr><td class="">1,000 bp</td><td class="n">0.999</td><td class="n">20/25</td><td class="n">21 ms</td></tr><tr><td class="">5,000 bp</td><td class="n">0.993</td><td class="n">18/25</td><td class="n">19 ms</td></tr></tbody></table></div>
+      <figcaption>Atlas counts shared bins, not intervals. Per-track overlap counts still rank almost identically to exact interval counts (ρ = 0.999 at 1 kb); "top-25 shared" compares the 25 most-enriched tracks by each method. Smaller bins track more closely at a larger index.</figcaption></figure>
+  </div>
+  <p class="sub">A 100-iteration shuffled-null bootstrap (<code>Atlas.bootstrap</code>) over all 500 tracks takes 1.2 s, 12 ms per iteration. With a command-line tool each iteration would be a separate search.</p>
+  <details><summary>Query timings</summary><div class="tbl"><table><thead><tr><th class="">engine</th><th class="n">tracks</th><th class="n">median</th></tr></thead><tbody><tr><td class="">Atlas sparse row-sum only</td><td class="n">10</td><td class="n">2.2 ms</td></tr><tr class="hl"><td class="">Atlas.search()</td><td class="n">10</td><td class="n">14 ms</td></tr><tr><td class="">per-track loop (cgranges)</td><td class="n">10</td><td class="n">72 ms</td></tr><tr><td class="">GIGGLE search -s</td><td class="n">10</td><td class="n">127 ms</td></tr><tr><td class="">bedtools intersect -C</td><td class="n">10</td><td class="n">256 ms</td></tr><tr><td class="">pyranges, per track</td><td class="n">10</td><td class="n">384 ms</td></tr><tr><td class="">Atlas sparse row-sum only</td><td class="n">50</td><td class="n">2.5 ms</td></tr><tr class="hl"><td class="">Atlas.search()</td><td class="n">50</td><td class="n">15 ms</td></tr><tr><td class="">GIGGLE search -s</td><td class="n">50</td><td class="n">318 ms</td></tr><tr><td class="">per-track loop (cgranges)</td><td class="n">50</td><td class="n">353 ms</td></tr><tr><td class="">bedtools intersect -C</td><td class="n">50</td><td class="n">2.0 s</td></tr><tr><td class="">pyranges, per track</td><td class="n">50</td><td class="n">2.0 s</td></tr><tr><td class="">Atlas sparse row-sum only</td><td class="n">100</td><td class="n">2.8 ms</td></tr><tr class="hl"><td class="">Atlas.search()</td><td class="n">100</td><td class="n">15 ms</td></tr><tr><td class="">GIGGLE search -s</td><td class="n">100</td><td class="n">497 ms</td></tr><tr><td class="">per-track loop (cgranges)</td><td class="n">100</td><td class="n">841 ms</td></tr><tr><td class="">pyranges, per track</td><td class="n">100</td><td class="n">4.3 s</td></tr><tr><td class="">bedtools intersect -C</td><td class="n">100</td><td class="n">4.3 s</td></tr><tr><td class="">Atlas sparse row-sum only</td><td class="n">250</td><td class="n">3.3 ms</td></tr><tr class="hl"><td class="">Atlas.search()</td><td class="n">250</td><td class="n">18 ms</td></tr><tr><td class="">GIGGLE search -s</td><td class="n">250</td><td class="n">865 ms</td></tr><tr><td class="">per-track loop (cgranges)</td><td class="n">250</td><td class="n">1.9 s</td></tr><tr><td class="">pyranges, per track</td><td class="n">250</td><td class="n">11 s</td></tr><tr><td class="">bedtools intersect -C</td><td class="n">250</td><td class="n">11 s</td></tr><tr><td class="">Atlas sparse row-sum only</td><td class="n">500</td><td class="n">4.6 ms</td></tr><tr class="hl"><td class="">Atlas.search()</td><td class="n">500</td><td class="n">21 ms</td></tr><tr><td class="">GIGGLE search -s</td><td class="n">500</td><td class="n">1.3 s</td></tr><tr><td class="">per-track loop (cgranges)</td><td class="n">500</td><td class="n">3.9 s</td></tr><tr><td class="">pyranges, per track</td><td class="n">500</td><td class="n">22 s</td></tr></tbody></table></div></details>
+</section>
+<section id="motifs">
+  <span class="tag green">motifs · PWM scanning</span>
+  <h2>Motif scanning: SIMD scoring, sequences prepared once</h2>
+  <p class="verdict"><code>scan_motifs_matrix</code> counts JASPAR hits <b>26× faster than MEME FIMO</b>, 52× faster than Biopython and 32× faster than a vectorised numpy scorer. MOODS, a dedicated C++ scanner that scores every motif in one pass per sequence, is 2.7× faster still; see <a href='#fixes'>fixes</a> for where that gap comes from.</p>
+  <div class="why"><h3>Why: SIMD scoring, and the sequence layout is built once</h3><div class="scroll"><svg viewBox="0 0 760 200" role="img" aria-label="Each 500 bp sequence is converted once into lightmotif's striped SIMD layout; that striped copy is then scanned by every motif in the library, so the conversion cost is paid once rather than once per motif.">
+  <defs>
+    <marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+  </defs>
+  <rect x="20" y="70" width="120" height="44" rx="8" class="box"/>
+  <text x="80" y="89" text-anchor="middle">sequence</text>
+  <text x="80" y="105" text-anchor="middle" class="small">500 bp window</text>
+  <line x1="140" y1="92" x2="196" y2="92" class="arrow hl" marker-end="url(#ah4)"/>
+  <text x="168" y="84" text-anchor="middle" class="small">once</text>
+  <rect x="198" y="62" width="170" height="60" rx="8" class="box hl"/>
+  <text x="283" y="86" text-anchor="middle">stripe()</text>
+  <text x="283" y="103" text-anchor="middle" class="small">positions interleaved</text>
+  <text x="283" y="116" text-anchor="middle" class="small">into SIMD lanes</text>
+  <rect x="470" y="20" width="160" height="30" rx="6" class="box"/><text x="550" y="40" text-anchor="middle" class="small">scan motif 1</text>
+  <rect x="470" y="58" width="160" height="30" rx="6" class="box"/><text x="550" y="78" text-anchor="middle" class="small">scan motif 2</text>
+  <rect x="470" y="96" width="160" height="30" rx="6" class="box"/><text x="550" y="116" text-anchor="middle" class="small">…</text>
+  <rect x="470" y="134" width="160" height="30" rx="6" class="box"/><text x="550" y="154" text-anchor="middle" class="small">scan motif 1,019</text>
+  <line x1="368" y1="88" x2="468" y2="36" class="arrow hl" marker-end="url(#ah4)"/>
+  <line x1="368" y1="90" x2="468" y2="73" class="arrow hl" marker-end="url(#ah4)"/>
+  <line x1="368" y1="94" x2="468" y2="111" class="arrow hl" marker-end="url(#ah4)"/>
+  <line x1="368" y1="96" x2="468" y2="149" class="arrow hl" marker-end="url(#ah4)"/>
+  <text x="418" y="190" text-anchor="middle" class="small">reused by every motif</text>
+  <text x="648" y="74" class="small">motifs split</text>
+  <text x="648" y="89" class="small">across a</text>
+  <text x="648" y="104" class="small">process pool</text>
+</svg></div><p class="sub"><a href='https://github.com/althonos/lightmotif'>lightmotif</a> scores PSSMs with AVX2 over a <em>striped</em> sequence layout. genomeblocks stripes each window once and reuses it for all 1,019 motifs; motifs are then split across worker processes. Striping one sequence costs about 0.7× one motif scan, so re-striping per motif would cost 1.7× the time.</p></div>
+  <figure><div class="ttl">Engines <span>· forward strand, log2-odds ≥ 13, same PSSMs, lower is better</span></div><div class="scroll" id="c-motifs_engines"></div><figcaption>Every engine scores the same probability matrices (pseudocount 0.1, uniform background, forward strand) and reports the same hits per motif (Pearson r ≥ 0.9999; FIMO differs by a handful of hits that sit exactly at the score cut-off, float32 vs float64 rounding). FIMO runs in its fastest mode (<code>--text</code>, no q-values); its time includes reading the FASTA and computing a p-value for every candidate, which is part of what FIMO is for.</figcaption></figure>
+  <figure><div class="ttl">Worker processes <span>· 5,000 windows × 1,019 motifs</span></div><div class="scroll" id="c-motifs_workers"></div><figcaption>3.0× with 4 processes. Each worker receives the sequences once (pool initializer) and scans a share of the motifs.</figcaption></figure><figure><div class="ttl">Full JASPAR library <span>· 1,019 motifs, 1 core</span></div><div class="tbl"><table><thead><tr><th class="">engine</th><th class="n">windows</th><th class="n">time</th><th class="n">Gbp·motif/s</th></tr></thead><tbody><tr><td class="">genomeblocks scan_motifs_matrix (lightmotif)</td><td class="n">1,000</td><td class="n">1.6 s</td><td class="n">0.31</td></tr><tr><td class="">MOODS (C++, all motifs per pass)</td><td class="n">1,000</td><td class="n">574 ms</td><td class="n">0.89</td></tr><tr><td class="">MEME FIMO --text (CLI)</td><td class="n">1,000</td><td class="n">46 s</td><td class="n">0.01</td></tr><tr><td class="">genomeblocks scan_motifs_matrix (lightmotif)</td><td class="n">5,000</td><td class="n">7.2 s</td><td class="n">0.35</td></tr><tr><td class="">MOODS (C++, all motifs per pass)</td><td class="n">5,000</td><td class="n">2.2 s</td><td class="n">1.16</td></tr></tbody></table></div><figcaption>Throughput is sequence length × motifs scored per second. MOODS checks all motifs in one pass per sequence with a lookahead filter.</figcaption></figure>
+  <details><summary>Engine table</summary><div class="tbl"><table><thead><tr><th class="">engine</th><th class="n">time</th><th class="n">Gbp·motif/s</th><th class="n">hits</th><th class="n">r vs genomeblocks</th></tr></thead><tbody><tr><td class="">MOODS (C++, all motifs per pass)</td><td class="n">65 ms</td><td class="n">0.764</td><td class="n">993</td><td class="n">1.000</td></tr><tr class="hl"><td class="">genomeblocks scan_motifs_matrix (lightmotif)</td><td class="n">175 ms</td><td class="n">0.285</td><td class="n">993</td><td class="n">1.000</td></tr><tr><td class="">lightmotif, re-striped per motif</td><td class="n">295 ms</td><td class="n">0.169</td><td class="n">993</td><td class="n">1.000</td></tr><tr><td class="">MEME FIMO --text (CLI)</td><td class="n">4.5 s</td><td class="n">0.011</td><td class="n">996</td><td class="n">1.000</td></tr><tr><td class="">numpy sliding window</td><td class="n">5.7 s</td><td class="n">0.009</td><td class="n">993</td><td class="n">1.000</td></tr><tr><td class="">Biopython PSSM.search</td><td class="n">9.2 s</td><td class="n">0.005</td><td class="n">993</td><td class="n">1.000</td></tr></tbody></table></div></details>
+</section>
+<section id="pairs">
+  <span class="tag purple">bedpe · Hi-C pairs</span>
+  <h2>Hi-C pairs: fast only for one chromosome today, with an easy fix</h2>
+  <p class="verdict">With a target chromosome, <code>count_pairs</code> runs at <b>1.7M pairs/s</b>. Counting against every partner chromosome drops to 371k/s, no faster than a per-pair Python loop (390k/s), and <code>count_pairs_2d</code> manages 53k/s, 12× slower than cooler cload.</p>
+  <p class="sub">The file is parsed in 2M-row chunks by pandas' C reader at 3M pairs/s, so reading is not the problem. The time goes to converting each chunk's categorical chromosome columns to Python strings and then comparing whole columns against every chromosome name, and in 2-D against every chromosome <em>pair</em> (23 × 23 × 2 full-chunk scans). Using the integer category codes, one <code>searchsorted</code> per anchor over genome-wide coordinates and a single <code>bincount</code> / sparse sum gives the same output in 4.0 s (3.3×) and 6.4 s for the 2-D matrix (15×).</p>
+  <figure><div class="ttl">Pair counting <span>· 5M pairs (naive loop: first 200k), higher is better</span></div><div class="scroll" id="c-pairs"></div><figcaption>The naive loop does one cgranges lookup per anchor and agrees exactly with <code>count_pairs</code> on the same pairs (match). The fix rows are drop-in versions in <code>benchmarks/bench_fixes.py</code>, checked for identical output.</figcaption></figure>
+  <details><summary>Pairs table</summary><div class="tbl"><table><thead><tr><th class="">engine</th><th class="n">pairs</th><th class="n">median</th><th class="n">pairs/s</th></tr></thead><tbody><tr><td class="">pandas chunked parse only (I/O floor)</td><td class="n">5,000,000</td><td class="n">1.7 s</td><td class="n">3M</td></tr><tr class="hl"><td class="">genomeblocks count_pairs (target_chrom=chr1)</td><td class="n">5,000,000</td><td class="n">3.0 s</td><td class="n">1.7M</td></tr><tr><td class="">cooler cload pairs (500 kb, CLI)</td><td class="n">5,000,000</td><td class="n">7.7 s</td><td class="n">649k</td></tr><tr><td class="">naive per-pair loop (cgranges lookup)</td><td class="n">200,000</td><td class="n">513 ms</td><td class="n">390k</td></tr><tr class="hl"><td class="">genomeblocks count_pairs (50 kb x partner chrom)</td><td class="n">5,000,000</td><td class="n">13 s</td><td class="n">371k</td></tr><tr class="hl"><td class="">genomeblocks count_pairs_2d (500 kb)</td><td class="n">5,000,000</td><td class="n">94 s</td><td class="n">53k</td></tr><tr><td class="">count_pairs, integer-code fix (same output)</td><td class="n">5,000,000</td><td class="n">4.0 s</td><td class="n">1.2M</td></tr><tr><td class="">count_pairs_2d, integer-code fix (same output)</td><td class="n">5,000,000</td><td class="n">6.4 s</td><td class="n">780k</td></tr></tbody></table></div></details>
+</section>
+<section id="genes">
+  <span class="tag navy">Genes · annotation</span>
+  <h2>Gene models: lazy indexes, per-CRE lookups</h2>
+  <p class="verdict">Labelling 100k CREs (promoter / UTR / exon / intron / intergenic) takes <b>734 ms</b> (136k CREs/s); nearest gene for the same set takes 488 ms.</p>
+  <p class="sub"><code>Genes.annot</code> merges promoters, exons and UTRs into five <code>Loci</code> the first time it is used and keeps them, so each CRE costs at most five cached-index lookups. Parsing the GTF (876,947 lines, 20,000 genes, 70,028 transcripts) is plain Python at 176k lines/s, roughly 17 s for a ~3M-line GENCODE GTF. With the pure-Python fallback index, annotation is 57× slower already at 10k CREs.</p>
+  <figure><div class="ttl">Gene-model steps <span>· 20k genes; blue = default path</span></div><div class="scroll" id="c-genes"></div><figcaption><code>select_isoforms</code> picks, per gene, the longest isoform whose TSS is open in ATAC peaks and/or a bigWig; the bigWig variant scores every candidate TSS through <code>signal()</code>.</figcaption></figure>
+  <details><summary>Genes table</summary><div class="tbl"><table><thead><tr><th class="">step</th><th class="n">n</th><th class="n">median</th><th class="n">per second</th></tr></thead><tbody><tr><td class="">Genes.make (GTF parse)</td><td class="n">876,947</td><td class="n">5.0 s</td><td class="n">176k</td></tr><tr><td class="">annot index build (prom/exon/UTR merge)</td><td class="n">20,000</td><td class="n">3.3 s</td><td class="n"></td></tr><tr><td class="">annotations (cgranges)</td><td class="n">10,000</td><td class="n">73 ms</td><td class="n">136k</td></tr><tr><td class="">annotations (pure-Python fallback)</td><td class="n">10,000</td><td class="n">4.2 s</td><td class="n">2.4k</td></tr><tr><td class="">annotations (fallback, bounded scan)</td><td class="n">10,000</td><td class="n">136 ms</td><td class="n">74k</td></tr><tr><td class="">nearest_genes (pyranges)</td><td class="n">10,000</td><td class="n">272 ms</td><td class="n">37k</td></tr><tr><td class="">annotations (cgranges)</td><td class="n">100,000</td><td class="n">734 ms</td><td class="n">136k</td></tr><tr><td class="">annotations (fallback, bounded scan)</td><td class="n">100,000</td><td class="n">1.2 s</td><td class="n">84k</td></tr><tr><td class="">nearest_genes (pyranges)</td><td class="n">100,000</td><td class="n">488 ms</td><td class="n">205k</td></tr><tr><td class="">select_isoforms (peaks)</td><td class="n">70,028</td><td class="n">236 ms</td><td class="n">297k</td></tr><tr><td class="">select_isoforms (peaks + bigWig)</td><td class="n">70,028</td><td class="n">543 ms</td><td class="n">129k</td></tr><tr><td class="">select_isoforms (bigWig only)</td><td class="n">70,028</td><td class="n">1.6 s</td><td class="n">43k</td></tr></tbody></table></div></details>
+</section>
+<section id="architecture">
+  <span class="tag purple">Architecture · contact graphs</span>
+  <h2>Contact graphs: graph-tool storage, numpy over edge arrays</h2>
+  <p class="verdict">Building a graph from 50k loops over 100k CREs takes <b>2.1 s</b> (73,237 loci, 114,367 links). The vectorised annotation step is 185× faster than the loop it replaced.</p>
+  <p class="sub"><code>make</code> anchors each loop end with a cached-index lookup. <code>annotate</code> pulls the whole edge list with weights out of graph-tool as one (E, 3) array, masks promoter–non-promoter edges, and picks each CRE's strongest promoter with one <code>lexsort</code> + <code>unique</code>, instead of visiting neighbours vertex by vertex.</p>
+  <figure><div class="ttl">Pipeline steps <span>· 100k CREs, 50k loops, 5 kb .mcool; blue = genomeblocks today</span></div><div class="scroll" id="c-architecture"></div><figcaption>Gray rows are comparisons: the stage-2 loop genomeblocks used to run, and graph-tool's native <code>incident_edges_op</code>, which computes the same node strengths 225× faster than <code>strength()</code>'s per-edge Python loop (see <a href='#fixes'>fixes</a>).</figcaption></figure>
+  <details><summary>Architecture table</summary><div class="tbl"><table><thead><tr><th class="">step</th><th class="n">median</th><th class="n">size</th><th class="">check</th></tr></thead><tbody><tr><td class="">make (50k loops -&gt; graph)</td><td class="n">2.1 s</td><td class="n">114,367</td><td class=""></td></tr><tr><td class="">add_mcool (5 kb)</td><td class="n">18 s</td><td class="n">114,367</td><td class=""></td></tr><tr><td class="">normalize (power-law O/E)</td><td class="n">1.1 s</td><td class="n">114,367</td><td class=""></td></tr><tr><td class="">annotate (total)</td><td class="n">1.6 s</td><td class="n">73,237</td><td class=""></td></tr><tr><td class="">annotate stage 2: vectorised (genomeblocks)</td><td class="n">74 ms</td><td class="n">114,367</td><td class=""></td></tr><tr><td class="">annotate stage 2: per-vertex loop</td><td class="n">14 s</td><td class="n">114,367</td><td class="">same result (3 of 3,073 differ, only at tied weights)</td></tr><tr><td class="">strength: per-edge Python loop (genomeblocks)</td><td class="n">531 ms</td><td class="n">114,367</td><td class=""></td></tr><tr><td class="">strength: graph-tool incident_edges_op</td><td class="n">2.4 ms</td><td class="n">114,367</td><td class="">same result</td></tr></tbody></table></div></details>
+</section>
+<section id="import">
+  <span class="tag navy">package · import</span>
+  <h2>Import only what you touch</h2>
+  <p class="verdict"><code>import genomeblocks</code> costs <b>2.0 ms</b>. Each building block loads its dependencies on first access through a module <code>__getattr__</code>.</p>
+  <figure><div class="ttl">Import cost <span>· median of 15 fresh interpreters, start-up (25 ms) subtracted</span></div><div class="scroll" id="c-import"></div><figcaption>Touching <code>Loci</code> pulls in numpy, pandas and the signal/motif/atlas modules that attach methods to it; <code>Architecture</code> adds graph-tool.</figcaption></figure>
+</section>
+<section id="fixes">
+  <span class="tag warn">Not fast yet</span>
+  <h2>Where it is slow, and what fixes it</h2>
+  <p class="verdict">The benchmarks also found a few slow paths. Each one comes with a measured or one-line fix.</p>
+  <div class="fixes"><div class="fix"><span class="t">pip installs get a quadratic overlap index</span><p>cgranges is not on PyPI, so pip users get <code>_PyIntervalIndex</code>. Its <code>overlap()</code> walks every interval that starts before the query end (<code>range(hi)</code> from 0), so each lookup is O(n) and <code>A &amp; B</code> is O(n·m): 7.3 s at 100k peaks, roughly 12.2 min projected at 1M. Tracking the longest interval per chromosome and starting the walk at <code>bisect_left(starts, qs - max_len)</code> gives identical results in 156 ms (47× faster). The benchmark's <code>BoundedPyIndex</code> is a drop-in.</p></div><div class="fix"><span class="t">Loci.sort() / merge() compare dataclasses in Python</span><p><code>sort()</code> calls <code>sorted(s)</code>, which runs <code>Locus.__lt__</code> in Python for every comparison. On 2,000,000 intervals that is 13 s; <code>sorted(s, key=lambda l: (l.chrom, l.start))</code> gives the same order (checked: identical) in 7.4 s (1.7×). <code>merge()</code> goes from 15 s to 5.4 s (2.8×, identical output). pyranges still merges the same set in 151 ms; a numpy merge over start/end arrays would close the rest.</p></div><div class="fix"><span class="t">signal(): workers are capped at half the cores</span><p><code>signal()</code> caps <code>workers</code> at <code>cpu_count() // 2</code>, so on this 4-core machine <code>workers=4</code> silently runs 2 processes (20k/s). Lifting the cap gave 42k/s (2.1× more). Consider honouring an explicit <code>workers</code> request and only defaulting to half.</p></div><div class="fix"><span class="t">pybigtools deprecates <code>missing=</code></span><p>pybigtools 0.3 warns on every <code>values(..., missing=...)</code> call that the argument is deprecated in favour of <code>fillna</code>. <code>_PyBigToolsHandle</code> uses it on the hot path, so a future pybigtools release will break <code>signal()</code>. Switching to <code>fillna</code> (with a version check) avoids that.</p></div><div class="fix"><span class="t">pure-Python bigWig reader: keep it, it is close</span><p>The fallback reader manages 2.5k regions/s, 80× faster than pyBigWig's binned stats. Most of its time is the per-call R-tree walk and block inflate; caching the last inflated block per handle (as pybigtools does) would help the dense-peak case most.</p></div><div class="fix"><span class="t">count_pairs / count_pairs_2d compare chromosome strings per chunk</span><p>Each chunk's chromosome columns become Python strings and are compared against every chromosome (2-D: every chromosome pair). With integer category codes and one global <code>searchsorted</code> per anchor: <code>count_pairs</code> 13 s → 4.0 s, <code>count_pairs_2d</code> 94 s → 6.4 s on 5M pairs, identical output (checked).</p></div><div class="fix"><span class="t">Architecture.strength() and add_mcool() loop in Python</span><p><code>strength()</code> walks every edge in Python (531 ms); <code>gt.incident_edges_op(G, 'out', 'sum', G.ep[key])</code> returns the same sums in 2.4 ms. <code>add_mcool</code> (18 s) does a pandas MultiIndex lookup per edge; joining the edge bin pairs against the pixel table in one merge would follow the pattern <code>annotate</code> already uses.</p></div><div class="fix"><span class="t">Touching Loci imports matplotlib, pandas and scipy</span><p><code>import genomeblocks</code> is lazy (2.0 ms), but <code>from genomeblocks import Loci</code> takes 797 ms because <code>loci.py</code> imports every module that attaches methods, and those import their heavy dependencies at module level: <code>signal_draw</code> 315 ms, <code>bedpe</code> 157 ms, <code>atlas</code> 109 ms (cumulative, <code>python -X importtime</code>). Moving <code>matplotlib.pyplot</code>, <code>pandas</code> and <code>scipy.sparse</code> imports inside the functions that use them keeps the method attachment and removes most of that cost.</p></div><div class="fix"><span class="t">scan_motifs_matrix: one Python-level scan per window × motif</span><p>For 1,000 windows × 1,019 motifs that is 1,019,000 calls into lightmotif, each on only 500 bp, so call overhead dominates (1.5 s). Concatenating the windows, striping once, and scoring each motif over the whole block with <code>pssm.calculate(striped).threshold(t)</code> (hits split back per window with <code>np.bincount</code>, edge-crossing hits dropped) gives identical counts in every cell in 1.0 s (1.5×). MOODS still takes only 574 ms: the rest of the gap is the scoring itself, since lightmotif scores every position for every motif while MOODS skips most positions with a lookahead filter.</p></div><div class="fix"><span class="t">Small API papercut: numpy integers as Loci indexes</span><p><code>Loci[np.int64(3)]</code> raises <code>TypeError</code> because <code>__getitem__</code> only accepts <code>int</code>. Checking <code>isinstance(key, numbers.Integral)</code> (or <code>operator.index</code>) lets index arrays from numpy work directly.</p></div></div>
+</section>
+<section id="method">
+  <span class="tag navy">Method</span>
+  <h2>How this was measured</h2>
+  <ul class="plain">
+    <li><b>Machine:</b> Intel(R) Xeon(R) Processor @ 2.10GHz, 4 cores (AVX2/AVX-512), 17 GB RAM, Linux, Python 3.11.16. Input files sit in the OS page cache, as in an interactive session.</li>
+    <li><b>Timing:</b> wall clock, median of 3–5 runs after one warm-up (single runs are marked in the tables). Benchmarks ran one at a time.</li>
+    <li><b>Data:</b> no public data could be downloaded in this sandbox, so everything is synthetic and seeded, laid out on real hg38 chromosome sizes: clustered peak sets with lognormal widths (1k–1M); four genome-wide bigWigs (13.8M variable-span records, 165 MB each, similar to a ChIP-seq track); 500 peak files (7.4M peaks) for Atlas; 5M Hi-C pairs with P(s) ∝ s⁻¹; a GENCODE-shaped GTF (20k genes); 50k loops; and the real JASPAR 2024 CORE vertebrate motifs (1,019).</li>
+    <li><b>Correctness:</b> every comparison checks that the engines return the same answer (same intervals, same matrix, same hit counts, same graph labels) before timing is compared.</li>
+    <li><b>Versions:</b> numpy 2.4.6, scipy 1.17.1, pandas 3.0.6, pybigtools 0.3.0, pyBigWig 0.3.26, pyranges 0.1.4, bioframe 0.8.0, lightmotif 0.10.0, Bio 1.88, graph_tool 3.9, bedtools v2.31.1, cgranges (git), MOODS-python 1.9, deepTools 3.5.6, cooler 0.10.</li>
+  </ul>
+  <pre>cd benchmarks
+python make_data.py            # ~3 min, ~1.5 GB
+PY=python ./run_all.sh         # every bench, then figures
+python build_report.py         # this page → report/index.html</pre>
+</section>
+</div>
+<script>/* Tiny SVG chart kit for the benchmark report: horizontal bars (emphasis)
+   and multi-series log/linear line charts. Colours come from CSS tokens so
+   both themes work; every label goes in via textContent. */
+(function () {
+  const NS = "http://www.w3.org/2000/svg";
+  const tip = document.createElement("div");
+  tip.className = "tip"; tip.hidden = true; tip.setAttribute("role", "status");
+  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(tip));
+
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs || {}) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function txt(parent, x, y, s, cls, anchor) {
+    const t = el("text", { x, y, class: cls || "", "text-anchor": anchor || "start" }, parent);
+    t.textContent = s;
+    return t;
+  }
+  function showTip(evt, value, label) {
+    tip.replaceChildren();
+    const v = document.createElement("strong"); v.textContent = value;
+    const l = document.createElement("span"); l.textContent = label;
+    tip.append(v, l);
+    tip.hidden = false;
+    const r = (evt.target.getBoundingClientRect ? evt.target.getBoundingClientRect() : null);
+    const x = evt.clientX || (r ? r.left + r.width / 2 : 0);
+    const y = evt.clientY || (r ? r.top : 0);
+    const w = tip.offsetWidth;
+    tip.style.left = Math.min(window.innerWidth - w - 12, Math.max(12, x + 14)) + "px";
+    tip.style.top = (y + window.scrollY - 12 - tip.offsetHeight) + "px";
+  }
+  function hideTip() { tip.hidden = true; }
+  function bindTip(node, value, label) {
+    node.setAttribute("tabindex", "0");
+    node.setAttribute("aria-label", label + ": " + value);
+    node.addEventListener("pointermove", e => showTip(e, value, label));
+    node.addEventListener("focus", e => showTip(e, value, label));
+    node.addEventListener("pointerleave", hideTip);
+    node.addEventListener("blur", hideTip);
+  }
+
+  // ── scales & ticks ────────────────────────────────────────────────────────
+  function scale(d0, d1, r0, r1, log) {
+    if (log) {
+      const a = Math.log10(d0), b = Math.log10(d1);
+      return v => r0 + (Math.log10(v) - a) / (b - a) * (r1 - r0);
+    }
+    return v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+  }
+  function logTicks(lo, hi) {
+    const out = [];
+    for (let p = Math.floor(Math.log10(lo)); p <= Math.ceil(Math.log10(hi)); p++) {
+      const v = Math.pow(10, p);
+      if (v >= lo * 0.999 && v <= hi * 1.001) out.push(v);
+    }
+    return out;
+  }
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo, step0 = span / (n || 5);
+    const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= (n || 5));
+    const out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  // ── horizontal emphasis bars ──────────────────────────────────────────────
+  // spec: {rows:[{label, value, hl, tip?}], log, fmt, axis, sort:'asc'|'desc'|null}
+  function hbar(host, spec) {
+    const rows = spec.rows.slice();
+    if (spec.sort === "asc") rows.sort((a, b) => a.value - b.value);
+    if (spec.sort === "desc") rows.sort((a, b) => b.value - a.value);
+    const W = 760, labelW = spec.labelW || 290, rowH = 30, top = 6, axisH = 34;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img",
+                            "aria-label": spec.aria || "" }, null);
+    const vals = rows.map(r => r.value);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const x0 = labelW, x1 = W - 92;
+    let sx, ticks;
+    if (spec.log) {
+      lo = Math.pow(10, Math.floor(Math.log10(lo) - 0.15));
+      hi = Math.pow(10, Math.ceil(Math.log10(hi) + 0.05));
+      sx = scale(lo, hi, x0, x1, true); ticks = logTicks(lo, hi);
+    } else {
+      lo = 0; ticks = niceTicks(0, hi * 1.02, 5); hi = ticks[ticks.length - 1];
+      sx = scale(0, hi, x0, x1, false);
+    }
+    const base = spec.log ? x0 : sx(0);
+    const plotB = top + rows.length * rowH;
+    for (const t of ticks) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, spec.fmt(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    el("line", { x1: base, x2: base, y1: top, y2: plotB, class: "baseline" }, svg);
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      const lab = txt(svg, labelW - 12, y + 4, r.label, r.hl ? "rlabel hl" : "rlabel", "end");
+      const xe = Math.max(sx(r.value), base + 2);
+      const h = 16, rad = 4;
+      const w = xe - base;
+      const p = `M${base},${y - h / 2} h${Math.max(0, w - rad)} a${rad},${rad} 0 0 1 ${rad},${rad}` +
+                ` v${h - 2 * rad} a${rad},${rad} 0 0 1 -${rad},${rad} h-${Math.max(0, w - rad)} z`;
+      el("path", { d: p, class: r.hl ? "bar hl" : "bar" }, svg);
+      txt(svg, xe + 6, y + 4, spec.fmt(r.value, true), "vlabel");
+      const hit = el("rect", { x: 0, y: y - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      bindTip(hit, spec.fmt(r.value, true), r.tip || r.label);
+      void lab;
+    });
+    host.appendChild(svg);
+  }
+
+  // ── multi-series lines ────────────────────────────────────────────────────
+  // spec: {series:[{name, color, pts:[[x,y],...]}], xlog, ylog, xfmt, yfmt,
+  //        xLabel, yLabel, legend:true}
+  function lines(host, spec) {
+    const W = spec.W || 760, H = spec.H || 330;
+    const m = { l: 74, r: spec.endLabels ? 190 : 24, t: 14, b: 46 };
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img",
+                            "aria-label": spec.aria || "" }, null);
+    const xs = spec.series.flatMap(s => s.pts.map(p => p[0]));
+    const ys = spec.series.flatMap(s => s.pts.map(p => p[1]));
+    let xlo = Math.min(...xs), xhi = Math.max(...xs), ylo = Math.min(...ys), yhi = Math.max(...ys);
+    let xt, yt;
+    if (spec.xlog) { xt = logTicks(xlo, xhi); }
+    else { xt = spec.xticks || niceTicks(xlo, xhi, 6); }
+    if (spec.ylog) {
+      ylo = Math.pow(10, Math.floor(Math.log10(ylo))); yhi = Math.pow(10, Math.ceil(Math.log10(yhi)));
+      yt = logTicks(ylo, yhi);
+    } else {
+      ylo = 0; yt = niceTicks(0, yhi * 1.05, 5); yhi = yt[yt.length - 1];
+    }
+    const sx = scale(xlo, xhi, m.l, W - m.r, !!spec.xlog);
+    const sy = scale(ylo, yhi, H - m.b, m.t, !!spec.ylog);
+    for (const t of yt) {
+      el("line", { x1: m.l, x2: W - m.r, y1: sy(t), y2: sy(t), class: "grid" }, svg);
+      txt(svg, m.l - 8, sy(t) + 4, spec.yfmt(t), "tick", "end");
+    }
+    for (const t of xt) txt(svg, sx(t), H - m.b + 17, spec.xfmt(t), "tick", "middle");
+    el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, class: "baseline" }, svg);
+    if (spec.xLabel) txt(svg, (m.l + W - m.r) / 2, H - 8, spec.xLabel, "axis-label", "middle");
+    if (spec.yLabel) {
+      const t = txt(svg, 0, 0, spec.yLabel, "axis-label", "middle");
+      t.setAttribute("transform", `translate(14 ${(m.t + H - m.b) / 2}) rotate(-90)`);
+    }
+    const ends = [];
+    spec.series.forEach(s => {
+      const d = s.pts.map((p, i) => (i ? "L" : "M") + sx(p[0]).toFixed(1) + "," + sy(p[1]).toFixed(1)).join(" ");
+      el("path", { d, class: "line", style: `stroke:${s.color}` }, svg);
+      s.pts.forEach(p => {
+        const c = el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 4, class: "dot", style: `fill:${s.color}` }, svg);
+        const hit = el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 12, class: "hit" }, svg);
+        bindTip(hit, spec.yfmt(p[1], true), `${s.name} · ${spec.xfmt(p[0], true)}`);
+        void c;
+      });
+      const last = s.pts[s.pts.length - 1];
+      ends.push({ y: sy(last[1]), x: sx(last[0]), name: s.name, color: s.color });
+    });
+    if (spec.endLabels) {
+      // de-collide end labels with leader lines
+      ends.sort((a, b) => a.y - b.y);
+      let prev = -1e9;
+      ends.forEach(e => { e.ly = Math.max(e.y, prev + 15); prev = e.ly; });
+      ends.forEach(e => {
+        const lx = W - m.r + 14;
+        el("line", { x1: e.x + 5, y1: e.y, x2: lx - 3, y2: e.ly, class: "leader" }, svg);
+        txt(svg, lx, e.ly + 4, e.name, "endlabel");
+      });
+    }
+    host.appendChild(svg);
+    if (spec.legend !== false) {
+      const lg = document.createElement("div");
+      lg.className = "legend";
+      spec.series.forEach(s => {
+        const i = document.createElement("span");
+        const k = document.createElement("i"); k.style.background = s.color;
+        const t = document.createElement("span"); t.textContent = s.name;
+        i.append(k, t); lg.appendChild(i);
+      });
+      host.appendChild(lg);
+    }
+  }
+
+  window.Charts = { hbar, lines };
+})();
+</script>
+<script>
+const DATA = {"loci_latency": {"kind": "hbar", "fmt": "time", "log": true, "sort": "asc", "axis": "time per overlap lookup (log scale)", "rows": [{"label": "genomeblocks (cgranges)", "value": 2.2740150006939075e-06, "hl": true}, {"label": "genomeblocks (pure-Python fallback)", "value": 0.00010357532500052002, "hl": true}, {"label": "genomeblocks (fallback, bounded scan)", "value": 3.303669999468184e-06, "hl": true}, {"label": "intervaltree", "value": 8.907029999818406e-06, "hl": false}, {"label": "pyranges", "value": 0.0011239388500030145, "hl": false}, {"label": "bioframe", "value": 0.006312107949997881, "hl": false}]}, "loci_tools": {"kind": "lines", "xlog": true, "ylog": true, "xfmt": "num", "yfmt": "time", "xLabel": "peaks per set (n)", "yLabel": "time for A & B", "endLabels": true, "series": [{"name": "genomeblocks (cgranges)", "color": "var(--s1)", "pts": [[1000, 0.0009915510000837457], [10000, 0.009440980999897874], [100000, 0.1491245780000554], [1000000, 1.8710473979999733]]}, {"name": "pyranges", "color": "var(--s2)", "pts": [[1000, 0.03770132200008902], [10000, 0.039582707000136], [100000, 0.0653212929998972], [1000000, 0.31808045900015713]]}, {"name": "bioframe", "color": "var(--s3)", "pts": [[1000, 0.008263352999961171], [10000, 0.009691234000001714], [100000, 0.05946448600002441], [1000000, 0.9737297490000856]]}, {"name": "bedtools (CLI)", "color": "var(--s4)", "pts": [[1000, 0.0043377010000540395], [10000, 0.01430232799998521], [100000, 0.11680613900011849], [1000000, 2.1920291310000266]]}, {"name": "intervaltree", "color": "var(--s5)", "pts": [[1000, 0.015478449000056571], [10000, 0.28430954999998903], [100000, 13.82478316200013]]}]}, "loci_index": {"kind": "lines", "xlog": true, "ylog": true, "xfmt": "num", "yfmt": "time", "xLabel": "peaks per set (n)", "yLabel": "time for A & B", "endLabels": true, "series": [{"name": "cgranges (conda)", "color": "var(--s1)", "pts": [[1000, 0.0009915510000837457], [10000, 0.009440980999897874], [100000, 0.1491245780000554], [1000000, 1.8710473979999733]]}, {"name": "pure-Python fallback (pip)", "color": "var(--s8)", "pts": [[1000, 0.001925443000004634], [10000, 0.09369850799998858], [100000, 7.349963620000153]]}, {"name": "fallback + bounded scan", "color": "var(--s7)", "pts": [[1000, 0.0014118000000280517], [10000, 0.016659325000091485], [100000, 0.15575525100007326], [1000000, 1.9479925719999756]]}]}, "signal_engines": {"kind": "hbar", "fmt": "num", "log": true, "sort": "desc", "labelW": 300, "axis": "regions per second, 1 track, 1 core (log scale)", "rows": [{"label": "genomeblocks signal()", "value": 12492.915205317318, "hl": true}, {"label": "genomeblocks signal(exact=False)", "value": 12663.004718184555, "hl": true}, {"label": "genomeblocks, pure-Python reader", "value": 2515.802590056899, "hl": true}, {"label": "pybigtools per-base + numpy bins", "value": 7003.480399194725, "hl": false}, {"label": "pyBigWig per-base + numpy bins", "value": 4167.32338821409, "hl": false}, {"label": "pyBigWig stats(nBins=200)", "value": 31.520311546288582, "hl": false}, {"label": "pyBigWig stats(nBins=200), zoom", "value": 30.41356592615008, "hl": false}, {"label": "deepTools computeMatrix -p 1", "value": 172.8173718134669, "hl": false}]}, "signal_scaling": {"kind": "lines", "xlog": true, "ylog": false, "xfmt": "num", "yfmt": "num", "xLabel": "loci (random subset of 100k peaks, genome order)", "yLabel": "regions / s", "endLabels": true, "series": [{"name": "genomeblocks signal()", "color": "var(--s1)", "pts": [[1000, 9587.846844212887], [5000, 13172.17462202254], [20000, 24917.840522460938], [50000, 36932.99171083869]]}, {"name": "pyBigWig per-base + numpy bins", "color": "var(--s2)", "pts": [[1000, 3975.322343782218], [5000, 4158.324343791571], [20000, 4160.675373874501], [50000, 4073.2741691091337]]}, {"name": "genomeblocks, pure-Python reader", "color": "var(--s3)", "pts": [[1000, 2602.470587787981], [5000, 2476.7548164279287], [20000, 2501.5559412163834], [50000, 2479.1135690804244]]}]}, "signal_parallel": {"kind": "lines", "xlog": false, "ylog": false, "xfmt": "int", "yfmt": "num", "xticks": [1, 2, 3, 4], "xLabel": "workers (4-core machine)", "yLabel": "region-tracks / s", "endLabels": true, "series": [{"name": "genomeblocks, processes", "color": "var(--s1)", "pts": [[1, 9778.379082358737], [2, 19875.386193070168], [3, 26947.608637142155], [4, 42243.19202671153]]}, {"name": "same work on threads", "color": "var(--s2)", "pts": [[1, 9778.379082358737], [2, 12177.968882922276], [4, 11575.31477465729]]}, {"name": "deepTools -p", "color": "var(--s3)", "pts": [[1, 183.81346510377367], [4, 653.0469859810822]]}]}, "atlas_query": {"kind": "lines", "xlog": true, "ylog": true, "xfmt": "num", "yfmt": "time", "xLabel": "tracks in the collection", "yLabel": "time per query", "endLabels": true, "series": [{"name": "Atlas.search()", "color": "var(--s1)", "pts": [[10, 0.014293236999947112], [50, 0.014998922999438946], [100, 0.01541796399942541], [250, 0.01761665499998344], [500, 0.02062255200053187]]}, {"name": "GIGGLE search -s", "color": "var(--s2)", "pts": [[10, 0.12743459099965548], [50, 0.31786416199975065], [100, 0.4973160869994899], [250, 0.865256158000193], [500, 1.2939444459998413]]}, {"name": "per-track loop (cgranges)", "color": "var(--s3)", "pts": [[10, 0.07214154199937184], [50, 0.3526979179996488], [100, 0.8405680300002132], [250, 1.857568481999806], [500, 3.8915902150001784]]}, {"name": "pyranges, per track", "color": "var(--s4)", "pts": [[10, 0.38368647699917346], [50, 1.9941837809992649], [100, 4.273860903000241], [250, 10.83844943799977], [500, 21.575082530000145]]}, {"name": "bedtools intersect -C", "color": "var(--s5)", "pts": [[10, 0.25555099499979406], [50, 1.9807810379998045], [100, 4.31943249699998], [250, 10.99656526599938]]}]}, "motifs_engines": {"kind": "hbar", "fmt": "time", "log": true, "sort": "asc", "labelW": 300, "axis": "time for 1,000 \u00d7 500 bp windows \u00d7 100 motifs (log scale)", "rows": [{"label": "genomeblocks (lightmotif)", "value": 0.1752093199997944, "hl": true}, {"label": "MEME FIMO --text (CLI)", "value": 4.475028052000198, "hl": false}, {"label": "lightmotif, re-striped per motif", "value": 0.2950625220000802, "hl": false}, {"label": "MOODS (C++, all motifs per pass)", "value": 0.06543491999991602, "hl": false}, {"label": "numpy sliding window", "value": 5.676212059000136, "hl": false}, {"label": "Biopython PSSM.search", "value": 9.17123314599985, "hl": false}]}, "motifs_workers": {"kind": "lines", "xlog": false, "ylog": false, "xfmt": "int", "yfmt": "time", "xticks": [1, 2, 3, 4], "xLabel": "worker processes", "yLabel": "time, 5,000 windows \u00d7 1,019 motifs", "endLabels": false, "legend": false, "series": [{"name": "scan_motifs_matrix", "color": "var(--s1)", "pts": [[1, 7.416982147999988], [2, 4.297942429000159], [3, 3.2196761919999517], [4, 2.4668634189997647]]}]}, "pairs": {"kind": "hbar", "fmt": "num", "log": true, "sort": "desc", "labelW": 340, "axis": "read pairs per second (log scale)", "rows": [{"label": "pandas chunked parse only (I/O floor)", "value": 3020479.1269690436, "hl": false}, {"label": "genomeblocks count_pairs (50 kb x partner chrom)", "value": 371266.2897473829, "hl": true}, {"label": "genomeblocks count_pairs (target_chrom=chr1)", "value": 1662691.1344763811, "hl": true}, {"label": "genomeblocks count_pairs_2d (500 kb)", "value": 53378.640745535, "hl": true}, {"label": "cooler cload pairs (500 kb, CLI)", "value": 649146.513932522, "hl": false}, {"label": "naive per-pair loop (cgranges lookup)", "value": 389852.5292944717, "hl": false}, {"label": "count_pairs, integer-code fix (proposed)", "value": 1238546.0275879726, "hl": true}, {"label": "count_pairs_2d, integer-code fix (proposed)", "value": 779559.3412757341, "hl": true}]}, "genes": {"kind": "hbar", "fmt": "time", "log": true, "sort": null, "labelW": 330, "axis": "seconds (log scale)", "rows": [{"label": "Genes.make (GTF parse)", "value": 4.990279015999931, "hl": true}, {"label": "annot index build (prom/exon/UTR merge)", "value": 3.2924057019999964, "hl": true}, {"label": "annotations (cgranges) \u00b7 10k CREs", "value": 0.07342616100004307, "hl": true}, {"label": "annotations (pure-Python fallback) \u00b7 10k CREs", "value": 4.216595656000209, "hl": false}, {"label": "annotations (fallback, bounded scan) \u00b7 10k CREs", "value": 0.13596263499994166, "hl": false}, {"label": "nearest_genes (pyranges) \u00b7 10k CREs", "value": 0.27223573400033274, "hl": true}, {"label": "annotations (cgranges) \u00b7 100k CREs", "value": 0.734419816999889, "hl": true}, {"label": "annotations (fallback, bounded scan) \u00b7 100k CREs", "value": 1.1861104279996653, "hl": false}, {"label": "nearest_genes (pyranges) \u00b7 100k CREs", "value": 0.488081308999881, "hl": true}, {"label": "select_isoforms (peaks)", "value": 0.23561995000000024, "hl": true}, {"label": "select_isoforms (peaks + bigWig)", "value": 0.5428794509998625, "hl": true}, {"label": "select_isoforms (bigWig only)", "value": 1.6368515759995717, "hl": true}]}, "architecture": {"kind": "hbar", "fmt": "time", "log": true, "sort": null, "labelW": 340, "axis": "seconds (log scale)", "rows": [{"label": "make (50k loops -> graph)", "value": 2.1188511350001136, "hl": true}, {"label": "add_mcool (5 kb)", "value": 18.027995104000183, "hl": true}, {"label": "normalize (power-law O/E)", "value": 1.0872590059998402, "hl": true}, {"label": "annotate (total)", "value": 1.642652673000157, "hl": true}, {"label": "annotate stage 2: vectorised (genomeblocks)", "value": 0.07381996299955063, "hl": true}, {"label": "annotate stage 2: per-vertex loop", "value": 13.663633570999991, "hl": false}, {"label": "strength: per-edge Python loop (genomeblocks)", "value": 0.5313576910002666, "hl": true}, {"label": "strength: graph-tool incident_edges_op", "value": 0.002363956000408507, "hl": false}]}, "import": {"kind": "hbar", "fmt": "time", "log": false, "sort": null, "labelW": 330, "axis": "seconds on top of a bare interpreter start-up", "rows": [{"label": "import genomeblocks", "value": 0.001995513999645482, "hl": true}, {"label": "+ Locus", "value": 0.012870519999523822, "hl": false}, {"label": "+ Loci (pulls signal, motifs, atlas, bedpe)", "value": 0.7967262989996016, "hl": false}, {"label": "+ Genes", "value": 0.01651335499900597, "hl": false}, {"label": "+ browser (matplotlib)", "value": 0.784519908999755, "hl": false}, {"label": "+ Architecture (graph-tool)", "value": 0.9203458649999448, "hl": false}, {"label": "everything", "value": 1.4898192319997179, "hl": false}]}};
+const F = {
+  time: (s) => { s = +(+s).toPrecision(6); if (s === 0) return "0"; if (s < 1e-3) return (s < 1e-5 ? (s*1e6).toFixed(1) : (s*1e6).toFixed(0)) + " µs";
+                 if (s < 1) return (s < 0.01 ? (s*1e3).toFixed(1) : (s*1e3).toFixed(0)) + " ms";
+                 if (s < 120) return (s < 10 ? s.toFixed(1) : s.toFixed(0)) + " s"; return (s/60).toFixed(1) + " min"; },
+  num: (x) => { for (const [d, u] of [[1e9, "G"], [1e6, "M"], [1e3, "k"]]) if (x >= d) { const v = x / d;
+                 return (v >= 10 ? v.toFixed(0) : v.toFixed(1)).replace(/\.0$/, "") + u; }
+                 return x >= 10 ? x.toFixed(0) : (+x.toFixed(1)).toString(); },
+  int: (x) => String(Math.round(x)),
+};
+document.addEventListener("DOMContentLoaded", () => {
+  for (const [id, s] of Object.entries(DATA)) {
+    const host = document.getElementById("c-" + id); if (!host) continue;
+    if (s.kind === "hbar") Charts.hbar(host, {...s, fmt: F[s.fmt]});
+    else Charts.lines(host, {...s, xfmt: F[s.xfmt], yfmt: F[s.yfmt]});
+  }
+});
+</script>

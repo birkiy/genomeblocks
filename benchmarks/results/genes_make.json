@@ -1,0 +1,207 @@
+{
+ "bench": "genes_make",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+  "cores": 4,
+  "mem_gb": 16.876515328,
+  "python": "3.11.16",
+  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "versions": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1",
+   "pandas": "3.0.6",
+   "pybigtools": "0.3.0",
+   "pyBigWig": "0.3.26",
+   "cgranges": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.88",
+   "MOODS": "installed",
+   "graph_tool": "3.9",
+   "intervaltree": "installed",
+   "bedtools": "v2.31.1"
+  }
+ },
+ "meta": {
+  "gtf": "/home/user/genomeblocks/benchmarks/data/genes.gtf"
+ },
+ "rows": [
+  {
+   "part": "components",
+   "step": "read lines",
+   "seconds": 0.11127362600001334,
+   "runs": [
+    0.13040398800001185,
+    0.11127362600001334,
+    0.10255469300000186
+   ]
+  },
+  {
+   "part": "components",
+   "step": "read + split",
+   "seconds": 2.4146370099999785,
+   "runs": [
+    2.4146370099999785,
+    2.551866188999952,
+    2.3903407640000296
+   ]
+  },
+  {
+   "part": "components",
+   "step": "read + split + _parse_attributes",
+   "seconds": 2.522475647999954,
+   "runs": [
+    2.7158184040000037,
+    2.50011688699999,
+    2.522475647999954
+   ]
+  },
+  {
+   "part": "components",
+   "step": "read + split + regex attributes",
+   "seconds": 2.9853378599999587,
+   "runs": [
+    2.9853378599999587,
+    3.1329251829999976,
+    2.8391667959999722
+   ]
+  },
+  {
+   "part": "components",
+   "step": "Genes.make (all)",
+   "seconds": 6.037101261999965,
+   "runs": [
+    6.037101261999965,
+    6.26191833900009,
+    5.7770143139999846
+   ]
+  },
+  {
+   "part": "parse",
+   "variant": "Genes.make (current)",
+   "objects": true,
+   "seconds": 5.6479817299999695,
+   "runs": [
+    5.999777611000013,
+    5.079824176000102,
+    5.6479817299999695
+   ]
+  },
+  {
+   "part": "parse",
+   "variant": "Genes.make, garbage collector paused",
+   "objects": true,
+   "seconds": 5.086794906000023,
+   "runs": [
+    6.447980654000048,
+    3.699614930999928,
+    5.086794906000023
+   ],
+   "same": true
+  },
+  {
+   "part": "parse",
+   "variant": "fast Python parser, same objects",
+   "objects": true,
+   "seconds": 7.801481451999962,
+   "runs": [
+    9.311910750000038,
+    5.948576755999966,
+    7.801481451999962
+   ],
+   "same": true
+  },
+  {
+   "part": "parse",
+   "variant": "pandas read_csv + str.extract (table)",
+   "objects": false,
+   "seconds": 5.020917321999946,
+   "runs": [
+    5.275829847999944,
+    5.020917321999946,
+    4.806328156000063
+   ],
+   "rows": 876946
+  },
+  {
+   "part": "parse",
+   "variant": "pyranges.read_gtf (table)",
+   "objects": false,
+   "seconds": 6.783758570000032,
+   "runs": [
+    6.863004329999967,
+    6.783758570000032,
+    6.674132913999983
+   ],
+   "rows": 876946
+  },
+  {
+   "part": "parse",
+   "variant": "polars read_csv + str.extract (table)",
+   "objects": false,
+   "seconds": 0.5495236669999031,
+   "runs": [
+    0.7967586149999306,
+    0.5495236669999031,
+    0.49206200000003264
+   ],
+   "rows": 876946
+  },
+  {
+   "part": "parse",
+   "variant": "polars table, then the same objects",
+   "objects": true,
+   "seconds": 3.8056168410000737,
+   "runs": [
+    4.97305235500005,
+    3.8056168410000737,
+    3.738315349000004
+   ],
+   "same": true
+  },
+  {
+   "part": "annot",
+   "variant": "current (Loci.sort/merge)",
+   "seconds": 3.9808201900000313,
+   "runs": [
+    4.144330654999976,
+    3.9758834929999693,
+    3.9808201900000313
+   ]
+  },
+  {
+   "part": "annot",
+   "variant": "key-sort fix (same Loci objects)",
+   "seconds": 1.5695037030000094,
+   "runs": [
+    1.618307566999988,
+    1.5695037030000094,
+    1.5616497750000917
+   ],
+   "same": true
+  },
+  {
+   "part": "annot",
+   "variant": "numpy merge (from Gene objects)",
+   "seconds": 1.3497049190000325,
+   "runs": [
+    1.406997944000068,
+    1.3329704709999532,
+    1.3497049190000325
+   ],
+   "same": true
+  },
+  {
+   "part": "annot",
+   "variant": "numpy merge (from columnar table)",
+   "seconds": 0.1504402719999689,
+   "runs": [
+    0.1504402719999689,
+    0.1393633749999026,
+    0.18783487000007426
+   ],
+   "same": true
+  }
+ ]
+}

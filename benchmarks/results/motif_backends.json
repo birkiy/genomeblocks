@@ -1,0 +1,197 @@
+{
+ "bench": "motif_backends",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+  "cores": 4,
+  "mem_gb": 16.876515328,
+  "python": "3.11.16",
+  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "versions": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1",
+   "pandas": "3.0.6",
+   "pybigtools": "0.3.0",
+   "pyBigWig": "0.3.26",
+   "cgranges": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.88",
+   "MOODS": "installed",
+   "graph_tool": "3.9",
+   "intervaltree": "installed",
+   "bedtools": "v2.31.1"
+  }
+ },
+ "meta": {
+  "threshold": 13.0
+ },
+ "rows": [
+  {
+   "part": "scan",
+   "engine": "lightmotif (scan_motifs_matrix, today)",
+   "workers": 1,
+   "n_seqs": 1000,
+   "seconds": 1.7906117400000312,
+   "runs": [
+    1.7966123610001432,
+    1.733933898000032,
+    1.7906117400000312
+   ]
+  },
+  {
+   "part": "scan",
+   "engine": "lightmotif (scan_motifs_matrix, today)",
+   "workers": 4,
+   "n_seqs": 1000,
+   "seconds": 0.6259393090001595,
+   "runs": [
+    0.6259393090001595,
+    0.6315502049999395,
+    0.6235086209999281
+   ]
+  },
+  {
+   "part": "scan",
+   "engine": "MOODS backend",
+   "workers": 1,
+   "n_seqs": 1000,
+   "seconds": 0.6197920919998978,
+   "runs": [
+    0.6826010820000192,
+    0.6197920919998978,
+    0.5725564809999923
+   ],
+   "cells_differing": 0,
+   "cells": 1019000
+  },
+  {
+   "part": "scan",
+   "engine": "MOODS backend",
+   "workers": 4,
+   "n_seqs": 1000,
+   "seconds": 0.5443804950000413,
+   "runs": [
+    0.5120512119999603,
+    0.5443804950000413,
+    0.5466588960000536
+   ],
+   "cells_differing": 0,
+   "cells": 1019000
+  },
+  {
+   "part": "scan",
+   "engine": "lookahead scanner (numba prototype)",
+   "workers": 1,
+   "n_seqs": 1000,
+   "seconds": 4.607533308000029,
+   "runs": [
+    4.66878646400005,
+    4.607533308000029,
+    4.479462369000203
+   ],
+   "cells_differing": 0,
+   "cells": 1019000
+  },
+  {
+   "part": "scan",
+   "engine": "lookahead scanner (numba prototype)",
+   "workers": 4,
+   "n_seqs": 1000,
+   "seconds": 1.3062380089997987,
+   "runs": [
+    1.3226499849999982,
+    1.2760369099999025,
+    1.3062380089997987
+   ],
+   "cells_differing": 0,
+   "cells": 1019000
+  },
+  {
+   "part": "pruning",
+   "n_seqs": 1000,
+   "seconds": 0.0,
+   "columns_scored_fraction": 0.1563145741492484
+  },
+  {
+   "part": "scan",
+   "engine": "lightmotif (scan_motifs_matrix, today)",
+   "workers": 1,
+   "n_seqs": 5000,
+   "seconds": 8.897235486,
+   "runs": [
+    8.94802474800008,
+    8.897235486,
+    8.790643643999829
+   ]
+  },
+  {
+   "part": "scan",
+   "engine": "lightmotif (scan_motifs_matrix, today)",
+   "workers": 4,
+   "n_seqs": 5000,
+   "seconds": 3.4401926620000722,
+   "runs": [
+    3.4401926620000722,
+    3.377744870000015,
+    3.580305343999953
+   ]
+  },
+  {
+   "part": "scan",
+   "engine": "MOODS backend",
+   "workers": 1,
+   "n_seqs": 5000,
+   "seconds": 1.6985919700000522,
+   "runs": [
+    1.7676790900000015,
+    1.6804327760000888,
+    1.6985919700000522
+   ],
+   "cells_differing": 0,
+   "cells": 5095000
+  },
+  {
+   "part": "scan",
+   "engine": "MOODS backend",
+   "workers": 4,
+   "n_seqs": 5000,
+   "seconds": 1.1508390429999054,
+   "runs": [
+    1.1508390429999054,
+    1.16647507100015,
+    1.1402588890000516
+   ],
+   "cells_differing": 0,
+   "cells": 5095000
+  },
+  {
+   "part": "scan",
+   "engine": "lookahead scanner (numba prototype)",
+   "workers": 1,
+   "n_seqs": 5000,
+   "seconds": 22.99984386999995,
+   "runs": [
+    23.368128236999837,
+    22.91567140799998,
+    22.99984386999995
+   ],
+   "cells_differing": 0,
+   "cells": 5095000
+  },
+  {
+   "part": "scan",
+   "engine": "lookahead scanner (numba prototype)",
+   "workers": 4,
+   "n_seqs": 5000,
+   "seconds": 6.370038659999864,
+   "runs": [
+    6.370038659999864,
+    6.471669776999988,
+    6.259921671000029
+   ],
+   "cells_differing": 0,
+   "cells": 5095000
+  }
+ ]
+}
