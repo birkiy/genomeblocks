@@ -25,9 +25,11 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Dict, Iterable, List, Optional, Sequence, Union
 
 import numpy as np
-from scipy.sparse import csc_matrix, csr_matrix
 
 from .loci import Loci
+# scipy.sparse is imported where the matrix is built: loci.py imports this
+# module to attach Loci.enrich, and `from genomeblocks import Loci` should not
+# pay for scipy.
 
 
 _BED_EXT = (".bed", ".bed.gz", ".narrowPeak", ".narrowPeak.gz",
@@ -48,7 +50,7 @@ class Atlas:
         track_names: Sequence[str],
         track_n_peaks: np.ndarray,
         track_n_bins: np.ndarray,
-        M: csr_matrix,
+        M: "csr_matrix",
     ):
         self.bin_size = int(bin_size)
         self.chrom_names = list(chrom_names)
@@ -166,6 +168,7 @@ class Atlas:
         track_n_bins = lens.astype(np.int64)
         del per_track_bins
 
+        from scipy.sparse import csc_matrix
         M = csc_matrix(
             (data, indices, indptr),
             shape=(n_bins, n_tracks),
@@ -619,6 +622,7 @@ class Atlas:
         chrom_offsets = d["chrom_offsets"].astype(np.int64)
         chrom_sizes = {c: int(l) for c, l in zip(chrom_names, chrom_lens)}
         chrom_off = {c: int(o) for c, o in zip(chrom_names, chrom_offsets)}
+        from scipy.sparse import csr_matrix
         M = csr_matrix(
             (d["M_data"], d["M_indices"], d["M_indptr"]),
             shape=tuple(int(x) for x in d["M_shape"].tolist()),

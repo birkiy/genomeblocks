@@ -39,3 +39,79 @@ def test_loci_pair_to_bed_attached(bedpe_path):
     # both loops whose first anchor overlaps the locus should be returned
     assert len(hits) >= 1
     assert all(isinstance(p, Pair) for p in hits)
+
+
+def _write_pairs(path, rows):
+    with open(path, "w") as f:
+        f.write("## pairs format v1.0\n")
+        for i, (c1, p1, c2, p2) in enumerate(rows):
+            f.write(f"r{i}\t{c1}\t{p1}\t{c2}\t{p2}\t+\t-\n")
+
+
+def _random_pairs(n=3000, seed=0):
+    import random
+    rng = random.Random(seed)
+    sizes = {"chr1": 50_000, "chr2": 30_000, "chrM": 1_000}
+    rows = []
+    for _ in range(n):
+        c1 = rng.choice(list(sizes))
+        c2 = c1 if rng.random() < 0.7 else rng.choice(list(sizes))
+        rows.append((c1, rng.randrange(1, sizes[c1]), c2, rng.randrange(1, sizes[c2])))
+    return rows
+
+
+# windows with gaps, out of order, none on chrM
+_WINDOWS = [("chr2", 10_000, 20_000), ("chr1", 0, 5_000), ("chr1", 40_000, 50_000),
+            ("chr1", 5_000, 9_000)]
+
+
+def _window_of(windows, c, p):
+    hit = [i for i, (wc, s, e) in enumerate(windows) if wc == c and s <= p < e]
+    return hit[0] if hit else None
+
+
+def test_count_pairs_matches_brute_force(tmp_path):
+    from genomeblocks.bedpe import count_pairs
+    rows = _random_pairs()
+    path = tmp_path / "x.pairs"
+    _write_pairs(path, rows)
+    loci = Loci([Locus(*w) for w in _WINDOWS])
+
+    want = {}
+    for c1, p1, c2, p2 in rows:
+        for (ca, pa), cb in (((c1, p1), c2), ((c2, p2), c1)):
+            w = _window_of(_WINDOWS, ca, pa)
+            if w is not None:
+                want[(w, cb)] = want.get((w, cb), 0) + 1
+
+    df = count_pairs(loci, str(path), chunksize=700, verbose=False)
+    partners = sorted({cb for _, cb in want})
+    assert list(df.columns) == ["chrom", "start", "end", "uid"] + partners
+    for i in range(len(loci)):
+        for cb in partners:
+            assert df[cb].iloc[i] == want.get((i, cb), 0)
+
+    one = count_pairs(loci, str(path), target_chrom="chr2", chunksize=700, verbose=False)
+    assert one["count"].tolist() == [want.get((i, "chr2"), 0) for i in range(len(loci))]
+
+
+def test_count_pairs_2d_matches_brute_force(tmp_path):
+    import numpy as np
+    from genomeblocks.bedpe import count_pairs_2d
+    rows = _random_pairs(seed=1)
+    path = tmp_path / "x.pairs"
+    _write_pairs(path, rows)
+    a = Loci([Locus(*w) for w in _WINDOWS])
+    b_windows = [("chr1", 0, 25_000), ("chr2", 0, 30_000)]
+    b = Loci([Locus(*w) for w in b_windows])
+
+    for loci_b, wb in ((None, _WINDOWS), (b, b_windows)):
+        want = np.zeros((len(a), len(wb)), dtype=np.int64)
+        for c1, p1, c2, p2 in rows:
+            for (ca, pa), (cb, pb) in (((c1, p1), (c2, p2)), ((c2, p2), (c1, p1))):
+                i, j = _window_of(_WINDOWS, ca, pa), _window_of(wb, cb, pb)
+                if i is not None and j is not None:
+                    want[i, j] += 1
+        got = count_pairs_2d(a, str(path), loci_b=loci_b, chunksize=700, verbose=False)
+        assert got.dtype == np.int64
+        assert np.array_equal(got.toarray(), want)

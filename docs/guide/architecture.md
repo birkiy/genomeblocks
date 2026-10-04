@@ -85,10 +85,12 @@ arch.normalize(cre, source="w", name="n")   # power-law O/E -> ep.n, distances -
 arch.prune()                                 # drop zero-distance (co-located) edges
 ```
 
-`normalize` fits a power law `w ≈ C · d^-α` over all edges with positive distance
-and weight, then divides the raw weight by the fitted expectation; the
+`normalize` fits a power law `w ≈ C · d^-α` over all cis edges with positive
+distance and weight, then divides the raw weight by the fitted expectation; the
 observed-over-expected ratio lands in `ep.n` and the printed `α`/`C` describe the
-decay. Zero-distance edges are a power-law singularity — run `prune()` **once at
+decay. Trans (inter-chromosomal) edges have no distance: `ep.d` is `inf` for them
+and their expectation is the mean trans weight, so their `ep.n` reads as "times
+the average trans contact". Zero-distance edges are a power-law singularity — run `prune()` **once at
 the end** to remove them (removing edges mid-pipeline desyncs graph-tool's
 edge-index range).
 

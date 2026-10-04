@@ -1,5 +1,6 @@
 """Loci container and interval operations."""
 import bisect
+import numbers
 from typing import Iterable, Optional, Union, List, Dict
 
 # Local imports are delayed to avoid circular imports
@@ -29,6 +30,10 @@ class _PyIntervalIndex:
     end)`` yielding ``(start, end, label)`` for each overlapping interval
     (half-open). Correct but not as fast as the C extension on large sets;
     install ``cgranges`` when performance matters.
+
+    The longest interval per chromosome bounds the scan on the left: an
+    interval starting before ``qs - max_len`` cannot reach ``qs``, so a lookup
+    walks only starts in ``[qs - max_len, qe)`` — O(log n + k), not O(n).
     """
     __slots__ = ("_by_chrom", "_sorted")
 
@@ -42,18 +47,20 @@ class _PyIntervalIndex:
     def index(self):
         for chrom, ivs in self._by_chrom.items():
             ivs.sort(key=lambda t: t[0])
-            self._sorted[chrom] = (ivs, [t[0] for t in ivs])
+            max_len = max((e - s for s, e, _ in ivs), default=0)
+            self._sorted[chrom] = (ivs, [t[0] for t in ivs], max_len)
 
     def overlap(self, chrom, start, end):
         data = self._sorted.get(chrom)
         if data is None:
             return
-        ivs, starts = data
+        ivs, starts, max_len = data
         qs, qe = int(start), int(end)
-        hi = bisect.bisect_left(starts, qe)   # intervals with start >= end can't overlap
-        for k in range(hi):
+        lo = bisect.bisect_left(starts, qs - max_len)  # earlier starts end before qs
+        hi = bisect.bisect_left(starts, qe)            # intervals with start >= end can't overlap
+        for k in range(lo, hi):
             s, e, label = ivs[k]
-            if e > qs:                        # start < qe already guaranteed
+            if e > qs:                                 # start < qe already guaranteed
                 yield (s, e, label)
 
 
@@ -133,7 +140,7 @@ class Loci(list):
         self._cgr = None
 
     def __getitem__(self, key: Union[int, str, slice]):
-        if isinstance(key, int) or isinstance(key, slice):
+        if isinstance(key, (numbers.Integral, slice)):    # numpy ints too
             return super().__getitem__(key)
         elif isinstance(key, str):
             try:
@@ -270,23 +277,32 @@ def slop(s, n:int) -> Loci:
     return Loci([Locus(l.chrom, max(0, l.start - n), l.end + n, l.strand) for l in s])
 
 
+def _sort_key(l: Locus):
+    return (l.chrom, l.start)
+
+
 def sort(s) -> Loci:
-    out = Loci(sorted(s))
+    # Same order as Locus.__lt__ (chrom, then start; stable on ties), but the
+    # key is compared in C instead of calling a dataclass method per comparison.
+    out = Loci(sorted(s, key=_sort_key))
     out.uids
     return out
 
 
 def merge(s) -> Loci:
     if not s: return Loci()
-    sorted_loci = sort(s)
-    merged = [sorted_loci[0].copy()]
-    for l in sorted_loci[1:]:
-        last = merged[-1]
-        if last.chrom != l.chrom: merged.append(l.copy()); continue
-        if last.overlaps(l) or last.end == l.start:
-            last.end = max(last.end, l.end)
+    it = iter(sorted(s, key=_sort_key))
+    first = next(it)
+    c, a, b, st = first.chrom, first.start, first.end, first.strand
+    merged = []
+    for l in it:
+        # same rule as Locus.overlaps(), plus book-ended intervals
+        if l.chrom == c and ((l.start < b and a < l.end) or b == l.start):
+            if l.end > b: b = l.end
         else:
-            merged.append(l.copy())
+            merged.append(Locus(c, a, b, st))
+            c, a, b, st = l.chrom, l.start, l.end, l.strand
+    merged.append(Locus(c, a, b, st))
     return Loci(merged)
 
 
