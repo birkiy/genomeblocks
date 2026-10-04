@@ -16,6 +16,11 @@ Outputs (in ``$GB_BENCH_DATA`` or ``benchmarks/data``):
   genes.gtf                 GENCODE-shaped GTF (20k genes, ~70k transcripts)
   hic.pairs                 5M Hi-C read pairs (4DN .pairs) with distance decay
   loops.bedpe               50k chromatin loops anchored near A peaks
+  loops_<n>.bedpe           12.5k / 200k / 1M loops (scaling)
+  loops_trans.bedpe         loops.bedpe + 2.5k inter-chromosomal loops (5%)
+  hic_trans_5kb.cool        hic.pairs + ~40 read pairs at each inter-chromosomal loop
+  hichip.allValidPairs      HiC-Pro style H3K27ac HiChIP pairs: 3M short-range pairs over
+                            H3K27ac-like CREs (with SE-like clusters) + 1M Hi-C background
   genome.fa                 chr21 + chr22, random sequence at 41% GC
   jaspar.txt                JASPAR CORE vertebrates (jaspar16 format)
 
@@ -26,6 +31,7 @@ Usage:
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 import time
 
 import numpy as np
@@ -340,7 +346,7 @@ def pairs(n=5_000_000):
             df.to_csv(f, sep="\t", header=False, index=False)
 
 
-def loops(n=50_000):
+def loops(n=50_000, out="loops.bedpe"):
     a = pd.read_csv(DATA / "peaks_A_100000.bed", sep="\t", header=None,
                     usecols=[0, 1, 2], names=["chrom", "start", "end"])
     rng = np.random.default_rng(5)
@@ -359,7 +365,93 @@ def loops(n=50_000):
         x, y = max(0, x + jit[0]), max(0, y + jit[1])
         rows.append(f"{chroms[i]}\t{max(0, x - 2500)}\t{x + 2500}\t{chroms[i]}"
                     f"\t{max(0, y - 2500)}\t{y + 2500}\tL{len(rows)}\t{rng.integers(2, 60)}")
-    (DATA / "loops.bedpe").write_text("\n".join(rows) + "\n")
+    (DATA / out).write_text("\n".join(rows) + "\n")
+
+
+def loops_scale():
+    """Loop sets of other sizes for the Architecture scaling benchmark."""
+    for n in (12_500, 200_000, 1_000_000):
+        loops(n, f"loops_{n}.bedpe")
+
+
+def loops_trans(n=2_500):
+    """loops.bedpe plus ``n`` inter-chromosomal loops between A peaks."""
+    a = pd.read_csv(DATA / "peaks_A_100000.bed", sep="\t", header=None,
+                    usecols=[0, 1, 2], names=["chrom", "start", "end"])
+    rng = np.random.default_rng(7)
+    centres = ((a["start"] + a["end"]) // 2).to_numpy()
+    chroms = a["chrom"].to_numpy()
+    rows = []
+    while len(rows) < n:
+        i, j = rng.integers(0, len(a), 2)
+        if chroms[i] == chroms[j]:
+            continue
+        x, y = centres[i], centres[j]
+        rows.append(f"{chroms[i]}\t{max(0, x - 2500)}\t{x + 2500}\t{chroms[j]}"
+                    f"\t{max(0, y - 2500)}\t{y + 2500}\tT{len(rows)}\t{rng.integers(2, 20)}")
+    cis = (DATA / "loops.bedpe").read_text()
+    (DATA / "loops_trans.bedpe").write_text(cis + "\n".join(rows) + "\n")
+
+
+def hic_trans():
+    """hic.pairs plus ~40 contacts at each inter-chromosomal loop, binned at 5 kb,
+    so the trans loops carry real Hi-C weight (the random trans background is
+    far too sparse to hit any one pixel)."""
+    import shutil
+    import subprocess
+    rng = np.random.default_rng(8)
+    t = pd.read_csv(DATA / "loops_trans.bedpe", sep="\t", header=None, usecols=range(6))
+    t = t[t[0] != t[3]]
+    k = rng.poisson(40, len(t))
+    i = np.repeat(np.arange(len(t)), k)
+    x = ((t[1].to_numpy() + t[2].to_numpy()) // 2)[i] + rng.normal(0, 1500, len(i)).astype(np.int64)
+    y = ((t[4].to_numpy() + t[5].to_numpy()) // 2)[i] + rng.normal(0, 1500, len(i)).astype(np.int64)
+    extra = pd.DataFrame({"id": [f"t{n}" for n in range(len(i))], "c1": t[0].to_numpy()[i],
+                          "p1": np.maximum(x, 1), "c2": t[3].to_numpy()[i], "p2": np.maximum(y, 1),
+                          "s1": "+", "s2": "-"})
+    out = DATA / "hic_trans.pairs"
+    shutil.copyfile(DATA / "hic.pairs", out)
+    extra.to_csv(out, sep="\t", header=False, index=False, mode="a")
+    cooler = Path(sys.executable).parent / "cooler"
+    subprocess.run([str(cooler), "cload", "pairs", "-c1", "2", "-p1", "3", "-c2", "4", "-p2", "5",
+                    f"{DATA / 'hg38.chrom.sizes'}:5000", str(out), str(DATA / "hic_trans_5kb.cool")],
+                   check=True)
+    out.unlink()
+    print(f"            hic_trans_5kb.cool: +{len(i):,} trans read pairs", flush=True)
+
+
+def hichip_avp(n_short=3_000_000, n_bg=1_000_000):
+    """HiC-Pro allValidPairs with a ChIP-like short-range component.
+
+    H3K27ac weight per A peak: lognormal, x15 inside 400 SE-like clusters
+    (CREs within 15 kb of a cluster centre). Short-range pairs sit on a CRE
+    (pos1 ~ centre +- 250 bp) with a gap of 150 bp + Exp(450 bp), so most fall
+    within 1 kb and some do not; the background is the first ``n_bg`` Hi-C pairs.
+    """
+    rng = np.random.default_rng(9)
+    a = pd.read_csv(DATA / "peaks_A_100000.bed", sep="\t", header=None, usecols=[0, 1, 2],
+                    names=["chrom", "start", "end"])
+    cen = ((a.start + a.end) // 2).to_numpy()
+    ch = a.chrom.to_numpy()
+    w = rng.lognormal(0, 1, len(a))
+    for c in rng.choice(len(a), 400, replace=False):
+        near = (ch == ch[c]) & (np.abs(cen - cen[c]) < 15_000)
+        w[near] *= 15
+    i = rng.choice(len(a), n_short, p=w / w.sum())
+    p1 = cen[i] + rng.normal(0, 250, n_short).astype(np.int64)
+    gap = 150 + rng.exponential(450, n_short).astype(np.int64)
+    p2 = p1 + gap
+    s1 = np.where(rng.random(n_short) < 0.9, "+", "-")
+    s2 = np.where(rng.random(n_short) < 0.9, "-", "+")
+    short = pd.DataFrame({"id": [f"s{k}" for k in range(n_short)], "c1": ch[i], "p1": np.maximum(p1, 1), "s1": s1,
+                          "c2": ch[i], "p2": np.maximum(p2, 2), "s2": s2, "size": gap})
+    bg = pd.read_csv(DATA / "hic.pairs", sep="\t", comment="#", header=None, nrows=n_bg,
+                     names=["id", "c1", "p1", "c2", "p2", "s1", "s2"])
+    bg = bg[["id", "c1", "p1", "s1", "c2", "p2", "s2"]].assign(size=300)
+    out = pd.concat([short, bg], ignore_index=True).sample(frac=1, random_state=1)
+    out = out.assign(f1="HIC_x_1", f2="HIC_x_2", q1=42, q2=42)
+    out.to_csv(DATA / "hichip.allValidPairs", sep="\t", header=False, index=False)
+    print(f"            hichip.allValidPairs: {len(out):,} pairs", flush=True)
 
 
 # ── genome FASTA + motifs ────────────────────────────────────────────────────
@@ -392,6 +484,8 @@ def motifs():
 
 STEPS = {"chromsizes": chromsizes, "peaks": peaks, "bw": bigwigs,
          "atlas": atlas, "gtf": gtf, "pairs": pairs, "loops": loops,
+         "loops_trans": loops_trans, "loops_scale": loops_scale, "hic_trans": hic_trans,
+         "hichip_avp": hichip_avp,
          "genome": genome, "motifs": motifs}
 
 if __name__ == "__main__":

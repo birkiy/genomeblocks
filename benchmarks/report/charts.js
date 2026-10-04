@@ -218,5 +218,93 @@
     host.appendChild(svg);
   }
 
-  window.Charts = { hbar, lines, diverge };
+  // ── dumbbell: two times per row (log x), ratio at the right ──────────────
+  // spec: {rows:[{label, a, b, tip?}], names:[aName, bName], fmt, axis, labelW}
+  function dumbbell(host, spec) {
+    const rows = spec.rows.slice();
+    const W = 760, labelW = spec.labelW || 250, rowH = 30, top = 6, axisH = 34, ratioW = 96;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": spec.aria || "" }, null);
+    const vals = rows.flatMap(r => [r.a, r.b].filter(v => v != null && v > 0));
+    const lo = Math.pow(10, Math.floor(Math.log10(Math.min(...vals)))), hi = Math.pow(10, Math.ceil(Math.log10(Math.max(...vals))));
+    const x0 = labelW, x1 = W - ratioW - 10;
+    const sx = scale(lo, hi, x0, x1, true);
+    const plotB = top + rows.length * rowH;
+    for (const t of logTicks(lo, hi)) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, spec.fmt(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      txt(svg, labelW - 12, y + 4, r.label, "rlabel", "end");
+      if (r.a != null && r.b != null) {
+        el("line", { x1: sx(r.a), x2: sx(r.b), y1: y, y2: y, class: "conn" }, svg);
+        const ratio = r.a / r.b;
+        const lab = ratio >= 1.05 ? `${ratio >= 100 ? Math.round(ratio).toLocaleString() : +ratio.toPrecision(2)}× faster`
+                  : ratio > 0.95 ? "same" : `${+(1 / ratio).toPrecision(2)}× slower`;
+        txt(svg, W - ratioW + 4, y + 4, lab, "vlabel");
+      } else if (r.note) {
+        txt(svg, W - ratioW + 4, y + 4, r.note, "vlabel bad");
+      }
+      if (r.a != null) el("circle", { cx: sx(r.a), cy: y, r: 6, class: "dot sa" }, svg);
+      if (r.b != null) el("circle", { cx: sx(r.b), cy: y, r: 6, class: "dot sb" }, svg);
+      const hit = el("rect", { x: 0, y: y - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      const tip = `${spec.names[0]} ${r.a != null ? spec.fmt(r.a, true) : (r.note || "—")} · ${spec.names[1]} ${r.b != null ? spec.fmt(r.b, true) : "—"}`;
+      bindTip(hit, tip, r.tip || r.label);
+    });
+    host.appendChild(svg);
+    const lg = document.createElement("div");
+    lg.className = "legend";
+    [["sa", spec.names[0]], ["sb", spec.names[1]]].forEach(([c, n]) => {
+      const i = document.createElement("span"); const k = document.createElement("i");
+      k.className = "key " + c; const t = document.createElement("span"); t.textContent = n;
+      i.append(k, t); lg.appendChild(i);
+    });
+    host.prepend(lg);
+  }
+
+  // ── stacked horizontal bars (linear x), 2px surface gap between parts ─────
+  // spec: {rows:[{label, parts:[{key, value}]}], keys:[{key, name, cls}], fmt, axis, labelW}
+  function stack(host, spec) {
+    const rows = spec.rows;
+    const W = 760, labelW = spec.labelW || 130, rowH = 44, top = 6, axisH = 34;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": spec.aria || "" }, null);
+    const tot = rows.map(r => r.parts.reduce((a, p) => a + p.value, 0));
+    const ticks = niceTicks(0, Math.max(...tot) * 1.02, 6), hi = ticks[ticks.length - 1];
+    const x0 = labelW, x1 = W - 80;
+    const sx = scale(0, hi, x0, x1, false);
+    const plotB = top + rows.length * rowH;
+    for (const t of ticks) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, spec.fmt(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    const cls = Object.fromEntries(spec.keys.map(k => [k.key, k]));
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      txt(svg, labelW - 12, y + 4, r.label, "rlabel hl", "end");
+      let acc = 0;
+      r.parts.forEach(p => {
+        const a = sx(acc), b = sx(acc + p.value);
+        acc += p.value;
+        const w = Math.max(1, b - a - 2);
+        const seg = el("rect", { x: a, y: y - 12, width: w, height: 24, rx: 3, class: "seg " + cls[p.key].cls }, svg);
+        bindTip(seg, spec.fmt(p.value, true), `${r.label} · ${cls[p.key].name}`);
+      });
+      txt(svg, sx(acc) + 6, y + 4, spec.fmt(acc, true), "vlabel");
+    });
+    host.appendChild(svg);
+    const lg = document.createElement("div");
+    lg.className = "legend";
+    spec.keys.forEach(k => {
+      const i = document.createElement("span"); const q = document.createElement("i");
+      q.className = "key " + k.cls; const t = document.createElement("span"); t.textContent = k.name;
+      i.append(q, t); lg.appendChild(i);
+    });
+    host.prepend(lg);
+  }
+
+  window.Charts = { hbar, lines, diverge, dumbbell, stack };
 })();

@@ -1,0 +1,849 @@
+<title>Columnar Architecture Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
+<style>/* Layout: one reading column (~920px) under a sticky section bar; each module
+   section = verdict line -> "why" diagram -> chart -> data table. */
+:root {
+  --bg: #f6f4e8;          /* parchment page (brand n-50) */
+  --surface: #fbfaf4;     /* cards, chart surface (brand n-0) */
+  --ink: #1e1e1e;         /* brand n-900 */
+  --ink-2: #52514b;       /* brand n-500 */
+  --muted: #868377;       /* brand n-400 */
+  --rule: #e1dcc5;        /* brand n-100 */
+  --grid: #e9e5d2;
+  --brand: #003552;       /* deep navy */
+  --brand-subtle: #e8eff4;
+  --code-bg: #eeece2;
+  --mod-green: #0f7a3a; --mod-green-bg: #eafaf0;
+  --mod-purple: #5325a3; --mod-purple-bg: #f1ecfb;
+  --mod-navy: #003552; --mod-navy-bg: #e8eff4;
+  --warn: #8a5300; --warn-bg: #fdf1dc;
+  /* chart series (validated categorical order, light steps) */
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+  --bar-other: #c9c5b2;
+  --font: "Nunito", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1b1a; --surface: #232220; --ink: #f2f0e6; --ink-2: #c7c3b1; --muted: #9a968a;
+    --rule: #3a3935; --grid: #302f2c; --brand: #8cc3e8; --brand-subtle: #1d2a33;
+    --code-bg: #2d2c29;
+    --mod-green: #5fd38e; --mod-green-bg: #18291f; --mod-purple: #b79cf0; --mod-purple-bg: #251d36;
+    --mod-navy: #8cc3e8; --mod-navy-bg: #1d2a33; --warn: #f4c06a; --warn-bg: #33281a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --bar-other: #55534c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1b1a; --surface: #232220; --ink: #f2f0e6; --ink-2: #c7c3b1; --muted: #9a968a;
+  --rule: #3a3935; --grid: #302f2c; --brand: #8cc3e8; --brand-subtle: #1d2a33;
+  --code-bg: #2d2c29;
+  --mod-green: #5fd38e; --mod-green-bg: #18291f; --mod-purple: #b79cf0; --mod-purple-bg: #251d36;
+  --mod-navy: #8cc3e8; --mod-navy-bg: #1d2a33; --warn: #f4c06a; --warn-bg: #33281a;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --bar-other: #55534c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px;
+       line-height: 1.6; margin: 0; }
+.wrap { max-width: 960px; margin: 0 auto; padding-inline: 20px; padding-block: 8px 64px; }
+h1, h2, h3 { line-height: 1.22; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 42px); font-weight: 800; letter-spacing: -0.01em; color: var(--brand); }
+h2 { font-size: 26px; font-weight: 800; color: var(--ink); }
+h3 { font-size: 17px; font-weight: 800; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--brand); }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--code-bg);
+       padding: 1px 5px; border-radius: 5px; }
+.eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+           color: var(--muted); }
+
+/* header + nav */
+header.top { display: grid; gap: 12px; padding-block: 36px 22px; }
+header.top .lede { font-size: 18.5px; color: var(--ink-2); max-width: 62ch; }
+nav.sections { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+               border-bottom: 1px solid var(--rule); padding-block: 10px; margin-bottom: 8px;
+               display: flex; gap: 6px; flex-wrap: wrap; }
+nav.sections a { text-decoration: none; font-size: 13.5px; font-weight: 700; color: var(--ink-2);
+                 padding: 4px 11px; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface); }
+nav.sections a:hover, nav.sections a:focus-visible { color: var(--brand); border-color: var(--brand); outline: none; }
+
+section { display: grid; gap: 18px; padding-block: 40px 8px; border-top: 1px solid var(--rule);
+          scroll-margin-top: 64px; }
+section:first-of-type { border-top: 0; }
+.verdict { font-size: 19px; font-weight: 700; color: var(--ink); max-width: 62ch; }
+.verdict b { color: var(--brand); }
+.sub { color: var(--ink-2); }
+
+/* stat tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+        padding: 14px 16px; display: grid; gap: 4px; align-content: start; text-decoration: none; color: inherit; }
+.tiles.two-up { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+.tile:hover, .tile:focus-visible { border-color: var(--brand); outline: none; }
+.tile .k { font-size: 13px; font-weight: 700; color: var(--muted); }
+.tile .v { font-size: 34px; font-weight: 800; line-height: 1.1; color: var(--brand); }
+.tile .d { font-size: 14px; color: var(--ink-2); line-height: 1.4; }
+.tag { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em;
+       text-transform: uppercase; border-radius: 999px; padding: 1px 9px; width: fit-content; }
+.tag.green { color: var(--mod-green); background: var(--mod-green-bg); }
+.tag.purple { color: var(--mod-purple); background: var(--mod-purple-bg); }
+.tag.navy { color: var(--mod-navy); background: var(--mod-navy-bg); }
+.tag.warn { color: var(--warn); background: var(--warn-bg); }
+
+/* figure cards */
+figure { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+         padding: 16px 16px 12px; display: grid; gap: 10px; min-width: 0; }
+figure .ttl { font-weight: 800; font-size: 15.5px; }
+figure .ttl span { font-weight: 600; color: var(--muted); }
+figcaption { font-size: 14px; color: var(--ink-2); max-width: 75ch; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { font-family: var(--font); fill: var(--ink-2); font-size: 12.5px; }
+.chart .tick { fill: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.chart .axis-label { fill: var(--muted); font-size: 12px; font-weight: 600; }
+.chart .rlabel { fill: var(--ink-2); font-size: 13px; }
+.chart .rlabel.hl { fill: var(--ink); font-weight: 800; }
+.chart .vlabel { fill: var(--ink-2); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chart .endlabel { fill: var(--ink-2); font-size: 12.5px; font-weight: 600; }
+.chart .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .baseline { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.chart .bar { fill: var(--bar-other); }
+.chart .bar.hl { fill: var(--s1); }
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot { stroke: var(--surface); stroke-width: 2; }
+.chart .leader { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover, .chart .hit:focus-visible { fill: var(--ink); fill-opacity: 0.04; outline: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.legend > span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
+.tip { position: absolute; z-index: 20; pointer-events: none; background: var(--ink); color: var(--bg);
+       border-radius: 8px; padding: 6px 10px; display: grid; gap: 1px; font-size: 12.5px;
+       box-shadow: 0 4px 14px rgba(0,0,0,.18); max-width: 320px; }
+.tip strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.tip span { opacity: 0.82; }
+
+/* why diagrams */
+.why { display: grid; gap: 10px; background: var(--brand-subtle); border-radius: var(--radius);
+       padding: 16px 18px; }
+.why h3 { color: var(--brand); }
+.why svg { width: 100%; height: auto; display: block; color: var(--ink); }
+.why svg text { font-family: var(--font); font-size: 13px; fill: currentColor; }
+.why svg .small { font-size: 11.5px; fill: var(--ink-2); }
+.why svg .bad { fill: var(--s8); }
+.why svg .good { fill: var(--s1); }
+.why svg .box { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.2; }
+.why svg .box.hl { stroke: var(--s1); stroke-width: 2; }
+.why svg .box.bad { fill: var(--surface); stroke: var(--s8); stroke-width: 1.6; }
+.why svg .arrow { stroke: var(--ink-2); stroke-width: 1.5; fill: none; }
+.why svg .arrow.hl { stroke: var(--s1); stroke-width: 2; }
+.why svg .arrow.bad { stroke: var(--s8); }
+.why svg .cell { fill: var(--surface); stroke: var(--rule); }
+.why svg .cell.on { fill: var(--s1); stroke: var(--s1); }
+.why svg .cell.q { fill: var(--s4); stroke: var(--s4); }
+.why svg .head { font-weight: 800; }
+
+/* tables */
+details { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); }
+details > summary { cursor: pointer; padding: 10px 14px; font-weight: 700; font-size: 14px; color: var(--ink-2); }
+details > summary:focus-visible { outline: 2px solid var(--brand); border-radius: var(--radius); }
+.tbl { overflow-x: auto; padding: 0 14px 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.hl td { font-weight: 700; }
+
+/* lists */
+.mech { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+.mech > div { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+              padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.mech p { font-size: 14.5px; color: var(--ink-2); }
+.fixes { display: grid; gap: 10px; }
+.fix { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--s4);
+       border-radius: var(--radius); padding: 12px 16px; display: grid; gap: 4px; }
+.fix .t { font-weight: 800; }
+.fix p { font-size: 14.5px; color: var(--ink-2); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.two > * { min-width: 0; }
+ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto;
+      font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* phones: diagrams and charts keep a legible size and scroll sideways */
+.scroll { overflow-x: auto; min-width: 0; }
+@media (max-width: 640px) {
+  .scroll > svg.chart, .scroll > svg { min-width: 600px; }
+  .tile .v { font-size: 30px; }
+}
+.why svg .rowhl { fill: none; stroke: var(--s1); stroke-width: 2; }
+.chart .bar.fast { fill: var(--s1); }
+.chart .bar.slow { fill: var(--s8); }
+.chart .mid { stroke: var(--ink-2); stroke-width: 1.2; }
+
+/* prototype report: dumbbell + stacked bars */
+.chart .conn { stroke: var(--muted); stroke-width: 2; opacity: .55; }
+.chart .dot.sa { fill: var(--s2); }
+.chart .dot.sb { fill: var(--s1); }
+.chart .vlabel.bad { fill: var(--s8); }
+.legend i.key { height: 10px; width: 10px; border-radius: 50%; }
+.legend i.key.sa { background: var(--s2); }
+.legend i.key.sb { background: var(--s1); }
+.chart .seg { stroke: none; }
+.chart .seg.k1, .legend i.key.k1 { fill: var(--s1); background: var(--s1); }
+.chart .seg.k2, .legend i.key.k2 { fill: var(--s2); background: var(--s2); }
+.chart .seg.k3, .legend i.key.k3 { fill: var(--s3); background: var(--s3); }
+.chart .seg.k4, .legend i.key.k4 { fill: var(--s4); background: var(--s4); }
+.chart .seg.k5, .legend i.key.k5 { fill: var(--bar-other); background: var(--bar-other); }
+.legend i.key.k1, .legend i.key.k2, .legend i.key.k3, .legend i.key.k4, .legend i.key.k5 { border-radius: 3px; }
+.why svg .heat { stroke: var(--surface); stroke-width: 1; }
+.why svg .strip { stroke: var(--surface); stroke-width: 2; }
+</style>
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">genomeblocks · branch columnar-prototype · measured against main</span>
+  <h1>One graph, two tables</h1>
+  <p class="lede">A working prototype of the notebook design. CREs, genes and the Architecture are stored as tables that share one genome and line up by row. Intra- and inter-chromosomal edges live in one sorted edge table. Every result is checked against main.</p>
+</header>
+<nav class="sections" aria-label="Sections"><a href="#answers">Summary</a><a href="#design">Design</a><a href="#blocks">Blocks</a><a href="#speed">Speed</a><a href="#notebook">Notebook</a><a href="#scale">Scale</a><a href="#trans">Trans</a><a href="#try">Try it</a><a href="#limits">Limits</a></nav>
+
+<section id="answers">
+  <h2>What the prototype shows</h2>
+  <div class="tiles two-up">
+    <a class="tile" href="#speed"><span class="tag green">speed</span><span class="k">Whole pipeline, fresh process</span>
+      <span class="v">43 s → 2.7 s</span><span class="d">Load CREs and genes, build the graph, add Hi-C, normalise, annotate, find hubs, save. 16× faster end to end; the Architecture steps alone go from 30 s to 485 ms.</span></a>
+    <a class="tile" href="#same"><span class="tag navy">same answers</span><span class="k">Checked against main</span>
+      <span class="v">identical</span><span class="d">Same edges, Hi-C weights, O/E, distances, region labels, strengths and hubs. Gene picks match too, except 6 of 73k CREs where two promoters tie on weight and either answer is valid.</span></a>
+    <a class="tile" href="#trans"><span class="tag warn">trans</span><span class="k">Inter-chromosomal loops</span>
+      <span class="v">5,863 kept</span><span class="d">On main, any trans edge makes <code>normalize</code> stop with a TypeError. The prototype normalises them against the mean trans weight and keeps them in neighbours and graph algorithms. (Fixed in 1.1.0: the classic <code>normalize</code> now does the same.)</span></a>
+    <a class="tile" href="#notebook"><span class="tag purple">notebook</span><span class="k">Cut, look up, reload</span>
+      <span class="v">µs–ms</span><span class="d">One chromosome: 61 µs instead of 389 ms. Reloading a saved graph: 544 ms instead of 3.0 s, from a file 5× smaller.</span></a>
+  </div>
+</section>
+
+<section id="design">
+  <span class="tag navy">Design</span>
+  <h2>Tables that line up by row</h2>
+  <p class="verdict">Every table shares one <b>Genome</b>, and the <b>row number</b> links the tables. Row i of the CREs is row i of the labels, of the signal cube and of every graph column. Graph edges store row numbers, so nothing needs a lookup dictionary.</p>
+  <div class="why"><h3>The notebook structure</h3><div class="scroll"><svg viewBox="0 0 760 430" role="img" aria-label="Notebook structure. A shared Genome maps chromosome names to codes. The CRE Loci table holds chrom, start, end and strand columns. To its right, per-CRE results (region label, gene, strength, signal) are columns aligned to the same rows, so row i means the same CRE everywhere. The Architecture edge table stores src and tgt as Loci row numbers. Genes are three tables (genes, transcripts, features) linked by row numbers.">
+  <defs>
+    <marker id="sp1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    <marker id="sp2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="good"/></marker>
+  </defs>
+  <!-- Genome -->
+  <rect x="20" y="34" width="148" height="62" rx="8" class="box hl"/>
+  <text x="32" y="54" class="head">Genome</text>
+  <text x="32" y="72" class="small">chr1 → 0 · chr2 → 1 …</text>
+  <text x="32" y="88" class="small">shared by every table</text>
+  <path d="M168,62 C 184,62 186,66 200,66" class="arrow hl" marker-end="url(#sp2)"/>
+
+  <!-- Loci table -->
+  <text x="200" y="26" class="head">Loci (CREs)</text>
+  <g class="small">
+    <text x="224" y="58" text-anchor="middle">chrom</text>
+    <text x="280" y="58" text-anchor="middle">start</text>
+    <text x="344" y="58" text-anchor="middle">end</text>
+    <text x="398" y="58" text-anchor="middle">strand</text>
+  </g>
+  <g class="small">
+    <text x="192" y="86" text-anchor="end">0</text>
+    <rect x="200" y="70" width="48" height="26" class="cell"/><text x="224" y="88" text-anchor="middle">0</text>
+    <rect x="248" y="70" width="64" height="26" class="cell"/><text x="280" y="88" text-anchor="middle">9,800</text>
+    <rect x="312" y="70" width="64" height="26" class="cell"/><text x="344" y="88" text-anchor="middle">10,100</text>
+    <rect x="376" y="70" width="44" height="26" class="cell"/><text x="398" y="88" text-anchor="middle">.</text>
+    <text x="192" y="112" text-anchor="end">1</text>
+    <rect x="200" y="96" width="48" height="26" class="cell"/><text x="224" y="114" text-anchor="middle">0</text>
+    <rect x="248" y="96" width="64" height="26" class="cell"/><text x="280" y="114" text-anchor="middle">15,200</text>
+    <rect x="312" y="96" width="64" height="26" class="cell"/><text x="344" y="114" text-anchor="middle">15,640</text>
+    <rect x="376" y="96" width="44" height="26" class="cell"/><text x="398" y="114" text-anchor="middle">+</text>
+    <text x="192" y="138" text-anchor="end">2</text>
+    <rect x="200" y="122" width="48" height="26" class="cell"/><text x="224" y="140" text-anchor="middle">0</text>
+    <rect x="248" y="122" width="64" height="26" class="cell"/><text x="280" y="140" text-anchor="middle">88,050</text>
+    <rect x="312" y="122" width="64" height="26" class="cell"/><text x="344" y="140" text-anchor="middle">88,700</text>
+    <rect x="376" y="122" width="44" height="26" class="cell"/><text x="398" y="140" text-anchor="middle">.</text>
+    <text x="192" y="164" text-anchor="end" class="good head">i</text>
+    <rect x="200" y="148" width="48" height="26" class="cell"/><text x="224" y="166" text-anchor="middle">1</text>
+    <rect x="248" y="148" width="64" height="26" class="cell"/><text x="280" y="166" text-anchor="middle">3,100</text>
+    <rect x="312" y="148" width="64" height="26" class="cell"/><text x="344" y="166" text-anchor="middle">3,350</text>
+    <rect x="376" y="148" width="44" height="26" class="cell"/><text x="398" y="166" text-anchor="middle">.</text>
+    <text x="192" y="190" text-anchor="end">⋮</text>
+    <rect x="200" y="174" width="48" height="26" class="cell"/><text x="224" y="192" text-anchor="middle">1</text>
+    <rect x="248" y="174" width="64" height="26" class="cell"/><text x="280" y="192" text-anchor="middle">8,800</text>
+    <rect x="312" y="174" width="64" height="26" class="cell"/><text x="344" y="192" text-anchor="middle">9,420</text>
+    <rect x="376" y="174" width="44" height="26" class="cell"/><text x="398" y="192" text-anchor="middle">−</text>
+  </g>
+  <!-- chromosome blocks bracket -->
+  <path d="M166,72 h-6 v74 h6" class="arrow"/>
+  <text x="156" y="130" text-anchor="end" class="small">chr1 rows</text>
+  <path d="M166,150 h-6 v48 h6" class="arrow"/>
+  <text x="156" y="178" text-anchor="end" class="small">chr2 rows</text>
+
+  <!-- aligned per-CRE columns -->
+  <text x="442" y="26" class="head">Per-CRE results, same rows</text>
+  <g class="small">
+    <text x="480" y="58" text-anchor="middle">label</text>
+    <text x="561" y="58" text-anchor="middle">gene</text>
+    <text x="632" y="58" text-anchor="middle">strength</text>
+    <text x="710" y="58" text-anchor="middle">signal</text>
+  </g>
+  <g class="small">
+    <rect x="442" y="70" width="76" height="26" class="cell"/><text x="480" y="88" text-anchor="middle">Promoter</text>
+    <rect x="524" y="70" width="74" height="26" class="cell"/><text x="561" y="88" text-anchor="middle">MYC</text>
+    <rect x="604" y="70" width="56" height="26" class="cell"/><text x="632" y="88" text-anchor="middle">3.1</text>
+    <rect x="442" y="96" width="76" height="26" class="cell"/><text x="480" y="114" text-anchor="middle">Intronic</text>
+    <rect x="524" y="96" width="74" height="26" class="cell"/><text x="561" y="114" text-anchor="middle">MYC</text>
+    <rect x="604" y="96" width="56" height="26" class="cell"/><text x="632" y="114" text-anchor="middle">0.8</text>
+    <rect x="442" y="122" width="76" height="26" class="cell"/><text x="480" y="140" text-anchor="middle">Intergenic</text>
+    <rect x="524" y="122" width="74" height="26" class="cell"/><text x="561" y="140" text-anchor="middle">—</text>
+    <rect x="604" y="122" width="56" height="26" class="cell"/><text x="632" y="140" text-anchor="middle">0</text>
+    <rect x="442" y="148" width="76" height="26" class="cell"/><text x="480" y="166" text-anchor="middle">Promoter</text>
+    <rect x="524" y="148" width="74" height="26" class="cell"/><text x="561" y="166" text-anchor="middle">SOX2</text>
+    <rect x="604" y="148" width="56" height="26" class="cell"/><text x="632" y="166" text-anchor="middle">5.2</text>
+    <rect x="442" y="174" width="76" height="26" class="cell"/><text x="480" y="192" text-anchor="middle">Exonic</text>
+    <rect x="524" y="174" width="74" height="26" class="cell"/><text x="561" y="192" text-anchor="middle">SOX2</text>
+    <rect x="604" y="174" width="56" height="26" class="cell"/><text x="632" y="192" text-anchor="middle">1.4</text>
+  </g>
+  <!-- signal cube rows: little profiles -->
+  <g>
+    <rect x="666" y="70" width="88" height="26" class="cell"/>
+    <path d="M670,92 L690,90 L700,80 L710,76 L720,82 L730,90 L750,92" class="arrow hl" fill="none"/>
+    <rect x="666" y="96" width="88" height="26" class="cell"/>
+    <path d="M670,118 L690,117 L705,110 L715,112 L730,117 L750,118" class="arrow hl" fill="none"/>
+    <rect x="666" y="122" width="88" height="26" class="cell"/>
+    <path d="M670,144 L750,144" class="arrow hl" fill="none"/>
+    <rect x="666" y="148" width="88" height="26" class="cell"/>
+    <path d="M670,170 L688,168 L700,156 L710,152 L722,158 L734,168 L750,170" class="arrow hl" fill="none"/>
+    <rect x="666" y="174" width="88" height="26" class="cell"/>
+    <path d="M670,196 L695,195 L708,188 L720,191 L750,196" class="arrow hl" fill="none"/>
+  </g>
+  <rect x="196" y="146" width="562" height="30" rx="4" class="rowhl"/>
+  <text x="442" y="222" class="small">row i is the same CRE in every column:</text>
+  <text x="442" y="238" class="small">no uid lookup, just an index</text>
+
+  <!-- Architecture edge table -->
+  <text x="442" y="258" class="head">Architecture edges</text>
+  <g class="small">
+    <text x="470" y="282" text-anchor="middle">src</text>
+    <text x="530" y="282" text-anchor="middle">tgt</text>
+    <text x="588" y="282" text-anchor="middle">w</text>
+    <text x="636" y="282" text-anchor="middle">n</text>
+    <text x="700" y="282" text-anchor="middle">d</text>
+    <rect x="442" y="290" width="56" height="24" class="cell"/><text x="470" y="307" text-anchor="middle">0</text>
+    <rect x="498" y="290" width="64" height="24" class="cell"/><text x="530" y="307" text-anchor="middle">1</text>
+    <rect x="562" y="290" width="52" height="24" class="cell"/><text x="588" y="307" text-anchor="middle">12</text>
+    <rect x="614" y="290" width="44" height="24" class="cell"/><text x="636" y="307" text-anchor="middle">1.4</text>
+    <rect x="658" y="290" width="84" height="24" class="cell"/><text x="700" y="307" text-anchor="middle">5.4 kb</text>
+    <rect x="442" y="314" width="56" height="24" class="cell on"/><text x="470" y="331" text-anchor="middle" style="fill:var(--surface)">i</text>
+    <rect x="498" y="314" width="64" height="24" class="cell"/><text x="530" y="331" text-anchor="middle">i + 1</text>
+    <rect x="562" y="314" width="52" height="24" class="cell"/><text x="588" y="331" text-anchor="middle">30</text>
+    <rect x="614" y="314" width="44" height="24" class="cell"/><text x="636" y="331" text-anchor="middle">2.2</text>
+    <rect x="658" y="314" width="84" height="24" class="cell"/><text x="700" y="331" text-anchor="middle">5.7 kb</text>
+    <rect x="442" y="338" width="56" height="24" class="cell on"/><text x="470" y="355" text-anchor="middle" style="fill:var(--surface)">i</text>
+    <rect x="498" y="338" width="64" height="24" class="cell"/><text x="530" y="355" text-anchor="middle">58,214</text>
+    <rect x="562" y="338" width="52" height="24" class="cell"/><text x="588" y="355" text-anchor="middle">9</text>
+    <rect x="614" y="338" width="44" height="24" class="cell"/><text x="636" y="355" text-anchor="middle">1.1</text>
+    <rect x="658" y="338" width="84" height="24" class="cell"/><text x="700" y="355" text-anchor="middle">∞ (trans)</text>
+  </g>
+  <path d="M442,326 C 428,326 432,161 422,161" class="arrow hl" marker-end="url(#sp2)"/>
+  <text x="442" y="384" class="small">src, tgt are Loci row numbers</text>
+  <text x="442" y="400" class="small">w Hi-C count · n O/E · d distance</text>
+
+  <!-- Genes -->
+  <text x="20" y="258" class="head">Genes: three linked tables</text>
+  <g class="small">
+    <rect x="20" y="272" width="112" height="96" rx="6" class="box"/>
+    <text x="30" y="290" class="head">genes</text>
+    <text x="30" y="308">0 · MYC</text><text x="30" y="324">1 · SOX2</text><text x="30" y="340">2 · TP53</text><text x="30" y="358">⋮</text>
+    <rect x="150" y="272" width="122" height="96" rx="6" class="box"/>
+    <text x="160" y="290" class="head">transcripts</text>
+    <text x="160" y="308">T1 · gene 0</text><text x="160" y="324">T2 · gene 0</text><text x="160" y="340">T3 · gene 1</text><text x="160" y="358">⋮</text>
+    <rect x="290" y="272" width="130" height="96" rx="6" class="box"/>
+    <text x="300" y="290" class="head">features</text>
+    <text x="300" y="308">exon · tx 0</text><text x="300" y="324">CDS · tx 0</text><text x="300" y="340">5'UTR · tx 2</text><text x="300" y="358">⋮</text>
+  </g>
+  <path d="M150,304 C 140,304 140,304 134,304" class="arrow" marker-end="url(#sp1)"/>
+  <path d="M290,304 C 280,304 280,304 274,304" class="arrow" marker-end="url(#sp1)"/>
+  <text x="20" y="392" class="small">links are row numbers: transcript → gene row,</text>
+  <text x="20" y="408" class="small">feature → transcript row</text>
+</svg></div><p class="sub">Loci, Genes and Architecture are plain numpy columns. Looking at one row still gives a normal <code>Locus</code> (a view onto the columns), so code that reads <code>cre[i].start</code> or loops over peaks keeps working. Classic functions such as <code>signal()</code> run unchanged on the new Loci and return the same cube.</p></div>
+</section>
+
+<section id="blocks">
+  <span class="tag navy">Architecture</span>
+  <h2>One graph, sorted into blocks</h2>
+  <p class="verdict">Most loops are within one chromosome, and a few cross chromosomes. Keep them all in <b>one</b> edge table, sorted so each chromosome's edges form one block and all trans edges form a final block. Nothing is split, but every part can be sliced out.</p>
+  <div class="why"><h3>The edge table of the benchmark graph (120,230 edges)</h3><div class="scroll"><svg viewBox="0 0 760 466" role="img" aria-label="The edge table sorted into one block per chromosome (114,367 cis edges) followed by one trans block (5,863 edges), and the same edges as a chromosome-by-chromosome matrix: large counts on the diagonal, small counts off it."><text x="20" y="22" class="head">The edge table, top to bottom (row numbers)</text><rect x="20.0" y="34" width="56.8" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr1: 9,479 edges</title></rect><text x="23.0" y="76" class="small" text-anchor="start">cis chr1</text><rect x="76.8" y="34" width="56.4" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr2: 9,412 edges</title></rect><text x="79.8" y="76" class="small" text-anchor="start">cis chr2</text><rect x="133.1" y="34" width="44.1" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr3: 7,368 edges</title></rect><text x="136.1" y="76" class="small" text-anchor="start">cis chr3</text><rect x="177.3" y="34" width="39.0" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr4: 6,513 edges</title></rect><rect x="216.3" y="34" width="41.5" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr5: 6,934 edges</title></rect><rect x="257.8" y="34" width="44.2" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr6: 7,375 edges</title></rect><rect x="301.9" y="34" width="33.5" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr7: 5,595 edges</title></rect><rect x="335.5" y="34" width="31.0" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr8: 5,180 edges</title></rect><rect x="366.5" y="34" width="30.5" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr9: 5,091 edges</title></rect><rect x="397.0" y="34" width="32.1" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr10: 5,364 edges</title></rect><rect x="429.1" y="34" width="31.7" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr11: 5,301 edges</title></rect><rect x="460.8" y="34" width="28.2" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr12: 4,713 edges</title></rect><rect x="489.1" y="34" width="24.6" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr13: 4,103 edges</title></rect><rect x="513.6" y="34" width="22.9" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr14: 3,829 edges</title></rect><rect x="536.6" y="34" width="23.7" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr15: 3,963 edges</title></rect><rect x="560.3" y="34" width="18.9" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr16: 3,160 edges</title></rect><rect x="579.2" y="34" width="19.1" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr17: 3,189 edges</title></rect><rect x="598.3" y="34" width="16.2" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr18: 2,710 edges</title></rect><rect x="614.5" y="34" width="14.2" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr19: 2,376 edges</title></rect><rect x="628.8" y="34" width="14.2" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr20: 2,369 edges</title></rect><rect x="643.0" y="34" width="10.6" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chr21: 1,767 edges</title></rect><rect x="653.5" y="34" width="11.6" height="26" class="cell on strip" style="fill-opacity:1.00"><title>chr22: 1,939 edges</title></rect><rect x="665.1" y="34" width="39.7" height="26" class="cell on strip" style="fill-opacity:0.35"><title>chrX: 6,637 edges</title></rect><rect x="704.9" y="34" width="35.1" height="26" class="cell q strip" style="fill-opacity:1.00"><title>trans: 5,863 edges</title></rect><text x="740.0" y="76" class="small" text-anchor="end">trans</text><text x="322" y="76" class="small">… one block per chromosome …</text><text x="20" y="96" class="small">114,367 cis edges in 23 blocks, then 5,863 trans edges in one block. Each block is a slice: A.chrom(c), A.cis, A.trans.</text><text x="20" y="122" class="head">The same edges as a matrix</text><text x="20" y="140" class="small">chromosome × chromosome edge counts, log colour scale</text><rect x="240.0" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:1.00"><title>chr1 × chr1: 9,479 edges</title></rect><rect x="253.0" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.30"><title>chr1 × chr2: 91 edges</title></rect><rect x="266.1" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.29"><title>chr1 × chr3: 77 edges</title></rect><rect x="279.1" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr1 × chr4: 49 edges</title></rect><rect x="292.2" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.27"><title>chr1 × chr5: 63 edges</title></rect><rect x="305.2" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr1 × chr6: 50 edges</title></rect><rect x="318.3" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.27"><title>chr1 × chr7: 66 edges</title></rect><rect x="331.3" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr1 × chr8: 42 edges</title></rect><rect x="344.3" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.28"><title>chr1 × chr9: 67 edges</title></rect><rect x="357.4" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr1 × chr10: 42 edges</title></rect><rect x="370.4" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr1 × chr11: 42 edges</title></rect><rect x="383.5" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr1 × chr12: 33 edges</title></rect><rect x="396.5" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr1 × chr13: 32 edges</title></rect><rect x="409.6" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr1 × chr14: 26 edges</title></rect><rect x="422.6" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr1 × chr15: 27 edges</title></rect><rect x="435.7" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr1 × chr16: 12 edges</title></rect><rect x="448.7" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr1 × chr17: 25 edges</title></rect><rect x="461.7" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr1 × chr18: 21 edges</title></rect><rect x="474.8" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr1 × chr19: 21 edges</title></rect><rect x="487.8" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr1 × chr20: 15 edges</title></rect><rect x="500.9" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr1 × chr21: 10 edges</title></rect><rect x="513.9" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr1 × chr22: 7 edges</title></rect><rect x="527.0" y="150.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr1 × chrX: 53 edges</title></rect><rect x="240.0" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.30"><title>chr2 × chr1: 91 edges</title></rect><rect x="253.0" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:1.00"><title>chr2 × chr2: 9,412 edges</title></rect><rect x="266.1" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.29"><title>chr2 × chr3: 75 edges</title></rect><rect x="279.1" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr2 × chr4: 58 edges</title></rect><rect x="292.2" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr2 × chr5: 59 edges</title></rect><rect x="305.2" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.30"><title>chr2 × chr6: 83 edges</title></rect><rect x="318.3" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr2 × chr7: 52 edges</title></rect><rect x="331.3" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr2 × chr8: 55 edges</title></rect><rect x="344.3" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr2 × chr9: 45 edges</title></rect><rect x="357.4" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr2 × chr10: 35 edges</title></rect><rect x="370.4" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr2 × chr11: 26 edges</title></rect><rect x="383.5" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr2 × chr12: 50 edges</title></rect><rect x="396.5" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr2 × chr13: 35 edges</title></rect><rect x="409.6" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr2 × chr14: 14 edges</title></rect><rect x="422.6" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.27"><title>chr2 × chr15: 63 edges</title></rect><rect x="435.7" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr2 × chr16: 36 edges</title></rect><rect x="448.7" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr2 × chr17: 44 edges</title></rect><rect x="461.7" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr2 × chr18: 21 edges</title></rect><rect x="474.8" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr2 × chr19: 25 edges</title></rect><rect x="487.8" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr2 × chr20: 16 edges</title></rect><rect x="500.9" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr2 × chr21: 16 edges</title></rect><rect x="513.9" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr2 × chr22: 20 edges</title></rect><rect x="527.0" y="163.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr2 × chrX: 44 edges</title></rect><rect x="240.0" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.29"><title>chr3 × chr1: 77 edges</title></rect><rect x="253.0" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.29"><title>chr3 × chr2: 75 edges</title></rect><rect x="266.1" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.95"><title>chr3 × chr3: 7,368 edges</title></rect><rect x="279.1" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr3 × chr4: 42 edges</title></rect><rect x="292.2" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr3 × chr5: 31 edges</title></rect><rect x="305.2" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.28"><title>chr3 × chr6: 73 edges</title></rect><rect x="318.3" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr3 × chr7: 33 edges</title></rect><rect x="331.3" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr3 × chr8: 37 edges</title></rect><rect x="344.3" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr3 × chr9: 29 edges</title></rect><rect x="357.4" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr3 × chr10: 22 edges</title></rect><rect x="370.4" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr3 × chr11: 50 edges</title></rect><rect x="383.5" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr3 × chr12: 19 edges</title></rect><rect x="396.5" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr3 × chr13: 51 edges</title></rect><rect x="409.6" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr3 × chr14: 38 edges</title></rect><rect x="422.6" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr3 × chr15: 13 edges</title></rect><rect x="435.7" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr3 × chr16: 15 edges</title></rect><rect x="448.7" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr3 × chr17: 22 edges</title></rect><rect x="461.7" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr3 × chr18: 30 edges</title></rect><rect x="474.8" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr3 × chr19: 10 edges</title></rect><rect x="487.8" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr3 × chr20: 29 edges</title></rect><rect x="500.9" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr3 × chr21: 19 edges</title></rect><rect x="513.9" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr3 × chr22: 11 edges</title></rect><rect x="527.0" y="176.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr3 × chrX: 54 edges</title></rect><rect x="240.0" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr4 × chr1: 49 edges</title></rect><rect x="253.0" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr4 × chr2: 58 edges</title></rect><rect x="266.1" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr4 × chr3: 42 edges</title></rect><rect x="279.1" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.93"><title>chr4 × chr4: 6,513 edges</title></rect><rect x="292.2" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr4 × chr5: 53 edges</title></rect><rect x="305.2" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr4 × chr6: 55 edges</title></rect><rect x="318.3" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr4 × chr7: 39 edges</title></rect><rect x="331.3" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr4 × chr8: 22 edges</title></rect><rect x="344.3" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr4 × chr9: 41 edges</title></rect><rect x="357.4" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr4 × chr10: 45 edges</title></rect><rect x="370.4" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr4 × chr11: 29 edges</title></rect><rect x="383.5" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr4 × chr12: 44 edges</title></rect><rect x="396.5" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr4 × chr13: 25 edges</title></rect><rect x="409.6" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr4 × chr14: 32 edges</title></rect><rect x="422.6" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr4 × chr15: 35 edges</title></rect><rect x="435.7" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr4 × chr16: 20 edges</title></rect><rect x="448.7" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr4 × chr17: 16 edges</title></rect><rect x="461.7" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr4 × chr18: 15 edges</title></rect><rect x="474.8" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr4 × chr19: 13 edges</title></rect><rect x="487.8" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr4 × chr20: 14 edges</title></rect><rect x="500.9" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr4 × chr21: 3 edges</title></rect><rect x="513.9" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr4 × chr22: 42 edges</title></rect><rect x="527.0" y="189.1" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr4 × chrX: 59 edges</title></rect><rect x="240.0" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.27"><title>chr5 × chr1: 63 edges</title></rect><rect x="253.0" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr5 × chr2: 59 edges</title></rect><rect x="266.1" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr5 × chr3: 31 edges</title></rect><rect x="279.1" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr5 × chr4: 53 edges</title></rect><rect x="292.2" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.94"><title>chr5 × chr5: 6,934 edges</title></rect><rect x="305.2" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr5 × chr6: 34 edges</title></rect><rect x="318.3" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr5 × chr7: 47 edges</title></rect><rect x="331.3" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr5 × chr8: 34 edges</title></rect><rect x="344.3" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr5 × chr9: 27 edges</title></rect><rect x="357.4" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr5 × chr10: 34 edges</title></rect><rect x="370.4" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr5 × chr11: 26 edges</title></rect><rect x="383.5" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr5 × chr12: 22 edges</title></rect><rect x="396.5" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr5 × chr13: 26 edges</title></rect><rect x="409.6" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr5 × chr14: 34 edges</title></rect><rect x="422.6" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr5 × chr15: 26 edges</title></rect><rect x="435.7" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr5 × chr16: 17 edges</title></rect><rect x="448.7" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr5 × chr17: 19 edges</title></rect><rect x="461.7" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr5 × chr18: 10 edges</title></rect><rect x="474.8" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr5 × chr19: 20 edges</title></rect><rect x="487.8" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr5 × chr20: 11 edges</title></rect><rect x="500.9" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr5 × chr21: 8 edges</title></rect><rect x="513.9" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr5 × chr22: 19 edges</title></rect><rect x="527.0" y="202.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr5 × chrX: 38 edges</title></rect><rect x="240.0" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr6 × chr1: 50 edges</title></rect><rect x="253.0" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.30"><title>chr6 × chr2: 83 edges</title></rect><rect x="266.1" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.28"><title>chr6 × chr3: 73 edges</title></rect><rect x="279.1" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr6 × chr4: 55 edges</title></rect><rect x="292.2" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr6 × chr5: 34 edges</title></rect><rect x="305.2" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.95"><title>chr6 × chr6: 7,375 edges</title></rect><rect x="318.3" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr6 × chr7: 43 edges</title></rect><rect x="331.3" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr6 × chr8: 37 edges</title></rect><rect x="344.3" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr6 × chr9: 30 edges</title></rect><rect x="357.4" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr6 × chr10: 24 edges</title></rect><rect x="370.4" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr6 × chr11: 59 edges</title></rect><rect x="383.5" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr6 × chr12: 33 edges</title></rect><rect x="396.5" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr6 × chr13: 48 edges</title></rect><rect x="409.6" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr6 × chr14: 48 edges</title></rect><rect x="422.6" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr6 × chr15: 31 edges</title></rect><rect x="435.7" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr6 × chr16: 15 edges</title></rect><rect x="448.7" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr6 × chr17: 12 edges</title></rect><rect x="461.7" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr6 × chr18: 14 edges</title></rect><rect x="474.8" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr6 × chr19: 29 edges</title></rect><rect x="487.8" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr6 × chr20: 26 edges</title></rect><rect x="500.9" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr6 × chr21: 4 edges</title></rect><rect x="513.9" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr6 × chr22: 11 edges</title></rect><rect x="527.0" y="215.2" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr6 × chrX: 35 edges</title></rect><rect x="240.0" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.27"><title>chr7 × chr1: 66 edges</title></rect><rect x="253.0" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr7 × chr2: 52 edges</title></rect><rect x="266.1" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr7 × chr3: 33 edges</title></rect><rect x="279.1" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr7 × chr4: 39 edges</title></rect><rect x="292.2" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr7 × chr5: 47 edges</title></rect><rect x="305.2" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr7 × chr6: 43 edges</title></rect><rect x="318.3" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.90"><title>chr7 × chr7: 5,595 edges</title></rect><rect x="331.3" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr7 × chr8: 36 edges</title></rect><rect x="344.3" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr7 × chr9: 28 edges</title></rect><rect x="357.4" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr7 × chr10: 45 edges</title></rect><rect x="370.4" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr7 × chr11: 30 edges</title></rect><rect x="383.5" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr7 × chr12: 26 edges</title></rect><rect x="396.5" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr7 × chr13: 31 edges</title></rect><rect x="409.6" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr7 × chr14: 19 edges</title></rect><rect x="422.6" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr7 × chr15: 17 edges</title></rect><rect x="435.7" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr7 × chr16: 12 edges</title></rect><rect x="448.7" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr7 × chr17: 14 edges</title></rect><rect x="461.7" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr7 × chr18: 10 edges</title></rect><rect x="474.8" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr7 × chr19: 7 edges</title></rect><rect x="487.8" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr7 × chr20: 16 edges</title></rect><rect x="500.9" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr7 × chr21: 10 edges</title></rect><rect x="513.9" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr7 × chr22: 6 edges</title></rect><rect x="527.0" y="228.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr7 × chrX: 27 edges</title></rect><rect x="240.0" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr8 × chr1: 42 edges</title></rect><rect x="253.0" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr8 × chr2: 55 edges</title></rect><rect x="266.1" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr8 × chr3: 37 edges</title></rect><rect x="279.1" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr8 × chr4: 22 edges</title></rect><rect x="292.2" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr8 × chr5: 34 edges</title></rect><rect x="305.2" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr8 × chr6: 37 edges</title></rect><rect x="318.3" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr8 × chr7: 36 edges</title></rect><rect x="331.3" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.88"><title>chr8 × chr8: 5,180 edges</title></rect><rect x="344.3" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr8 × chr9: 22 edges</title></rect><rect x="357.4" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr8 × chr10: 16 edges</title></rect><rect x="370.4" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr8 × chr11: 27 edges</title></rect><rect x="383.5" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr8 × chr12: 22 edges</title></rect><rect x="396.5" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr8 × chr13: 19 edges</title></rect><rect x="409.6" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr8 × chr14: 32 edges</title></rect><rect x="422.6" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr8 × chr15: 38 edges</title></rect><rect x="435.7" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr8 × chr16: 25 edges</title></rect><rect x="448.7" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr8 × chr17: 22 edges</title></rect><rect x="461.7" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr8 × chr18: 4 edges</title></rect><rect x="474.8" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr8 × chr19: 3 edges</title></rect><rect x="487.8" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr8 × chr20: 13 edges</title></rect><rect x="500.9" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr8 × chr21: 9 edges</title></rect><rect x="513.9" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr8 × chr22: 11 edges</title></rect><rect x="527.0" y="241.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr8 × chrX: 13 edges</title></rect><rect x="240.0" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.28"><title>chr9 × chr1: 67 edges</title></rect><rect x="253.0" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr9 × chr2: 45 edges</title></rect><rect x="266.1" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr9 × chr3: 29 edges</title></rect><rect x="279.1" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr9 × chr4: 41 edges</title></rect><rect x="292.2" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr9 × chr5: 27 edges</title></rect><rect x="305.2" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr9 × chr6: 30 edges</title></rect><rect x="318.3" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr9 × chr7: 28 edges</title></rect><rect x="331.3" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr9 × chr8: 22 edges</title></rect><rect x="344.3" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.88"><title>chr9 × chr9: 5,091 edges</title></rect><rect x="357.4" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr9 × chr10: 23 edges</title></rect><rect x="370.4" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr9 × chr11: 15 edges</title></rect><rect x="383.5" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr9 × chr12: 24 edges</title></rect><rect x="396.5" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr9 × chr13: 15 edges</title></rect><rect x="409.6" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr9 × chr14: 17 edges</title></rect><rect x="422.6" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr9 × chr15: 24 edges</title></rect><rect x="435.7" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr9 × chr16: 17 edges</title></rect><rect x="448.7" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr9 × chr17: 12 edges</title></rect><rect x="461.7" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr9 × chr18: 5 edges</title></rect><rect x="474.8" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr9 × chr19: 16 edges</title></rect><rect x="487.8" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr9 × chr20: 11 edges</title></rect><rect x="500.9" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr9 × chr21: 5 edges</title></rect><rect x="513.9" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr9 × chr22: 11 edges</title></rect><rect x="527.0" y="254.3" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr9 × chrX: 30 edges</title></rect><rect x="240.0" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr10 × chr1: 42 edges</title></rect><rect x="253.0" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr10 × chr2: 35 edges</title></rect><rect x="266.1" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr10 × chr3: 22 edges</title></rect><rect x="279.1" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr10 × chr4: 45 edges</title></rect><rect x="292.2" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr10 × chr5: 34 edges</title></rect><rect x="305.2" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr10 × chr6: 24 edges</title></rect><rect x="318.3" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr10 × chr7: 45 edges</title></rect><rect x="331.3" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr10 × chr8: 16 edges</title></rect><rect x="344.3" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr10 × chr9: 23 edges</title></rect><rect x="357.4" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.89"><title>chr10 × chr10: 5,364 edges</title></rect><rect x="370.4" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr10 × chr11: 11 edges</title></rect><rect x="383.5" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr10 × chr12: 16 edges</title></rect><rect x="396.5" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr10 × chr13: 14 edges</title></rect><rect x="409.6" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr10 × chr14: 38 edges</title></rect><rect x="422.6" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr10 × chr15: 9 edges</title></rect><rect x="435.7" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr10 × chr16: 10 edges</title></rect><rect x="448.7" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr10 × chr17: 17 edges</title></rect><rect x="461.7" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr10 × chr18: 18 edges</title></rect><rect x="474.8" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr10 × chr19: 7 edges</title></rect><rect x="487.8" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr10 × chr20: 7 edges</title></rect><rect x="500.9" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr10 × chr21: 8 edges</title></rect><rect x="513.9" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr10 × chr22: 1 edges</title></rect><rect x="527.0" y="267.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr10 × chrX: 23 edges</title></rect><rect x="240.0" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr11 × chr1: 42 edges</title></rect><rect x="253.0" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr11 × chr2: 26 edges</title></rect><rect x="266.1" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr11 × chr3: 50 edges</title></rect><rect x="279.1" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr11 × chr4: 29 edges</title></rect><rect x="292.2" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr11 × chr5: 26 edges</title></rect><rect x="305.2" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chr11 × chr6: 59 edges</title></rect><rect x="318.3" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr11 × chr7: 30 edges</title></rect><rect x="331.3" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr11 × chr8: 27 edges</title></rect><rect x="344.3" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr11 × chr9: 15 edges</title></rect><rect x="357.4" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr11 × chr10: 11 edges</title></rect><rect x="370.4" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.89"><title>chr11 × chr11: 5,301 edges</title></rect><rect x="383.5" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr11 × chr12: 18 edges</title></rect><rect x="396.5" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr11 × chr13: 16 edges</title></rect><rect x="409.6" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr11 × chr14: 11 edges</title></rect><rect x="422.6" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr11 × chr15: 33 edges</title></rect><rect x="435.7" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr11 × chr16: 18 edges</title></rect><rect x="448.7" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr11 × chr17: 22 edges</title></rect><rect x="461.7" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr11 × chr18: 28 edges</title></rect><rect x="474.8" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr11 × chr19: 7 edges</title></rect><rect x="487.8" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr11 × chr20: 27 edges</title></rect><rect x="500.9" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr11 × chr21: 4 edges</title></rect><rect x="513.9" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr11 × chr22: 12 edges</title></rect><rect x="527.0" y="280.4" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr11 × chrX: 29 edges</title></rect><rect x="240.0" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr12 × chr1: 33 edges</title></rect><rect x="253.0" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr12 × chr2: 50 edges</title></rect><rect x="266.1" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr12 × chr3: 19 edges</title></rect><rect x="279.1" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr12 × chr4: 44 edges</title></rect><rect x="292.2" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr12 × chr5: 22 edges</title></rect><rect x="305.2" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr12 × chr6: 33 edges</title></rect><rect x="318.3" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr12 × chr7: 26 edges</title></rect><rect x="331.3" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr12 × chr8: 22 edges</title></rect><rect x="344.3" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr12 × chr9: 24 edges</title></rect><rect x="357.4" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr12 × chr10: 16 edges</title></rect><rect x="370.4" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr12 × chr11: 18 edges</title></rect><rect x="383.5" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.86"><title>chr12 × chr12: 4,713 edges</title></rect><rect x="396.5" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr12 × chr13: 28 edges</title></rect><rect x="409.6" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr12 × chr14: 18 edges</title></rect><rect x="422.6" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr12 × chr15: 14 edges</title></rect><rect x="435.7" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr12 × chr16: 8 edges</title></rect><rect x="448.7" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr12 × chr17: 12 edges</title></rect><rect x="461.7" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr12 × chr18: 18 edges</title></rect><rect x="474.8" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr12 × chr19: 7 edges</title></rect><rect x="487.8" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr12 × chr20: 3 edges</title></rect><rect x="500.9" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr12 × chr21: 9 edges</title></rect><rect x="513.9" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr12 × chr22: 9 edges</title></rect><rect x="527.0" y="293.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr12 × chrX: 25 edges</title></rect><rect x="240.0" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr13 × chr1: 32 edges</title></rect><rect x="253.0" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr13 × chr2: 35 edges</title></rect><rect x="266.1" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr13 × chr3: 51 edges</title></rect><rect x="279.1" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr13 × chr4: 25 edges</title></rect><rect x="292.2" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr13 × chr5: 26 edges</title></rect><rect x="305.2" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr13 × chr6: 48 edges</title></rect><rect x="318.3" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr13 × chr7: 31 edges</title></rect><rect x="331.3" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr13 × chr8: 19 edges</title></rect><rect x="344.3" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr13 × chr9: 15 edges</title></rect><rect x="357.4" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr13 × chr10: 14 edges</title></rect><rect x="370.4" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr13 × chr11: 16 edges</title></rect><rect x="383.5" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr13 × chr12: 28 edges</title></rect><rect x="396.5" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.84"><title>chr13 × chr13: 4,103 edges</title></rect><rect x="409.6" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr13 × chr14: 6 edges</title></rect><rect x="422.6" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr13 × chr15: 8 edges</title></rect><rect x="435.7" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr13 × chr16: 4 edges</title></rect><rect x="448.7" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr13 × chr17: 6 edges</title></rect><rect x="461.7" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr13 × chr18: 13 edges</title></rect><rect x="474.8" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr13 × chr19: 24 edges</title></rect><rect x="487.8" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr13 × chr20: 7 edges</title></rect><rect x="500.9" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr13 × chr21: 14 edges</title></rect><rect x="513.9" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr13 × chr22: 4 edges</title></rect><rect x="527.0" y="306.5" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr13 × chrX: 18 edges</title></rect><rect x="240.0" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr14 × chr1: 26 edges</title></rect><rect x="253.0" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr14 × chr2: 14 edges</title></rect><rect x="266.1" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr14 × chr3: 38 edges</title></rect><rect x="279.1" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr14 × chr4: 32 edges</title></rect><rect x="292.2" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr14 × chr5: 34 edges</title></rect><rect x="305.2" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chr14 × chr6: 48 edges</title></rect><rect x="318.3" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr14 × chr7: 19 edges</title></rect><rect x="331.3" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr14 × chr8: 32 edges</title></rect><rect x="344.3" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr14 × chr9: 17 edges</title></rect><rect x="357.4" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr14 × chr10: 38 edges</title></rect><rect x="370.4" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr14 × chr11: 11 edges</title></rect><rect x="383.5" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr14 × chr12: 18 edges</title></rect><rect x="396.5" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr14 × chr13: 6 edges</title></rect><rect x="409.6" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.83"><title>chr14 × chr14: 3,829 edges</title></rect><rect x="422.6" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr14 × chr15: 12 edges</title></rect><rect x="435.7" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr14 × chr16: 14 edges</title></rect><rect x="448.7" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr14 × chr17: 12 edges</title></rect><rect x="461.7" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr14 × chr18: 15 edges</title></rect><rect x="474.8" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr14 × chr19: 12 edges</title></rect><rect x="487.8" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr14 × chr20: 9 edges</title></rect><rect x="500.9" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr14 × chr21: 15 edges</title></rect><rect x="513.9" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr14 × chr22: 6 edges</title></rect><rect x="527.0" y="319.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr14 × chrX: 43 edges</title></rect><rect x="240.0" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr15 × chr1: 27 edges</title></rect><rect x="253.0" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.27"><title>chr15 × chr2: 63 edges</title></rect><rect x="266.1" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr15 × chr3: 13 edges</title></rect><rect x="279.1" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr15 × chr4: 35 edges</title></rect><rect x="292.2" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr15 × chr5: 26 edges</title></rect><rect x="305.2" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr15 × chr6: 31 edges</title></rect><rect x="318.3" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr15 × chr7: 17 edges</title></rect><rect x="331.3" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chr15 × chr8: 38 edges</title></rect><rect x="344.3" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr15 × chr9: 24 edges</title></rect><rect x="357.4" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr15 × chr10: 9 edges</title></rect><rect x="370.4" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr15 × chr11: 33 edges</title></rect><rect x="383.5" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr15 × chr12: 14 edges</title></rect><rect x="396.5" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr15 × chr13: 8 edges</title></rect><rect x="409.6" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr15 × chr14: 12 edges</title></rect><rect x="422.6" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.83"><title>chr15 × chr15: 3,963 edges</title></rect><rect x="435.7" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr15 × chr16: 6 edges</title></rect><rect x="448.7" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr15 × chr17: 8 edges</title></rect><rect x="461.7" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr15 × chr18: 10 edges</title></rect><rect x="474.8" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr15 × chr19: 7 edges</title></rect><rect x="487.8" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr15 × chr20: 9 edges</title></rect><rect x="500.9" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr15 × chr21: 4 edges</title></rect><rect x="513.9" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr15 × chr22: 8 edges</title></rect><rect x="527.0" y="332.6" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr15 × chrX: 16 edges</title></rect><rect x="240.0" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr16 × chr1: 12 edges</title></rect><rect x="253.0" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chr16 × chr2: 36 edges</title></rect><rect x="266.1" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr16 × chr3: 15 edges</title></rect><rect x="279.1" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr16 × chr4: 20 edges</title></rect><rect x="292.2" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr16 × chr5: 17 edges</title></rect><rect x="305.2" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr16 × chr6: 15 edges</title></rect><rect x="318.3" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr16 × chr7: 12 edges</title></rect><rect x="331.3" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr16 × chr8: 25 edges</title></rect><rect x="344.3" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr16 × chr9: 17 edges</title></rect><rect x="357.4" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr16 × chr10: 10 edges</title></rect><rect x="370.4" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr16 × chr11: 18 edges</title></rect><rect x="383.5" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr16 × chr12: 8 edges</title></rect><rect x="396.5" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr16 × chr13: 4 edges</title></rect><rect x="409.6" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr16 × chr14: 14 edges</title></rect><rect x="422.6" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr16 × chr15: 6 edges</title></rect><rect x="435.7" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.79"><title>chr16 × chr16: 3,160 edges</title></rect><rect x="448.7" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr16 × chr17: 17 edges</title></rect><rect x="461.7" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr16 × chr18: 8 edges</title></rect><rect x="474.8" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr16 × chr19: 3 edges</title></rect><rect x="487.8" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr16 × chr20: 6 edges</title></rect><rect x="500.9" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr16 × chr21: 2 edges</title></rect><rect x="513.9" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr16 × chr22: 7 edges</title></rect><rect x="527.0" y="345.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr16 × chrX: 11 edges</title></rect><rect x="240.0" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr17 × chr1: 25 edges</title></rect><rect x="253.0" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr17 × chr2: 44 edges</title></rect><rect x="266.1" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr17 × chr3: 22 edges</title></rect><rect x="279.1" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr17 × chr4: 16 edges</title></rect><rect x="292.2" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr17 × chr5: 19 edges</title></rect><rect x="305.2" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr17 × chr6: 12 edges</title></rect><rect x="318.3" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr17 × chr7: 14 edges</title></rect><rect x="331.3" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr17 × chr8: 22 edges</title></rect><rect x="344.3" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr17 × chr9: 12 edges</title></rect><rect x="357.4" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr17 × chr10: 17 edges</title></rect><rect x="370.4" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr17 × chr11: 22 edges</title></rect><rect x="383.5" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr17 × chr12: 12 edges</title></rect><rect x="396.5" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr17 × chr13: 6 edges</title></rect><rect x="409.6" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr17 × chr14: 12 edges</title></rect><rect x="422.6" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr17 × chr15: 8 edges</title></rect><rect x="435.7" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr17 × chr16: 17 edges</title></rect><rect x="448.7" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.79"><title>chr17 × chr17: 3,189 edges</title></rect><rect x="461.7" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr17 × chr18: 8 edges</title></rect><rect x="474.8" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr17 × chr19: 8 edges</title></rect><rect x="487.8" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr17 × chr20: 2 edges</title></rect><rect x="500.9" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr17 × chr21: 3 edges</title></rect><rect x="513.9" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr17 × chr22: 8 edges</title></rect><rect x="527.0" y="358.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr17 × chrX: 42 edges</title></rect><rect x="240.0" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr18 × chr1: 21 edges</title></rect><rect x="253.0" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr18 × chr2: 21 edges</title></rect><rect x="266.1" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr18 × chr3: 30 edges</title></rect><rect x="279.1" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr18 × chr4: 15 edges</title></rect><rect x="292.2" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr18 × chr5: 10 edges</title></rect><rect x="305.2" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr18 × chr6: 14 edges</title></rect><rect x="318.3" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr18 × chr7: 10 edges</title></rect><rect x="331.3" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr18 × chr8: 4 edges</title></rect><rect x="344.3" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr18 × chr9: 5 edges</title></rect><rect x="357.4" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr18 × chr10: 18 edges</title></rect><rect x="370.4" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr18 × chr11: 28 edges</title></rect><rect x="383.5" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr18 × chr12: 18 edges</title></rect><rect x="396.5" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr18 × chr13: 13 edges</title></rect><rect x="409.6" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr18 × chr14: 15 edges</title></rect><rect x="422.6" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr18 × chr15: 10 edges</title></rect><rect x="435.7" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr18 × chr16: 8 edges</title></rect><rect x="448.7" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr18 × chr17: 8 edges</title></rect><rect x="461.7" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.77"><title>chr18 × chr18: 2,710 edges</title></rect><rect x="474.8" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr18 × chr19: 6 edges</title></rect><rect x="487.8" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr18 × chr20: 10 edges</title></rect><rect x="500.9" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr18 × chr21: 6 edges</title></rect><rect x="513.9" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr18 × chr22: 5 edges</title></rect><rect x="527.0" y="371.7" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr18 × chrX: 12 edges</title></rect><rect x="240.0" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr19 × chr1: 21 edges</title></rect><rect x="253.0" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr19 × chr2: 25 edges</title></rect><rect x="266.1" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr19 × chr3: 10 edges</title></rect><rect x="279.1" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr19 × chr4: 13 edges</title></rect><rect x="292.2" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr19 × chr5: 20 edges</title></rect><rect x="305.2" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr19 × chr6: 29 edges</title></rect><rect x="318.3" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr19 × chr7: 7 edges</title></rect><rect x="331.3" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr19 × chr8: 3 edges</title></rect><rect x="344.3" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr19 × chr9: 16 edges</title></rect><rect x="357.4" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr19 × chr10: 7 edges</title></rect><rect x="370.4" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr19 × chr11: 7 edges</title></rect><rect x="383.5" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr19 × chr12: 7 edges</title></rect><rect x="396.5" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chr19 × chr13: 24 edges</title></rect><rect x="409.6" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr19 × chr14: 12 edges</title></rect><rect x="422.6" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr19 × chr15: 7 edges</title></rect><rect x="435.7" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr19 × chr16: 3 edges</title></rect><rect x="448.7" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr19 × chr17: 8 edges</title></rect><rect x="461.7" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr19 × chr18: 6 edges</title></rect><rect x="474.8" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.74"><title>chr19 × chr19: 2,376 edges</title></rect><rect x="487.8" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr19 × chr20: 12 edges</title></rect><rect x="500.9" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr19 × chr21: 4 edges</title></rect><rect x="513.9" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr19 × chr22: 5 edges</title></rect><rect x="527.0" y="384.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr19 × chrX: 16 edges</title></rect><rect x="240.0" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr20 × chr1: 15 edges</title></rect><rect x="253.0" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr20 × chr2: 16 edges</title></rect><rect x="266.1" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chr20 × chr3: 29 edges</title></rect><rect x="279.1" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr20 × chr4: 14 edges</title></rect><rect x="292.2" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr20 × chr5: 11 edges</title></rect><rect x="305.2" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr20 × chr6: 26 edges</title></rect><rect x="318.3" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr20 × chr7: 16 edges</title></rect><rect x="331.3" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr20 × chr8: 13 edges</title></rect><rect x="344.3" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr20 × chr9: 11 edges</title></rect><rect x="357.4" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr20 × chr10: 7 edges</title></rect><rect x="370.4" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chr20 × chr11: 27 edges</title></rect><rect x="383.5" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr20 × chr12: 3 edges</title></rect><rect x="396.5" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr20 × chr13: 7 edges</title></rect><rect x="409.6" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr20 × chr14: 9 edges</title></rect><rect x="422.6" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr20 × chr15: 9 edges</title></rect><rect x="435.7" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr20 × chr16: 6 edges</title></rect><rect x="448.7" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr20 × chr17: 2 edges</title></rect><rect x="461.7" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr20 × chr18: 10 edges</title></rect><rect x="474.8" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr20 × chr19: 12 edges</title></rect><rect x="487.8" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.74"><title>chr20 × chr20: 2,369 edges</title></rect><rect x="500.9" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr20 × chr21: 6 edges</title></rect><rect x="513.9" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr20 × chr22: 1 edges</title></rect><rect x="527.0" y="397.8" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr20 × chrX: 9 edges</title></rect><rect x="240.0" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr21 × chr1: 10 edges</title></rect><rect x="253.0" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chr21 × chr2: 16 edges</title></rect><rect x="266.1" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr21 × chr3: 19 edges</title></rect><rect x="279.1" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr21 × chr4: 3 edges</title></rect><rect x="292.2" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr21 × chr5: 8 edges</title></rect><rect x="305.2" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr21 × chr6: 4 edges</title></rect><rect x="318.3" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr21 × chr7: 10 edges</title></rect><rect x="331.3" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr21 × chr8: 9 edges</title></rect><rect x="344.3" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr21 × chr9: 5 edges</title></rect><rect x="357.4" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr21 × chr10: 8 edges</title></rect><rect x="370.4" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr21 × chr11: 4 edges</title></rect><rect x="383.5" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr21 × chr12: 9 edges</title></rect><rect x="396.5" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr21 × chr13: 14 edges</title></rect><rect x="409.6" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chr21 × chr14: 15 edges</title></rect><rect x="422.6" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr21 × chr15: 4 edges</title></rect><rect x="435.7" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr21 × chr16: 2 edges</title></rect><rect x="448.7" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.10"><title>chr21 × chr17: 3 edges</title></rect><rect x="461.7" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr21 × chr18: 6 edges</title></rect><rect x="474.8" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr21 × chr19: 4 edges</title></rect><rect x="487.8" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr21 × chr20: 6 edges</title></rect><rect x="500.9" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.69"><title>chr21 × chr21: 1,767 edges</title></rect><rect x="513.9" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr21 × chr22: 2 edges</title></rect><rect x="527.0" y="410.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr21 × chrX: 10 edges</title></rect><rect x="240.0" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr22 × chr1: 7 edges</title></rect><rect x="253.0" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr22 × chr2: 20 edges</title></rect><rect x="266.1" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr22 × chr3: 11 edges</title></rect><rect x="279.1" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chr22 × chr4: 42 edges</title></rect><rect x="292.2" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chr22 × chr5: 19 edges</title></rect><rect x="305.2" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr22 × chr6: 11 edges</title></rect><rect x="318.3" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr22 × chr7: 6 edges</title></rect><rect x="331.3" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr22 × chr8: 11 edges</title></rect><rect x="344.3" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr22 × chr9: 11 edges</title></rect><rect x="357.4" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr22 × chr10: 1 edges</title></rect><rect x="370.4" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chr22 × chr11: 12 edges</title></rect><rect x="383.5" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr22 × chr12: 9 edges</title></rect><rect x="396.5" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.11"><title>chr22 × chr13: 4 edges</title></rect><rect x="409.6" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr22 × chr14: 6 edges</title></rect><rect x="422.6" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr22 × chr15: 8 edges</title></rect><rect x="435.7" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr22 × chr16: 7 edges</title></rect><rect x="448.7" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.13"><title>chr22 × chr17: 8 edges</title></rect><rect x="461.7" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr22 × chr18: 5 edges</title></rect><rect x="474.8" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.12"><title>chr22 × chr19: 5 edges</title></rect><rect x="487.8" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr22 × chr20: 1 edges</title></rect><rect x="500.9" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.09"><title>chr22 × chr21: 2 edges</title></rect><rect x="513.9" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.71"><title>chr22 × chr22: 1,939 edges</title></rect><rect x="527.0" y="423.9" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chr22 × chrX: 10 edges</title></rect><rect x="240.0" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.25"><title>chrX × chr1: 53 edges</title></rect><rect x="253.0" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chrX × chr2: 44 edges</title></rect><rect x="266.1" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chrX × chr3: 54 edges</title></rect><rect x="279.1" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.26"><title>chrX × chr4: 59 edges</title></rect><rect x="292.2" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.23"><title>chrX × chr5: 38 edges</title></rect><rect x="305.2" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.22"><title>chrX × chr6: 35 edges</title></rect><rect x="318.3" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chrX × chr7: 27 edges</title></rect><rect x="331.3" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.16"><title>chrX × chr8: 13 edges</title></rect><rect x="344.3" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chrX × chr9: 30 edges</title></rect><rect x="357.4" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.19"><title>chrX × chr10: 23 edges</title></rect><rect x="370.4" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.21"><title>chrX × chr11: 29 edges</title></rect><rect x="383.5" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.20"><title>chrX × chr12: 25 edges</title></rect><rect x="396.5" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.18"><title>chrX × chr13: 18 edges</title></rect><rect x="409.6" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chrX × chr14: 43 edges</title></rect><rect x="422.6" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chrX × chr15: 16 edges</title></rect><rect x="435.7" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chrX × chr16: 11 edges</title></rect><rect x="448.7" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.24"><title>chrX × chr17: 42 edges</title></rect><rect x="461.7" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.15"><title>chrX × chr18: 12 edges</title></rect><rect x="474.8" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.17"><title>chrX × chr19: 16 edges</title></rect><rect x="487.8" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chrX × chr20: 9 edges</title></rect><rect x="500.9" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chrX × chr21: 10 edges</title></rect><rect x="513.9" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.14"><title>chrX × chr22: 10 edges</title></rect><rect x="527.0" y="437.0" width="13.0" height="13.0" class="cell on heat" style="fill-opacity:0.93"><title>chrX × chrX: 6,637 edges</title></rect><text x="234" y="159.1" class="small" text-anchor="end">chr1</text><text x="234" y="185.2" class="small" text-anchor="end">chr3</text><text x="234" y="211.3" class="small" text-anchor="end">chr5</text><text x="234" y="237.4" class="small" text-anchor="end">chr7</text><text x="234" y="263.5" class="small" text-anchor="end">chr9</text><text x="234" y="289.6" class="small" text-anchor="end">chr11</text><text x="234" y="315.7" class="small" text-anchor="end">chr13</text><text x="234" y="341.7" class="small" text-anchor="end">chr15</text><text x="234" y="367.8" class="small" text-anchor="end">chr17</text><text x="234" y="393.9" class="small" text-anchor="end">chr19</text><text x="234" y="420.0" class="small" text-anchor="end">chr21</text><text x="234" y="446.1" class="small" text-anchor="end">chrX</text><rect x="564" y="160" width="14" height="14" class="cell on"/><text x="586" y="172" class="small">diagonal: one cis block</text><text x="586" y="188" class="small">1,767–9,479 edges each</text><rect x="564" y="206" width="14" height="14" class="cell on" style="fill-opacity:.2"/><text x="586" y="218" class="small">off-diagonal: a trans pair</text><text x="586" y="234" class="small">1–91 edges each</text><text x="564" y="270" class="small">One graph. The diagonal is most of it;</text><text x="564" y="286" class="small">the trans pairs stay in the same table,</text><text x="564" y="302" class="small">so neighbours and graph algorithms</text><text x="564" y="318" class="small">always see them.</text></svg></div>
+    <p class="sub">Real counts from the trans benchmark: 114,367 cis edges and 5,863 trans edges (5% of loops). A per-chromosome analysis takes one block. A whole-genome analysis takes the whole table. Neither needs a copy.</p></div>
+  <div class="why"><h3>Taking one chromosome</h3><div class="scroll"><svg viewBox="0 0 760 250" role="img" aria-label="Taking one chromosome. In main, subgraph() walks every vertex and edge in Python and copies matching ones and their properties into a new graph. In the prototype, A.chrom('chr8') returns a view: two numbers (start and end row) into the same sorted edge arrays; nothing is copied.">
+  <defs>
+    <marker id="vw1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    <marker id="vw2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="good"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">main: G.subgraph(filter)</text>
+  <text x="20" y="40" class="small">a new graph, filled one vertex and one edge at a time</text>
+  <rect x="20" y="58" width="120" height="120" rx="8" class="box"/>
+  <text x="80" y="80" text-anchor="middle" class="small">graph-tool Graph</text>
+  <g class="small">
+    <circle cx="48" cy="112" r="7" class="cell"/><circle cx="80" cy="100" r="7" class="cell"/><circle cx="110" cy="122" r="7" class="cell"/>
+    <circle cx="58" cy="150" r="7" class="cell"/><circle cx="98" cy="156" r="7" class="cell"/>
+    <path d="M48,112 L80,100 L110,122 M58,150 L98,156 L110,122 M48,112 L58,150" class="arrow"/>
+  </g>
+  <path d="M146,118 L214,118" class="arrow bad" marker-end="url(#vw1)"/>
+  <text x="180" y="108" text-anchor="middle" class="small bad">Python loop</text>
+  <rect x="220" y="58" width="120" height="120" rx="8" class="box bad"/>
+  <text x="280" y="80" text-anchor="middle" class="small">new Graph</text>
+  <g class="small">
+    <circle cx="258" cy="120" r="7" class="cell"/><circle cx="300" cy="140" r="7" class="cell"/>
+    <path d="M258,120 L300,140" class="arrow"/>
+  </g>
+  <text x="20" y="204" class="small">copies every matching vertex, edge and</text>
+  <text x="20" y="220" class="small">property value, one at a time</text>
+
+  <line x1="372" y1="16" x2="372" y2="236" stroke="currentColor" opacity=".18"/>
+
+  <text x="396" y="22" class="head">columnar: A.chrom("chr8")</text>
+  <text x="396" y="40" class="small">a view: two numbers into the same sorted arrays</text>
+  <g class="small">
+    <text x="404" y="74">src</text><text x="404" y="98">tgt</text><text x="404" y="122">n</text>
+    <rect x="436" y="60" width="300" height="20" class="cell"/>
+    <rect x="436" y="84" width="300" height="20" class="cell"/>
+    <rect x="436" y="108" width="300" height="20" class="cell"/>
+    <rect x="566" y="60" width="64" height="68" class="cell on" style="fill-opacity:.28"/>
+    <text x="476" y="146" text-anchor="middle">chr1 … chr7</text>
+    <text x="598" y="146" text-anchor="middle" class="good head">chr8</text>
+    <text x="690" y="146" text-anchor="middle">… trans</text>
+  </g>
+  <path d="M566,160 v8 h64 v-8" class="arrow hl"/>
+  <path d="M598,168 L598,190" class="arrow hl" marker-end="url(#vw2)"/>
+  <rect x="520" y="194" width="156" height="34" rx="8" class="box hl"/>
+  <text x="598" y="216" text-anchor="middle" class="small">view = (lo, hi) · no copy</text>
+</svg></div><p class="sub">On main this is a Python loop that rebuilds a graph (389 ms for chr8). In the prototype it is a slice of the same arrays (61 µs), and edits to the slice write through to the full graph.</p></div>
+  <div class="mech">
+    <div><h3>Per chromosome</h3><p><code>A.chrom("chr8")</code>, or <code>for c, view in A.chroms()</code>. Each block is independent, so blocks can go to separate processes.</p></div>
+    <div><h3>Cis or trans only</h3><p><code>A.cis</code>, <code>A.trans</code>: slices again. Distance-decay fits use cis; trans gets its own flat expectation.</p></div>
+    <div><h3>Whole graph</h3><p><code>A.neighbors(row)</code> uses one adjacency index over all edges, so a CRE's trans partners are always listed. <code>A.graph()</code> builds a graph-tool Graph from the arrays when you need real graph algorithms.</p></div>
+  </div>
+</section>
+
+<section id="speed">
+  <span class="tag green">Speed</span>
+  <h2>Every step, main vs prototype</h2>
+  <p class="verdict">Same inputs, same outputs, every step faster. The biggest gain is <b>add_mcool</b>: 23 s → 295 ms. The prototype maps every edge to its Hi-C pixel with array lookups, reading pixels one chromosome block at a time, instead of one pandas lookup per edge.</p>
+  <figure><div class="ttl">Per step <span>· 100k CREs, 50k loops, 5 kb Hi-C, medians</span></div><div class="scroll" id="c-steps"></div><figcaption>Each row is one call on the same data. The orange dot is main and the blue dot is the prototype; the label on the right is the speed-up. Steps on main that are already fast (strength, prime_hubs) are still loops over graph-tool property maps, and in the prototype they become one or two numpy calls.</figcaption></figure>
+  <figure><div class="ttl">Where the time goes <span>· one fresh Python process per implementation</span></div><div class="scroll" id="c-e2e"></div><figcaption>main imports genomeblocks from a clean checkout of origin/main (ec4737a). Peak memory: 1,258 MB on main, 782 MB for the prototype.</figcaption></figure>
+  <details><summary>Per-step table</summary><div class="tbl"><table><thead><tr><th class="">step</th><th class="n">main</th><th class="n">columnar</th><th class="n">speed-up</th></tr></thead><tbody><tr><td class="">Loci.make (100k CREs)</td><td class="n">203 ms</td><td class="n">56 ms</td><td class="n">3.7×</td></tr><tr><td class="">Genes.make (GTF, 877k lines)</td><td class="n">6.4 s</td><td class="n">852 ms</td><td class="n">7.6×</td></tr><tr><td class="">gene annotation index</td><td class="n">5.1 s</td><td class="n">139 ms</td><td class="n">37×</td></tr><tr><td class="">Genes.annotations (100k CREs)</td><td class="n">829 ms</td><td class="n">43 ms</td><td class="n">19×</td></tr><tr><td class="">Architecture.make (50k loops)</td><td class="n">2.1 s</td><td class="n">128 ms</td><td class="n">16×</td></tr><tr><td class="">add_mcool (5 kb)</td><td class="n">23 s</td><td class="n">295 ms</td><td class="n">79×</td></tr><tr><td class="">normalize (power-law O/E)</td><td class="n">1.3 s</td><td class="n">9.6 ms</td><td class="n">137×</td></tr><tr><td class="">Architecture.annotate</td><td class="n">2.4 s</td><td class="n">40 ms</td><td class="n">59×</td></tr><tr><td class="">strength</td><td class="n">616 ms</td><td class="n">1.2 ms</td><td class="n">532×</td></tr><tr><td class="">prime_hubs</td><td class="n">168 ms</td><td class="n">11 ms</td><td class="n">15×</td></tr><tr><td class="">save the graph</td><td class="n">1.3 s</td><td class="n">78 ms</td><td class="n">17×</td></tr><tr><td class="">load it back</td><td class="n">2.0 s</td><td class="n">60 ms</td><td class="n">33×</td></tr></tbody></table></div></details>
+  <details><summary>End-to-end table (fresh process)</summary><div class="tbl"><table><thead><tr><th class="">step</th><th class="n">main</th><th class="n">columnar</th></tr></thead><tbody><tr><td class="">import</td><td class="n">1.6 s</td><td class="n">69 ms</td></tr><tr><td class="">Loci.make</td><td class="n">180 ms</td><td class="n">325 ms</td></tr><tr><td class="">Genes.make</td><td class="n">5.8 s</td><td class="n">759 ms</td></tr><tr><td class="">make</td><td class="n">1.9 s</td><td class="n">195 ms</td></tr><tr><td class="">add_mcool</td><td class="n">22 s</td><td class="n">492 ms</td></tr><tr><td class="">normalize</td><td class="n">1.4 s</td><td class="n">214 ms</td></tr><tr><td class="">annotate</td><td class="n">7.5 s</td><td class="n">171 ms</td></tr><tr><td class="">strength</td><td class="n">636 ms</td><td class="n">1.0 ms</td></tr><tr><td class="">prime_hubs</td><td class="n">162 ms</td><td class="n">227 ms</td></tr><tr><td class="">save</td><td class="n">2.0 s</td><td class="n">216 ms</td></tr><tr><td class="">total</td><td class="n">43 s</td><td class="n">2.7 s</td></tr></tbody></table></div></details>
+</section>
+
+<section id="notebook">
+  <span class="tag purple">Notebook</span>
+  <h2>The interactive part</h2>
+  <p class="verdict">In a notebook you cut, look up and reload all the time. Views and lookups take <b>microseconds to milliseconds</b>. Graph algorithms still run in graph-tool, at the same speed, built from the tables on demand.</p>
+  <figure><div class="ttl">Everyday operations <span>· same graph, medians</span></div><div class="scroll" id="c-views"></div><figcaption>Building the graph-tool Graph from the tables takes 17 ms and is cached. Components and PageRank are graph-tool's own code on both sides, so they match.</figcaption></figure>
+  <div class="tiles">
+    <div class="tile"><span class="k">Reload a saved graph (fresh process)</span><span class="v">544 ms</span><span class="d">main: 3.0 s to unpickle and rebuild the graph.</span></div>
+    <div class="tile"><span class="k">File on disk</span><span class="v">3.2 MB</span><span class="d">Parquet tables that pandas, polars and R can read; main's pickle: 16.1 MB, Python only.</span></div>
+    <div class="tile"><span class="k">Peak memory, whole pipeline</span><span class="v">782 MB</span><span class="d">main: 1,258 MB in the same pipeline.</span></div>
+  </div>
+  <details><summary>All timings</summary><div class="tbl"><table><thead><tr><th class="">operation</th><th class="n">main</th><th class="n">columnar</th><th class="n">speed-up</th></tr></thead><tbody><tr><td class="">one chromosome (chr8)</td><td class="n">389 ms</td><td class="n">61 µs</td><td class="n">6,383×</td></tr><tr><td class="">all cis / all trans split</td><td class="n">—</td><td class="n">69 µs</td><td class="n">—</td></tr><tr><td class="">region chr8:20-40 Mb</td><td class="n">247 ms</td><td class="n">1.1 ms</td><td class="n">216×</td></tr><tr><td class="">neighbours of 1,000 CREs</td><td class="n">239 ms</td><td class="n">6.3 ms</td><td class="n">38×</td></tr><tr><td class="">copy</td><td class="n">2.8 s</td><td class="n">2.7 ms</td><td class="n">1,033×</td></tr><tr><td class="">graph-tool Graph from tables</td><td class="n">—</td><td class="n">17 ms</td><td class="n">—</td></tr><tr><td class="">connected components (graph-tool)</td><td class="n">15 ms</td><td class="n">9.8 ms</td><td class="n">1.6×</td></tr><tr><td class="">pagerank (graph-tool)</td><td class="n">7.2 ms</td><td class="n">4.4 ms</td><td class="n">1.7×</td></tr></tbody></table></div></details>
+</section>
+
+<section id="scale">
+  <span class="tag green">Scale</span>
+  <h2>Bigger loop sets</h2>
+  <p class="verdict">The prototype runs <b>1,000,000 loops</b> (1,428,862 edges) in 5.3 s. main needs 82 s for 200,000 loops; it was not run at 1M.</p>
+  <figure><div class="ttl">Pipeline time vs loop count <span>· log–log, make → add_mcool → normalize → annotate → strength</span></div><div class="scroll" id="c-scale"></div><figcaption>The gap widens with size: 37× at 12.5k loops, 66× at 50k loops, 83× at 200k loops. main does Python work per edge, so its time grows with the edge count. The prototype's fixed costs (reading the cooler and GTF index, fitting the power law) dominate at small sizes.</figcaption></figure>
+</section>
+
+<section id="trans">
+  <span class="tag warn">Trans loops</span>
+  <h2>Inter-chromosomal edges</h2>
+  <p class="verdict">With 5% trans loops, main builds the graph and adds Hi-C, then <b>stops at normalize</b> (TypeError). <code>Locus.distance_to</code> has no distance between chromosomes, and normalize writes that missing value into a float column. The prototype gives trans edges an infinite distance and normalises them against the mean trans contact. (Fixed in 1.1.0: the classic <code>normalize</code> now does the same.)</p>
+  <div class="two">
+    <figure><div class="ttl">Same pipeline, 52.5k loops (2.5k trans)</div><div class="tbl"><table><thead><tr><th class="">step</th><th class="n">main</th><th class="n">columnar</th></tr></thead><tbody><tr><td class="">make</td><td class="n">2.1 s</td><td class="n">150 ms</td></tr><tr><td class="">add_mcool</td><td class="n">24 s</td><td class="n">286 ms</td></tr><tr><td class="">normalize</td><td class="n">fails (TypeError)</td><td class="n">9.1 ms</td></tr><tr><td class="">annotate</td><td class="n">not reached</td><td class="n">42 ms</td></tr><tr><td class="">strength</td><td class="n">not reached</td><td class="n">1.1 ms</td></tr></tbody></table></div></figure>
+    <figure><div class="ttl">What trans edges add</div><div class="tbl"><table><thead><tr><th class=""></th><th class="n">value</th></tr></thead><tbody><tr><td class="">trans edges</td><td class="n">5,863</td></tr><tr><td class="">with Hi-C contacts</td><td class="n">5,829</td></tr><tr><td class="">median O/E, trans (with contacts)</td><td class="n">0.79</td></tr><tr><td class="">median O/E, cis (with contacts)</td><td class="n">0.70</td></tr><tr><td class="">connected components, cis only</td><td class="n">6,638</td></tr><tr><td class="">connected components, with trans</td><td class="n">5,606</td></tr><tr><td class="">largest component, cis only → with trans</td><td class="n">521 → 46,434 CREs</td></tr></tbody></table></div></figure>
+  </div>
+  <p class="sub">The synthetic Hi-C adds about 40 read pairs at each trans loop, so those edges carry real weight. The flat trans expectation is a first choice. A per-chromosome-pair expectation would be the obvious next refinement.</p>
+</section>
+
+<section id="try">
+  <span class="tag green">Try it</span>
+  <h2>Using it in a notebook</h2>
+  <pre>import genomeblocks.columnar as gbc
+
+cre   = gbc.Loci.make("atac.narrowPeak")          # sorted, one block per chromosome
+genes = gbc.Genes.make("gencode.gtf")              # polars parse when installed
+A = (gbc.Architecture.make(cre, "loops.bedpe")
+       .add_mcool("hic.mcool", resolution=5000)
+       .normalize().annotate(genes).strength())
+
+A.chrom("chr8"); A.cis; A.trans                    # views, no copy
+A.neighbors("chr8:127735000-127736000(.)")         # cis + trans partners
+A.vp.strength[cre.row(uid)]                        # every column is aligned with cre
+cube = cre.take(rows).signal(bigwigs)              # classic functions still work
+g = A.graph()                                      # graph-tool for algorithms
+A.save("session/arch"); gbc.Architecture.load("session/arch")</pre>
+  <p class="sub">The notebook <code>examples/columnar_prototype/columnar_prototype.ipynb</code> on branch <code>columnar-prototype</code> walks through all of this with outputs: block matrix, views, trans partners, graph-tool components and PageRank, a hub signal profile, a 1,000-permutation genome-wide test, save/reload and hand-off to pandas, polars and Arrow.</p>
+</section>
+
+<section id="limits">
+  <span class="tag warn">Limits</span>
+  <h2>What the prototype does not do yet</h2>
+  <div class="fixes">
+    <div class="fix"><span class="t">Classic-only features</span><p><code>Genes.select_isoforms</code>, <code>make_ucsc</code> and the Architecture draw helpers are not ported. Use <code>A.to_legacy()</code> to get a classic graph for drawing.</p></div>
+    <div class="fix"><span class="t">Coolers</span><p>Fixed-size bins only. As on main, each CRE maps to the bin holding its start.</p></div>
+    <div class="fix"><span class="t">Interval kernel</span><p>The all-pairs overlap used by <code>make</code> scans a window as wide as the longest reference interval. That suits CREs; it would need cgranges or a tree for megabase-long intervals.</p></div>
+    <div class="fix"><span class="t">Graph-tool vertices</span><p><code>A.graph()</code> has one vertex per CRE row, isolated CREs included, so vertex i is row i. Algorithms that normalise over all vertices (PageRank) are scaled differently from main's graph, which holds linked CREs only.</p></div>
+    <div class="fix"><span class="t">Edge cases kept simple</span><p>Duplicate CRE rows stay separate vertices (main merges them by uid). Ensembl-style generic "UTR" lines are classed 5' or 3' by the transcript's first CDS base. Without polars, GTF parsing falls back to pandas, which is slow (about 11 s here).</p></div>
+  </div>
+</section>
+
+<section id="method">
+  <span class="tag navy">Method</span>
+  <h2>How this was measured</h2>
+  <ul class="plain">
+    <li>Code: <code>genomeblocks/columnar/</code> on branch <code>columnar-prototype</code>. The classic modules on that branch are byte-identical to origin/main (checked), so the in-process "main" numbers run main's code. The fresh-process runs import main from a separate checkout (ec4737a).</li>
+    <li>Tests: <code>tests/test_columnar.py</code> compares every step with the classic implementation, and the full suite passes. The benchmark repeats the comparison at full size.</li>
+    <li>Data: the synthetic hg38-shaped set from the <a href="https://claude.ai/artifact/4hL67NF3y68wJSdsySs1Eo">benchmark report</a>: 100k CREs, 20k genes, 50k loops (52.5k with trans), a 5 kb cooler from 5M read pairs. 4 vCPU Xeon at 2.1 GHz; medians of 3–5 runs after a warm-up (main's add_mcool: one run).</li>
+    <li>Bench: <code>benchmarks/bench_prototype.py</code>; page: <code>benchmarks/build_prototype_report.py</code>.</li>
+  </ul>
+</section>
+</div>
+<script>/* Tiny SVG chart kit for the benchmark report: horizontal bars (emphasis)
+   and multi-series log/linear line charts. Colours come from CSS tokens so
+   both themes work; every label goes in via textContent. */
+(function () {
+  const NS = "http://www.w3.org/2000/svg";
+  const tip = document.createElement("div");
+  tip.className = "tip"; tip.hidden = true; tip.setAttribute("role", "status");
+  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(tip));
+
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs || {}) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function txt(parent, x, y, s, cls, anchor) {
+    const t = el("text", { x, y, class: cls || "", "text-anchor": anchor || "start" }, parent);
+    t.textContent = s;
+    return t;
+  }
+  function showTip(evt, value, label) {
+    tip.replaceChildren();
+    const v = document.createElement("strong"); v.textContent = value;
+    const l = document.createElement("span"); l.textContent = label;
+    tip.append(v, l);
+    tip.hidden = false;
+    const r = (evt.target.getBoundingClientRect ? evt.target.getBoundingClientRect() : null);
+    const x = evt.clientX || (r ? r.left + r.width / 2 : 0);
+    const y = evt.clientY || (r ? r.top : 0);
+    const w = tip.offsetWidth;
+    tip.style.left = Math.min(window.innerWidth - w - 12, Math.max(12, x + 14)) + "px";
+    tip.style.top = (y + window.scrollY - 12 - tip.offsetHeight) + "px";
+  }
+  function hideTip() { tip.hidden = true; }
+  function bindTip(node, value, label) {
+    node.setAttribute("tabindex", "0");
+    node.setAttribute("aria-label", label + ": " + value);
+    node.addEventListener("pointermove", e => showTip(e, value, label));
+    node.addEventListener("focus", e => showTip(e, value, label));
+    node.addEventListener("pointerleave", hideTip);
+    node.addEventListener("blur", hideTip);
+  }
+
+  // ── scales & ticks ────────────────────────────────────────────────────────
+  function scale(d0, d1, r0, r1, log) {
+    if (log) {
+      const a = Math.log10(d0), b = Math.log10(d1);
+      return v => r0 + (Math.log10(v) - a) / (b - a) * (r1 - r0);
+    }
+    return v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+  }
+  function logTicks(lo, hi) {
+    const out = [];
+    for (let p = Math.floor(Math.log10(lo)); p <= Math.ceil(Math.log10(hi)); p++) {
+      const v = Math.pow(10, p);
+      if (v >= lo * 0.999 && v <= hi * 1.001) out.push(v);
+    }
+    return out;
+  }
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo, step0 = span / (n || 5);
+    const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= (n || 5));
+    const out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  // ── horizontal emphasis bars ──────────────────────────────────────────────
+  // spec: {rows:[{label, value, hl, tip?}], log, fmt, axis, sort:'asc'|'desc'|null}
+  function hbar(host, spec) {
+    const rows = spec.rows.slice();
+    if (spec.sort === "asc") rows.sort((a, b) => a.value - b.value);
+    if (spec.sort === "desc") rows.sort((a, b) => b.value - a.value);
+    const W = 760, labelW = spec.labelW || 290, rowH = 30, top = 6, axisH = 34;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img",
+                            "aria-label": spec.aria || "" }, null);
+    const vals = rows.map(r => r.value);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const x0 = labelW, x1 = W - 92;
+    let sx, ticks;
+    if (spec.log) {
+      lo = Math.pow(10, Math.floor(Math.log10(lo) - 0.15));
+      hi = Math.pow(10, Math.ceil(Math.log10(hi) + 0.05));
+      sx = scale(lo, hi, x0, x1, true); ticks = logTicks(lo, hi);
+    } else {
+      lo = 0; ticks = niceTicks(0, hi * 1.02, 5); hi = ticks[ticks.length - 1];
+      sx = scale(0, hi, x0, x1, false);
+    }
+    const base = spec.log ? x0 : sx(0);
+    const plotB = top + rows.length * rowH;
+    for (const t of ticks) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, spec.fmt(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    el("line", { x1: base, x2: base, y1: top, y2: plotB, class: "baseline" }, svg);
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      const lab = txt(svg, labelW - 12, y + 4, r.label, r.hl ? "rlabel hl" : "rlabel", "end");
+      const xe = Math.max(sx(r.value), base + 2);
+      const h = 16, rad = 4;
+      const w = xe - base;
+      const p = `M${base},${y - h / 2} h${Math.max(0, w - rad)} a${rad},${rad} 0 0 1 ${rad},${rad}` +
+                ` v${h - 2 * rad} a${rad},${rad} 0 0 1 -${rad},${rad} h-${Math.max(0, w - rad)} z`;
+      el("path", { d: p, class: r.hl ? "bar hl" : "bar" }, svg);
+      txt(svg, xe + 6, y + 4, spec.fmt(r.value, true), "vlabel");
+      const hit = el("rect", { x: 0, y: y - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      bindTip(hit, spec.fmt(r.value, true), r.tip || r.label);
+      void lab;
+    });
+    host.appendChild(svg);
+  }
+
+  // ── multi-series lines ────────────────────────────────────────────────────
+  // spec: {series:[{name, color, pts:[[x,y],...]}], xlog, ylog, xfmt, yfmt,
+  //        xLabel, yLabel, legend:true}
+  function lines(host, spec) {
+    const W = spec.W || 760, H = spec.H || 330;
+    const m = { l: 74, r: spec.endLabels ? 190 : 24, t: 14, b: 46 };
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img",
+                            "aria-label": spec.aria || "" }, null);
+    const xs = spec.series.flatMap(s => s.pts.map(p => p[0]));
+    const ys = spec.series.flatMap(s => s.pts.map(p => p[1]));
+    let xlo = Math.min(...xs), xhi = Math.max(...xs), ylo = Math.min(...ys), yhi = Math.max(...ys);
+    let xt, yt;
+    if (spec.xlog) { xt = logTicks(xlo, xhi); }
+    else { xt = spec.xticks || niceTicks(xlo, xhi, 6); }
+    if (spec.ylog) {
+      ylo = Math.pow(10, Math.floor(Math.log10(ylo))); yhi = Math.pow(10, Math.ceil(Math.log10(yhi)));
+      yt = logTicks(ylo, yhi);
+    } else {
+      ylo = 0; yt = niceTicks(0, yhi * 1.05, 5); yhi = yt[yt.length - 1];
+    }
+    const sx = scale(xlo, xhi, m.l, W - m.r, !!spec.xlog);
+    const sy = scale(ylo, yhi, H - m.b, m.t, !!spec.ylog);
+    for (const t of yt) {
+      el("line", { x1: m.l, x2: W - m.r, y1: sy(t), y2: sy(t), class: "grid" }, svg);
+      txt(svg, m.l - 8, sy(t) + 4, spec.yfmt(t), "tick", "end");
+    }
+    for (const t of xt) txt(svg, sx(t), H - m.b + 17, spec.xfmt(t), "tick", "middle");
+    el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, class: "baseline" }, svg);
+    if (spec.xLabel) txt(svg, (m.l + W - m.r) / 2, H - 8, spec.xLabel, "axis-label", "middle");
+    if (spec.yLabel) {
+      const t = txt(svg, 0, 0, spec.yLabel, "axis-label", "middle");
+      t.setAttribute("transform", `translate(14 ${(m.t + H - m.b) / 2}) rotate(-90)`);
+    }
+    const ends = [];
+    spec.series.forEach(s => {
+      const d = s.pts.map((p, i) => (i ? "L" : "M") + sx(p[0]).toFixed(1) + "," + sy(p[1]).toFixed(1)).join(" ");
+      el("path", { d, class: "line", style: `stroke:${s.color}` }, svg);
+      s.pts.forEach(p => {
+        const c = el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 4, class: "dot", style: `fill:${s.color}` }, svg);
+        const hit = el("circle", { cx: sx(p[0]), cy: sy(p[1]), r: 12, class: "hit" }, svg);
+        bindTip(hit, spec.yfmt(p[1], true), `${s.name} · ${spec.xfmt(p[0], true)}`);
+        void c;
+      });
+      const last = s.pts[s.pts.length - 1];
+      ends.push({ y: sy(last[1]), x: sx(last[0]), name: s.name, color: s.color });
+    });
+    if (spec.endLabels) {
+      // de-collide end labels with leader lines
+      ends.sort((a, b) => a.y - b.y);
+      let prev = -1e9;
+      ends.forEach(e => { e.ly = Math.max(e.y, prev + 15); prev = e.ly; });
+      ends.forEach(e => {
+        const lx = W - m.r + 14;
+        el("line", { x1: e.x + 5, y1: e.y, x2: lx - 3, y2: e.ly, class: "leader" }, svg);
+        txt(svg, lx, e.ly + 4, e.name, "endlabel");
+      });
+    }
+    host.appendChild(svg);
+    if (spec.legend !== false) {
+      const lg = document.createElement("div");
+      lg.className = "legend";
+      spec.series.forEach(s => {
+        const i = document.createElement("span");
+        const k = document.createElement("i"); k.style.background = s.color;
+        const t = document.createElement("span"); t.textContent = s.name;
+        i.append(k, t); lg.appendChild(i);
+      });
+      host.appendChild(lg);
+    }
+  }
+
+  // ── diverging bars around 1× (log scale): right = faster, left = slower ──
+  // spec: {rows:[{label, value (ratio new/old speed), tip?}], axis, labelW}
+  function diverge(host, spec) {
+    const rows = spec.rows.slice().sort((a, b) => b.value - a.value);
+    const W = 760, labelW = spec.labelW || 300, rowH = 30, top = 6, axisH = 34;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": spec.aria || "" }, null);
+    const m = Math.max(...rows.map(r => Math.abs(Math.log10(r.value))), Math.log10(3));
+    const lim = Math.pow(10, Math.ceil(m * 2) / 2);
+    const x0 = labelW + 70, x1 = W - 70;
+    const sx = scale(1 / lim, lim, x0, x1, true);
+    const plotB = top + rows.length * rowH;
+    const ticks = [1 / lim, 1 / Math.sqrt(lim), 1, Math.sqrt(lim), lim].filter((v, i, a) => a.indexOf(v) === i);
+    const tl = v => v >= 1 ? (v === 1 ? "same" : `${(+v.toPrecision(2))}× faster`) : `${(+(1 / v).toPrecision(2))}× slower`;
+    for (const t of ticks) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: t === 1 ? "mid" : "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, tl(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      txt(svg, labelW - 12, y + 4, r.label, "rlabel", "end");
+      const a = sx(1), b = sx(Math.min(Math.max(r.value, 1 / lim), lim));
+      const fast = r.value >= 1;
+      el("rect", { x: Math.min(a, b), y: y - 8, width: Math.max(2, Math.abs(b - a)), height: 16, rx: 3,
+                   class: "bar " + (fast ? "fast" : "slow") }, svg);
+      const lab = Math.abs(r.value - 1) < 0.05 ? "same" : tl(r.value);
+      txt(svg, fast ? Math.max(a, b) + 6 : Math.min(a, b) - 6, y + 4, lab, "vlabel", fast ? "start" : "end");
+      const hit = el("rect", { x: 0, y: y - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      bindTip(hit, lab, r.tip || r.label);
+    });
+    host.appendChild(svg);
+  }
+
+  // ── dumbbell: two times per row (log x), ratio at the right ──────────────
+  // spec: {rows:[{label, a, b, tip?}], names:[aName, bName], fmt, axis, labelW}
+  function dumbbell(host, spec) {
+    const rows = spec.rows.slice();
+    const W = 760, labelW = spec.labelW || 250, rowH = 30, top = 6, axisH = 34, ratioW = 96;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": spec.aria || "" }, null);
+    const vals = rows.flatMap(r => [r.a, r.b].filter(v => v != null && v > 0));
+    const lo = Math.pow(10, Math.floor(Math.log10(Math.min(...vals)))), hi = Math.pow(10, Math.ceil(Math.log10(Math.max(...vals))));
+    const x0 = labelW, x1 = W - ratioW - 10;
+    const sx = scale(lo, hi, x0, x1, true);
+    const plotB = top + rows.length * rowH;
+    for (const t of logTicks(lo, hi)) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, spec.fmt(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      txt(svg, labelW - 12, y + 4, r.label, "rlabel", "end");
+      if (r.a != null && r.b != null) {
+        el("line", { x1: sx(r.a), x2: sx(r.b), y1: y, y2: y, class: "conn" }, svg);
+        const ratio = r.a / r.b;
+        const lab = ratio >= 1.05 ? `${ratio >= 100 ? Math.round(ratio).toLocaleString() : +ratio.toPrecision(2)}× faster`
+                  : ratio > 0.95 ? "same" : `${+(1 / ratio).toPrecision(2)}× slower`;
+        txt(svg, W - ratioW + 4, y + 4, lab, "vlabel");
+      } else if (r.note) {
+        txt(svg, W - ratioW + 4, y + 4, r.note, "vlabel bad");
+      }
+      if (r.a != null) el("circle", { cx: sx(r.a), cy: y, r: 6, class: "dot sa" }, svg);
+      if (r.b != null) el("circle", { cx: sx(r.b), cy: y, r: 6, class: "dot sb" }, svg);
+      const hit = el("rect", { x: 0, y: y - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      const tip = `${spec.names[0]} ${r.a != null ? spec.fmt(r.a, true) : (r.note || "—")} · ${spec.names[1]} ${r.b != null ? spec.fmt(r.b, true) : "—"}`;
+      bindTip(hit, tip, r.tip || r.label);
+    });
+    host.appendChild(svg);
+    const lg = document.createElement("div");
+    lg.className = "legend";
+    [["sa", spec.names[0]], ["sb", spec.names[1]]].forEach(([c, n]) => {
+      const i = document.createElement("span"); const k = document.createElement("i");
+      k.className = "key " + c; const t = document.createElement("span"); t.textContent = n;
+      i.append(k, t); lg.appendChild(i);
+    });
+    host.prepend(lg);
+  }
+
+  // ── stacked horizontal bars (linear x), 2px surface gap between parts ─────
+  // spec: {rows:[{label, parts:[{key, value}]}], keys:[{key, name, cls}], fmt, axis, labelW}
+  function stack(host, spec) {
+    const rows = spec.rows;
+    const W = 760, labelW = spec.labelW || 130, rowH = 44, top = 6, axisH = 34;
+    const H = top + rows.length * rowH + axisH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": spec.aria || "" }, null);
+    const tot = rows.map(r => r.parts.reduce((a, p) => a + p.value, 0));
+    const ticks = niceTicks(0, Math.max(...tot) * 1.02, 6), hi = ticks[ticks.length - 1];
+    const x0 = labelW, x1 = W - 80;
+    const sx = scale(0, hi, x0, x1, false);
+    const plotB = top + rows.length * rowH;
+    for (const t of ticks) {
+      el("line", { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: "grid" }, svg);
+      txt(svg, sx(t), plotB + 16, spec.fmt(t), "tick", "middle");
+    }
+    if (spec.axis) txt(svg, (x0 + x1) / 2, plotB + 31, spec.axis, "axis-label", "middle");
+    const cls = Object.fromEntries(spec.keys.map(k => [k.key, k]));
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + rowH / 2;
+      txt(svg, labelW - 12, y + 4, r.label, "rlabel hl", "end");
+      let acc = 0;
+      r.parts.forEach(p => {
+        const a = sx(acc), b = sx(acc + p.value);
+        acc += p.value;
+        const w = Math.max(1, b - a - 2);
+        const seg = el("rect", { x: a, y: y - 12, width: w, height: 24, rx: 3, class: "seg " + cls[p.key].cls }, svg);
+        bindTip(seg, spec.fmt(p.value, true), `${r.label} · ${cls[p.key].name}`);
+      });
+      txt(svg, sx(acc) + 6, y + 4, spec.fmt(acc, true), "vlabel");
+    });
+    host.appendChild(svg);
+    const lg = document.createElement("div");
+    lg.className = "legend";
+    spec.keys.forEach(k => {
+      const i = document.createElement("span"); const q = document.createElement("i");
+      q.className = "key " + k.cls; const t = document.createElement("span"); t.textContent = k.name;
+      i.append(q, t); lg.appendChild(i);
+    });
+    host.prepend(lg);
+  }
+
+  window.Charts = { hbar, lines, diverge, dumbbell, stack };
+})();
+</script>
+<script>
+const DATA = {"steps": {"kind": "dumbbell", "names": ["main", "columnar prototype"], "fmt": "time", "labelW": 260, "axis": "seconds per call (log scale) \u00b7 lower is better", "rows": [{"label": "Loci.make (100k CREs)", "a": 0.2033181940000759, "b": 0.055631662999985565}, {"label": "Genes.make (GTF, 877k lines)", "a": 6.44867074900003, "b": 0.851864199999909}, {"label": "gene annotation index", "a": 5.145779147999974, "b": 0.1393620750000082}, {"label": "Genes.annotations (100k CREs)", "a": 0.8290579839999737, "b": 0.042815476999976454}, {"label": "Architecture.make (50k loops)", "a": 2.076059320000013, "b": 0.1275559369998973}, {"label": "add_mcool (5 kb)", "a": 23.25494159599998, "b": 0.2948001469999326}, {"label": "normalize (power-law O/E)", "a": 1.313646241000015, "b": 0.009613253999987137}, {"label": "Architecture.annotate", "a": 2.3834195299998555, "b": 0.04017144900012681}, {"label": "strength", "a": 0.6157557280000674, "b": 0.001157838000153788}, {"label": "prime_hubs", "a": 0.16832051400001546, "b": 0.0114148140000907}, {"label": "save the graph", "a": 1.339798637000058, "b": 0.07795341199994255}, {"label": "load it back", "a": 1.981035079000094, "b": 0.05972770799985483}]}, "e2e": {"kind": "stack", "fmt": "time", "labelW": 150, "axis": "wall time, fresh Python process (seconds)", "keys": [{"key": "k1", "name": "add_mcool", "cls": "k1"}, {"key": "k2", "name": "Genes.make", "cls": "k2"}, {"key": "k3", "name": "make + annotate", "cls": "k3"}, {"key": "k4", "name": "save", "cls": "k4"}, {"key": "k5", "name": "everything else", "cls": "k5"}], "rows": [{"label": "main", "parts": [{"key": "k1", "value": 21.89479594400018}, {"key": "k2", "value": 5.822252945999935}, {"key": "k3", "value": 9.418382804999965}, {"key": "k4", "value": 2.0233324819996596}, {"key": "k5", "value": 3.92832528200006}]}, {"label": "columnar", "parts": [{"key": "k1", "value": 0.4924842229997921}, {"key": "k2", "value": 0.7588014779998957}, {"key": "k3", "value": 0.36586119799994776}, {"key": "k4", "value": 0.21554589200013652}, {"key": "k5", "value": 0.835455016999731}]}]}, "views": {"kind": "dumbbell", "names": ["main", "columnar prototype"], "fmt": "time", "labelW": 260, "axis": "seconds (log scale) \u00b7 lower is better", "rows": [{"label": "one chromosome (chr8)", "a": 0.388884249000057, "b": 6.092399996759923e-05}, {"label": "region chr8:20-40 Mb", "a": 0.24659680800004935, "b": 0.0011417905000143946}, {"label": "neighbours of 1,000 CREs", "a": 0.23878286700028184, "b": 0.0063003670002217405}, {"label": "copy", "a": 2.8299275139997917, "b": 0.0027401070001360495}, {"label": "connected components (graph-tool)", "a": 0.015486820999740303, "b": 0.00979900699985592}, {"label": "pagerank (graph-tool)", "a": 0.0072389849997307465, "b": 0.0043869629998880555}]}, "scale": {"kind": "lines", "xlog": true, "ylog": true, "xfmt": "count", "yfmt": "time", "xLabel": "loops in the BEDPE (100k CREs)", "yLabel": "pipeline time", "endLabels": true, "series": [{"name": "main", "color": "var(--s2)", "pts": [[12500, 13.278488062999713], [50000, 28.58245318199988], [200000, 81.85486270799993]]}, {"name": "columnar", "color": "var(--s1)", "pts": [[12500, 0.35786270400012654], [50000, 0.43049982199954684], [200000, 0.991899721000209], [1000000, 5.3338339860001724]]}]}};
+const F = {
+  time: (s) => { s = +(+s).toPrecision(6); if (s === 0) return "0"; if (s < 1e-3) return (s < 1e-5 ? (s*1e6).toFixed(1) : (s*1e6).toFixed(0)) + " µs";
+                 if (s < 1) return (s < 0.01 ? (s*1e3).toFixed(1) : (s*1e3).toFixed(0)) + " ms";
+                 if (s < 120) return (s < 10 ? s.toFixed(1) : s.toFixed(0)) + " s"; return (s/60).toFixed(1) + " min"; },
+  count: (v) => v >= 1e6 ? (v/1e6) + "M" : v >= 1e3 ? (+(v/1e3).toPrecision(3)) + "k" : String(v),
+};
+document.addEventListener("DOMContentLoaded", () => {
+  for (const [id, s] of Object.entries(DATA)) {
+    const host = document.getElementById("c-" + id); if (!host) continue;
+    if (s.kind === "dumbbell") Charts.dumbbell(host, {...s, fmt: F[s.fmt]});
+    else if (s.kind === "stack") Charts.stack(host, {...s, fmt: F[s.fmt]});
+    else Charts.lines(host, {...s, xfmt: F[s.xfmt], yfmt: F[s.yfmt]});
+  }
+});
+</script>

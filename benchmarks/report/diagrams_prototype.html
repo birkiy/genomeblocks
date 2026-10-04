@@ -1,0 +1,188 @@
+<!-- @structure -->
+<svg viewBox="0 0 760 430" role="img" aria-label="Notebook structure. A shared Genome maps chromosome names to codes. The CRE Loci table holds chrom, start, end and strand columns. To its right, per-CRE results (region label, gene, strength, signal) are columns aligned to the same rows, so row i means the same CRE everywhere. The Architecture edge table stores src and tgt as Loci row numbers. Genes are three tables (genes, transcripts, features) linked by row numbers.">
+  <defs>
+    <marker id="sp1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    <marker id="sp2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="good"/></marker>
+  </defs>
+  <!-- Genome -->
+  <rect x="20" y="34" width="148" height="62" rx="8" class="box hl"/>
+  <text x="32" y="54" class="head">Genome</text>
+  <text x="32" y="72" class="small">chr1 → 0 · chr2 → 1 …</text>
+  <text x="32" y="88" class="small">shared by every table</text>
+  <path d="M168,62 C 184,62 186,66 200,66" class="arrow hl" marker-end="url(#sp2)"/>
+
+  <!-- Loci table -->
+  <text x="200" y="26" class="head">Loci (CREs)</text>
+  <g class="small">
+    <text x="224" y="58" text-anchor="middle">chrom</text>
+    <text x="280" y="58" text-anchor="middle">start</text>
+    <text x="344" y="58" text-anchor="middle">end</text>
+    <text x="398" y="58" text-anchor="middle">strand</text>
+  </g>
+  <g class="small">
+    <text x="192" y="86" text-anchor="end">0</text>
+    <rect x="200" y="70" width="48" height="26" class="cell"/><text x="224" y="88" text-anchor="middle">0</text>
+    <rect x="248" y="70" width="64" height="26" class="cell"/><text x="280" y="88" text-anchor="middle">9,800</text>
+    <rect x="312" y="70" width="64" height="26" class="cell"/><text x="344" y="88" text-anchor="middle">10,100</text>
+    <rect x="376" y="70" width="44" height="26" class="cell"/><text x="398" y="88" text-anchor="middle">.</text>
+    <text x="192" y="112" text-anchor="end">1</text>
+    <rect x="200" y="96" width="48" height="26" class="cell"/><text x="224" y="114" text-anchor="middle">0</text>
+    <rect x="248" y="96" width="64" height="26" class="cell"/><text x="280" y="114" text-anchor="middle">15,200</text>
+    <rect x="312" y="96" width="64" height="26" class="cell"/><text x="344" y="114" text-anchor="middle">15,640</text>
+    <rect x="376" y="96" width="44" height="26" class="cell"/><text x="398" y="114" text-anchor="middle">+</text>
+    <text x="192" y="138" text-anchor="end">2</text>
+    <rect x="200" y="122" width="48" height="26" class="cell"/><text x="224" y="140" text-anchor="middle">0</text>
+    <rect x="248" y="122" width="64" height="26" class="cell"/><text x="280" y="140" text-anchor="middle">88,050</text>
+    <rect x="312" y="122" width="64" height="26" class="cell"/><text x="344" y="140" text-anchor="middle">88,700</text>
+    <rect x="376" y="122" width="44" height="26" class="cell"/><text x="398" y="140" text-anchor="middle">.</text>
+    <text x="192" y="164" text-anchor="end" class="good head">i</text>
+    <rect x="200" y="148" width="48" height="26" class="cell"/><text x="224" y="166" text-anchor="middle">1</text>
+    <rect x="248" y="148" width="64" height="26" class="cell"/><text x="280" y="166" text-anchor="middle">3,100</text>
+    <rect x="312" y="148" width="64" height="26" class="cell"/><text x="344" y="166" text-anchor="middle">3,350</text>
+    <rect x="376" y="148" width="44" height="26" class="cell"/><text x="398" y="166" text-anchor="middle">.</text>
+    <text x="192" y="190" text-anchor="end">⋮</text>
+    <rect x="200" y="174" width="48" height="26" class="cell"/><text x="224" y="192" text-anchor="middle">1</text>
+    <rect x="248" y="174" width="64" height="26" class="cell"/><text x="280" y="192" text-anchor="middle">8,800</text>
+    <rect x="312" y="174" width="64" height="26" class="cell"/><text x="344" y="192" text-anchor="middle">9,420</text>
+    <rect x="376" y="174" width="44" height="26" class="cell"/><text x="398" y="192" text-anchor="middle">−</text>
+  </g>
+  <!-- chromosome blocks bracket -->
+  <path d="M166,72 h-6 v74 h6" class="arrow"/>
+  <text x="156" y="130" text-anchor="end" class="small">chr1 rows</text>
+  <path d="M166,150 h-6 v48 h6" class="arrow"/>
+  <text x="156" y="178" text-anchor="end" class="small">chr2 rows</text>
+
+  <!-- aligned per-CRE columns -->
+  <text x="442" y="26" class="head">Per-CRE results, same rows</text>
+  <g class="small">
+    <text x="480" y="58" text-anchor="middle">label</text>
+    <text x="561" y="58" text-anchor="middle">gene</text>
+    <text x="632" y="58" text-anchor="middle">strength</text>
+    <text x="710" y="58" text-anchor="middle">signal</text>
+  </g>
+  <g class="small">
+    <rect x="442" y="70" width="76" height="26" class="cell"/><text x="480" y="88" text-anchor="middle">Promoter</text>
+    <rect x="524" y="70" width="74" height="26" class="cell"/><text x="561" y="88" text-anchor="middle">MYC</text>
+    <rect x="604" y="70" width="56" height="26" class="cell"/><text x="632" y="88" text-anchor="middle">3.1</text>
+    <rect x="442" y="96" width="76" height="26" class="cell"/><text x="480" y="114" text-anchor="middle">Intronic</text>
+    <rect x="524" y="96" width="74" height="26" class="cell"/><text x="561" y="114" text-anchor="middle">MYC</text>
+    <rect x="604" y="96" width="56" height="26" class="cell"/><text x="632" y="114" text-anchor="middle">0.8</text>
+    <rect x="442" y="122" width="76" height="26" class="cell"/><text x="480" y="140" text-anchor="middle">Intergenic</text>
+    <rect x="524" y="122" width="74" height="26" class="cell"/><text x="561" y="140" text-anchor="middle">—</text>
+    <rect x="604" y="122" width="56" height="26" class="cell"/><text x="632" y="140" text-anchor="middle">0</text>
+    <rect x="442" y="148" width="76" height="26" class="cell"/><text x="480" y="166" text-anchor="middle">Promoter</text>
+    <rect x="524" y="148" width="74" height="26" class="cell"/><text x="561" y="166" text-anchor="middle">SOX2</text>
+    <rect x="604" y="148" width="56" height="26" class="cell"/><text x="632" y="166" text-anchor="middle">5.2</text>
+    <rect x="442" y="174" width="76" height="26" class="cell"/><text x="480" y="192" text-anchor="middle">Exonic</text>
+    <rect x="524" y="174" width="74" height="26" class="cell"/><text x="561" y="192" text-anchor="middle">SOX2</text>
+    <rect x="604" y="174" width="56" height="26" class="cell"/><text x="632" y="192" text-anchor="middle">1.4</text>
+  </g>
+  <!-- signal cube rows: little profiles -->
+  <g>
+    <rect x="666" y="70" width="88" height="26" class="cell"/>
+    <path d="M670,92 L690,90 L700,80 L710,76 L720,82 L730,90 L750,92" class="arrow hl" fill="none"/>
+    <rect x="666" y="96" width="88" height="26" class="cell"/>
+    <path d="M670,118 L690,117 L705,110 L715,112 L730,117 L750,118" class="arrow hl" fill="none"/>
+    <rect x="666" y="122" width="88" height="26" class="cell"/>
+    <path d="M670,144 L750,144" class="arrow hl" fill="none"/>
+    <rect x="666" y="148" width="88" height="26" class="cell"/>
+    <path d="M670,170 L688,168 L700,156 L710,152 L722,158 L734,168 L750,170" class="arrow hl" fill="none"/>
+    <rect x="666" y="174" width="88" height="26" class="cell"/>
+    <path d="M670,196 L695,195 L708,188 L720,191 L750,196" class="arrow hl" fill="none"/>
+  </g>
+  <rect x="196" y="146" width="562" height="30" rx="4" class="rowhl"/>
+  <text x="442" y="222" class="small">row i is the same CRE in every column:</text>
+  <text x="442" y="238" class="small">no uid lookup, just an index</text>
+
+  <!-- Architecture edge table -->
+  <text x="442" y="258" class="head">Architecture edges</text>
+  <g class="small">
+    <text x="470" y="282" text-anchor="middle">src</text>
+    <text x="530" y="282" text-anchor="middle">tgt</text>
+    <text x="588" y="282" text-anchor="middle">w</text>
+    <text x="636" y="282" text-anchor="middle">n</text>
+    <text x="700" y="282" text-anchor="middle">d</text>
+    <rect x="442" y="290" width="56" height="24" class="cell"/><text x="470" y="307" text-anchor="middle">0</text>
+    <rect x="498" y="290" width="64" height="24" class="cell"/><text x="530" y="307" text-anchor="middle">1</text>
+    <rect x="562" y="290" width="52" height="24" class="cell"/><text x="588" y="307" text-anchor="middle">12</text>
+    <rect x="614" y="290" width="44" height="24" class="cell"/><text x="636" y="307" text-anchor="middle">1.4</text>
+    <rect x="658" y="290" width="84" height="24" class="cell"/><text x="700" y="307" text-anchor="middle">5.4 kb</text>
+    <rect x="442" y="314" width="56" height="24" class="cell on"/><text x="470" y="331" text-anchor="middle" style="fill:var(--surface)">i</text>
+    <rect x="498" y="314" width="64" height="24" class="cell"/><text x="530" y="331" text-anchor="middle">i + 1</text>
+    <rect x="562" y="314" width="52" height="24" class="cell"/><text x="588" y="331" text-anchor="middle">30</text>
+    <rect x="614" y="314" width="44" height="24" class="cell"/><text x="636" y="331" text-anchor="middle">2.2</text>
+    <rect x="658" y="314" width="84" height="24" class="cell"/><text x="700" y="331" text-anchor="middle">5.7 kb</text>
+    <rect x="442" y="338" width="56" height="24" class="cell on"/><text x="470" y="355" text-anchor="middle" style="fill:var(--surface)">i</text>
+    <rect x="498" y="338" width="64" height="24" class="cell"/><text x="530" y="355" text-anchor="middle">58,214</text>
+    <rect x="562" y="338" width="52" height="24" class="cell"/><text x="588" y="355" text-anchor="middle">9</text>
+    <rect x="614" y="338" width="44" height="24" class="cell"/><text x="636" y="355" text-anchor="middle">1.1</text>
+    <rect x="658" y="338" width="84" height="24" class="cell"/><text x="700" y="355" text-anchor="middle">∞ (trans)</text>
+  </g>
+  <path d="M442,326 C 428,326 432,161 422,161" class="arrow hl" marker-end="url(#sp2)"/>
+  <text x="442" y="384" class="small">src, tgt are Loci row numbers</text>
+  <text x="442" y="400" class="small">w Hi-C count · n O/E · d distance</text>
+
+  <!-- Genes -->
+  <text x="20" y="258" class="head">Genes: three linked tables</text>
+  <g class="small">
+    <rect x="20" y="272" width="112" height="96" rx="6" class="box"/>
+    <text x="30" y="290" class="head">genes</text>
+    <text x="30" y="308">0 · MYC</text><text x="30" y="324">1 · SOX2</text><text x="30" y="340">2 · TP53</text><text x="30" y="358">⋮</text>
+    <rect x="150" y="272" width="122" height="96" rx="6" class="box"/>
+    <text x="160" y="290" class="head">transcripts</text>
+    <text x="160" y="308">T1 · gene 0</text><text x="160" y="324">T2 · gene 0</text><text x="160" y="340">T3 · gene 1</text><text x="160" y="358">⋮</text>
+    <rect x="290" y="272" width="130" height="96" rx="6" class="box"/>
+    <text x="300" y="290" class="head">features</text>
+    <text x="300" y="308">exon · tx 0</text><text x="300" y="324">CDS · tx 0</text><text x="300" y="340">5'UTR · tx 2</text><text x="300" y="358">⋮</text>
+  </g>
+  <path d="M150,304 C 140,304 140,304 134,304" class="arrow" marker-end="url(#sp1)"/>
+  <path d="M290,304 C 280,304 280,304 274,304" class="arrow" marker-end="url(#sp1)"/>
+  <text x="20" y="392" class="small">links are row numbers: transcript → gene row,</text>
+  <text x="20" y="408" class="small">feature → transcript row</text>
+</svg>
+
+<!-- @views -->
+<svg viewBox="0 0 760 250" role="img" aria-label="Taking one chromosome. In main, subgraph() walks every vertex and edge in Python and copies matching ones and their properties into a new graph. In the prototype, A.chrom('chr8') returns a view: two numbers (start and end row) into the same sorted edge arrays; nothing is copied.">
+  <defs>
+    <marker id="vw1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    <marker id="vw2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="good"/></marker>
+  </defs>
+  <text x="20" y="22" class="head">main: G.subgraph(filter)</text>
+  <text x="20" y="40" class="small">a new graph, filled one vertex and one edge at a time</text>
+  <rect x="20" y="58" width="120" height="120" rx="8" class="box"/>
+  <text x="80" y="80" text-anchor="middle" class="small">graph-tool Graph</text>
+  <g class="small">
+    <circle cx="48" cy="112" r="7" class="cell"/><circle cx="80" cy="100" r="7" class="cell"/><circle cx="110" cy="122" r="7" class="cell"/>
+    <circle cx="58" cy="150" r="7" class="cell"/><circle cx="98" cy="156" r="7" class="cell"/>
+    <path d="M48,112 L80,100 L110,122 M58,150 L98,156 L110,122 M48,112 L58,150" class="arrow"/>
+  </g>
+  <path d="M146,118 L214,118" class="arrow bad" marker-end="url(#vw1)"/>
+  <text x="180" y="108" text-anchor="middle" class="small bad">Python loop</text>
+  <rect x="220" y="58" width="120" height="120" rx="8" class="box bad"/>
+  <text x="280" y="80" text-anchor="middle" class="small">new Graph</text>
+  <g class="small">
+    <circle cx="258" cy="120" r="7" class="cell"/><circle cx="300" cy="140" r="7" class="cell"/>
+    <path d="M258,120 L300,140" class="arrow"/>
+  </g>
+  <text x="20" y="204" class="small">copies every matching vertex, edge and</text>
+  <text x="20" y="220" class="small">property value, one at a time</text>
+
+  <line x1="372" y1="16" x2="372" y2="236" stroke="currentColor" opacity=".18"/>
+
+  <text x="396" y="22" class="head">columnar: A.chrom("chr8")</text>
+  <text x="396" y="40" class="small">a view: two numbers into the same sorted arrays</text>
+  <g class="small">
+    <text x="404" y="74">src</text><text x="404" y="98">tgt</text><text x="404" y="122">n</text>
+    <rect x="436" y="60" width="300" height="20" class="cell"/>
+    <rect x="436" y="84" width="300" height="20" class="cell"/>
+    <rect x="436" y="108" width="300" height="20" class="cell"/>
+    <rect x="566" y="60" width="64" height="68" class="cell on" style="fill-opacity:.28"/>
+    <text x="476" y="146" text-anchor="middle">chr1 … chr7</text>
+    <text x="598" y="146" text-anchor="middle" class="good head">chr8</text>
+    <text x="690" y="146" text-anchor="middle">… trans</text>
+  </g>
+  <path d="M566,160 v8 h64 v-8" class="arrow hl"/>
+  <path d="M598,168 L598,190" class="arrow hl" marker-end="url(#vw2)"/>
+  <rect x="520" y="194" width="156" height="34" rx="8" class="box hl"/>
+  <text x="598" y="216" text-anchor="middle" class="small">view = (lo, hi) · no copy</text>
+</svg>
