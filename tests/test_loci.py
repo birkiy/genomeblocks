@@ -105,3 +105,48 @@ def test_to_frame_columns(cre):
     df = cre.to_frame()
     assert list(df.columns) == ["Chr", "Start", "End", "Strand", "Name"]
     assert len(df) == len(cre)
+
+
+def test_pure_python_index_matches_brute_force(monkeypatch):
+    # The fallback index bounds its scan by the longest interval per chrom;
+    # mixed short/long intervals must still report every overlap.
+    import random
+    monkeypatch.setattr(loci_mod, "_get_cgranges", lambda: None)
+    rng = random.Random(0)
+    ivs = []
+    for _ in range(400):
+        s = rng.randrange(0, 50_000)
+        ivs.append(("chr1", s, s + rng.choice([1, 50, 200, 900, 20_000])))
+    idx = loci_mod._PyIntervalIndex()
+    for i, (c, s, e) in enumerate(ivs):
+        idx.add(c, s, e, i)
+    idx.index()
+    for _ in range(300):
+        qs = rng.randrange(-100, 52_000)
+        qe = qs + rng.randrange(0, 1500)
+        want = sorted(i for i, (_, s, e) in enumerate(ivs) if s < qe and e > qs)
+        assert sorted(lab for *_, lab in idx.overlap("chr1", qs, qe)) == want
+    assert list(idx.overlap("chr2", 0, 10)) == []
+
+
+def test_merge_fuses_book_ended_and_keeps_first_strand():
+    raw = Loci([
+        Locus("chr1", 300, 400, "-"),
+        Locus("chr1", 100, 200, "+"),
+        Locus("chr1", 200, 300, "-"),             # book-ended with both
+        Locus("chr1", 150, 180, "-"),             # contained
+        Locus("chr2", 100, 200, "."),
+        Locus("chr1", 500, 600, "."),
+    ])
+    merged = raw.merge()
+    assert [l.uid for l in merged] == [
+        "chr1:100-400(+)", "chr1:500-600(.)", "chr2:100-200(.)"]
+    # sort is (chrom, start) and stable on ties, like Locus.__lt__
+    tied = Loci([Locus("chr1", 5, 9), Locus("chr1", 5, 6), Locus("chr1", 1, 2)])
+    assert [l.end for l in tied.sort()] == [2, 9, 6]
+
+
+def test_numpy_integer_index(cre):
+    import numpy as np
+    assert cre[np.int64(2)] is cre[2]
+    assert [cre[i].start for i in np.array([0, 4])] == [1000, 17000]
