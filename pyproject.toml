@@ -48,9 +48,13 @@ Issues = "https://github.com/birkiy/genomeblocks/issues"
 test = ["pytest", "pysam"]
 bam = ["pysam"]
 viz = ["logomaker"]        # motif-logo plotting in genomeblocks.motifs_draw
+columnar = ["polars", "pyarrow"]   # genomeblocks.columnar: fast GTF/GFF3 + pairs parsing, parquet save/load
 
 [tool.setuptools.packages.find]
 include = ["genomeblocks*"]
+
+[tool.setuptools.package-data]
+"genomeblocks.columnar" = ["_view.js", "_view.css"]   # the one-file browser's assets
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
