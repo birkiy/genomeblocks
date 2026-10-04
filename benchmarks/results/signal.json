@@ -1,24 +1,24 @@
 {
  "bench": "signal",
  "env": {
-  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
-  "cores": 4,
-  "mem_gb": 16.876515328,
-  "python": "3.11.16",
-  "platform": "Linux-6.18.44-fc-v64-x86_64-with-glibc2.39",
+  "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+  "cores": 64,
+  "mem_gb": 811.278905344,
+  "python": "3.12.12",
+  "platform": "Linux-5.15.0-191-generic-x86_64-with-glibc2.35",
   "versions": {
-   "numpy": "2.4.6",
-   "scipy": "1.17.1",
-   "pandas": "3.0.6",
-   "pybigtools": "0.3.0",
-   "pyBigWig": "0.3.26",
+   "numpy": "2.3.4",
+   "scipy": "1.16.3",
+   "pandas": "2.3.3",
+   "pybigtools": "0.2.5",
+   "pyBigWig": "0.3.24",
    "cgranges": "installed",
    "pyranges": "0.1.4",
    "bioframe": "0.8.0",
    "lightmotif": "0.10.0",
-   "Bio": "1.88",
+   "Bio": "1.86",
    "MOODS": "installed",
-   "graph_tool": "3.9",
+   "graph_tool": "2.98 (commit c96a6bf3, )",
    "intervaltree": "installed",
    "bedtools": "v2.31.1"
   }
@@ -27,10 +27,10 @@
   "flank": 3000,
   "n_bins": 200,
   "tracks": [
-   "/home/user/genomeblocks/benchmarks/data/signal_0.bw",
-   "/home/user/genomeblocks/benchmarks/data/signal_1.bw",
-   "/home/user/genomeblocks/benchmarks/data/signal_2.bw",
-   "/home/user/genomeblocks/benchmarks/data/signal_3.bw"
+   "/home/ualtintas/apps/genomeblocks/.claude/worktrees/docs/benchmarks/data/signal_0.bw",
+   "/home/ualtintas/apps/genomeblocks/.claude/worktrees/docs/benchmarks/data/signal_1.bw",
+   "/home/ualtintas/apps/genomeblocks/.claude/worktrees/docs/benchmarks/data/signal_2.bw",
+   "/home/ualtintas/apps/genomeblocks/.claude/worktrees/docs/benchmarks/data/signal_3.bw"
   ]
  },
  "rows": [
@@ -39,13 +39,13 @@
    "engine": "genomeblocks \u00b7 pybigtools (exact)",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 0.40022684200016556,
+   "seconds": 0.4097360069863498,
    "runs": [
-    0.37895683300007477,
-    0.40022684200016556,
-    0.40822759299999234
+    0.4097360069863498,
+    0.41325087496079504,
+    0.36262043402530253
    ],
-   "rate": 12492.915205317318,
+   "rate": 12202.979271398457,
    "max_abs_diff": 0.0,
    "pearson_r": 1.0
   },
@@ -54,13 +54,13 @@
    "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 0.394850993999853,
+   "seconds": 0.355247049825266,
    "runs": [
-    0.3949679500001366,
-    0.39280537500007995,
-    0.394850993999853
+    0.35922817699611187,
+    0.355247049825266,
+    0.3520956861320883
    ],
-   "rate": 12663.004718184555,
+   "rate": 14074.712238875258,
    "max_abs_diff": 0.0,
    "pearson_r": 1.0
   },
@@ -69,13 +69,13 @@
    "engine": "genomeblocks \u00b7 pure-Python reader",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 1.9874373369998466,
+   "seconds": 1.8412640918977559,
    "runs": [
-    1.9598465520000445,
-    2.1660600789998625,
-    1.9874373369998466
+    1.9015828529372811,
+    1.8371470391284674,
+    1.8412640918977559
    ],
-   "rate": 2515.802590056899,
+   "rate": 2715.5257206187057,
    "max_abs_diff": 0.0,
    "pearson_r": 1.0
   },
@@ -84,13 +84,13 @@
    "engine": "pybigtools values() + numpy binning",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 0.7139307479999388,
+   "seconds": 0.7541083372198045,
    "runs": [
-    0.7139307479999388,
-    0.7495627299999796,
-    0.6722307779998573
+    0.7541083372198045,
+    0.7500055071432143,
+    0.758482915116474
    ],
-   "rate": 7003.480399194725,
+   "rate": 6630.347064499593,
    "max_abs_diff": 0.0,
    "pearson_r": 1.0
   },
@@ -99,13 +99,13 @@
    "engine": "pyBigWig values() + numpy binning",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 1.1998108939999383,
+   "seconds": 1.2256852320861071,
    "runs": [
-    1.149666292999882,
-    1.2172008099998948,
-    1.1998108939999383
+    1.2148055660072714,
+    1.2256852320861071,
+    1.2446101550012827
    ],
-   "rate": 4167.32338821409,
+   "rate": 4079.350773844307,
    "max_abs_diff": 5.7220458984375e-06,
    "pearson_r": 0.9999999999999929
   },
@@ -114,11 +114,11 @@
    "engine": "pyBigWig stats(nBins) exact",
    "n_loci": 300,
    "n_tracks": 1,
-   "seconds": 9.517672424000011,
+   "seconds": 9.177788202883676,
    "runs": [
-    9.517672424000011
+    9.177788202883676
    ],
-   "rate": 31.520311546288582,
+   "rate": 32.68761420161554,
    "max_abs_diff": 0.0,
    "pearson_r": 1.0
   },
@@ -127,11 +127,11 @@
    "engine": "pyBigWig stats(nBins) zoom",
    "n_loci": 300,
    "n_tracks": 1,
-   "seconds": 9.864019258000098,
+   "seconds": 8.23389253183268,
    "runs": [
-    9.864019258000098
+    8.23389253183268
    ],
-   "rate": 30.41356592615008,
+   "rate": 36.43477235586735,
    "max_abs_diff": 0.0,
    "pearson_r": 1.0
   },
@@ -140,13 +140,13 @@
    "engine": "deepTools computeMatrix (-p 1)",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 28.932276584999954,
+   "seconds": 40.25628790911287,
    "runs": [
-    28.932276584999954,
-    28.733671433000154,
-    29.119778546000134
+    40.25628790911287,
+    40.40716480510309,
+    40.228095713071525
    ],
-   "rate": 172.8173718134669,
+   "rate": 124.20419913750028,
    "max_abs_diff": 3.816044330596924,
    "pearson_r": 0.9979652115680452
   },
@@ -155,194 +155,194 @@
    "engine": "genomeblocks \u00b7 pybigtools (exact)",
    "n_loci": 1000,
    "n_tracks": 1,
-   "seconds": 0.10429870399980246,
+   "seconds": 0.09784902120009065,
    "runs": [
-    0.10625230300001931,
-    0.10211987999991834,
-    0.10429870399980246
+    0.09772245702333748,
+    0.09784902120009065,
+    0.10295064188539982
    ],
-   "rate": 9587.846844212887
+   "rate": 10219.826297036823
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
    "n_loci": 1000,
    "n_tracks": 1,
-   "seconds": 0.10783447600010732,
+   "seconds": 0.0997219008859247,
    "runs": [
-    0.1338584059999448,
-    0.1033770699998513,
-    0.10783447600010732
+    0.09891253104433417,
+    0.0997219008859247,
+    0.10128369904123247
    ],
-   "rate": 9273.472057294597
+   "rate": 10027.887466203982
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pure-Python reader",
    "n_loci": 1000,
    "n_tracks": 1,
-   "seconds": 0.38425026000004436,
+   "seconds": 0.49177323817275465,
    "runs": [
-    0.38425026000004436,
-    0.38692852000008315,
-    0.377527801000042
+    0.5022306500468403,
+    0.49177323817275465,
+    0.4163298779167235
    ],
-   "rate": 2602.470587787981
+   "rate": 2033.4575417638134
   },
   {
    "part": "scaling",
    "engine": "pyBigWig values() + numpy binning",
    "n_loci": 1000,
    "n_tracks": 1,
-   "seconds": 0.25155192800002624,
+   "seconds": 0.243726824875921,
    "runs": [
-    0.25155192800002624
+    0.243726824875921
    ],
-   "rate": 3975.322343782218
+   "rate": 4102.954200913627
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pybigtools (exact)",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 0.3795880440000019,
+   "seconds": 0.36270927591249347,
    "runs": [
-    0.37808176199996524,
-    0.3795880440000019,
-    0.4256294629999502
+    0.37066596606746316,
+    0.36126513592898846,
+    0.36270927591249347
    ],
-   "rate": 13172.17462202254
+   "rate": 13785.145106700526
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 0.3937092159999338,
+   "seconds": 0.35726553085260093,
    "runs": [
-    0.4408787400000165,
-    0.39095066699997005,
-    0.3937092159999338
+    0.35726553085260093,
+    0.3705325690098107,
+    0.3550595208071172
    ],
-   "rate": 12699.7281160948
+   "rate": 13995.192841771457
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pure-Python reader",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 2.01877067800001,
+   "seconds": 1.8954319059848785,
    "runs": [
-    2.01877067800001,
-    2.2712786729998697,
-    1.9827984709997963
+    1.8954319059848785,
+    1.7987655780743808,
+    2.014084700960666
    ],
-   "rate": 2476.7548164279287
+   "rate": 2637.921195803638
   },
   {
    "part": "scaling",
    "engine": "pyBigWig values() + numpy binning",
    "n_loci": 5000,
    "n_tracks": 1,
-   "seconds": 1.2024074089999885,
+   "seconds": 1.3748185909353197,
    "runs": [
-    1.2024074089999885
+    1.3748185909353197
    ],
-   "rate": 4158.324343791571
+   "rate": 3636.8434591784135
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pybigtools (exact)",
    "n_loci": 20000,
    "n_tracks": 1,
-   "seconds": 0.8026377720000255,
+   "seconds": 0.7141406070441008,
    "runs": [
-    0.8026377720000255,
-    0.8199974859999202,
-    0.8009809200000291
+    0.739191633882001,
+    0.7115392819978297,
+    0.7141406070441008
    ],
-   "rate": 24917.840522460938
+   "rate": 28005.68935966545
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
    "n_loci": 20000,
    "n_tracks": 1,
-   "seconds": 0.8436717229999431,
+   "seconds": 0.7275349928531796,
    "runs": [
-    0.8274959499999568,
-    0.8436717229999431,
-    0.855392110999901
+    0.7364310859702528,
+    0.710659716045484,
+    0.7275349928531796
    ],
-   "rate": 23705.90296529513
+   "rate": 27490.08665764082
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pure-Python reader",
    "n_loci": 20000,
    "n_tracks": 1,
-   "seconds": 7.995024085000068,
+   "seconds": 6.881489092949778,
    "runs": [
-    7.368657277000011,
-    8.015050595000048,
-    7.995024085000068
+    6.821282684104517,
+    7.4032312501221895,
+    6.881489092949778
    ],
-   "rate": 2501.5559412163834
+   "rate": 2906.3477003095736
   },
   {
    "part": "scaling",
    "engine": "pyBigWig values() + numpy binning",
    "n_loci": 20000,
    "n_tracks": 1,
-   "seconds": 4.806911908000075,
+   "seconds": 4.96496769785881,
    "runs": [
-    4.806911908000075
+    4.96496769785881
    ],
-   "rate": 4160.675373874501
+   "rate": 4028.2235891736395
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pybigtools (exact)",
    "n_loci": 50000,
    "n_tracks": 1,
-   "seconds": 1.3538031360001241,
+   "seconds": 1.3169308239594102,
    "runs": [
-    1.3538031360001241
+    1.3169308239594102
    ],
-   "rate": 36932.99171083869
+   "rate": 37967.066371544715
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pybigtools (zoom, exact=False)",
    "n_loci": 50000,
    "n_tracks": 1,
-   "seconds": 1.3574697850001485,
+   "seconds": 1.159211260965094,
    "runs": [
-    1.3574697850001485
+    1.159211260965094
    ],
-   "rate": 36833.23235072561
+   "rate": 43132.77629685275
   },
   {
    "part": "scaling",
    "engine": "genomeblocks \u00b7 pure-Python reader",
    "n_loci": 50000,
    "n_tracks": 1,
-   "seconds": 20.168499185999963,
+   "seconds": 14.744655143935233,
    "runs": [
-    20.168499185999963
+    14.744655143935233
    ],
-   "rate": 2479.1135690804244
+   "rate": 3391.059303314122
   },
   {
    "part": "scaling",
    "engine": "pyBigWig values() + numpy binning",
    "n_loci": 50000,
    "n_tracks": 1,
-   "seconds": 12.275137376999965,
+   "seconds": 13.548094825120643,
    "runs": [
-    12.275137376999965
+    13.548094825120643
    ],
-   "rate": 4073.2741691091337
+   "rate": 3690.5558047387494
   },
   {
    "part": "parallel",
@@ -350,13 +350,13 @@
    "workers": 1,
    "n_loci": 5000,
    "n_tracks": 16,
-   "seconds": 8.181315055000141,
+   "seconds": 5.020236566895619,
    "runs": [
-    8.181315055000141,
-    8.42230665299985,
-    8.130811938999841
+    5.020236566895619,
+    5.53663646010682,
+    4.967858788091689
    ],
-   "rate": 9778.379082358737,
+   "rate": 15935.504021371224,
    "identical": true
   },
   {
@@ -365,43 +365,43 @@
    "workers": 2,
    "n_loci": 5000,
    "n_tracks": 16,
-   "seconds": 4.0250790210000105,
+   "seconds": 3.800714891171083,
    "runs": [
-    3.909276487999932,
-    4.158814138000025,
-    4.0250790210000105
+    3.8706458429805934,
+    3.800714891171083,
+    3.436582896159962
    ],
-   "rate": 19875.386193070168,
+   "rate": 21048.671708008664,
    "identical": true
   },
   {
    "part": "parallel",
-   "engine": "genomeblocks \u00b7 processes (cap lifted)",
-   "workers": 3,
-   "n_loci": 5000,
-   "n_tracks": 16,
-   "seconds": 2.9687235359999704,
-   "runs": [
-    2.9879975830001513,
-    2.8547379500000716,
-    2.9687235359999704
-   ],
-   "rate": 26947.608637142155,
-   "identical": true
-  },
-  {
-   "part": "parallel",
-   "engine": "genomeblocks \u00b7 processes (cap lifted)",
+   "engine": "genomeblocks \u00b7 processes",
    "workers": 4,
    "n_loci": 5000,
    "n_tracks": 16,
-   "seconds": 1.8937962820000394,
+   "seconds": 2.0662725360598415,
    "runs": [
-    1.970859216000008,
-    1.7970946469999944,
-    1.8937962820000394
+    2.0202857370022684,
+    2.0662725360598415,
+    2.1739891439210624
    ],
-   "rate": 42243.19202671153,
+   "rate": 38717.0610865067,
+   "identical": true
+  },
+  {
+   "part": "parallel",
+   "engine": "genomeblocks \u00b7 processes",
+   "workers": 8,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 1.460261075058952,
+   "runs": [
+    1.465108040953055,
+    1.460261075058952,
+    1.408629392972216
+   ],
+   "rate": 54784.724023935465,
    "identical": true
   },
   {
@@ -410,13 +410,13 @@
    "workers": 2,
    "n_loci": 5000,
    "n_tracks": 16,
-   "seconds": 6.569239975000073,
+   "seconds": 18.94857311202213,
    "runs": [
-    6.569239975000073,
-    6.492838981999967,
-    6.59560839400001
+    18.94857311202213,
+    15.509620221098885,
+    18.95463385991752
    ],
-   "rate": 12177.968882922276
+   "rate": 4221.953786548873
   },
   {
    "part": "parallel",
@@ -424,13 +424,27 @@
    "workers": 4,
    "n_loci": 5000,
    "n_tracks": 16,
-   "seconds": 6.911259136999888,
+   "seconds": 19.699078288162127,
    "runs": [
-    6.911259136999888,
-    6.974444467000012,
-    6.4622389080000175
+    19.76533618522808,
+    19.699078288162127,
+    19.567232748959213
    ],
-   "rate": 11575.31477465729
+   "rate": 4061.103714079599
+  },
+  {
+   "part": "parallel",
+   "engine": "threads (same chunks)",
+   "workers": 8,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 19.734817621996626,
+   "runs": [
+    19.664959450019524,
+    19.734817621996626,
+    19.883429558947682
+   ],
+   "rate": 4053.749141863424
   },
   {
    "part": "parallel",
@@ -438,11 +452,11 @@
    "workers": 1,
    "n_loci": 5000,
    "n_tracks": 16,
-   "seconds": 435.2238284329999,
+   "seconds": 597.8857716489583,
    "runs": [
-    435.2238284329999
+    597.8857716489583
    ],
-   "rate": 183.81346510377367
+   "rate": 133.80482325137362
   },
   {
    "part": "parallel",
@@ -450,12 +464,23 @@
    "workers": 4,
    "n_loci": 5000,
    "n_tracks": 16,
-   "seconds": 122.50267089099998,
+   "seconds": 185.88368808408268,
    "runs": [
-    122.50267089099998
+    185.88368808408268
    ],
-   "rate": 653.0469859810822,
-   "retimed": true
+   "rate": 430.376655555773
+  },
+  {
+   "part": "parallel",
+   "engine": "deepTools computeMatrix",
+   "workers": 8,
+   "n_loci": 5000,
+   "n_tracks": 16,
+   "seconds": 105.08200547099113,
+   "runs": [
+    105.08200547099113
+   ],
+   "rate": 761.3101752429416
   }
  ]
 }

@@ -7,7 +7,7 @@ pairs, and the synthetic GTF. Runs the README pipeline:
     make -> add_mcool -> normalize -> annotate -> strength
 
 and, where a step has a vectorised core, compares it with the per-element
-loop it replaced (annotate stage 2) or could use (strength).
+loop it replaced (annotate stage 2) or with graph-tool's own reduction (strength).
 """
 from __future__ import annotations
 
@@ -129,7 +129,7 @@ if __name__ == "__main__":
             same_result=all(tied(k) for k in diff))
 
     t = timeit(quiet(lambda: G.strength(key="n", verbose=False)), repeat=3)
-    rec.add(step="strength: per-edge Python loop (genomeblocks)", seconds=t["median"],
+    rec.add(step="strength (genomeblocks, numpy bincount)", seconds=t["median"],
             runs=t["runs"], n_edges=G.n_links)
     ref = np.asarray(G.vp.strength.a).copy()
     t = timeit(lambda: res.__setitem__("s", gt.incident_edges_op(G, "out", "sum", G.ep.n)),

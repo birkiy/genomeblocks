@@ -164,8 +164,12 @@ def _giggle_search(idx, q, cwd):
 
 def part_giggle(rec):
     """GIGGLE (Layer et al. 2018): build + search at each collection size."""
+    import shutil
     from scipy.stats import spearmanr
     print("\n== GIGGLE ==")
+    if shutil.which(GIGGLE) is None:
+        print(f"  skipped: {GIGGLE!r} not found (build it from github.com/ryanlayer/giggle, set GIGGLE=)")
+        return
     gz, q = _giggle_inputs()
     base = DATA / "giggle"
     base.mkdir(exist_ok=True)

@@ -30,7 +30,7 @@ def build_annot(g):
 
 if __name__ == "__main__":
     import cgranges
-    from bench_loci import BoundedPyIndex, _ORIG_PY
+    from bench_loci import _ORIG_PY
     rec = Recorder("genes")
     n_lines = sum(1 for _ in open(GTF))
 
@@ -47,10 +47,7 @@ if __name__ == "__main__":
     for n in (10_000, 100_000):
         L = Loci.make(str(DATA / f"peaks_A_{n}.bed"))
         for label, getcg, py in (("cgranges", lambda: cgranges, _ORIG_PY),
-                                 ("pure-Python fallback", lambda: None, _ORIG_PY),
-                                 ("fallback, bounded scan", lambda: None, BoundedPyIndex)):
-            if label == "pure-Python fallback" and n > 10_000:
-                continue
+                                 ("pure-Python fallback", lambda: None, _ORIG_PY)):
             gl._get_cgranges, gl._PyIntervalIndex = getcg, py
             build_annot(g)
             t = timeit(lambda: g.annotations(L), repeat=3 if n <= 10_000 else 1)

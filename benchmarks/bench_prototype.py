@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Columnar prototype (branch columnar-prototype) vs the main branch.
+"""genomeblocks.columnar vs the classic modules (rows labelled impl="main").
 
 Parts
-  steps   every pipeline step, same inputs, both implementations (in-process;
-          the classic modules on this branch are byte-identical to main)
+  steps   every pipeline step, same inputs, both implementations (in-process)
   views   per-chromosome views, region / neighbour lookups, copies, graph-tool
   trans   the same pipeline with 5% inter-chromosomal loops
   scale   whole Architecture pipeline at 12.5k → 1M loops
-  e2e     fresh Python processes, one per implementation — the "main" process
-          imports genomeblocks from a checkout of origin/main — wall time per
-          step, total, peak memory; plus reloading the saved result
+  e2e     fresh Python processes, one per implementation (the classic one imports
+          genomeblocks from GB_MAIN_CHECKOUT, this repo by default) — wall time
+          per step, total, peak memory; plus reloading the saved result
 
 Inputs: 100k CREs, the synthetic GTF (20k genes), loops.bedpe (50k loops),
 the 5 kb Hi-C .mcool; loops_trans.bedpe + hic_trans_5kb.cool for ``trans``.
@@ -32,7 +31,9 @@ import numpy as np
 from common import DATA, RESULTS, Recorder, timeit
 
 ROOT = Path(__file__).resolve().parent.parent
-MAIN = Path(os.environ.get("GB_MAIN_CHECKOUT", ROOT.parent / "genomeblocks-main"))
+# the classic modules ship in this repo since 1.1; point GB_MAIN_CHECKOUT at another
+# checkout to compare against an older release instead
+MAIN = Path(os.environ.get("GB_MAIN_CHECKOUT", ROOT))
 BED = str(DATA / "peaks_A_100000.bed")
 GTF = str(DATA / "genes.gtf")
 LOOPS = str(DATA / "loops.bedpe")
@@ -326,7 +327,7 @@ def _run(code, pythonpath, **consts):
 
 def part_e2e(rec):
     if not (MAIN / "genomeblocks").is_dir():
-        raise SystemExit(f"main checkout missing: git worktree add {MAIN} origin/main")
+        raise SystemExit(f"checkout missing: {MAIN} (set GB_MAIN_CHECKOUT)")
     head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=MAIN, capture_output=True,
                           text=True).stdout.strip()
     with tempfile.TemporaryDirectory() as d:

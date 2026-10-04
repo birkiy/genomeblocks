@@ -9,7 +9,7 @@ the files sit in the OS page cache, as they do in an interactive session.
 Parts:
   engines   one track, same loci: every engine, with a correctness check
   scaling   throughput vs number of loci
-  parallel  16 tracks: workers=1..4 processes, threads, deepTools -p
+  parallel  16 tracks: workers=1..8 processes, threads, deepTools -p
 """
 from __future__ import annotations
 
@@ -182,25 +182,19 @@ def part_parallel(rec):
     bws = [BWS[i % 4] for i in range(T)]
     L = pick_loci(n)
     ref = None
-    real_cpu = gs.cpu_count
-    for w in (1, 2, 3, 4):
-        # signal() caps workers at cpu_count()//2; lift the cap past 2 so the
-        # sweep can use all 4 cores of this machine
-        gs.cpu_count = (lambda: 8) if w > 2 else real_cpu
+    for w in (1, 2, 4, 8):
         res = {}
         t = timeit(lambda: res.__setitem__("c", gb(L, bws, workers=w)), repeat=3)
         ref = res["c"] if ref is None else ref
-        rec.add(part="parallel", engine="genomeblocks · processes" +
-                (" (cap lifted)" if w > 2 else ""), workers=w, n_loci=n, n_tracks=T,
-                seconds=t["median"], runs=t["runs"], rate=n * T / t["median"],
+        rec.add(part="parallel", engine="genomeblocks · processes", workers=w, n_loci=n,
+                n_tracks=T, seconds=t["median"], runs=t["runs"], rate=n * T / t["median"],
                 identical=bool(np.array_equal(ref, res["c"])))
-    gs.cpu_count = real_cpu
-    for w in (2, 4):
+    for w in (2, 4, 8):
         t = timeit(lambda: threaded(L, bws, w), repeat=3)
         rec.add(part="parallel", engine="threads (same chunks)", workers=w,
                 n_loci=n, n_tracks=T, seconds=t["median"], runs=t["runs"],
                 rate=n * T / t["median"])
-    for p in (1, 4):
+    for p in (1, 4, 8):
         t = timeit(lambda: deeptools(L, bws, p), repeat=1, warmup=0)
         rec.add(part="parallel", engine="deepTools computeMatrix", workers=p,
                 n_loci=n, n_tracks=T, seconds=t["median"], runs=t["runs"],
