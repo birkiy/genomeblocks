@@ -80,7 +80,7 @@ class Loci:
     def __init__(self, codes=(), starts=(), ends=(), strands=None, *, genome: Optional[Genome] = None,
                  cols: Optional[Dict[str, np.ndarray]] = None, filename: Optional[str] = None,
                  is_sorted: Optional[bool] = None):
-        self.genome = genome or default_genome()
+        self.genome = genome if genome is not None else default_genome()
         self.codes = np.asarray(codes, np.int32)
         self.starts = np.asarray(starts, np.int64)
         self.ends = np.asarray(ends, np.int64)
@@ -113,7 +113,7 @@ class Loci:
         use = [0, 1, 2] + ([3] if names and ncol > 3 else []) + ([5] if ncol > 5 else [])
         df = pd.read_csv(filename, sep="\t", header=None, comment="#", usecols=use,
                          dtype={0: "category", 5: "category", 3: str})
-        g = genome or default_genome()
+        g = genome if genome is not None else default_genome()
         cat = df[0]
         lut = np.fromiter((g._add(str(c)) for c in cat.cat.categories), np.int32,
                           len(cat.cat.categories))
@@ -134,7 +134,7 @@ class Loci:
         c = df[chrom] if chrom else df.iloc[:, 0]
         s = df[start] if start else df.iloc[:, 1]
         e = df[end] if end else df.iloc[:, 2]
-        g = genome or default_genome()
+        g = genome if genome is not None else default_genome()
         st = df[strand].map(SCODE).fillna(0).to_numpy(np.int8) if strand else None
         return cls(g.encode(c.to_numpy()), s.to_numpy(np.int64), e.to_numpy(np.int64), st,
                    genome=g, cols={k: df[k].to_numpy() for k in keep})
@@ -143,7 +143,7 @@ class Loci:
     def from_loci(cls, items, *, genome: Optional[Genome] = None) -> "Loci":
         """From any iterable of Locus objects (e.g. a classic ``genomeblocks.Loci``)."""
         items = list(items)
-        g = genome or default_genome()
+        g = genome if genome is not None else default_genome()
         n = len(items)
         return cls(g.encode([l.chrom for l in items]),
                    np.fromiter((l.start for l in items), np.int64, n),
@@ -478,7 +478,7 @@ class Loci:
     def load(cls, path: str, *, genome: Optional[Genome] = None) -> "Loci":
         import pyarrow.parquet as pq
         t = pq.read_table(path)
-        g = genome or default_genome()
+        g = genome if genome is not None else default_genome()
         ch = t.column("chrom").combine_chunks()
         lut = np.array([g._add(str(n)) for n in ch.dictionary.to_pylist()], np.int32)
         st = t.column("strand").combine_chunks()

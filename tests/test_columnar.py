@@ -533,3 +533,40 @@ def test_hichip_shortrange(tmp_path):
     cov = {c: list(zip(a.tolist(), z.tolist(), d.tolist())) for c, a, z, d in hichip.coverage(fr)}
     assert cov["chr2"] == [(249, 299, 1), (299, 396, 2), (396, 446, 1)]
     assert cov["chr1"] == [(999, 1146, 1), (1353, 1500, 1)]
+
+
+def test_without_polars(tmp_path, world, monkeypatch):
+    # polars is optional: GFF3 parsing and the HiChIP short-range steps fall
+    # back to pandas with the same results.
+    import sys
+    from genomeblocks.columnar import hichip
+    gff = tmp_path / "g.gff3"
+    _gtf_to_gff3(world / "genes.gtf", gff)
+    rows = ["r1#0/1\tchr1\t1000\t+\tchr1\t1500\t-\t500",   # '#' inside a read name
+            "r2\tchr1\t5000\t+\tchr1\t9000\t-\t500",
+            "r4\tchr2\t300\t+\tchr2\t250\t+\t500"]
+    avp = tmp_path / "x.allValidPairs"
+    avp.write_text("# header\n" + "\n".join(rows) + "\n")
+    g = gbc.Genome(sizes={"chr1": 10_000, "chr2": 10_000})
+
+    monkeypatch.setitem(sys.modules, "polars", None)          # import polars -> ImportError
+    a, b = gbc.Genes.make(str(world / "genes.gtf")), gbc.Genes.make(str(gff))
+    for x, y in ((a.genes, b.genes), (a.transcripts, b.transcripts), (a.features, b.features)):
+        assert np.array_equal(x.starts, y.starts) and np.array_equal(x.ends, y.ends)
+    assert list(a.genes.cols["gene_name"]) == list(b.genes.cols["gene_name"])
+    assert np.array_equal(a.transcripts.cols["gene"], b.transcripts.cols["gene"])
+
+    ends = hichip.shortrange_ends(str(avp), 1000, genome=g)
+    assert sorted(zip(ends.chroms, ends.starts.tolist(), ends.strands.tolist())) == sorted(
+        [("chr1", 999, 1), ("chr1", 1499, 2), ("chr2", 299, 1), ("chr2", 249, 1)])
+    bed = hichip.write_bed(ends, str(tmp_path / "e.bed"))
+    assert open(bed).read().splitlines()[0] == "chr1\t999\t1000\t.\t0\t+"
+    bg = hichip.to_bedgraph(hichip.fragments(ends, 147), str(tmp_path / "f.bg"))
+    assert "chr2\t299\t396\t2" in open(bg).read().splitlines()
+
+
+def test_explicit_empty_genome_is_used(world):
+    # an empty Genome is falsy; it must still be the one the tables use
+    g = gbc.Genome()
+    L = gbc.Loci.make(str(world / "peaks.bed"), genome=g)
+    assert L.genome is g and len(g) > 0

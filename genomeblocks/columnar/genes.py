@@ -15,6 +15,7 @@ once from the tables, cached, and reused by every ``annotations`` call.
 """
 from __future__ import annotations
 
+import inspect
 from typing import Optional
 
 import numpy as np
@@ -90,9 +91,11 @@ def _gff3_frame(path, name_k, type_k):
           .with_columns(pl.coalesce("a_tx_id", strip(pl.col("ID"))).alias("transcript_id")))
     txid = tx.select(pl.col("ID").alias("Parent"), pl.col("transcript_id").alias("t_id"),
                      pl.col("gene_id").alias("t_gene"), "g_name", "g_type")
-    ft = (df.filter(pl.col("feature").is_in(feats))
-          .with_columns(pl.col("Parent").str.split(",")).explode("Parent")
-          .join(txid, on="Parent", how="inner", maintain_order="left"))
+    ft = df.filter(pl.col("feature").is_in(feats)).with_columns(pl.col("Parent").str.split(","))
+    # str.split never yields an empty list, so empty_as_null only silences
+    # the polars-2.0 deprecation where the keyword exists
+    kw = {"empty_as_null": True} if "empty_as_null" in inspect.signature(ft.explode).parameters else {}
+    ft = ft.explode("Parent", **kw).join(txid, on="Parent", how="inner", maintain_order="left")
     out = [
         genes.select("line", "chrom", pl.lit("gene").alias("feature"), "start", "end", "strand", "gene_id",
                      pl.lit(None, pl.Utf8).alias("transcript_id"), pl.col("a_name").alias(name_k),
@@ -165,6 +168,55 @@ def _read_gtf_pandas(path, keys):
     for k in keys:
         out[k] = df["attr"].str.extract(rf'(?:^|;\s*){k} "?([^";]*)"?', expand=False).to_numpy(object)
     return out
+
+
+def _read_gff3_pandas(path, name_k, type_k):
+    """GFF3 -> the columns _read_gtf_pandas returns (pandas fallback of _gff3_frame).
+
+    Same rules as the polars path: genes are ID rows without a Parent,
+    transcripts hang off a gene ID, features off one or more transcript IDs;
+    every output row keeps its file line order.
+    """
+    import pandas as pd
+    df = pd.read_csv(path, sep="\t", comment="#", header=None, usecols=[0, 2, 3, 4, 6, 8],
+                     names=["chrom", "feature", "start", "end", "strand", "attr"],
+                     dtype={"chrom": str, "attr": str}, quoting=3)
+    df["line"] = np.arange(len(df))
+
+    def attr(k):
+        return df["attr"].str.extract(rf"(?:^|;){k}=([^;]*)", expand=False)
+
+    def strip(c):
+        return c.str.replace(r"^(gene|transcript):", "", regex=True)
+    df["ID"], df["Parent"] = attr("ID"), attr("Parent")
+    df["exon_number"] = attr("exon_number")
+    df["a_name"] = attr(name_k).fillna(attr("Name"))
+    df["a_type"] = attr(type_k).fillna(attr("biotype")).fillna(attr("gene_biotype"))
+    a_gene, a_tx = attr("gene_id"), attr("transcript_id")
+    feats = list(_FEATURE)
+    is_feat = df["feature"].isin(feats)
+
+    gm = df["Parent"].isna() & df["ID"].notna() & ~df["feature"].isin(feats + ["chromosome", "region", "scaffold"])
+    genes = df[gm].assign(gene_id=a_gene[gm].fillna(strip(df["ID"][gm])))
+    gid = genes[["ID", "gene_id", "a_name", "a_type"]].rename(
+        columns={"ID": "Parent", "a_name": "g_name", "a_type": "g_type"})
+    tm = df["Parent"].notna() & ~is_feat
+    tx = df[tm].assign(transcript_id=a_tx[tm].fillna(strip(df["ID"][tm])))
+    tx = tx.drop(columns=["a_name", "a_type"]).merge(gid, on="Parent", how="inner")
+    txid = tx[["ID", "transcript_id", "gene_id", "g_name", "g_type"]].rename(
+        columns={"ID": "Parent", "transcript_id": "t_id", "gene_id": "t_gene"})
+    ft = df[is_feat].assign(Parent=df["Parent"][is_feat].str.split(",")).explode("Parent")
+    ft = ft.merge(txid, on="Parent", how="inner")
+
+    keep = ["line", "chrom", "feature", "start", "end", "strand", "gene_id", "transcript_id",
+            name_k, type_k, "exon_number"]
+    out = pd.concat([
+        genes.assign(feature="gene", transcript_id=None).rename(columns={"a_name": name_k, "a_type": type_k}),
+        tx.assign(feature="transcript").rename(columns={"g_name": name_k, "g_type": type_k}),
+        ft.rename(columns={"t_gene": "gene_id", "t_id": "transcript_id", "g_name": name_k, "g_type": type_k}),
+    ])[keep].sort_values("line", kind="stable")
+    return {c: out[c].to_numpy() if c in ("start", "end") else out[c].to_numpy(object)
+            for c in keep if c != "line"}
 
 
 def _resolve_generic_utr(F, T):
@@ -269,13 +321,16 @@ class Genes:
 
         ``cre`` / ``bw`` / ``r`` / ``kw`` run :meth:`select_isoforms` right after
         parsing, exactly like the classic ``Genes.make``."""
-        g = genome or default_genome()
+        g = genome if genome is not None else default_genome()
         try:
             G, T, F = _tables_polars(filename, g, gene_name_key, gene_type_key)
         except ImportError:
-            G, T, F = _tables_numpy(_read_gtf_pandas(
-                filename, ("gene_id", "transcript_id", gene_name_key, gene_type_key, "exon_number")),
-                g, gene_name_key, gene_type_key)
+            if _is_gff3(filename):
+                d = _read_gff3_pandas(filename, gene_name_key, gene_type_key)
+            else:
+                d = _read_gtf_pandas(filename, ("gene_id", "transcript_id", gene_name_key,
+                                                gene_type_key, "exon_number"))
+            G, T, F = _tables_numpy(d, g, gene_name_key, gene_type_key)
         _resolve_generic_utr(F, T)
         out = cls(G, T, F, promoter_r=promoter_r, filename=filename)
         if cre is not None or bw is not None:
@@ -472,7 +527,7 @@ class Genes:
     def load(cls, path: str, *, genome: Optional[Genome] = None) -> "Genes":
         import json
         import os
-        g = genome or default_genome()
+        g = genome if genome is not None else default_genome()
         t = [Loci.load(os.path.join(path, f"{n}.parquet"), genome=g)
              for n in ("genes", "transcripts", "features")]
         meta = json.load(open(os.path.join(path, "meta.json")))
