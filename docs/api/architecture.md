@@ -65,7 +65,8 @@ arch.add_mcool(loci, mcool, *, resolution=None,
 
 arch.normalize(loci, *, source="w", name="n",
                verbose=True) -> Architecture
-# Fit w ≈ C·d^-α power law; write O/E to ep.n (or `name`), distances to ep.d.
+# Fit w ≈ C·d^-α power law on cis edges; write O/E to ep.n (or `name`),
+# distances to ep.d. Trans edges: d = inf, expectation = mean trans weight.
 
 arch.prune(*, dist_prop="d", verbose=True) -> Architecture
 # Drop zero-distance (co-located) edges. Call once, after normalize.

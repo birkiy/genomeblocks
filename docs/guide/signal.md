@@ -30,7 +30,7 @@ cube = loci.signal(
     span=False,         # True → use the full Locus span rather than center±flank
     dtype=np.float32,
     progress=True,
-    workers=1,          # 1 = sequential (fastest for typical jobs); >1 = multiprocessing
+    workers=1,          # 1 = sequential (fastest for typical jobs); >1 = multiprocessing; None = half the cores
     backend=None,       # None → auto-detect pybigtools; 'bigwig' forces pure-Python
     exact=True,         # pybigtools base-accurate binning (False = ~3× faster, approximate)
 )
@@ -49,8 +49,9 @@ Returns a dense `numpy.ndarray` — immediately suitable for `tmm()`, plotting, 
   `ProcessPoolExecutor` whose children write directly into one shared-memory
   cube. Work is split by (track-chunk, loci-chunk); each child opens its own
   bigWig handles.
-- `workers` is capped at `min(workers, n_tracks·⌈n_loci/1000⌉, cpu_count()//2)`
-  — half the cores are left free for the OS and each worker's own Rust pool.
+- An explicit `workers` is honoured, capped at `min(workers, n_tracks·⌈n_loci/1000⌉, cpu_count())`.
+  `workers=None` asks for half the cores, leaving the rest for the OS and each
+  worker's own Rust pool — the polite choice on a shared machine.
 
 ### Backends
 

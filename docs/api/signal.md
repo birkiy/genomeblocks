@@ -28,7 +28,7 @@ signal(
     agg: str = "mean",               # mean / max / min / std / sum / coverage
     dtype = np.float32,
     progress: bool = True,
-    workers: int = 1,                # 1 = sequential; >1 = multiprocessing
+    workers: int | None = 1,         # 1 = sequential; >1 = multiprocessing; None = half the cores
     span: bool = False,              # True: use full locus span, not center±flank
     verbose: bool = True,
     backend: str | None = None,      # 'pybigtools' | 'bigwig' | None (auto)
@@ -43,7 +43,8 @@ is fastest for typical heatmap / browser / per-locus workloads. Pass
 `workers > 1` for scale (many bigWigs × many loci): extraction then runs in a
 `ProcessPoolExecutor` writing into a shared-memory cube. Multiprocessing (not
 threading) is used because `pybigtools` serialises concurrent Python threads;
-`workers` is capped at `min(workers, n_tracks·⌈n_loci/1000⌉, cpu_count()//2)`.
+`workers` is capped at `min(workers, n_tracks·⌈n_loci/1000⌉, cpu_count())`, and
+`workers=None` uses half the cores.
 
 ---
 
