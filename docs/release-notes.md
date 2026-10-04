@@ -16,7 +16,75 @@ permalink: /release-notes/
 
 ---
 
-## Unreleased — ATAC-supported isoforms
+## v1.1.0 — columnar foundation
+
+`1.1.0` adds `genomeblocks.columnar`, a table-first foundation that sits next to
+the classic API (which is unchanged). It also adds a benchmark suite and fixes
+every slow path that suite found. Upgrade: `pip install -U genomeblocks`
+(`pip install -U "genomeblocks[columnar]"` adds polars and pyarrow).
+
+### `genomeblocks.columnar` (new)
+
+CREs, genes and the Architecture are numpy tables that share one `Genome`, and
+the row number is the join key: row `i` of the CREs is row `i` of the labels,
+the signal cube and every graph column.
+
+```python
+import genomeblocks.columnar as gbc
+cre   = gbc.Loci.make("atac.narrowPeak")
+genes = gbc.Genes.make("gencode.gtf")              # GTF or GFF3
+A = (gbc.Architecture.make(cre, "loops.bedpe")
+       .add_mcool("hic.mcool", resolution=5000)
+       .normalize().annotate(genes).strength())
+A.chrom("chr8"); A.cis; A.trans                    # zero-copy views
+```
+
+- `Loci`: genome-sorted columns, vectorised overlap / merge / nearest, and
+  hand-off to pandas, polars, Arrow and parquet. Classic functions such as
+  `signal()` run on it unchanged.
+- `Genes`: genes ⇄ transcripts ⇄ features linked by row numbers, GTF and GFF3
+  (GENCODE and Ensembl style), and a vectorised `select_isoforms`.
+- `Architecture`: one edge table sorted into per-chromosome cis blocks plus a
+  trans block. Trans loops are kept and normalised against the mean trans
+  weight. Includes `near` / `support`, graph-tool on demand, and parquet
+  save / load.
+- `hichip` (short-range HiChIP ends → coverage bigWig / MACS3 input), `se`
+  (ROSE-style super-enhancers), and `view` / `igv` (one-file shareable browsers).
+- Measured against 1.0.1, the whole pipeline in a fresh process takes 43 s →
+  2.7 s with identical edges, weights, O/E, labels and hubs, and peak memory
+  drops from 1.26 GB to 0.78 GB.
+- polars and pyarrow are optional: without them parsing falls back to pandas
+  with identical results (parquet save / load needs pyarrow).
+
+See `examples/columnar_prototype` and `examples/case_study_se` in the repository.
+
+### Faster, and one crash fixed (classic API)
+
+The new `benchmarks/` suite times every block against the tools people would
+otherwise use (report: `benchmarks/report/index.html`). Every fix below was
+checked to give output identical to 1.0.1.
+
+- **`Architecture.normalize` no longer crashes on inter-chromosomal edges.**
+  Trans edges get `ep.d = inf` and an expectation equal to the mean trans
+  weight. The power law is fitted on cis edges only, so cis-only graphs give
+  bit-identical O/E, and `prune()` keeps trans edges.
+- The pure-Python overlap index (used whenever `cgranges` is missing, i.e. on
+  pip installs) is now O(log n + k) per lookup: `A & B` on 100k × 100k peaks
+  takes 24.5 s → 0.24 s.
+- `add_mcool` 45×, `strength` 150× and `normalize` 14× faster (array work
+  instead of per-edge loops).
+- `count_pairs` / `count_pairs_2d` are 3–4× faster, `scan_motifs_matrix`
+  3.5×, and `Loci.sort` / `merge` 2–3×. The pure-Python bigWig reader is 1.7×
+  faster on sorted peaks.
+- `from genomeblocks import Loci` no longer imports matplotlib, pandas or
+  scipy: ~1.1 s → ~0.2 s.
+- `signal()` uses `fillna=` on pybigtools ≥ 0.3, so there is no deprecation
+  warning on every call. `Loci[np.int64(i)]` works.
+- **Behaviour change:** `signal(workers=n)` now honours `n` up to the core
+  count; it used to be silently capped at half the cores. `workers=None`
+  asks for half the cores.
+
+### ATAC-supported isoforms
 
 `Genes.make()` / `Genes.make_ucsc()` take `cre` (peaks: a path, a `Loci`, or a list)
 and/or `bw` (bigwigs), plus `r` (TSS half-window, defaults to `promoter_r`) and `kw`;
