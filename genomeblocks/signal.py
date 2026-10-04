@@ -16,12 +16,39 @@ from .loci import Loci
 
 def _open_pybigtools(path):
     """Adapter wrapping pybigtools handle to match our API."""
+    global _FILL_KW
     import pybigtools
-    return _PyBigToolsHandle(pybigtools.open(path, "r"))
+    h = pybigtools.open(path, "r")
+    if _FILL_KW is None:
+        _FILL_KW = _fill_kwarg(h)
+    return _PyBigToolsHandle(h)
 
 
 # pybigtools' native summary kinds — anything else falls back to a values() reduction.
 _NATIVE_SUMMARY = {'mean', 'min', 'max'}
+
+
+def _fill_kwarg(h) -> str:
+    """Name of pybigtools' fill-value argument for ``values()``.
+
+    pybigtools 0.3 renamed ``missing=`` to ``fillna=`` and warns on every
+    ``missing=`` call; a later release drops it. Older releases only know
+    ``missing=``.
+    """
+    try:
+        from importlib.metadata import version
+        major, minor = (int(x) for x in version('pybigtools').split('.')[:2])
+        return 'fillna' if (major, minor) >= (0, 3) else 'missing'
+    except Exception:          # no metadata / odd version string: probe the handle
+        import inspect
+        try:
+            params = inspect.signature(h.values).parameters
+        except (TypeError, ValueError):
+            return 'missing'
+        return 'fillna' if 'fillna' in params else 'missing'
+
+
+_FILL_KW: str | None = None    # resolved on the first pybigtools open
 
 
 class _PyBigToolsHandle:
@@ -42,9 +69,9 @@ class _PyBigToolsHandle:
         if stat in _NATIVE_SUMMARY:
             return self._h.values(chrom, start, end,
                                   bins=n_bins, summary=stat,
-                                  exact=exact, missing=missing)
+                                  exact=exact, **{_FILL_KW: missing})
         # sum / std / coverage: reduce from per-base values in numpy.
-        vals = self._h.values(chrom, start, end, missing=np.nan)
+        vals = self._h.values(chrom, start, end, **{_FILL_KW: np.nan})
         n = vals.size
         if n == 0 or n_bins <= 0:
             return np.full(max(n_bins, 1), missing, dtype=np.float64)
@@ -75,7 +102,7 @@ class _PyBigToolsHandle:
         return [None if np.isnan(v) else float(v) for v in arr]
 
     def values(self, chrom, start, end):
-        return self._h.values(chrom, start, end, missing=0.0).astype(np.float64, copy=False)
+        return self._h.values(chrom, start, end, **{_FILL_KW: 0.0}).astype(np.float64, copy=False)
 
     def close(self):
         self._h.close()
@@ -232,7 +259,7 @@ def signal(
     agg: str = "mean",
     dtype: str | np.dtype = np.float32,
     progress: bool = True,
-    workers: int = 1,
+    workers: int | None = 1,
     span: bool = False,
     verbose: bool = True,
     backend: str | None = None,
@@ -258,7 +285,9 @@ def signal(
         dtype: Output cube dtype (float32 default)
         progress: Show a tqdm bar
         workers: 1 (default) = sequential. >1 = multiprocessing with that
-            many processes. Capped at ``min(workers, n_tracks, cpu_count())``.
+            many processes, capped at ``cpu_count()`` and at the available
+            work. ``None`` = half the cores, the polite choice on a shared
+            machine.
         span: Use full locus span instead of center±flank
         backend: 'pybigtools' | 'bigwig' | None (auto-detect)
         exact: pybigtools base-accurate binning when True (default); zoom
@@ -287,11 +316,13 @@ def signal(
     ends = np.fromiter((loc.end for loc in loci),
                        dtype=np.int64, count=n_loci)
 
-    # Use at most half the cores: each worker spins up pybigtools' own tokio
-    # pool, so we leave the other half free for the OS / user processes.
-    _core_cap = max(1, (cpu_count() or 2) // 2)
+    # workers=None defaults to half the cores: each worker spins up
+    # pybigtools' own tokio pool, so the other half stays free for the OS /
+    # other users. An explicit count is honoured up to the core count.
+    if workers is None:
+        workers = max(1, (cpu_count() or 2) // 2)
     workers = max(1, min(workers, n_tracks * max(1, (n_loci + 999) // 1000),
-                         _core_cap))
+                         cpu_count() or 1))
 
     if verbose:
         print(f"[INFO] Extracting {n_tracks} bigwigs for {n_loci} loci "

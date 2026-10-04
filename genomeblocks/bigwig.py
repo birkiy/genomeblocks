@@ -51,7 +51,7 @@ class BigWigReader:
         '_full_data_off', '_full_index_off',
         '_total_summary_off', '_uncompress_buf',
         '_zooms', '_chroms', '_name_to_id', '_id_to_name',
-        '_rtree_cache',
+        '_rtree_cache', '_last_block',
     )
 
     def __init__(self, path: str | Path):
@@ -59,6 +59,7 @@ class BigWigReader:
         self._fh = _builtins.open(self._path, 'rb')
         self._mm = mmap.mmap(self._fh.fileno(), 0, access=mmap.ACCESS_READ)
         self._rtree_cache: Dict[int, object] = {}
+        self._last_block: Optional[tuple] = None   # (offset, inflated bytes)
         self._parse_header()
         self._parse_chrom_tree()
 
@@ -201,10 +202,16 @@ class BigWigReader:
     # ── block decompression & parsing ────────────────────────────────────
 
     def _decompress(self, offset: int, size: int) -> bytes:
+        # Neighbouring queries (sorted peaks) usually land in the block the
+        # previous query inflated, so keep the last one. The cache is one
+        # tuple, swapped atomically, so concurrent readers stay safe.
+        last = self._last_block
+        if last is not None and last[0] == offset:
+            return last[1]
         raw = bytes(self._mm[offset:offset + size])
-        if self._uncompress_buf > 0:
-            return zlib.decompress(raw)
-        return raw
+        data = zlib.decompress(raw) if self._uncompress_buf > 0 else raw
+        self._last_block = (offset, data)
+        return data
 
     def _parse_data_block(self, offset: int, size: int,
                           expect_cid: int | None = None,
