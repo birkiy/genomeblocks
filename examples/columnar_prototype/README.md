@@ -14,7 +14,8 @@ A notebook tour of `genomeblocks.columnar`, the table-first prototype on the
 | --- | --- |
 | `columnar_prototype.ipynb` | the tour, executed (outputs included) |
 | `make_notebook.py` | rebuilds and re-executes the notebook |
-| `make_igv_share.py` | writes a one-file IGV browser (igv.js + all tracks embedded) to send to people who don't code |
+| `make_view_demo.py` | writes a **genomeblocks view** page: our own one-file browser (two-model layout: anchor O/E, strength, ATAC, SE, prime hubs, copy number + SVs, CREs, loops, genes; gene search, CRE inspector, trans side by side) |
+| `make_igv_share.py` | the same data as an IGV page (igv.js + embedded tracks), for when people want IGV |
 
 ## Data
 

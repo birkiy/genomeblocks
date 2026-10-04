@@ -378,3 +378,51 @@ def test_igv_html_embeds_tracks(tmp_path, mixed, world):
     genes = text(cfg["tracks"][2]).splitlines()
     assert len(genes) == len(G.genes) and all(len(l.split("\t")) == 12 for l in genes)
     assert cfg["reference"]["format"] == "chromsizes" and "const SIZES = \"chr1" in page
+
+
+@pytest.mark.parametrize("mode", ["center", "overlap"])
+def test_support_matches_reference(world, mixed, mode):
+    """Architecture.support vs a direct port of the classic near()/support() rule."""
+    A = mixed
+    C = quiet(lambda: ClassicGenes.make(str(world / "genes.gtf")))
+    G = gbc.Genes.make(str(world / "genes.gtf"))
+    linked = ClassicLoci(l for l, d in zip(A.loci.to_legacy(), A.degree) if d > 0)
+    ref = {}
+    for key, g in C.items():                       # the classic rule, written out
+        t = g.tss
+        start, end = t.start, t.end
+        start = end = start if abs(end - start) <= 1 else None
+        lo, hi = max(0, start - 20_000), end + 20_000
+        hits = linked.overlaps(t.chrom, lo, hi)
+        if mode == "center":
+            hits = [l for l in hits if lo <= l.center < hi]
+        if hits:
+            ref[g.gene_name or key] = sorted(l.uid for l in hits)
+    got = {k: sorted(v) for k, v in A.support(G, r=20_000, mode=mode).items()}
+    assert got == ref and len(ref) > 10
+
+
+def test_view_payload_roundtrip(tmp_path, mixed, world):
+    import base64
+    import gzip
+    import json
+    import re
+    from genomeblocks.columnar.view import View
+    A = mixed
+    G = gbc.Genes.make(str(world / "genes.gtf"))
+    v = View(A, genes=G, samples={"a": "#46a8e4", "b": "#ffa600"}, title="t")
+    v.anchor_profile().cre_values("strength", {"a": A.vp.strength, "b": A.vp.strength * 2})
+    v.intervals("hubs", {"a": A.vp.strength > 0, "b": A.loci.take(np.arange(10))})
+    v.cres().loops({"a": "n", "b": "w"}).genes()
+    v.region("first", f"{A.loci.chroms[0]}:1-500000", anchor=0)
+    sizes = v.save(str(tmp_path / "v.html"))
+    page = (tmp_path / "v.html").read_text()
+    D = json.loads(re.search(r'<script type="application/json" id="gb-data">(.*?)</script>', page, re.S).group(1))
+    arr = lambda p: np.frombuffer(gzip.decompress(base64.b64decode(p["b"])), dtype=p["t"])
+    assert [t["type"] for t in D["tracks"]] == ["anchor", "creval", "intervals", "cre", "loops", "genes"]
+    assert np.array_equal(np.cumsum(arr(D["cre"]["start"])), A.loci.starts)
+    src = np.cumsum(arr(D["edges"]["src"]))
+    assert np.array_equal(src, A.src) and np.array_equal(src + arr(D["edges"]["dt"]), A.tgt)
+    assert np.allclose(arr(D["edges"]["scores"][1]["v"]), A.ep.w)
+    assert len(D["genes"]["names"]) == len(G.genes) and sizes["total"] == len(page)
+    assert D["samples"] == [{"name": "a", "color": "#46a8e4"}, {"name": "b", "color": "#ffa600"}]

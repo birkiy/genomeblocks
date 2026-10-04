@@ -307,6 +307,77 @@ class Architecture:
         i = self.loci.uids.get(uid)
         return i is not None and self.degree[i] > 0
 
+    # ── CREs near a position (gene support) ──────────────────────────────
+    def near_rows(self, key, start=None, end=None, *, r: int = 0, mode: str = "overlap",
+                  linked: bool = True) -> np.ndarray:
+        """Row numbers of the CREs near a window (same rules as the classic ``near``).
+
+        ``key`` is a Locus or a chromosome with ``start``/``end``; ``r`` widens the
+        window on each side. A 1-bp locus (a TSS, stored end-before-start on the
+        '-' strand) collapses to its anchor base. ``mode='overlap'`` keeps CREs
+        that intersect the window, ``'center'`` only those whose midpoint is in
+        it. ``linked=True`` keeps CREs with at least one edge (the classic
+        vertex set)."""
+        if mode not in ("overlap", "center"):
+            raise ValueError(f"mode must be 'overlap' or 'center', got {mode!r}")
+        if hasattr(key, "chrom"):
+            key, start, end = key.chrom, key.start, key.end
+        if end is None:
+            end = start
+        start, end = int(start), int(end)
+        if abs(end - start) <= 1:
+            start = end = start
+        else:
+            start, end = sorted((start, end))
+        lo, hi = max(0, start - r), end + r
+        rows = self.loci.overlap_rows(key, lo, hi) if hi > lo else np.zeros(0, np.int64)
+        if mode == "center":
+            c = self.loci.centers[rows]
+            rows = rows[(c >= lo) & (c < hi)]
+        if linked:
+            rows = rows[self.degree[rows] > 0]
+        return rows
+
+    def near(self, key, start=None, end=None, *, r: int = 0, mode: str = "overlap") -> Loci:
+        """CREs near a window as a Loci (classic API)."""
+        return self.loci.take(self.near_rows(key, start, end, r=r, mode=mode))
+
+    def support(self, genes, *, r: int = 5000, mode: str = "overlap", uids: bool = True,
+                rows: bool = False, linked: bool = True) -> dict:
+        """CREs within ``r`` bp of each gene's TSS: ``{gene_name: [uid, ...]}``.
+
+        Same rule as the classic ``support`` (TSS = gene start on '+', gene end
+        on '-'), computed for every gene at once. ``rows=True`` returns CRE row
+        arrays instead of uids (what you want for array work)."""
+        from . import _intervals as K
+        if mode not in ("overlap", "center"):
+            raise ValueError(f"mode must be 'overlap' or 'center', got {mode!r}")
+        G, L = genes.genes, self.loci
+        g = L.genome
+        lut = np.array([g._add(n) for n in G.genome.names], np.int64)
+        tss = np.where(G.strands == 2, G.ends, G.starts)
+        lo, hi = np.maximum(tss - r, 0), tss + r
+        gi, ci = K.overlap_pairs(lut[G.codes], lo, hi, L.codes, L.starts, L.ends)
+        if mode == "center":
+            c = L.centers[ci]
+            ok = (c >= lo[gi]) & (c < hi[gi])
+            gi, ci = gi[ok], ci[ok]
+        if linked:
+            ok = self.degree[ci] > 0
+            gi, ci = gi[ok], ci[ok]
+        o = np.lexsort((L.starts[ci], gi))
+        gi, ci = gi[o], ci[o]
+        cut = np.flatnonzero(np.diff(gi)) + 1
+        names = G.cols["gene_name"]
+        ids = G.cols["gene_id"]
+        out = {}
+        for grp in np.split(np.arange(len(gi)), cut) if len(gi) else []:
+            k = gi[grp[0]]
+            key = names[k] or ids[k]
+            sel = ci[grp]
+            out[key] = sel if rows else (L.uid[sel].tolist() if uids else [L[i] for i in sel])
+        return out
+
     # ── Hi-C weights ──────────────────────────────────────────────────────
     def add_mcool(self, mcool: str, *, resolution: Optional[int] = None, name: str = "w",
                   verbose: bool = True) -> "Architecture":
