@@ -540,10 +540,15 @@ def make(cls, loci, bedpe: str, *, name: str="Skeleton", r: int=2500, dmax=1e9, 
 
 
 def add_mcool(s: Architecture, loci, mcool: str, *, resolution: Optional[int]=None, name: str="w", verbose: bool=True) -> Architecture:
+    """Overlay Hi-C contacts from a cooler onto the edges as ``ep[name]``.
+
+    Each CRE maps to its nearest cooler bin. An edge gets the pixel count of
+    its (bin1, bin2) pair divided by the number of edges sharing that pair, so
+    a pixel's contacts are counted once however many CRE pairs fall in it.
+    Edges whose bin pair has no pixel keep 0.
+    """
     import cooler
-    from tqdm import tqdm
     import numpy as np
-    from collections import defaultdict
     print(f"[INFO] Adding '{name}' weights to the graph. 🏗️")
     uri = f"{mcool}::resolutions/{resolution}" if resolution else mcool
     clr = cooler.Cooler(uri)
@@ -553,39 +558,41 @@ def add_mcool(s: Architecture, loci, mcool: str, *, resolution: Optional[int]=No
     bins_l = Loci(Locus(row[1], row[2], row[3]) for row in bins.itertuples(index=False))
     near = loci.nearest(bins_l)
     uid_to_bin = dict(zip(near['Name'], near['Name_b'].map(bins_l.uids)))
-    bin_pair_edge_counts = defaultdict(int)
-    for edge in s.edges():
-        v1, v2 = edge.source(), edge.target()
-        uid1, uid2 = s.vp.uid[v1], s.vp.uid[v2]
-        bin1 = uid_to_bin.get(uid1)
-        bin2 = uid_to_bin.get(uid2)
-        if bin1 is None or bin2 is None: continue
-        if bin1 > bin2: bin1, bin2 = bin2, bin1
-        bin_pair_edge_counts[(bin1, bin2)] += 1
-    pixels = clr.pixels()[:].set_index(['bin1_id', 'bin2_id'])['count']
-    edges_set = 0
+
+    # vertex -> bin (-1 = unmapped), then one (bin1, bin2) key per edge
+    vbin = np.fromiter((uid_to_bin.get(u, -1) for u in s.vp.uid), dtype=np.int64, count=s.n_loci)
+    E = s.get_edges([s.edge_index])                  # src, tgt, edge index
+    b1, b2 = vbin[E[:, 0]], vbin[E[:, 1]]
+    mapped = (b1 >= 0) & (b2 >= 0)
+    lo, hi = np.minimum(b1, b2), np.maximum(b1, b2)
+    n_bins = len(bins_l)
+    ekey = lo * n_bins + hi
+
+    # edges sharing a bin pair split its count
+    _, inv, per_pair = np.unique(ekey[mapped], return_inverse=True, return_counts=True)
+    n_share = np.ones(len(E), dtype=np.int64)
+    n_share[mapped] = per_pair[inv]
+
+    # pixel count per edge: cooler pixels are upper-triangular (bin1 <= bin2)
+    # and sorted by (bin1, bin2), so their keys are sorted for searchsorted
+    px = clr.pixels()[:]
+    pkey = px['bin1_id'].to_numpy(np.int64) * n_bins + px['bin2_id'].to_numpy(np.int64)
+    pcount = px['count'].to_numpy(float)
+    if np.any(pkey[1:] < pkey[:-1]):
+        order = np.argsort(pkey, kind='stable')
+        pkey, pcount = pkey[order], pcount[order]
+    total = np.zeros(len(E))
+    if len(pkey):
+        j = np.minimum(np.searchsorted(pkey, ekey), len(pkey) - 1)
+        found = mapped & (pkey[j] == ekey)
+        total[found] = pcount[j[found]]
+    has = total > 0
+
     s.ep[name] = s.new_edge_property("float")
-    for edge in tqdm(s.edges(), desc='[INFO] Assigning distributed weights to edges', total=s.n_links):
-        v1, v2 = edge.source(), edge.target()
-        uid1, uid2 = s.vp.uid[v1], s.vp.uid[v2]
-        bin1 = uid_to_bin.get(uid1)
-        bin2 = uid_to_bin.get(uid2)
-        if bin1 is None or bin2 is None: continue
-        bin1, bin2 = (min(bin1, bin2), max(bin1, bin2))
-        try:
-            total_count = float(pixels[bin1][bin2].sum())
-            if total_count > 0:
-                num_edges_in_pair = bin_pair_edge_counts.get((bin1, bin2), 1)
-                distributed_weight = total_count / num_edges_in_pair
-                s.ep[name][edge] += distributed_weight
-                edges_set += 1
-        except KeyError:
-            s.ep[name][edge] += 0
-        except TypeError:
-            print(pixels[bin1][bin2])
-            break
+    w = s.ep[name].a
+    w[E[has, 2]] = total[has] / n_share[has]
     if verbose:
-        print(f"[INFO] Set distributed weights for {edges_set}/{s.n_links} edges from cooler. [{name}]")
+        print(f"[INFO] Set distributed weights for {int(has.sum())}/{s.n_links} edges from cooler. [{name}]")
     return s
 
 
@@ -621,9 +628,14 @@ def _pl_expect(x, y):
 def normalize(s: Architecture, loci, *, source: str = "w", name: str = "n", verbose: bool = True) -> Architecture:
     """Normalize edge weights by their distance-decay (power-law) expectation.
 
-    Fits a power law to the (distance, ``ep[source]``) cloud across all edges,
-    then stores the observed/expected ratio in ``ep[name]``. Edge distances are
-    computed from ``loci`` and cached in ``ep.d``.
+    Fits a power law to the (distance, ``ep[source]``) cloud across the cis
+    (intra-chromosomal) edges, then stores the observed/expected ratio in
+    ``ep[name]``. Edge distances are computed from ``loci`` and cached in
+    ``ep.d``.
+
+    Trans (inter-chromosomal) edges have no genomic distance: ``ep.d`` is
+    ``inf`` for them and their expectation is the mean trans weight, so their
+    O/E is weight / mean trans weight (0 when every trans weight is 0).
 
     Zero-distance edges (overlapping/co-located loci) are a power-law
     singularity: ``_pl_expect`` fits on positive distances only, and
@@ -632,31 +644,45 @@ def normalize(s: Architecture, loci, *, source: str = "w", name: str = "n", verb
     edges mid-pipeline desyncs the edge-index range across repeated calls).
     """
     import numpy as np
-    from tqdm import tqdm
     if verbose:
         print(f"[INFO] Normalizing '{source}' by power-law expectation. Storing in '{name}'. 📏")
     if source not in s.ep:
         raise ValueError(f"Source edge property '{source}' not found in the graph.")
     if name not in s.ep:
         s.ep[name] = s.new_edge_property("float")
-    edge_list = list(s.edges())
-    distances = np.zeros(len(edge_list), dtype=float)
-    raw_weights = np.zeros(len(edge_list), dtype=float)
-    for i, edge in tqdm(enumerate(edge_list), desc='[INFO] Calculating distances for edges', total=len(edge_list)):
-        v1, v2 = edge.source(), edge.target()
-        uid1, uid2 = s.vp.uid[v1], s.vp.uid[v2]
-        dist = loci[uid1].distance_to(loci[uid2])
-        s.ep.d[edge] = dist
-        raw_weights[i] = s.ep[source][edge]
-        distances[i] = dist
-    expected, fit_params = _pl_expect(distances, raw_weights)
+
+    E = s.get_edges([s.edge_index, s.ep[source]])    # src, tgt, edge index, weight
+    src, tgt = E[:, 0].astype(np.int64), E[:, 1].astype(np.int64)
+    # one loci lookup per linked vertex, then everything per edge is array work
+    uids = list(s.vp.uid)
+    n = len(uids)
+    vchrom = np.full(n, -1, dtype=np.int64)
+    vcenter = np.zeros(n, dtype=np.int64)
+    codes: dict = {}
+    for v in np.unique(np.concatenate([src, tgt])):
+        l = loci[uids[v]]
+        vchrom[v] = codes.setdefault(l.chrom, len(codes))
+        vcenter[v] = l.center
+    eidx = E[:, 2].astype(np.int64)
+    raw_weights = E[:, 3].astype(float)
+    cis = vchrom[src] == vchrom[tgt]
+    distances = np.full(len(E), np.inf)
+    distances[cis] = np.abs(vcenter[src[cis]] - vcenter[tgt[cis]])
+
+    expected = np.empty(len(E))
+    expected[cis], fit_params = _pl_expect(distances[cis], raw_weights[cis])
+    tw = raw_weights[~cis]
+    expected[~cis] = tw.mean() if tw.size and tw.mean() > 0 else np.inf
     if verbose:
         print(f"[INFO] Power-law fit complete: alpha={fit_params['alpha']:.3f}, C={fit_params['C']:.3e}")
     norm_weights = raw_weights / np.maximum(expected, 1e-12)
-    for i, e in enumerate(s.edges()):
-        s.ep[name][e] = norm_weights[i]
+
+    s.ep.d.a[eidx] = distances
+    s.ep[name].a[eidx] = norm_weights
     if verbose:
-        print(f"[INFO] Set O/E weights for {s.n_links} intra-chromosomal edges to `ep.{name}`.")
+        n_trans = int((~cis).sum())
+        trans = f" + {n_trans} trans edges (vs the mean trans weight)" if n_trans else ""
+        print(f"[INFO] Set O/E weights for {int(cis.sum())} intra-chromosomal edges{trans} to `ep.{name}`.")
     return s
 
 
@@ -813,11 +839,12 @@ def strength(s: Architecture, key: str = "n", name: str = "strength", *, verbose
     if key not in s.ep:
         raise ValueError(f"Edge property '{key}' not found.")
 
+    import numpy as np
+    E = s.get_edges([s.ep[key]])                     # src, tgt, weight
+    src, tgt, w = E[:, 0].astype(np.int64), E[:, 1].astype(np.int64), E[:, 2]
+    n = s.num_vertices(ignore_filter=True)
     s.vp[name] = s.new_vp("float")
-    for e in s.edges():
-        w = s.ep[key][e]
-        s.vp[name][e.source()] += w
-        s.vp[name][e.target()] += w
+    s.vp[name].a = np.bincount(src, w, minlength=n) + np.bincount(tgt, w, minlength=n)
 
     if verbose:
         print(f"[INFO] Summed ep.{key} → vp.{name} (node strength).")

@@ -147,3 +147,63 @@ def test_pickle_preserves_bool_property_type(arch):
     g2 = pickle.loads(pickle.dumps(arch))
     assert g2.vp["is_hub"].value_type() == "bool"
     assert bool(g2.vp["is_hub"][g2.vertex(0)]) is True
+
+
+def test_normalize_handles_trans_edges():
+    # Regression: a single inter-chromosomal edge made normalize raise
+    # TypeError (no distance between chromosomes).
+    import math
+    cis = [Locus("chr1", 1000 + i * 3000, 1100 + i * 3000) for i in range(12)]
+    far = [Locus("chr2", 5000, 5100), Locus("chr3", 7000, 7100)]
+    loci = Loci(cis + far)
+    g = Architecture("cis+trans")
+    for i in range(len(cis) - 1):
+        for j in range(i + 1, min(i + 4, len(cis))):
+            e = g.add_edge(g._add_vertex(cis[i].uid), g._add_vertex(cis[j].uid))
+            g.ep.w[e] = 30.0 / (j - i)
+    trans_w = {(0, far[0]): 2.0, (3, far[1]): 6.0}
+    for (i, other), w in trans_w.items():
+        e = g.add_edge(g._add_vertex(cis[i].uid), g._add_vertex(other.uid))
+        g.ep.w[e] = w
+
+    g.normalize(loci, source="w", name="n", verbose=False)
+    for e in g.edges():
+        a, b = g.vp.uid[e.source()], g.vp.uid[e.target()]
+        if a.split(":")[0] == b.split(":")[0]:
+            assert math.isfinite(g.ep.d[e]) and g.ep.d[e] > 0
+            assert math.isfinite(g.ep.n[e])
+        else:                                       # trans: flat expectation
+            assert math.isinf(g.ep.d[e])
+            assert g.ep.n[e] == pytest.approx(g.ep.w[e] / 4.0)   # mean trans w = 4
+    g.prune(verbose=False)                          # trans edges survive prune
+    assert g.n_links == 30 + 2
+
+
+def test_add_mcool_splits_pixel_counts(tmp_path):
+    cooler = pytest.importorskip("cooler")
+    import numpy as np
+    import pandas as pd
+    bins = cooler.binnify(pd.Series({"chr1": 10_000, "chr2": 5_000}), 1000)
+    pixels = pd.DataFrame({"bin1_id": [0, 0, 2, 3], "bin2_id": [2, 5, 2, 12],
+                           "count": [12, 7, 4, 9]})
+    uri = str(tmp_path / "t.cool")
+    cooler.create_cooler(uri, bins, pixels)
+
+    loci = Loci([Locus("chr1", 100, 200), Locus("chr1", 600, 700),      # bin 0
+                 Locus("chr1", 2100, 2200), Locus("chr1", 2500, 2600),  # bin 2
+                 Locus("chr1", 5100, 5200), Locus("chr1", 8100, 8200), # bins 5, 8
+                 Locus("chr2", 2100, 2200)])                           # bin 12
+    g = Architecture("mcool")
+    def link(i, j):
+        return g.add_edge(g._add_vertex(loci[i].uid), g._add_vertex(loci[j].uid))
+    e02, e12, e03 = link(0, 2), link(1, 2), link(0, 3)   # three edges in pixel (0, 2)
+    e23 = link(2, 3)                                    # pixel (2, 2)
+    e04 = link(0, 4)                                    # pixel (0, 5)
+    e05 = link(0, 5)                                    # bin pair (0, 8): no pixel
+    e36 = link(3, 6)                                    # trans pixel (2, 12)
+    g.add_mcool(loci, uri, name="w", verbose=False)
+    assert [g.ep.w[e] for e in (e02, e12, e03)] == pytest.approx([4.0, 4.0, 4.0])
+    assert g.ep.w[e23] == pytest.approx(4.0)
+    assert g.ep.w[e04] == pytest.approx(7.0)
+    assert g.ep.w[e05] == 0.0
+    assert g.ep.w[e36] == 0.0                           # pixel (3, 12) is bin 3, not 2
