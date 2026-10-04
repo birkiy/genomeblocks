@@ -63,6 +63,8 @@ Machine: Intel(R) Xeon(R) Processor @ 2.10GHz, 4 cores, 17 GB RAM, Python 3.11.1
 
 ## Where it is slow, and the fix
 
+**Status:** all of these are fixed in genomeblocks 1.1.0, with outputs checked identical to 1.0.1. The timings above were measured on 1.0.1.
+
 - **pip installs get a quadratic overlap index** cgranges is not on PyPI, so pip users get `_PyIntervalIndex`. Its `overlap()` walks every interval that starts before the query end (`range(hi)` from 0), so each lookup is O(n) and `A & B` is O(n·m): 7.3 s at 100k peaks, roughly 12.2 min projected at 1M. Tracking the longest interval per chromosome and starting the walk at `bisect_left(starts, qs - max_len)` gives identical results in 156 ms (47× faster). The benchmark's `BoundedPyIndex` is a drop-in.
 
 - **Loci.sort() / merge() compare dataclasses in Python** `sort()` calls `sorted(s)`, which runs `Locus.__lt__` in Python for every comparison. On 2,000,000 intervals that is 13 s; `sorted(s, key=lambda l: (l.chrom, l.start))` gives the same order (checked: identical) in 7.4 s (1.7×). `merge()` goes from 15 s to 5.4 s (2.8×, identical output). pyranges still merges the same set in 151 ms; a numpy merge over start/end arrays would close the rest.

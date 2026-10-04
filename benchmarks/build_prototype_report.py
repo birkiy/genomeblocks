@@ -185,7 +185,7 @@ def build():
     <a class="tile" href="#same"><span class="tag navy">same answers</span><span class="k">Checked against main</span>
       <span class="v">identical</span><span class="d">Same edges, Hi-C weights, O/E, distances, region labels, strengths and hubs. Gene picks match too, except 6 of 73k CREs where two promoters tie on weight and either answer is valid.</span></a>
     <a class="tile" href="#trans"><span class="tag warn">trans</span><span class="k">Inter-chromosomal loops</span>
-      <span class="v">{tmeta['n_trans']:,} kept</span><span class="d">On main, any trans edge makes <code>normalize</code> stop with a TypeError. The prototype normalises them against the mean trans weight and keeps them in neighbours and graph algorithms.</span></a>
+      <span class="v">{tmeta['n_trans']:,} kept</span><span class="d">On main, any trans edge makes <code>normalize</code> stop with a TypeError. The prototype normalises them against the mean trans weight and keeps them in neighbours and graph algorithms. (Fixed in 1.1.0: the classic <code>normalize</code> now does the same.)</span></a>
     <a class="tile" href="#notebook"><span class="tag purple">notebook</span><span class="k">Cut, look up, reload</span>
       <span class="v">µs–ms</span><span class="d">One chromosome: {ftime(vw['one chromosome (chr8)']['columnar'])} instead of {ftime(vw['one chromosome (chr8)']['main'])}. Reloading a saved graph: {ftime(reload_['columnar']['seconds'])} instead of {ftime(reload_['main']['seconds'])}, from a file {meta['file_mb_main'] / meta['file_mb_columnar']:.0f}× smaller.</span></a>
   </div>
@@ -247,7 +247,7 @@ def build():
 <section id="trans">
   <span class="tag warn">Trans loops</span>
   <h2>Inter-chromosomal edges</h2>
-  <p class="verdict">With 5% trans loops, main builds the graph and adds Hi-C, then <b>stops at normalize</b> ({esc(fail_msg.split(':')[0]) if fail_msg else 'error'}). <code>Locus.distance_to</code> has no distance between chromosomes, and normalize writes that missing value into a float column. The prototype gives trans edges an infinite distance and normalises them against the mean trans contact.</p>
+  <p class="verdict">With 5% trans loops, main builds the graph and adds Hi-C, then <b>stops at normalize</b> ({esc(fail_msg.split(':')[0]) if fail_msg else 'error'}). <code>Locus.distance_to</code> has no distance between chromosomes, and normalize writes that missing value into a float column. The prototype gives trans edges an infinite distance and normalises them against the mean trans contact. (Fixed in 1.1.0: the classic <code>normalize</code> now does the same.)</p>
   <div class="two">
     <figure><div class="ttl">Same pipeline, 52.5k loops (2.5k trans)</div>{table(["step", "main", "columnar"], trans_rows, num_cols=(1, 2))}</figure>
     <figure><div class="ttl">What trans edges add</div>{table(["", "value"], [

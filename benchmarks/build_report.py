@@ -591,7 +591,7 @@ def build():
 <section id="fixes">
   <span class="tag warn">Not fast yet</span>
   <h2>Where it is slow, and what fixes it</h2>
-  <p class="verdict">The benchmarks also found a few slow paths. Each one comes with a measured or one-line fix.</p>
+  <p class="verdict">The benchmarks also found a few slow paths. Each one comes with a measured or one-line fix. All of these are fixed in genomeblocks 1.1.0, with outputs checked identical to 1.0.1; the timings on this page were measured on 1.0.1.</p>
   <div class="fixes">{fix_html}</div>
 </section>
 <section id="method">
@@ -665,7 +665,8 @@ def write_readme(tiles, fixes, env, vtxt):
     for name, title in figs:
         if (HERE / "figures" / f"{name}.png").exists():
             lines += [f"**{title}**", "", f"![{title}](figures/{name}.png)", ""]
-    lines += ["## Where it is slow, and the fix", ""]
+    lines += ["## Where it is slow, and the fix", "",
+              "**Status:** all of these are fixed in genomeblocks 1.1.0, with outputs checked identical to 1.0.1. The timings above were measured on 1.0.1.", ""]
     for t, d in fixes:
         lines += [f"- **{_plain(t)}** {_plain(d)}", ""]
     lines += ["## Reproduce", "", "```bash", "cd benchmarks",
