@@ -143,11 +143,11 @@ The fast path for `loci.signal()` and every module that extracts continuous cove
 
 | Module | Upstream tool(s) |
 |---|---|
-| [Loci](guide/loci) — overlap / set algebra | cgranges, pyranges |
-| [Genes](guide/genes) — enhancer-to-gene | pyranges |
-| [Architecture](guide/architecture) — contact networks | graph-tool |
-| [Signal](guide/signal) — bigWig extraction | pybigtools |
-| [Motifs](guide/motifs) — PSSM scanning | lightmotif |
+| [Loci]({{ '/guide/loci/' | relative_url }}) — overlap / set algebra | cgranges, pyranges |
+| [Genes]({{ '/guide/genes/' | relative_url }}) — enhancer-to-gene | pyranges |
+| [Architecture]({{ '/guide/architecture/' | relative_url }}) — contact networks | graph-tool |
+| [Signal]({{ '/guide/signal/' | relative_url }}) — bigWig extraction | pybigtools |
+| [Motifs]({{ '/guide/motifs/' | relative_url }}) — PSSM scanning | lightmotif |
 
 ---
 

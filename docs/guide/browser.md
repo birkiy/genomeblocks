@@ -116,11 +116,11 @@ The browser avoids `imshow` / rasterized patches entirely: coverage tracks use `
 The Nanog locus (mm10) rendered with HiChIP loops, ATAC signal, ATAC peaks, and
 GENCODE protein-coding genes:
 
-![Nanog-locus browser render](../assets/images/browser_Nanog.png)
+![Nanog-locus browser render]({{ '/assets/images/browser_Nanog.png' | relative_url }})
 
 A complete, runnable real-data example (AR & FOXA1 in LNCaP) lives in
 [`examples/ar_foxa1_lncap/`](https://github.com/birkiy/genomeblocks/tree/main/examples/ar_foxa1_lncap)
-and is walked through step by step in the [AR & FOXA1 example](../walkthrough/browser).
+and is walked through step by step in the [AR & FOXA1 example]({{ '/walkthrough/browser/' | relative_url }}).
 
 ---
 

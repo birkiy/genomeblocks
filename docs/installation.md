@@ -31,7 +31,7 @@ Everything except `graph-tool` and the optional `cgranges` is pip-installable
 and declared in `pyproject.toml`. TMM normalization (`tmm()`) is **vendored** —
 the edgeR algorithm ships inside `genomeblocks.signal`, so there is no external
 normalization dependency. Because `graph-tool` is a compiled C++/Boost library,
-the recommended path is conda. See the [Credits page](credits) for full
+the recommended path is conda. See the [Credits page]({{ '/credits/' | relative_url }}) for full
 citations of every upstream tool.
 
 ---

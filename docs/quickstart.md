@@ -47,7 +47,7 @@ combined = cre | superenhancers  # union
 xor = cre ^ superenhancers       # symmetric difference
 ```
 
-See the [Loci guide](guide/loci) for the full API.
+See the [Loci guide]({{ '/guide/loci/' | relative_url }}) for the full API.
 
 ---
 
@@ -66,7 +66,7 @@ print(annot_df.groupby("annotation").size())
 near_df = genes.nearest_genes(cre)
 ```
 
-`Genes` also parses UCSC RefSeq tables (`Genes.make_ucsc(...)`) and supports alt-promoter-aware transcript-level operations. See [Genes guide](guide/genes).
+`Genes` also parses UCSC RefSeq tables (`Genes.make_ucsc(...)`) and supports alt-promoter-aware transcript-level operations. See [Genes guide]({{ '/guide/genes/' | relative_url }}).
 
 ---
 
@@ -86,7 +86,7 @@ groups = {"promoters": cre & prom,               # CREs overlapping a promoter
 ```
 
 `groups` feeds straight into `plot_heatmap(..., groups=groups)` (see the
-[AR & FOXA1 walkthrough](walkthrough/signal-heatmaps)).
+[AR & FOXA1 walkthrough]({{ '/walkthrough/signal-heatmaps/' | relative_url }})).
 
 ---
 
@@ -111,7 +111,7 @@ result = arch.prime_hubs(key="n")
 print(sorted(result["prime_genes"]))
 ```
 
-Full API: [Architecture guide](guide/architecture).
+Full API: [Architecture guide]({{ '/guide/architecture/' | relative_url }}).
 
 ---
 
@@ -138,7 +138,7 @@ fig, union, S, groups = compare_heatmap(
 fig.savefig("compare.pdf")
 ```
 
-See [Signal guide](guide/signal) for the full pipeline.
+See [Signal guide]({{ '/guide/signal/' | relative_url }}) for the full pipeline.
 
 ---
 
@@ -162,12 +162,12 @@ fig, _ = browser(
 fig.savefig("browser.svg")
 ```
 
-A full real-data example is in [`examples/ar_foxa1_lncap/`](https://github.com/birkiy/genomeblocks/tree/main/examples/ar_foxa1_lncap) and the [browser walkthrough](walkthrough/browser); both render into an IGV-like, fully-vectorial SVG.
+A full real-data example is in [`examples/ar_foxa1_lncap/`](https://github.com/birkiy/genomeblocks/tree/main/examples/ar_foxa1_lncap) and the [browser walkthrough]({{ '/walkthrough/browser/' | relative_url }}); both render into an IGV-like, fully-vectorial SVG.
 
 ---
 
 ## Next steps
 
-- [Concepts →](concepts) — the mental model behind the API.
-- [Example: AR & FOXA1 →](walkthrough/) — a complete real-data walkthrough, concept by concept.
-- [Architecture guide →](guide/architecture) — build & mine chromatin networks.
+- [Concepts →]({{ '/concepts/' | relative_url }}) — the mental model behind the API.
+- [Example: AR & FOXA1 →]({{ '/walkthrough/' | relative_url }}) — a complete real-data walkthrough, concept by concept.
+- [Architecture guide →]({{ '/guide/architecture/' | relative_url }}) — build & mine chromatin networks.

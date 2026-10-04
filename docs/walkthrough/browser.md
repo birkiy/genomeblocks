@@ -63,7 +63,7 @@ The region accepts a `"chr:start-end"` string (commas allowed), a
 
 The two ATAC replicates are passed as a **list of bigWig paths** — the browser
 extracts each and averages their per-bin means into a single track. This is the
-same operation the [heatmap](signal-heatmaps) does over its track columns, so the
+same operation the [heatmap]({{ '/walkthrough/signal-heatmaps/' | relative_url }}) does over its track columns, so the
 two figures show the ATAC replicates consistently.
 
 ## Shared y-axes for honest comparison
@@ -105,4 +105,4 @@ up underneath.
 
 That completes the walkthrough. The full, runnable notebook is at
 [`examples/ar_foxa1_lncap/`](https://github.com/birkiy/genomeblocks/tree/main/examples/ar_foxa1_lncap);
-for per-module reference see the [User Guide](../guide/).
+for per-module reference see the [User Guide]({{ '/guide/' | relative_url }}).

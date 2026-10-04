@@ -23,7 +23,7 @@ categories.
 
 ## `Loci`: the interval container
 
-A [`Loci`](../guide/loci) is a list of `Locus` intervals (`chrom, start, end,
+A [`Loci`]({{ '/guide/loci/' | relative_url }}) is a list of `Locus` intervals (`chrom, start, end,
 strand`) with a fast overlap index ([cgranges](https://github.com/lh3/cgranges))
 built lazily behind the `.cgr` property. Every locus has a stable `.uid`
 (`chr:start-end(strand)`) used as its identity in set operations and joins.
@@ -140,4 +140,4 @@ ARmF  = A4 - F_any                 # AR 4h that is NOT FOXA1-bound -> FOXA1-inde
 > peak sets you can feed straight into signal extraction, annotation, motif
 > scanning, and the browser — no coordinate bookkeeping required.
 
-Next: **[Signal heatmaps →](signal-heatmaps)**
+Next: **[Signal heatmaps →]({{ '/walkthrough/signal-heatmaps/' | relative_url }})**

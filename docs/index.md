@@ -7,7 +7,7 @@ permalink: /
 ---
 
 <div class="gb-eyebrow-row">
-  <span class="gb-eyebrow">v1.0 · MIT</span>
+  <span class="gb-eyebrow">v1.1 · MIT</span>
   <button type="button" class="gb-install-chip" onclick="gbCopyInstall(this)" title="Copy to clipboard">
     <span class="chip-text">pip install genomeblocks</span>
     <span class="copy-icon" aria-hidden="true">⧉</span>
@@ -30,7 +30,7 @@ Fluent building blocks for regulatory genomics — from peaks to chromatin netwo
   <span class="chip">JASPAR motifs</span>
 </div>
 
-[Quickstart →](quickstart){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Quickstart →]({{ '/quickstart/' | relative_url }}){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [View on GitHub](https://github.com/birkiy/genomeblocks){: .btn .fs-5 .mb-4 .mb-md-0 }
 
 
@@ -50,7 +50,7 @@ Regulatory-genomics analyses usually end up as a cocktail of bedtools, PyRanges,
   </li>
   <li class="green">
     <span class="mod-name"><code>signal</code><span class="mod-tag">Intervals</span></span>
-    <small>Threaded bigWig extraction (pybigtools backend, pure-Python fallback), TMM normalization, and comparative heatmaps.</small>
+    <small>bigWig extraction into one signal cube (pybigtools, process-parallel, pure-Python fallback), TMM normalization, and comparative heatmaps.</small>
   </li>
   <li class="navy">
     <span class="mod-name"><code>Genes</code><span class="mod-tag">Annotation</span></span>
@@ -75,6 +75,10 @@ Regulatory-genomics analyses usually end up as a cocktail of bedtools, PyRanges,
   <li class="purple">
     <span class="mod-name"><code>browser</code><span class="mod-tag">Networks</span></span>
     <small>An IGV-like, SVG-clean multi-track region viewer built on matplotlib.</small>
+  </li>
+  <li class="green">
+    <span class="mod-name"><code>columnar</code><span class="mod-tag">New in 1.1</span></span>
+    <small>The same blocks as numpy tables that line up by row: columnar <code>Loci</code>, <code>Genes</code> and an <code>Architecture</code> whose per-chromosome and trans views are free. See <a href="{{ '/design/columnar/' | relative_url }}">Design → Columnar</a>.</small>
   </li>
 </ul>
 
@@ -131,21 +135,23 @@ counts = genes.annotations(se & cre).groupby("annotation").size()
 
 | Section | When to read it |
 |---|---|
-| [Installation](installation) | Setup with conda or pip. |
-| [Quickstart](quickstart) | A 10-minute tour end-to-end. |
-| [Concepts](concepts) | The mental model — UIDs, lazy indexes, chainable APIs. |
-| [Example: AR & FOXA1](walkthrough/) | A complete real-data walkthrough, concept by concept. |
-| [User Guide → Loci](guide/loci) | Interval algebra in depth. |
-| [User Guide → Genes](guide/genes) | GTF parsing & enhancer-to-gene. |
-| [User Guide → Architecture](guide/architecture) | Chromatin-contact networks. |
-| [User Guide → Signal](guide/signal) | BigWig extraction & heatmaps. |
-| [User Guide → Browser](guide/browser) | Multi-track region plots. |
-| [User Guide → BEDPE](guide/bedpe) | Loops & paired intervals. |
-| [User Guide → Motifs](guide/motifs) | TF motif scanning. |
-| [API Reference](api/) | Full method signatures. |
-| [User Guide → Atlas](guide/atlas) | GIGGLE-style enrichment against BED collections. |
-| [Release Notes](release-notes) | What's in v1.0 and the fixes it ships. |
-| [Credits](credits) | Upstream tools & citations. |
+| [Installation]({{ '/installation/' | relative_url }}) | Setup with conda or pip. |
+| [Quickstart]({{ '/quickstart/' | relative_url }}) | A 10-minute tour end-to-end. |
+| [Concepts]({{ '/concepts/' | relative_url }}) | The mental model — UIDs, lazy indexes, chainable APIs. |
+| [Example: AR & FOXA1]({{ '/walkthrough/' | relative_url }}) | A complete real-data walkthrough, concept by concept. |
+| [User Guide → Loci]({{ '/guide/loci/' | relative_url }}) | Interval algebra in depth. |
+| [User Guide → Genes]({{ '/guide/genes/' | relative_url }}) | GTF parsing & enhancer-to-gene. |
+| [User Guide → Architecture]({{ '/guide/architecture/' | relative_url }}) | Chromatin-contact networks. |
+| [User Guide → Signal]({{ '/guide/signal/' | relative_url }}) | BigWig extraction & heatmaps. |
+| [User Guide → Browser]({{ '/guide/browser/' | relative_url }}) | Multi-track region plots. |
+| [User Guide → BEDPE]({{ '/guide/bedpe/' | relative_url }}) | Loops & paired intervals. |
+| [User Guide → Motifs]({{ '/guide/motifs/' | relative_url }}) | TF motif scanning. |
+| [API Reference]({{ '/api/' | relative_url }}) | Full method signatures. |
+| [Design]({{ '/design/' | relative_url }}) | How each module works inside, with diagrams. |
+| [Benchmarks]({{ '/benchmarks/' | relative_url }}) | Measured speed against bedtools, deepTools, pyranges, FIMO and cooler. |
+| [User Guide → Atlas]({{ '/guide/atlas/' | relative_url }}) | GIGGLE-style enrichment against BED collections. |
+| [Release Notes]({{ '/release-notes/' | relative_url }}) | What changed in each release. |
+| [Credits]({{ '/credits/' | relative_url }}) | Upstream tools & citations. |
 
 ---
 
@@ -159,7 +165,7 @@ Altintas, U. B. (2024). genomeblocks: Fluent building blocks for regulatory geno
 https://github.com/birkiy/genomeblocks
 ```
 
-`genomeblocks` stands on top of several excellent upstream libraries — please also cite the ones whose module was load-bearing in your analysis. The [Credits](credits) page lists them all with BibTeX.
+`genomeblocks` stands on top of several excellent upstream libraries — please also cite the ones whose module was load-bearing in your analysis. The [Credits]({{ '/credits/' | relative_url }}) page lists them all with BibTeX.
 
 ---
 

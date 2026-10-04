@@ -40,19 +40,19 @@ We split the 4 h AR cistrome into two sets and characterise each:
 
 Each step maps to one page in this section:
 
-1. **[Peaks, set algebra & categories](peaks-and-sets)** — load peaks as `Loci`,
+1. **[Peaks, set algebra & categories]({{ '/walkthrough/peaks-and-sets/' | relative_url }})** — load peaks as `Loci`,
    build accessible chromatin from ATAC, and derive **AR+F** / **AR−F** with set
    operations and a Venn diagram.
-2. **[Signal heatmaps](signal-heatmaps)** — extract bigWig signal into a cube,
+2. **[Signal heatmaps]({{ '/walkthrough/signal-heatmaps/' | relative_url }})** — extract bigWig signal into a cube,
    average ATAC replicates, and draw grouped heatmaps.
-3. **[Genomic annotation](annotation)** — label each set by gene context
+3. **[Genomic annotation]({{ '/walkthrough/annotation/' | relative_url }})** — label each set by gene context
    (promoter / intron / intergenic …) with a `Genes` model.
-4. **[Motif & ChIP-Atlas enrichment](enrichment)** — what sequence motifs and
+4. **[Motif & ChIP-Atlas enrichment]({{ '/walkthrough/enrichment/' | relative_url }})** — what sequence motifs and
    what published TF datasets are enriched in each set.
-5. **[Genome browser](browser)** — an IGV-like view of all conditions at a
+5. **[Genome browser]({{ '/walkthrough/browser/' | relative_url }})** — an IGV-like view of all conditions at a
    locus, with replicate averaging and shared y-axes.
 
-Want to see it all at once? **[Full run & figures](notebook)** is the executed
+Want to see it all at once? **[Full run & figures]({{ '/walkthrough/notebook/' | relative_url }})** is the executed
 notebook, rendered with every figure and result table.
 
 ## Data
@@ -79,4 +79,4 @@ their paths are set once at the top of the notebook.
 > Every long step in the notebook is wrapped in a small `timer()` context manager
 > and loops use `tqdm`, so you can see where the time goes on real data.
 
-Start with **[Peaks, set algebra & categories →](peaks-and-sets)**
+Start with **[Peaks, set algebra & categories →]({{ '/walkthrough/peaks-and-sets/' | relative_url }})**

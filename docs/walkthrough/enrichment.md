@@ -168,4 +168,4 @@ are what make that readable.
 > `bootstrap(query, n)` gives a shuffled-position null — use those when you want
 > "enriched vs the genome" rather than "enriched vs the other set."
 
-Next: **[Genome browser →](browser)**
+Next: **[Genome browser →]({{ '/walkthrough/browser/' | relative_url }})**

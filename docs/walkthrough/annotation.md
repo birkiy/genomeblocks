@@ -91,4 +91,4 @@ this view surfaces.
 > `nearest_genes(loci)` to attach the closest gene to each peak — useful when you
 > want to name targets rather than just classify location.
 
-Next: **[Motif & ChIP-Atlas enrichment →](enrichment)**
+Next: **[Motif & ChIP-Atlas enrichment →]({{ '/walkthrough/enrichment/' | relative_url }})**
