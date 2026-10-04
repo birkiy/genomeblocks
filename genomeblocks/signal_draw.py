@@ -11,10 +11,11 @@ from typing import Dict, List, Sequence
 from collections.abc import Sequence as SequenceABC
 
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import gridspec
 
 from .loci import Loci
+# matplotlib is imported inside the plotting functions: loci.py imports this
+# module to attach Loci.plot_heatmap, so a top-level pyplot import would make
+# every `from genomeblocks import Loci` pay for matplotlib.
 # NOTE: signal/tmm are imported lazily inside compare_heatmap. loci.py imports
 # this module at its tail, so a top-level `from .signal import ...` here would
 # deadlock when `genomeblocks.signal` is the first thing imported.
@@ -83,6 +84,9 @@ def plot_heatmap(
     Returns:
         matplotlib Figure
     """
+    import matplotlib.pyplot as plt
+    from matplotlib import gridspec
+
     if groups is None:
         sets = ["all"]
         gidx = [np.ones(len(loci), dtype=bool)]
@@ -175,6 +179,8 @@ def plot_profiles(
     Returns:
         matplotlib Figure
     """
+    import matplotlib.pyplot as plt
+
     # Build uid to index mapping for efficient lookup
     uid_to_idx = {loc.uid: i for i, loc in enumerate(loci)}
 
