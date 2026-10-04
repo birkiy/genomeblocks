@@ -40,11 +40,80 @@ def _gtf_frame(path, keys):
                            ).drop("attr").with_row_index("line")
 
 
+def _is_gff3(path) -> bool:
+    """GFF3 by extension, else by sniffing the attribute column (key=value vs key "value")."""
+    name = str(path).lower().removesuffix(".gz")
+    if name.endswith((".gff3", ".gff")):
+        return True
+    if name.endswith(".gtf"):
+        return False
+    import gzip
+    op = gzip.open if str(path).endswith(".gz") else open
+    with op(path, "rt") as f:
+        for line in f:
+            if line.startswith("#") or not line.strip():
+                continue
+            attr = line.rstrip("\n").split("\t")[-1]
+            return "=" in attr and '"' not in attr
+    return False
+
+
+def _gff3_frame(path, name_k, type_k):
+    """GFF3 -> the same frame _gtf_frame returns. Links follow ID/Parent; gene_id,
+    transcript_id, gene_name and gene_type attributes are used when present
+    (GENCODE), otherwise ID / Name / biotype (Ensembl, RefSeq)."""
+    import polars as pl
+
+    def attr(k):
+        return pl.col("attr").str.extract(rf"(?:^|;){k}=([^;]*)", 1)
+
+    def strip(c):
+        return c.str.replace(r"^(gene|transcript):", "")
+    df = pl.read_csv(path, separator="\t", comment_prefix="#", has_header=False,
+                     columns=[0, 2, 3, 4, 6, 8], quote_char=None, infer_schema_length=0,
+                     new_columns=["chrom", "feature", "start", "end", "strand", "attr"])
+    df = df.with_columns(pl.col("start").cast(pl.Int64), pl.col("end").cast(pl.Int64),
+                         attr("ID").alias("ID"), attr("Parent").alias("Parent"),
+                         attr("gene_id").alias("a_gene_id"), attr("transcript_id").alias("a_tx_id"),
+                         attr("exon_number").alias("exon_number"),
+                         pl.coalesce(attr(name_k), attr("Name")).alias("a_name"),
+                         pl.coalesce(attr(type_k), attr("biotype"), attr("gene_biotype")).alias("a_type")
+                         ).with_row_index("line")
+    feats = list(_FEATURE)
+    genes = (df.filter(pl.col("Parent").is_null() & pl.col("ID").is_not_null()
+                       & ~pl.col("feature").is_in(feats + ["chromosome", "region", "scaffold"]))
+             .with_columns(pl.coalesce("a_gene_id", strip(pl.col("ID"))).alias("gene_id")))
+    gid = genes.select(pl.col("ID").alias("Parent"), "gene_id", pl.col("a_name").alias("g_name"),
+                       pl.col("a_type").alias("g_type"))
+    tx = (df.filter(pl.col("Parent").is_not_null() & ~pl.col("feature").is_in(feats))
+          .join(gid, on="Parent", how="inner", maintain_order="left")
+          .with_columns(pl.coalesce("a_tx_id", strip(pl.col("ID"))).alias("transcript_id")))
+    txid = tx.select(pl.col("ID").alias("Parent"), pl.col("transcript_id").alias("t_id"),
+                     pl.col("gene_id").alias("t_gene"), "g_name", "g_type")
+    ft = (df.filter(pl.col("feature").is_in(feats))
+          .with_columns(pl.col("Parent").str.split(",")).explode("Parent")
+          .join(txid, on="Parent", how="inner", maintain_order="left"))
+    out = [
+        genes.select("line", "chrom", pl.lit("gene").alias("feature"), "start", "end", "strand", "gene_id",
+                     pl.lit(None, pl.Utf8).alias("transcript_id"), pl.col("a_name").alias(name_k),
+                     pl.col("a_type").alias(type_k), "exon_number"),
+        tx.select("line", "chrom", pl.lit("transcript").alias("feature"), "start", "end", "strand", "gene_id",
+                  "transcript_id", pl.col("g_name").alias(name_k), pl.col("g_type").alias(type_k), "exon_number"),
+        ft.select("line", "chrom", "feature", "start", "end", "strand", pl.col("t_gene").alias("gene_id"),
+                  pl.col("t_id").alias("transcript_id"), pl.col("g_name").alias(name_k),
+                  pl.col("g_type").alias(type_k), "exon_number"),
+    ]
+    return pl.concat(out).sort("line")
+
+
 def _tables_polars(path, g, name_k, type_k):
     """Build the three tables with polars joins; only numbers cross into numpy
     (turning 900k strings into Python objects would cost more than the parse)."""
     import polars as pl
-    df = _gtf_frame(path, ("gene_id", "transcript_id", name_k, type_k, "exon_number"))
+    if _is_gff3(path):
+        df = _gff3_frame(path, name_k, type_k)
+    else:
+        df = _gtf_frame(path, ("gene_id", "transcript_id", name_k, type_k, "exon_number"))
     chroms = df["chrom"].unique(maintain_order=True).to_list()
     df = df.with_columns(
         pl.col("chrom").replace_strict(chroms, [g._add(c) for c in chroms],
@@ -115,6 +184,28 @@ def _resolve_generic_utr(F, T):
     k[generic] = np.where(cs == big, 2, np.where(plus, np.where(before, 2, 3), np.where(before, 3, 2)))
 
 
+def _peaks(cre, genome):
+    """BED path / columnar Loci / Locus / classic Loci / list of those -> one columnar Loci."""
+    if cre is None:
+        return None
+    if isinstance(cre, str):
+        return Loci.make(cre, genome=genome)
+    if isinstance(cre, Loci):
+        return cre
+    if isinstance(cre, Locus):
+        return Loci.from_loci([cre], genome=genome)
+    parts = list(cre)
+    if parts and all(isinstance(p, Locus) for p in parts):
+        return Loci.from_loci(parts, genome=genome)
+    parts = [x for x in (_peaks(p, genome) for p in parts) if x is not None]
+    if not parts:
+        return None
+    out = parts[0]
+    for p in parts[1:]:
+        out = out + p
+    return out.sort().merge() if len(parts) > 1 else out
+
+
 class GeneView(Locus):
     """One gene as a Locus, with its transcripts/exons one attribute away."""
 
@@ -141,6 +232,14 @@ class GeneView(Locus):
         return T.take(np.flatnonzero(T.cols["gene"] == self._i))
 
     @property
+    def canonical(self) -> Optional[str]:
+        """transcript_id chosen by select_isoforms (None if not run)."""
+        c = self._G.genes.cols.get("canonical")
+        if c is None or c[self._i] < 0:
+            return None
+        return self._G.transcripts.cols["transcript_id"][c[self._i]]
+
+    @property
     def exons(self) -> Loci:
         F, T = self._G.features, self._G.transcripts
         tx = np.flatnonzero(T.cols["gene"] == self._i)
@@ -164,8 +263,12 @@ class Genes:
     # ── construction ──────────────────────────────────────────────────────
     @classmethod
     def make(cls, filename: str, *, gene_name_key: str = "gene_name", gene_type_key: str = "gene_type",
-             promoter_r: int = 1000, genome: Optional[Genome] = None) -> "Genes":
-        """Parse a GTF/GFF into the three tables (polars if installed, else pandas)."""
+             promoter_r: int = 1000, genome: Optional[Genome] = None, cre=None, bw=None, r=None,
+             kw=None) -> "Genes":
+        """Parse a GTF or GFF3 (optionally .gz) into the three tables.
+
+        ``cre`` / ``bw`` / ``r`` / ``kw`` run :meth:`select_isoforms` right after
+        parsing, exactly like the classic ``Genes.make``."""
         g = genome or default_genome()
         try:
             G, T, F = _tables_polars(filename, g, gene_name_key, gene_type_key)
@@ -174,7 +277,94 @@ class Genes:
                 filename, ("gene_id", "transcript_id", gene_name_key, gene_type_key, "exon_number")),
                 g, gene_name_key, gene_type_key)
         _resolve_generic_utr(F, T)
-        return cls(G, T, F, promoter_r=promoter_r, filename=filename)
+        out = cls(G, T, F, promoter_r=promoter_r, filename=filename)
+        if cre is not None or bw is not None:
+            out.select_isoforms(cre, bw, r=r, **(kw or {}))
+        return out
+
+    # ── ATAC-supported isoform selection ─────────────────────────────────
+    def select_isoforms(self, cre=None, bw=None, *, r=None, agg="max", min_signal=0.0, min_frac=0.5,
+                        rank="longest", collapse=True, verbose=True) -> "Genes":
+        """Pick one open-chromatin-supported isoform per gene (classic rule, vectorised).
+
+        A transcript is *supported* when its TSS window (± ``r``) overlaps a peak
+        in ``cre`` and, with ``bw``, its window score is > ``min_signal`` and
+        >= ``min_frac`` x the best candidate score in its gene (max over
+        bigWigs). Per gene the winner is the longest supported isoform
+        (``rank='longest'``) or the strongest (``'signal'``), the other value
+        breaking ties, then the transcript id; genes with no supported isoform
+        fall back to all of theirs. ``collapse`` moves the gene body and TSS
+        onto the winner.
+
+        Writes ``transcripts.cols['tss_score']`` (NaN = not scored),
+        ``['tss_support']`` and ``genes.cols['canonical']`` (transcript row, -1).
+        """
+        if rank not in ("longest", "signal"):
+            raise ValueError(f"rank must be 'longest' or 'signal', got {rank!r}")
+        T, G = self.transcripts, self.genes
+        r = self.promoter_r if r is None else r
+        peaks = _peaks(cre, T.genome)
+        bigwigs = [bw] if isinstance(bw, str) else [str(p) for p in (bw or [])]
+        if peaks is None and not bigwigs:
+            raise ValueError("select_isoforms() needs `cre` (BED/narrowPeak/Loci) and/or `bw` (bigwig).")
+        n = len(T)
+        pos = np.where(T.strands == 2, T.ends, T.starts)
+        ws, we = np.maximum(0, pos - r), pos + r
+        # 1. peak filter
+        if peaks is not None:
+            cand = Loci(T.codes, ws, we, genome=T.genome).overlap_any(peaks)
+        else:
+            cand = np.ones(n, bool)
+        # 2. score each distinct candidate window once (isoforms sharing a TSS share a query)
+        score = np.full(n, np.nan)
+        if bigwigs and cand.any():
+            idx = np.flatnonzero(cand)
+            key = np.stack([T.codes[idx].astype(np.int64), ws[idx], we[idx]], 1)
+            uk, inv = np.unique(key, axis=0, return_inverse=True)
+            wins = Loci(uk[:, 0], uk[:, 1], uk[:, 2], genome=T.genome)
+            cube = wins.signal(bigwigs, n_bins=1, span=True, agg=agg, progress=False, verbose=False)
+            score[idx] = np.asarray(cube[:, :, 0], float).max(axis=1)[inv.ravel()]
+        support = cand.copy()
+        gene = T.cols["gene"].astype(np.int64)
+        ng = len(G)
+        # 3. within-gene relative cut
+        if bigwigs:
+            sc = np.where(support, score, -np.inf)
+            best = np.full(ng, -np.inf)
+            np.maximum.at(best, gene[support], sc[support])
+            best[~np.isfinite(best)] = 0.0
+            with np.errstate(invalid="ignore"):
+                support &= (score > min_signal) & (score >= min_frac * best[gene])
+        has_sup = np.bincount(gene[support], minlength=ng) > 0
+        pool = support | ~has_sup[gene]
+        length = T.ends - T.starts
+        s0 = np.nan_to_num(score, nan=0.0)
+        tid_rank = np.unique(T.cols["transcript_id"].astype(str), return_inverse=True)[1].ravel()
+        first_key, second_key = (length, s0) if rank == "longest" else (s0, length)
+        cand_rows = np.flatnonzero(pool)
+        o = np.lexsort((tid_rank[cand_rows], -second_key[cand_rows], -first_key[cand_rows], gene[cand_rows]))
+        rows = cand_rows[o]
+        g_sorted = gene[rows]
+        winners = rows[np.r_[True, g_sorted[1:] != g_sorted[:-1]]] if len(rows) else rows
+        canonical = np.full(ng, -1, np.int64)
+        canonical[gene[winners]] = winners
+        T.cols["tss_score"], T.cols["tss_support"] = score, support
+        G.cols["canonical"] = canonical
+        if collapse and len(winners):
+            G.starts, G.ends = G.starts.copy(), G.ends.copy()
+            G.starts[gene[winners]] = T.starts[winners]
+            G.ends[gene[winners]] = T.ends[winners]
+            G._dirty()
+        self._annot = None
+        if verbose:
+            n_genes = int((np.bincount(gene, minlength=ng) > 0).sum())
+            n_sup = int(has_sup.sum())
+            print(f"[INFO] Isoform support: {n_sup}/{n_genes} genes with an open TSS "
+                  f"({int(support.sum())}/{n} isoforms), {n_genes - n_sup} fell back to the longest isoform.")
+            if n_sup == 0:
+                print("[WARN] No isoform was supported — check that the peaks/bigwig use the "
+                      "same chromosome names as the annotation.")
+        return self
 
     # ── lookups ───────────────────────────────────────────────────────────
     def __len__(self):

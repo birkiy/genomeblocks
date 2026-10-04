@@ -426,3 +426,110 @@ def test_view_payload_roundtrip(tmp_path, mixed, world):
     assert np.allclose(arr(D["edges"]["scores"][1]["v"]), A.ep.w)
     assert len(D["genes"]["names"]) == len(G.genes) and sizes["total"] == len(page)
     assert D["samples"] == [{"name": "a", "color": "#46a8e4"}, {"name": "b", "color": "#ffa600"}]
+
+
+@pytest.fixture(scope="module")
+def world_bw(world):
+    """A small bigWig over the world's CREs (random heights)."""
+    pybigtools = pytest.importorskip("pybigtools")
+    rng = np.random.default_rng(3)
+    rows = [l.rstrip("\n").split("\t") for l in open(world / "peaks.bed")]
+    ivs = sorted((c, int(s), int(e)) for c, s, e, *_ in rows)
+    path = str(world / "atac.bw")
+    out = pybigtools.open(path, "w")
+    out.write(SIZES, iter([(c, s, e, float(rng.gamma(2, 2))) for c, s, e in ivs]))
+    return path
+
+
+@pytest.mark.parametrize("rank", ["longest", "signal"])
+def test_select_isoforms_matches_classic(world, world_bw, rank):
+    from genomeblocks import Loci as CL
+    bed, gtf = str(world / "peaks.bed"), str(world / "genes.gtf")
+    kw = {"min_frac": 0.5, "rank": rank}
+    C = quiet(lambda: ClassicGenes.make(gtf, promoter_r=2500, cre=CL.make(bed), bw=[world_bw], r=3000, kw=kw))
+    G = gbc.Genes.make(gtf, promoter_r=2500, cre=bed, bw=[world_bw], r=3000, kw={**kw, "verbose": False})
+    for i, gid in enumerate(G.genes.cols["gene_id"]):
+        assert G[i].canonical == C[gid].canonical
+        assert (G.genes.starts[i], G.genes.ends[i]) == (C[gid].start, C[gid].end)
+    ref = {t.transcript_id: (t.tss_score, t.tss_support) for g in C.values() for t in g.transcripts.values()}
+    T = G.transcripts
+    for k, tid in enumerate(T.cols["transcript_id"]):
+        s, sup = ref[tid]
+        assert (np.isnan(T.cols["tss_score"][k]) if s is None else np.isclose(T.cols["tss_score"][k], s))
+        assert bool(T.cols["tss_support"][k]) == sup
+    assert T.cols["tss_support"].any() and not T.cols["tss_support"].all()
+
+
+def _gtf_to_gff3(gtf, out, ensembl=False):
+    import re
+    lines = []
+    for l in open(gtf):
+        f = l.rstrip("\n").split("\t")
+        a = dict(re.findall(r'(\S+) "([^"]*)"', f[8]))
+        if f[2] == "gene":
+            attr = (f"ID=gene:{a['gene_id']};Name={a['gene_name']};biotype={a['gene_type']}" if ensembl else
+                    f"ID={a['gene_id']};gene_id={a['gene_id']};gene_name={a['gene_name']};gene_type={a['gene_type']}")
+            ftype = "gene"
+        elif f[2] == "transcript":
+            attr = (f"ID=transcript:{a['transcript_id']};Parent=gene:{a['gene_id']}" if ensembl else
+                    f"ID={a['transcript_id']};Parent={a['gene_id']};gene_id={a['gene_id']};"
+                    f"transcript_id={a['transcript_id']};gene_name={a['gene_name']}")
+            ftype = "mRNA" if ensembl else "transcript"
+        else:
+            parent = f"transcript:{a['transcript_id']}" if ensembl else a["transcript_id"]
+            attr = f"Parent={parent};exon_number={a['exon_number']}"
+            ftype = f[2]
+        lines.append("\t".join(f[:2] + [ftype] + f[3:8] + [attr]))
+    out.write_text("##gff-version 3\n" + "\n".join(lines) + "\n")
+
+
+@pytest.mark.parametrize("ensembl", [False, True])
+def test_gff3_matches_gtf(tmp_path, world, ensembl):
+    p = tmp_path / ("e.gff3" if ensembl else "g.gff3")
+    _gtf_to_gff3(world / "genes.gtf", p, ensembl)
+    a, b = gbc.Genes.make(str(world / "genes.gtf")), gbc.Genes.make(str(p))
+    for x, y in ((a.genes, b.genes), (a.transcripts, b.transcripts), (a.features, b.features)):
+        assert np.array_equal(x.codes, y.codes) and np.array_equal(x.starts, y.starts)
+        assert np.array_equal(x.ends, y.ends) and np.array_equal(x.strands, y.strands)
+    assert list(a.genes.cols["gene_name"]) == list(b.genes.cols["gene_name"])
+    assert list(a.transcripts.cols["transcript_id"]) == list(b.transcripts.cols["transcript_id"])
+    assert np.array_equal(a.features.cols["kind"], b.features.cols["kind"])
+    assert np.array_equal(a.transcripts.cols["gene"], b.transcripts.cols["gene"])
+
+
+def test_call_se_matches_classic_recipe(world, world_bw):
+    from genomeblocks import Architecture as Classic, Loci as CL
+    from genomeblocks.columnar.se import call_se
+    pytest.importorskip("graph_tool")
+    bed = str(world / "peaks.bed")
+    st = CL.make(bed).slop(500).merge().slop(-500)              # the gb_se() recipe, stitch = 1 kb
+    sig = np.nan_to_num(st.signal([world_bw], span=True, n_bins=1, progress=False, verbose=False)[:, :, 0]).mean(1)
+    G = quiet(lambda: Classic())
+    for l in st:
+        G._add_vertex(l.uid)
+    G.vp["sig"] = G.new_vp("float")
+    G.vp["sig"].a = sig * [l.length for l in st]
+    cut, order = G.elbow("sig", verbose=False)
+    ref = sorted((l.chrom, l.start, l.end) for l in st.subloci(order[:cut]))
+    se = call_se(gbc.Loci.make(bed), [world_bw], stitch=1000)
+    assert sorted(zip(se.chroms, se.starts.tolist(), se.ends.tolist())) == ref and len(ref) > 3
+    assert set(se.cols["rank"]) == set(range(1, len(se) + 1))
+
+
+def test_hichip_shortrange(tmp_path):
+    from genomeblocks.columnar import hichip
+    rows = ["r1\tchr1\t1000\t+\tchr1\t1500\t-\t500",       # short: both ends kept
+            "r2\tchr1\t5000\t+\tchr1\t9000\t-\t500",       # too far
+            "r3\tchr1\t100\t-\tchr2\t200\t+\t500",         # trans
+            "r4\tchr2\t300\t+\tchr2\t250\t+\t500"]         # short, reversed order
+    p = tmp_path / "x.allValidPairs"
+    p.write_text("\n".join(rows) + "\n")
+    g = gbc.Genome(sizes={"chr1": 10_000, "chr2": 10_000})
+    ends = hichip.shortrange_ends(str(p), 1000, genome=g)
+    got = sorted(zip(ends.chroms, ends.starts.tolist(), ends.ends.tolist(), ends.strands.tolist()))
+    assert got == sorted([("chr1", 999, 1000, 1), ("chr1", 1499, 1500, 2), ("chr2", 299, 300, 1), ("chr2", 249, 250, 1)])
+    fr = hichip.fragments(ends, 147, {"chr1": 10_000, "chr2": 10_000})
+    assert sorted(zip(fr.starts.tolist(), fr.ends.tolist())) == sorted([(999, 1146), (1353, 1500), (299, 446), (249, 396)])
+    cov = {c: list(zip(a.tolist(), z.tolist(), d.tolist())) for c, a, z, d in hichip.coverage(fr)}
+    assert cov["chr2"] == [(249, 299, 1), (299, 396, 2), (396, 446, 1)]
+    assert cov["chr1"] == [(999, 1146, 1), (1353, 1500, 1)]

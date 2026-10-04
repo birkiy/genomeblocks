@@ -526,23 +526,13 @@ class Architecture:
     def elbow(self, key: str, *, verbose: bool = True):
         """Slope-1 knee on the sorted ``vp[key]`` curve (classic rule).
         Returns (cutoff, uids sorted by value, descending)."""
-        from scipy.ndimage import uniform_filter1d
-        v = self.vp[key]
-        rows = np.flatnonzero(v > 0)
-        rows = rows[np.argsort(-v[rows], kind="stable")]
+        from .se import knee
+        v = np.asarray(self.vp[key], float)
+        cutoff, rows = knee(v)
         uids = self.loci.uid[rows].tolist()
-        y = v[rows]
-        if len(y) < 3:
-            return len(y), uids
-        ys = y[::-1]
-        m = len(ys)
-        xn = np.arange(m) / (m - 1)
-        yn = (ys - ys[0]) / (ys[-1] - ys[0])
-        yn_s = uniform_filter1d(yn, size=max(11, m // 200), mode="nearest")
-        crossed = np.flatnonzero(np.gradient(yn_s, xn) >= 1.0)
-        i = int(crossed[0]) if len(crossed) else m
-        cutoff = m - i
-        if verbose:
+        ys = v[rows][::-1]
+        m, i = len(ys), len(ys) - cutoff
+        if verbose and m:
             print(f"[INFO] Slope-1 on vp.{key} (value≈{(ys[i] if i < m else ys[-1]):.3g} at cutoff): "
                   f"cutoff at {cutoff}/{m} ({100 * cutoff / m:.1f}%)")
         return cutoff, uids
