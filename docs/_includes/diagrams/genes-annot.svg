@@ -1,0 +1,77 @@
+<svg class="gbd" viewBox="0 0 880 292" role="img" aria-label="Each CRE is checked against five merged interval sets in a fixed order; the first set it touches names it, and a CRE that touches none is Intergenic." xmlns="http://www.w3.org/2000/svg">
+<text class="s" x="20" y="36">gene model</text>
+<polyline class="ln navy thin" points="261.6,32 737.6,32"/>
+<rect class="iv fnl" x="261.6" y="28" width="64.6" height="8" rx="2"></rect>
+<rect class="iv fn" x="326.2" y="25" width="10.2" height="14" rx="2"></rect>
+<rect class="iv fn" x="404.4" y="25" width="40.8" height="14" rx="2"></rect>
+<rect class="iv fn" x="533.6" y="25" width="40.8" height="14" rx="2"></rect>
+<rect class="iv fn" x="656" y="25" width="23.8" height="14" rx="2"></rect>
+<rect class="iv fnl" x="679.8" y="28" width="57.8" height="8" rx="2"></rect>
+<path class="ln navy" d="M261.6,26 L261.6,14 L288.8,14"/>
+<polygon class="hd navy" points="289.8,14.0 284.5,16.8 284.5,11.2"/>
+<text class="ms" x="261.6" y="8" text-anchor="middle">TSS</text>
+<text class="s" x="20" y="66">CREs</text>
+<rect class="iv fg" x="234.4" y="57" width="13.6" height="10" rx="2"></rect>
+<rect class="iv fg" x="313.28" y="57" width="9.52" height="10" rx="2"></rect>
+<rect class="iv fg" x="411.2" y="57" width="13.6" height="10" rx="2"></rect>
+<rect class="iv fg" x="479.2" y="57" width="13.6" height="10" rx="2"></rect>
+<rect class="iv fg" x="696.8" y="57" width="13.6" height="10" rx="2"></rect>
+<rect class="iv fg" x="792" y="57" width="13.6" height="10" rx="2"></rect>
+<text class="cap" x="20" y="100">1</text>
+<text class="m" x="36" y="100">prom</text>
+<text class="s" x="80" y="100">TSS ± r</text>
+<polyline class="ln faint" points="180,96 860,96"/>
+<rect class="iv fnl" x="220.8" y="91" width="81.6" height="10" rx="2"></rect>
+<text class="cap" x="20" y="130">2</text>
+<text class="m" x="36" y="130">utr5</text>
+<text class="s" x="80" y="130">5′ UTRs</text>
+<polyline class="ln faint" points="180,126 860,126"/>
+<rect class="iv fnl" x="261.6" y="121" width="64.6" height="10" rx="2"></rect>
+<text class="cap" x="20" y="160">3</text>
+<text class="m" x="36" y="160">utr3</text>
+<text class="s" x="80" y="160">3′ UTRs</text>
+<polyline class="ln faint" points="180,156 860,156"/>
+<rect class="iv fnl" x="679.8" y="151" width="57.8" height="10" rx="2"></rect>
+<text class="cap" x="20" y="190">4</text>
+<text class="m" x="36" y="190">exon</text>
+<text class="s" x="80" y="190">exons</text>
+<polyline class="ln faint" points="180,186 860,186"/>
+<rect class="iv fnl" x="261.6" y="181" width="74.8" height="10" rx="2"></rect>
+<rect class="iv fnl" x="404.4" y="181" width="40.8" height="10" rx="2"></rect>
+<rect class="iv fnl" x="533.6" y="181" width="40.8" height="10" rx="2"></rect>
+<rect class="iv fnl" x="656" y="181" width="81.6" height="10" rx="2"></rect>
+<text class="cap" x="20" y="220">5</text>
+<text class="m" x="36" y="220">body</text>
+<text class="s" x="80" y="220">gene bodies</text>
+<polyline class="ln faint" points="180,216 860,216"/>
+<rect class="iv fnl" x="261.6" y="211" width="476" height="10" rx="2"></rect>
+<polyline class="ln faint dash" points="241.2,70 241.2,230"/>
+<circle class="dot green" cx="241.2" cy="96" r="5.5"/>
+<rect class="chip green" x="197.4" y="242" width="87.6" height="22" rx="11"></rect>
+<text class="s" x="241.2" y="257" text-anchor="middle">Promoter-TSS</text>
+<polyline class="ln faint dash" points="318.04,70 318.04,230"/>
+<circle class="dot green" cx="318.04" cy="126" r="5.5"/>
+<circle class="dot muted" cx="318.04" cy="186" r="4"/>
+<circle class="dot muted" cx="318.04" cy="216" r="4"/>
+<rect class="chip green" x="292.04" y="242" width="52" height="22" rx="11"></rect>
+<text class="s" x="318.04" y="257" text-anchor="middle">5UTR</text>
+<polyline class="ln faint dash" points="418,70 418,230"/>
+<circle class="dot green" cx="418" cy="186" r="5.5"/>
+<circle class="dot muted" cx="418" cy="216" r="4"/>
+<rect class="chip green" x="392" y="242" width="52" height="22" rx="11"></rect>
+<text class="s" x="418" y="257" text-anchor="middle">Exonic</text>
+<polyline class="ln faint dash" points="486,70 486,230"/>
+<circle class="dot green" cx="486" cy="216" r="5.5"/>
+<rect class="chip green" x="454.8" y="242" width="62.4" height="22" rx="11"></rect>
+<text class="s" x="486" y="257" text-anchor="middle">Intronic</text>
+<polyline class="ln faint dash" points="703.6,70 703.6,230"/>
+<circle class="dot green" cx="703.6" cy="156" r="5.5"/>
+<circle class="dot muted" cx="703.6" cy="186" r="4"/>
+<circle class="dot muted" cx="703.6" cy="216" r="4"/>
+<rect class="chip green" x="677.6" y="242" width="52" height="22" rx="11"></rect>
+<text class="s" x="703.6" y="257" text-anchor="middle">3UTR</text>
+<polyline class="ln faint dash" points="798.8,70 798.8,230"/>
+<rect class="chip" x="761.3" y="242" width="75" height="22" rx="11"></rect>
+<text class="s" x="798.8" y="257" text-anchor="middle">Intergenic</text>
+<text class="s" x="860" y="282" text-anchor="end">filled dot = first set hit (wins) · grey = later sets, ignored</text>
+</svg>

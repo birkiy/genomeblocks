@@ -1,0 +1,57 @@
+<svg class="gbd" viewBox="0 0 880 198" role="img" aria-label="The Architecture pipeline: six chained calls, each reading the previous step&#x27;s output and writing graph-tool vertex or edge properties." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="88" y="52" text-anchor="end">READS</text>
+<text class="cap" x="88" y="104" text-anchor="end">STEP</text>
+<text class="cap" x="88" y="160" text-anchor="end">WRITES</text>
+<text class="s" x="168" y="56" text-anchor="middle">CRE Loci + BEDPE</text>
+<rect class="bx purple" x="110" y="76" width="116" height="50" rx="8"></rect>
+<text class="tm" x="168" y="106" text-anchor="middle">make()</text>
+<rect class="chip" x="114" y="148" width="108" height="24" rx="12"></rect>
+<text class="s" x="168" y="164" text-anchor="middle">CRE vertices · edges</text>
+<polyline class="ln faint" points="168,64 168,74"/>
+<polyline class="ln faint" points="168,128 168,146"/>
+<text class="s" x="296.4" y="56" text-anchor="middle">.mcool at 5 kb</text>
+<rect class="bx purple" x="238.4" y="76" width="116" height="50" rx="8"></rect>
+<text class="tm" x="296.4" y="106" text-anchor="middle">.add_mcool()</text>
+<rect class="chip" x="242.4" y="148" width="108" height="24" rx="12"></rect>
+<text class="s" x="296.4" y="164" text-anchor="middle">ep.w (Hi-C count)</text>
+<polyline class="ln faint" points="296.4,64 296.4,74"/>
+<polyline class="ln faint" points="296.4,128 296.4,146"/>
+<polyline class="ln purple" points="227,101 233.4,101"/>
+<polygon class="hd purple" points="237.4,101.0 231.2,104.3 231.2,97.7"/>
+<text class="s" x="424.8" y="56" text-anchor="middle">CRE positions</text>
+<rect class="bx purple" x="366.8" y="76" width="116" height="50" rx="8"></rect>
+<text class="tm" x="424.8" y="106" text-anchor="middle">.normalize()</text>
+<rect class="chip" x="370.8" y="148" width="108" height="24" rx="12"></rect>
+<text class="s" x="424.8" y="164" text-anchor="middle">ep.d · ep.n (O/E)</text>
+<polyline class="ln faint" points="424.8,64 424.8,74"/>
+<polyline class="ln faint" points="424.8,128 424.8,146"/>
+<polyline class="ln purple" points="355.4,101 361.8,101"/>
+<polygon class="hd purple" points="365.8,101.0 359.6,104.3 359.6,97.7"/>
+<text class="s" x="553.2" y="56" text-anchor="middle">Genes</text>
+<rect class="bx purple" x="495.2" y="76" width="116" height="50" rx="8"></rect>
+<text class="tm" x="553.2" y="106" text-anchor="middle">.annotate()</text>
+<rect class="chip" x="499.2" y="148" width="108" height="24" rx="12"></rect>
+<text class="s" x="553.2" y="164" text-anchor="middle">vp.annot · vp.gene</text>
+<polyline class="ln faint" points="553.2,64 553.2,74"/>
+<polyline class="ln faint" points="553.2,128 553.2,146"/>
+<polyline class="ln purple" points="483.8,101 490.2,101"/>
+<polygon class="hd purple" points="494.2,101.0 488.0,104.3 488.0,97.7"/>
+<text class="s" x="681.6" y="56" text-anchor="middle">ep.n</text>
+<rect class="bx purple" x="623.6" y="76" width="116" height="50" rx="8"></rect>
+<text class="tm" x="681.6" y="106" text-anchor="middle">.strength()</text>
+<rect class="chip" x="627.6" y="148" width="108" height="24" rx="12"></rect>
+<text class="s" x="681.6" y="164" text-anchor="middle">vp.strength</text>
+<polyline class="ln faint" points="681.6,64 681.6,74"/>
+<polyline class="ln faint" points="681.6,128 681.6,146"/>
+<polyline class="ln purple" points="612.2,101 618.6,101"/>
+<polygon class="hd purple" points="622.6,101.0 616.4,104.3 616.4,97.7"/>
+<text class="s" x="810" y="56" text-anchor="middle">vp.strength</text>
+<rect class="bx purple" x="752" y="76" width="116" height="50" rx="8"></rect>
+<text class="tm" x="810" y="106" text-anchor="middle">.prime_hubs()</text>
+<rect class="chip" x="756" y="148" width="108" height="24" rx="12"></rect>
+<text class="s" x="810" y="164" text-anchor="middle">hub CREs → genes</text>
+<polyline class="ln faint" points="810,64 810,74"/>
+<polyline class="ln faint" points="810,128 810,146"/>
+<polyline class="ln purple" points="740.6,101 747,101"/>
+<polygon class="hd purple" points="751.0,101.0 744.8,104.3 744.8,97.7"/>
+</svg>

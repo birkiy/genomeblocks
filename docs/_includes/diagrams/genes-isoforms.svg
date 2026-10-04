@@ -1,0 +1,32 @@
+<svg class="gbd" viewBox="0 0 880 262" role="img" aria-label="select_isoforms keeps isoforms whose TSS window overlaps a peak, picks the longest of those, and moves the gene&#x27;s body and TSS onto it." xmlns="http://www.w3.org/2000/svg">
+<rect class="bx ghost" x="147.7" y="18" width="40.6" height="76" rx="4"></rect>
+<rect class="bx hl" x="310.1" y="18" width="40.6" height="114" rx="4"></rect>
+<rect class="bx hl" x="414.5" y="18" width="40.6" height="152" rx="4"></rect>
+<text class="s" x="20" y="34">ATAC peaks</text>
+<polyline class="ln faint" points="110,30 690,30"/>
+<rect class="iv fg" x="317.64" y="24" width="23.2" height="12" rx="2"></rect>
+<rect class="iv fg" x="426.1" y="24" width="17.4" height="12" rx="2"></rect>
+<rect class="iv fg" x="550.8" y="24" width="17.4" height="12" rx="2"></rect>
+<text class="m" x="20" y="84">T_long</text>
+<polyline class="ln navy thin" points="168,80 661,80"/>
+<rect class="iv fn" x="168" y="74" width="23.2" height="12" rx="2"></rect>
+<rect class="iv fn" x="620.4" y="74" width="40.6" height="12" rx="2"></rect>
+<text class="s" x="712" y="84">✗  no peak in its TSS window</text>
+<text class="m" x="20" y="122">T_mid</text>
+<polyline class="ln navy thin" points="330.4,118 661,118"/>
+<rect class="iv fn" x="330.4" y="112" width="23.2" height="12" rx="2"></rect>
+<rect class="iv fn" x="620.4" y="112" width="40.6" height="12" rx="2"></rect>
+<text class="s" x="712" y="122">✓  peak · longest supported</text>
+<text class="m" x="20" y="160">T_short</text>
+<polyline class="ln navy thin" points="434.8,156 661,156"/>
+<rect class="iv fn" x="434.8" y="150" width="23.2" height="12" rx="2"></rect>
+<rect class="iv fn" x="620.4" y="150" width="40.6" height="12" rx="2"></rect>
+<text class="s" x="712" y="160">✓  peak</text>
+<text class="s" x="168" y="186" text-anchor="middle">TSS ± r</text>
+<text class="t" x="20" y="226">Gene</text>
+<rect class="bx ghost" x="168" y="215" width="493" height="14" rx="3"></rect>
+<rect class="iv fn" x="330.4" y="215" width="330.6" height="14" rx="2"></rect>
+<text class="s" x="712" y="220">canonical = T_mid: body and</text>
+<text class="s" x="712" y="234">TSS move to it; nothing dropped</text>
+<text class="s" x="172" y="248">span before</text>
+</svg>

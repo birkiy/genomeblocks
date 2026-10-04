@@ -1,0 +1,166 @@
+<svg class="gbd" viewBox="0 0 880 330" role="img" aria-label="In genomeblocks.columnar every table describing the CREs is aligned by row, and the Architecture&#x27;s edges store row numbers, so joins are array indexing." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="24">ARCHITECTURE EDGES</text>
+<text class="s" x="28" y="48">src</text>
+<text class="s" x="64" y="48">tgt</text>
+<text class="s" x="100" y="48">w</text>
+<text class="s" x="136" y="48">n</text>
+<rect class="bx" x="20" y="62" width="160" height="22" rx="3"></rect>
+<text class="m" x="28" y="77">0</text>
+<text class="m" x="64" y="77">1</text>
+<text class="m" x="100" y="77">12</text>
+<text class="m" x="136" y="77">1.4</text>
+<rect class="bx hl" x="20" y="88" width="160" height="22" rx="3"></rect>
+<text class="m" x="28" y="103">0</text>
+<text class="m" x="64" y="103">4</text>
+<text class="m" x="100" y="103">9</text>
+<text class="m" x="136" y="103">2.2</text>
+<rect class="bx" x="20" y="114" width="160" height="22" rx="3"></rect>
+<text class="m" x="28" y="129">3</text>
+<text class="m" x="64" y="129">4</text>
+<text class="m" x="100" y="129">30</text>
+<text class="m" x="136" y="129">1.1</text>
+<rect class="bx" x="20" y="140" width="160" height="22" rx="3"></rect>
+<text class="m" x="28" y="155">1</text>
+<text class="m" x="64" y="155">5</text>
+<text class="m" x="100" y="155">7</text>
+<text class="m" x="136" y="155">0.8</text>
+<text class="s" x="20" y="180">src and tgt are row numbers:</text>
+<text class="s" x="20" y="194">no uid → vertex lookup</text>
+<text class="cap" x="262" y="24">LOCI (CREs)</text>
+<text class="s" x="268" y="48">row</text>
+<text class="s" x="304" y="48">code</text>
+<text class="s" x="350" y="48">start</text>
+<text class="s" x="414" y="48">end</text>
+<text class="s" x="476" y="48">±</text>
+<rect class="bx hl" x="262" y="62" width="228" height="22" rx="3"></rect>
+<text class="ms" x="268" y="77">0</text>
+<text class="m" x="304" y="77">0</text>
+<text class="m" x="350" y="77">9,800</text>
+<text class="m" x="414" y="77">10,100</text>
+<text class="m" x="476" y="77">.</text>
+<rect class="bx" x="262" y="88" width="228" height="22" rx="3"></rect>
+<text class="ms" x="268" y="103">1</text>
+<text class="m" x="304" y="103">0</text>
+<text class="m" x="350" y="103">15,200</text>
+<text class="m" x="414" y="103">15,640</text>
+<text class="m" x="476" y="103">+</text>
+<rect class="bx" x="262" y="114" width="228" height="22" rx="3"></rect>
+<text class="ms" x="268" y="129">2</text>
+<text class="m" x="304" y="129">0</text>
+<text class="m" x="350" y="129">88,050</text>
+<text class="m" x="414" y="129">88,700</text>
+<text class="m" x="476" y="129">.</text>
+<rect class="bx" x="262" y="140" width="228" height="22" rx="3"></rect>
+<text class="ms" x="268" y="155">3</text>
+<text class="m" x="304" y="155">1</text>
+<text class="m" x="350" y="155">3,100</text>
+<text class="m" x="414" y="155">3,350</text>
+<text class="m" x="476" y="155">.</text>
+<rect class="bx hl" x="262" y="166" width="228" height="22" rx="3"></rect>
+<text class="ms" x="268" y="181">4</text>
+<text class="m" x="304" y="181">1</text>
+<text class="m" x="350" y="181">8,800</text>
+<text class="m" x="414" y="181">9,420</text>
+<text class="m" x="476" y="181">−</text>
+<rect class="bx" x="262" y="192" width="228" height="22" rx="3"></rect>
+<text class="ms" x="268" y="207">5</text>
+<text class="m" x="304" y="207">2</text>
+<text class="m" x="350" y="207">1,010</text>
+<text class="m" x="414" y="207">1,400</text>
+<text class="m" x="476" y="207">.</text>
+<polyline class="ln faint" points="496,64 502,64 502,134 496,134"/>
+<text class="ms" x="508" y="103">chr1</text>
+<polyline class="ln faint" points="496,142 502,142 502,186 496,186"/>
+<text class="ms" x="508" y="168">chr2</text>
+<polyline class="ln faint" points="496,194 502,194 502,212 496,212"/>
+<text class="ms" x="508" y="207">chrX</text>
+<path class="ln navy" d="M182,99 C222,99 222,73 256,73"/>
+<polygon class="hd navy" points="260.0,73.0 254.7,75.8 254.7,70.2"/>
+<path class="ln navy" d="M182,99 C222,99 222,177 256,177"/>
+<polygon class="hd navy" points="260.0,177.0 254.7,179.8 254.7,174.2"/>
+<text class="cap" x="570" y="24">SAME ROWS: ANNOTATIONS · SIGNAL</text>
+<text class="s" x="574" y="48">label</text>
+<text class="s" x="652" y="48">gene</text>
+<text class="s" x="704" y="48">strength</text>
+<rect class="bx hl" x="570" y="62" width="188" height="22" rx="3"></rect>
+<text class="m" x="574" y="77">Promoter</text>
+<text class="m" x="652" y="77">MYC</text>
+<text class="m" x="714" y="77">3.1</text>
+<rect class="iv fl" x="766" y="65" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="776" y="65" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="786" y="65" width="8" height="16" rx="1"></rect>
+<rect class="iv fn" x="796" y="65" width="8" height="16" rx="1"></rect>
+<rect class="iv fn" x="806" y="65" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="816" y="65" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="826" y="65" width="8" height="16" rx="1"></rect>
+<rect class="bx" x="570" y="88" width="188" height="22" rx="3"></rect>
+<text class="m" x="574" y="103">Intronic</text>
+<text class="m" x="652" y="103">MYC</text>
+<text class="m" x="714" y="103">0.8</text>
+<rect class="iv fl" x="766" y="91" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="776" y="91" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="786" y="91" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="796" y="91" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="806" y="91" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="816" y="91" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="826" y="91" width="8" height="16" rx="1"></rect>
+<rect class="bx" x="570" y="114" width="188" height="22" rx="3"></rect>
+<text class="m" x="574" y="129">Intergenic</text>
+<text class="m" x="652" y="129">—</text>
+<text class="m" x="714" y="129">0</text>
+<rect class="iv fl" x="766" y="117" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="776" y="117" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="786" y="117" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="796" y="117" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="806" y="117" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="816" y="117" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="826" y="117" width="8" height="16" rx="1"></rect>
+<rect class="bx" x="570" y="140" width="188" height="22" rx="3"></rect>
+<text class="m" x="574" y="155">Promoter</text>
+<text class="m" x="652" y="155">SOX2</text>
+<text class="m" x="714" y="155">5.2</text>
+<rect class="iv fl" x="766" y="143" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="776" y="143" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="786" y="143" width="8" height="16" rx="1"></rect>
+<rect class="iv fn" x="796" y="143" width="8" height="16" rx="1"></rect>
+<rect class="iv fn" x="806" y="143" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="816" y="143" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="826" y="143" width="8" height="16" rx="1"></rect>
+<rect class="bx hl" x="570" y="166" width="188" height="22" rx="3"></rect>
+<text class="m" x="574" y="181">Exonic</text>
+<text class="m" x="652" y="181">SOX2</text>
+<text class="m" x="714" y="181">1.4</text>
+<rect class="iv fl" x="766" y="169" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="776" y="169" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="786" y="169" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="796" y="169" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="806" y="169" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="816" y="169" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="826" y="169" width="8" height="16" rx="1"></rect>
+<rect class="bx" x="570" y="192" width="188" height="22" rx="3"></rect>
+<text class="m" x="574" y="207">Intronic</text>
+<text class="m" x="652" y="207">—</text>
+<text class="m" x="714" y="207">0.2</text>
+<rect class="iv fl" x="766" y="195" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="776" y="195" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="786" y="195" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="796" y="195" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="806" y="195" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="816" y="195" width="8" height="16" rx="1"></rect>
+<rect class="iv fl" x="826" y="195" width="8" height="16" rx="1"></rect>
+<text class="ms" x="800" y="48" text-anchor="middle">cube[i]</text>
+<text class="cap" x="20" y="240">GENES · THREE TABLES LINKED BY ROW NUMBER</text>
+<rect class="bx navy" x="20" y="252" width="250" height="50" rx="8"></rect>
+<text class="tm" x="145" y="274" text-anchor="middle">genes</text>
+<text class="s" x="145" y="290" text-anchor="middle">gene_id · gene_name</text>
+<rect class="bx navy" x="310" y="252" width="250" height="50" rx="8"></rect>
+<text class="tm" x="435" y="274" text-anchor="middle">transcripts</text>
+<text class="s" x="435" y="290" text-anchor="middle">transcript_id · gene → g</text>
+<polyline class="ln navy" points="308,277 276,277"/>
+<polygon class="hd navy" points="272.0,277.0 278.2,273.7 278.2,280.3"/>
+<rect class="bx navy" x="600" y="252" width="250" height="50" rx="8"></rect>
+<text class="tm" x="725" y="274" text-anchor="middle">features</text>
+<text class="s" x="725" y="290" text-anchor="middle">kind · transcript → t</text>
+<polyline class="ln navy" points="598,277 566,277"/>
+<polygon class="hd navy" points="562.0,277.0 568.2,273.7 568.2,280.3"/>
+</svg>

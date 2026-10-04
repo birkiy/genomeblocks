@@ -1,0 +1,171 @@
+<svg class="gbd" viewBox="0 0 880 318" role="img" aria-label="Atlas stores one bit per (genome bin, track); a query is the column sum over its bins, which fills the 2×2 table of a Fisher test for every track at once." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="110" y="24">M: GENOME BINS × TRACKS (CSR, 1 bit each)</text>
+<rect class="iv fm" x="114" y="46" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="144" y="46" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="174" y="46" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="204" y="46" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="234" y="46" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="264" y="46" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="294" y="46" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="324" y="46" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="354" y="46" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="114" y="64" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="144" y="64" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="174" y="64" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="204" y="64" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="234" y="64" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="264" y="64" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="294" y="64" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="324" y="64" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="354" y="64" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="114" y="82" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="144" y="82" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="174" y="82" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="204" y="82" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="234" y="82" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="264" y="82" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="294" y="82" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="324" y="82" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="354" y="82" width="22" height="12" rx="2"></rect>
+<rect class="bx hl" x="104" y="97" width="278" height="18" rx="3"></rect>
+<rect class="chip" x="114" y="100" width="22" height="12" rx="2"></rect>
+<rect class="iv fn" x="144" y="100" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="174" y="100" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="204" y="100" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="234" y="100" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="264" y="100" width="22" height="12" rx="2"></rect>
+<rect class="iv fn" x="294" y="100" width="22" height="12" rx="2"></rect>
+<rect class="iv fn" x="324" y="100" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="354" y="100" width="22" height="12" rx="2"></rect>
+<rect class="bx hl" x="104" y="115" width="278" height="18" rx="3"></rect>
+<rect class="chip" x="114" y="118" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="144" y="118" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="174" y="118" width="22" height="12" rx="2"></rect>
+<rect class="iv fn" x="204" y="118" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="234" y="118" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="264" y="118" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="294" y="118" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="324" y="118" width="22" height="12" rx="2"></rect>
+<rect class="iv fn" x="354" y="118" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="114" y="136" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="144" y="136" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="174" y="136" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="204" y="136" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="234" y="136" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="264" y="136" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="294" y="136" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="324" y="136" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="354" y="136" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="114" y="154" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="144" y="154" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="174" y="154" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="204" y="154" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="234" y="154" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="264" y="154" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="294" y="154" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="324" y="154" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="354" y="154" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="114" y="172" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="144" y="172" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="174" y="172" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="204" y="172" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="234" y="172" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="264" y="172" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="294" y="172" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="324" y="172" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="354" y="172" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="114" y="190" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="144" y="190" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="174" y="190" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="204" y="190" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="234" y="190" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="264" y="190" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="294" y="190" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="324" y="190" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="354" y="190" width="22" height="12" rx="2"></rect>
+<rect class="bx hl" x="104" y="205" width="278" height="18" rx="3"></rect>
+<rect class="chip" x="114" y="208" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="144" y="208" width="22" height="12" rx="2"></rect>
+<rect class="iv fn" x="174" y="208" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="204" y="208" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="234" y="208" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="264" y="208" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="294" y="208" width="22" height="12" rx="2"></rect>
+<rect class="iv fn" x="324" y="208" width="22" height="12" rx="2"></rect>
+<rect class="iv fn" x="354" y="208" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="114" y="226" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="144" y="226" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="174" y="226" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="204" y="226" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="234" y="226" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="264" y="226" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="294" y="226" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="324" y="226" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="354" y="226" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="114" y="244" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="144" y="244" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="174" y="244" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="204" y="244" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="234" y="244" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="264" y="244" width="22" height="12" rx="2"></rect>
+<rect class="iv fm" x="294" y="244" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="324" y="244" width="22" height="12" rx="2"></rect>
+<rect class="chip" x="354" y="244" width="22" height="12" rx="2"></rect>
+<text class="ms" x="98" y="56" text-anchor="end">chr1</text>
+<text class="ms" x="98" y="182" text-anchor="end">chr2</text>
+<polyline class="ln faint" points="102,169 380,169"/>
+<text class="s" x="98" y="128" text-anchor="end">query</text>
+<text class="s" x="98" y="142" text-anchor="end">bins</text>
+<text class="ms" x="125" y="274" text-anchor="middle">t1</text>
+<text class="ms" x="155" y="274" text-anchor="middle">t2</text>
+<text class="ms" x="185" y="274" text-anchor="middle">t3</text>
+<text class="ms" x="215" y="274" text-anchor="middle">t4</text>
+<text class="ms" x="245" y="274" text-anchor="middle">t5</text>
+<text class="ms" x="275" y="274" text-anchor="middle">t6</text>
+<text class="ms" x="305" y="274" text-anchor="middle">t7</text>
+<text class="ms" x="335" y="274" text-anchor="middle">t8</text>
+<text class="ms" x="365" y="274" text-anchor="middle">t9</text>
+<text class="m" x="98" y="304" text-anchor="end">a =</text>
+<rect class="bx" x="113" y="290" width="24" height="22" rx="4"></rect>
+<text class="t" x="125" y="305" text-anchor="middle">0</text>
+<rect class="bx green" x="143" y="290" width="24" height="22" rx="4"></rect>
+<text class="t" x="155" y="305" text-anchor="middle">1</text>
+<rect class="bx green" x="173" y="290" width="24" height="22" rx="4"></rect>
+<text class="t" x="185" y="305" text-anchor="middle">1</text>
+<rect class="bx green" x="203" y="290" width="24" height="22" rx="4"></rect>
+<text class="t" x="215" y="305" text-anchor="middle">1</text>
+<rect class="bx" x="233" y="290" width="24" height="22" rx="4"></rect>
+<text class="t" x="245" y="305" text-anchor="middle">0</text>
+<rect class="bx" x="263" y="290" width="24" height="22" rx="4"></rect>
+<text class="t" x="275" y="305" text-anchor="middle">0</text>
+<rect class="bx green" x="293" y="290" width="24" height="22" rx="4"></rect>
+<text class="t" x="305" y="305" text-anchor="middle">1</text>
+<rect class="bx green" x="323" y="290" width="24" height="22" rx="4"></rect>
+<text class="t" x="335" y="305" text-anchor="middle">2</text>
+<rect class="bx green" x="353" y="290" width="24" height="22" rx="4"></rect>
+<text class="t" x="365" y="305" text-anchor="middle">2</text>
+<text class="ms" x="110" y="334">M[query_bins].sum(axis=0): one sparse product for all tracks</text>
+<text class="cap" x="520" y="50">PER TRACK, VECTORISED</text>
+<rect class="bx green" x="520" y="70" width="112" height="48" rx="6"></rect>
+<text class="tm" x="576" y="91" text-anchor="middle">a</text>
+<text class="s" x="576" y="108" text-anchor="middle">query ∩ track</text>
+<rect class="bx" x="640" y="70" width="112" height="48" rx="6"></rect>
+<text class="tm" x="696" y="91" text-anchor="middle">b</text>
+<text class="s" x="696" y="108" text-anchor="middle">query only</text>
+<rect class="bx" x="520" y="126" width="112" height="48" rx="6"></rect>
+<text class="tm" x="576" y="147" text-anchor="middle">c</text>
+<text class="s" x="576" y="164" text-anchor="middle">track only</text>
+<rect class="bx" x="640" y="126" width="112" height="48" rx="6"></rect>
+<text class="tm" x="696" y="147" text-anchor="middle">d</text>
+<text class="s" x="696" y="164" text-anchor="middle">neither</text>
+<text class="ms" x="768" y="98">c = track bins − a</text>
+<text class="ms" x="768" y="116">b = query bins − a</text>
+<text class="ms" x="768" y="154">d = all bins − …</text>
+<polyline class="ln" points="636,188 636,216"/>
+<polygon class="hd" points="636.0,220.0 632.7,213.8 639.3,213.8"/>
+<rect class="bx navy" x="520" y="224" width="340" height="44" rx="8"></rect>
+<text class="t" x="690" y="244" text-anchor="middle">Fisher&#x27;s exact test</text>
+<text class="s" x="690" y="259" text-anchor="middle">log2 odds · p · GIGGLE-style score per track</text>
+<text class="s" x="520" y="292">ref = a second set replaces the genome in b, c, d</text>
+<text class="s" x="520" y="308">bootstrap() reshuffles the query per chromosome</text>
+</svg>

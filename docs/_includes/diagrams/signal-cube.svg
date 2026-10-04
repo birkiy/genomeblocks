@@ -1,0 +1,211 @@
+<svg class="gbd" viewBox="0 0 880 262" role="img" aria-label="signal() turns each region into a fixed window around its centre, asks the bigWig for n_bins summary values in one call, and writes them into one row of the cube." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="26">LOCI</text>
+<text class="s" x="26" y="46">chrom</text>
+<text class="s" x="82" y="46">start</text>
+<text class="s" x="152" y="46">end</text>
+<rect class="bx" x="20" y="56" width="200" height="24" rx="4"></rect>
+<text class="m" x="26" y="72">chr1</text>
+<text class="m" x="82" y="72">10,400</text>
+<text class="m" x="152" y="72">10,900</text>
+<rect class="bx hl" x="20" y="82" width="200" height="24" rx="4"></rect>
+<text class="m" x="26" y="98">chr1</text>
+<text class="m" x="82" y="98">88,050</text>
+<text class="m" x="152" y="98">88,700</text>
+<rect class="bx" x="20" y="108" width="200" height="24" rx="4"></rect>
+<text class="m" x="26" y="124">chr2</text>
+<text class="m" x="82" y="124">3,100</text>
+<text class="m" x="152" y="124">3,350</text>
+<rect class="bx" x="20" y="134" width="200" height="24" rx="4"></rect>
+<text class="m" x="26" y="150">chr2</text>
+<text class="m" x="82" y="150">41,000</text>
+<text class="m" x="152" y="150">41,600</text>
+<rect class="bx" x="20" y="160" width="200" height="24" rx="4"></rect>
+<text class="m" x="26" y="176">chrX</text>
+<text class="m" x="82" y="176">8,800</text>
+<text class="m" x="152" y="176">9,420</text>
+<text class="cap" x="300" y="26">BIGWIG TRACK t</text>
+<path class="iv fl" d="M300.0,140.0 L302.9,138.0 L305.8,136.3 L308.7,135.0 L311.6,134.2 L314.5,134.0 L317.4,134.5 L320.3,135.7 L323.2,137.3 L326.1,139.1 L329.0,141.1 L331.9,143.0 L334.8,144.5 L337.7,145.5 L340.6,145.9 L343.5,145.6 L346.4,144.7 L349.3,143.2 L352.2,141.3 L355.1,139.2 L358.0,137.1 L360.9,135.1 L363.8,133.5 L366.7,132.4 L369.6,131.7 L372.5,131.6 L375.4,131.9 L378.3,132.4 L381.2,132.9 L384.1,133.2 L387.0,133.0 L389.9,132.1 L392.8,130.3 L395.7,127.5 L398.6,123.7 L401.5,118.9 L404.4,113.4 L407.3,107.2 L410.2,100.7 L413.1,94.1 L416.0,87.9 L418.9,82.3 L421.8,77.5 L424.7,73.7 L427.6,71.1 L430.5,69.7 L433.4,69.4 L436.3,70.2 L439.2,71.7 L442.1,73.9 L445.0,76.5 L447.9,79.4 L450.8,82.3 L453.7,85.2 L456.6,87.9 L459.5,90.6 L462.4,93.2 L465.3,95.8 L468.2,98.5 L471.1,101.4 L474.0,104.7 L476.9,108.3 L479.8,112.2 L482.7,116.5 L485.6,120.9 L488.5,125.4 L491.4,129.7 L494.3,133.5 L497.2,136.8 L500.1,139.2 L503.0,140.5 L505.9,140.6 L508.8,139.4 L511.7,136.9 L514.6,133.3 L517.5,128.9 L520.4,124.0 L523.3,119.3 L526.2,115.4 L529.1,112.8 L532.0,111.8 L534.9,112.8 L537.8,115.4 L540.7,119.4 L543.6,124.2 L546.5,129.3 L549.4,134.2 L552.3,138.3 L555.2,141.5 L558.1,143.6 L561.0,144.6 L563.9,144.5 L566.8,143.7 L569.7,142.2 L572.6,140.4 L575.5,138.5 L578.4,136.7 L581.3,135.2 L584.2,134.3 L587.1,134.0 L590.0,134.4 L590,158 L300,158 Z"/>
+<polyline class="ln thin" points="300,140 302.9,138.037 305.8,136.29 308.7,134.951 311.6,134.168 314.5,134.026 317.4,134.542 320.3,135.658 323.2,137.251 326.1,139.145 329,141.13 331.9,142.986 334.8,144.508 337.7,145.524 340.6,145.919 343.5,145.642 346.4,144.716 349.3,143.232 352.2,141.336 355.1,139.216 358,137.078 360.9,135.121 363.8,133.513 366.7,132.371 369.6,131.747 372.5,131.617 375.4,131.882 378.3,132.377 381.2,132.888 384.1,133.169 387,132.972 389.9,132.072 392.8,130.289 395.7,127.512 398.6,123.712 401.5,118.947 404.4,113.362 407.3,107.176 410.2,100.663 413.1,94.1334 416,87.9036 418.9,82.2704 421.8,77.4864 424.7,73.7406 427.6,71.1448 430.5,69.7286 433.4,69.4418 436.3,70.1653 439.2,71.7274 442.1,73.9254 445,76.548 447.9,79.3987 450.8,82.3142 453.7,85.1798 456.6,87.936 459.5,90.58 462.4,93.1586 465.3,95.7551 468.2,98.4728 471.1,101.415 474,104.665 476.9,108.27 479.8,112.229 482.7,116.485 485.6,120.924 488.5,125.385 491.4,129.666 494.3,133.544 497.2,136.785 500.1,139.164 503,140.483 505.9,140.589 508.8,139.398 511.7,136.928 514.6,133.321 517.5,128.871 520.4,124.022 523.3,119.33 526.2,115.398 529.1,112.772 532,111.841 534.9,112.753 537.8,115.39 540.7,119.391 543.6,124.236 546.5,129.347 549.4,134.187 552.3,138.333 555.2,141.507 558.1,143.583 561,144.558 563.9,144.534 566.8,143.683 569.7,142.223 572.6,140.4 575.5,138.469 578.4,136.673 581.3,135.229 584.2,134.302 587.1,134 590,134.356"/>
+<polyline class="ln faint" points="300,158 590,158"/>
+<rect class="iv fn" x="303" y="136.836" width="23" height="21.164" rx="2"></rect>
+<rect class="iv fn" x="332" y="142.844" width="23" height="15.1556" rx="2"></rect>
+<polyline class="grid" points="329,50 329,158"/>
+<rect class="iv fn" x="361" y="133.158" width="23" height="24.8422" rx="2"></rect>
+<polyline class="grid" points="358,50 358,158"/>
+<rect class="iv fn" x="390" y="115.34" width="23" height="42.6599" rx="2"></rect>
+<polyline class="grid" points="387,50 387,158"/>
+<rect class="iv fn" x="419" y="74.9166" width="23" height="83.0834" rx="2"></rect>
+<polyline class="grid" points="416,50 416,158"/>
+<rect class="iv fn" x="448" y="90.493" width="23" height="67.507" rx="2"></rect>
+<polyline class="grid" points="445,50 445,158"/>
+<rect class="iv fn" x="477" y="124.327" width="23" height="33.6728" rx="2"></rect>
+<polyline class="grid" points="474,50 474,158"/>
+<rect class="iv fn" x="506" y="127.541" width="23" height="30.459" rx="2"></rect>
+<polyline class="grid" points="503,50 503,158"/>
+<rect class="iv fn" x="535" y="128.648" width="23" height="29.3522" rx="2"></rect>
+<polyline class="grid" points="532,50 532,158"/>
+<rect class="iv fn" x="564" y="138.948" width="23" height="19.0521" rx="2"></rect>
+<polyline class="grid" points="561,50 561,158"/>
+<polyline class="ln" points="300,170 300,176 590,176 590,170"/>
+<text class="s" x="445" y="192" text-anchor="middle">centre ± flank, split into n_bins</text>
+<text class="ms" x="445" y="210" text-anchor="middle">values(chrom, L, R, bins=n_bins): one native call</text>
+<polyline class="ln" points="222,81 286,81"/>
+<polygon class="hd" points="290.0,81.0 283.8,84.3 283.8,77.7"/>
+<rect class="chip" x="676" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="694" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="712" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="730" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="748" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="766" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="784" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="802" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="820" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="838" y="38" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="676" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="694" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="712" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="730" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="748" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="766" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="784" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="802" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="820" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="838" y="60" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="676" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="694" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="712" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="730" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="748" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="766" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="784" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="802" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="820" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="838" y="82" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="676" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="694" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="712" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="730" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="748" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="766" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="784" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="802" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="820" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="838" y="104" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="676" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="694" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="712" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="730" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="748" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="766" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="784" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="802" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="820" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="838" y="126" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="664" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="682" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="700" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="718" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="736" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="754" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="772" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="790" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="808" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="826" y="50" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="664" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="682" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="700" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="718" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="736" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="754" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="772" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="790" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="808" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="826" y="72" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="664" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="682" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="700" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="718" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="736" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="754" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="772" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="790" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="808" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="826" y="94" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="664" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="682" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="700" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="718" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="736" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="754" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="772" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="790" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="808" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="826" y="116" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="664" y="138" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="682" y="138" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="700" y="138" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="718" y="138" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="736" y="138" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="754" y="138" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="772" y="138" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="790" y="138" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="808" y="138" width="16" height="20" rx="2"></rect>
+<rect class="chip" x="826" y="138" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="652" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="670" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="688" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="706" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="724" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="742" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="760" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="778" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="796" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="814" y="62" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="652" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="670" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="688" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="706" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="724" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="742" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="760" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="778" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="796" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fn" x="814" y="84" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="652" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="670" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="688" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="706" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="724" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="742" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="760" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="778" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="796" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="814" y="106" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="652" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="670" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="688" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="706" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="724" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="742" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="760" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="778" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="796" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="814" y="128" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="652" y="150" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="670" y="150" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="688" y="150" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="706" y="150" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="724" y="150" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="742" y="150" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="760" y="150" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="778" y="150" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="796" y="150" width="16" height="20" rx="2"></rect>
+<rect class="iv fl" x="814" y="150" width="16" height="20" rx="2"></rect>
+<text class="s" x="644" y="117" text-anchor="end">loci</text>
+<text class="s" x="742" y="190" text-anchor="middle">bins</text>
+<text class="s" x="676" y="30">one grid per track</text>
+<polyline class="ln" points="600,81 642.046,87.3982"/>
+<polygon class="hd" points="646.0,88.0 639.4,90.3 640.4,83.8"/>
+<text class="m" x="742" y="212" text-anchor="middle">cube[i, t, :]</text>
+<text class="ms" x="742" y="228" text-anchor="middle">(n_loci × n_tracks × n_bins)</text>
+</svg>

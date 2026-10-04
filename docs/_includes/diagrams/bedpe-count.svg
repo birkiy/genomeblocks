@@ -1,0 +1,105 @@
+<svg class="gbd" viewBox="0 0 880 300" role="img" aria-label="count_pairs places every window on one sorted key (chromosome code, start); each read end is located with one searchsorted, then counts are a bincount." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="24">PAIRS CHUNK (pandas)</text>
+<text class="s" x="24" y="44">chrom1</text>
+<text class="s" x="86" y="44">pos1</text>
+<text class="s" x="154" y="44">chrom2</text>
+<text class="s" x="216" y="44">pos2</text>
+<rect class="bx" x="20" y="52" width="260" height="22" rx="4"></rect>
+<text class="m" x="24" y="67">chr1</text>
+<text class="m" x="86" y="67">12,040</text>
+<text class="m" x="154" y="67">chr1</text>
+<text class="m" x="216" y="67">61,500</text>
+<rect class="bx hl" x="20" y="76" width="260" height="22" rx="4"></rect>
+<text class="m" x="24" y="91">chr1</text>
+<text class="m" x="86" y="91">60,380</text>
+<text class="m" x="154" y="91">chr2</text>
+<text class="m" x="216" y="91">5,120</text>
+<rect class="bx" x="20" y="100" width="260" height="22" rx="4"></rect>
+<text class="m" x="24" y="115">chr2</text>
+<text class="m" x="86" y="115">4,990</text>
+<text class="m" x="154" y="115">chr2</text>
+<text class="m" x="216" y="115">18,200</text>
+<rect class="bx" x="20" y="124" width="260" height="22" rx="4"></rect>
+<text class="m" x="24" y="139">chr1</text>
+<text class="m" x="86" y="139">33,700</text>
+<text class="m" x="154" y="139">chrX</text>
+<text class="m" x="216" y="139">9,410</text>
+<text class="s" x="20" y="172">chrom columns are categorical:</text>
+<text class="s" x="20" y="188">names → codes once per category</text>
+<rect class="chip white" x="20" y="198" width="76" height="22" rx="11"></rect>
+<text class="m" x="58" y="213" text-anchor="middle">chr1 → 0</text>
+<rect class="chip white" x="104" y="198" width="76" height="22" rx="11"></rect>
+<text class="m" x="142" y="213" text-anchor="middle">chr2 → 1</text>
+<rect class="chip white" x="188" y="198" width="76" height="22" rx="11"></rect>
+<text class="m" x="226" y="213" text-anchor="middle">chrX → 2</text>
+<text class="cap" x="330" y="24">WINDOW KEYS · code · 2⁴⁰ + start (sorted)</text>
+<rect class="bx" x="330" y="78" width="34" height="28" rx="3"></rect>
+<text class="ms" x="347" y="96" text-anchor="middle">w0</text>
+<rect class="bx navy" x="367" y="78" width="34" height="28" rx="3"></rect>
+<text class="ms" x="384" y="96" text-anchor="middle">w1</text>
+<rect class="bx" x="404" y="78" width="34" height="28" rx="3"></rect>
+<text class="ms" x="421" y="96" text-anchor="middle">w2</text>
+<text class="s" x="453" y="96" text-anchor="middle">·</text>
+<rect class="bx" x="465" y="78" width="34" height="28" rx="3"></rect>
+<text class="ms" x="482" y="96" text-anchor="middle">w4</text>
+<rect class="bx" x="516" y="78" width="34" height="28" rx="3"></rect>
+<text class="ms" x="533" y="96" text-anchor="middle">w0</text>
+<rect class="bx" x="553" y="78" width="34" height="28" rx="3"></rect>
+<text class="ms" x="570" y="96" text-anchor="middle">w1</text>
+<rect class="bx" x="604" y="78" width="34" height="28" rx="3"></rect>
+<text class="ms" x="621" y="96" text-anchor="middle">w0</text>
+<text class="ms" x="414.5" y="70" text-anchor="middle">chr1</text>
+<text class="ms" x="551.5" y="70" text-anchor="middle">chr2</text>
+<text class="ms" x="621" y="70" text-anchor="middle">chrX</text>
+<text class="s" x="453" y="124" text-anchor="middle">gap</text>
+<polyline class="ln navy" points="385,156 385,112"/>
+<polygon class="hd navy" points="385.0,108.0 388.3,114.2 381.7,114.2"/>
+<text class="s" x="385" y="170" text-anchor="middle">60,380 on chr1 → window 1</text>
+<text class="ms" x="330" y="196">i = searchsorted(keys, code·2⁴⁰ + pos) − 1</text>
+<text class="ms" x="330" y="212">keep i if same code and pos &lt; end, else −1</text>
+<text class="cap" x="680" y="24">COUNTS</text>
+<text class="s" x="680" y="44">count_pairs: windows × partner</text>
+<rect class="chip" x="680" y="52" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="710" y="52" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="740" y="52" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="680" y="70" width="27" height="15" rx="2"></rect>
+<rect class="iv fg" x="710" y="70" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="740" y="70" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="680" y="88" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="710" y="88" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="740" y="88" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="680" y="106" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="710" y="106" width="27" height="15" rx="2"></rect>
+<rect class="chip" x="740" y="106" width="27" height="15" rx="2"></rect>
+<text class="ms" x="693" y="136" text-anchor="middle">chr1</text>
+<text class="ms" x="723" y="136" text-anchor="middle">chr2</text>
+<text class="ms" x="753" y="136" text-anchor="middle">chrX</text>
+<text class="s" x="680" y="172">count_pairs_2d: windows × windows</text>
+<rect class="iv fp" x="680" y="182" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="698" y="182" width="15" height="15" rx="2"></rect>
+<rect class="iv fp" x="716" y="182" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="734" y="182" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="752" y="182" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="680" y="200" width="15" height="15" rx="2"></rect>
+<rect class="iv fp" x="698" y="200" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="716" y="200" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="734" y="200" width="15" height="15" rx="2"></rect>
+<rect class="iv fp" x="752" y="200" width="15" height="15" rx="2"></rect>
+<rect class="iv fp" x="680" y="218" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="698" y="218" width="15" height="15" rx="2"></rect>
+<rect class="iv fp" x="716" y="218" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="734" y="218" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="752" y="218" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="680" y="236" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="698" y="236" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="716" y="236" width="15" height="15" rx="2"></rect>
+<rect class="iv fp" x="734" y="236" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="752" y="236" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="680" y="254" width="15" height="15" rx="2"></rect>
+<rect class="iv fp" x="698" y="254" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="716" y="254" width="15" height="15" rx="2"></rect>
+<rect class="chip" x="734" y="254" width="15" height="15" rx="2"></rect>
+<rect class="iv fp" x="752" y="254" width="15" height="15" rx="2"></rect>
+<text class="ms" x="780" y="230">sparse CSR</text>
+<text class="s" x="680" y="290">bincount / unique per chunk</text>
+</svg>

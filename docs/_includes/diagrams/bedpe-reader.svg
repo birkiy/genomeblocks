@@ -1,0 +1,36 @@
+<svg class="gbd" viewBox="0 0 880 176" role="img" aria-label="read_bedpe is the one BEDPE parser: it yields Pair objects that Architecture.make, the browser and Loci.pair_to_bed all consume." xmlns="http://www.w3.org/2000/svg">
+<rect class="bx dark" x="20" y="30" width="230" height="118" rx="8"></rect>
+<text class="cap" x="34" y="50">LOOPS.BEDPE</text>
+<text class="m w" x="34" y="74">chr8 127.73M  chr8 127.80M</text>
+<text class="m w" x="34" y="94">chr8 127.73M  chr8 128.21M</text>
+<text class="m w" x="34" y="114">chr8 127.74M  chr2 41.05M</text>
+<text class="m w" x="34" y="134">…</text>
+<polyline class="ln" points="252,89 314,89"/>
+<polygon class="hd" points="318.0,89.0 311.8,92.3 311.8,85.7"/>
+<text class="ms" x="285" y="78" text-anchor="middle">read_bedpe</text>
+<rect class="bx purple" x="320" y="30" width="250" height="118" rx="8"></rect>
+<text class="t" x="336" y="52">Pair</text>
+<text class="s" x="374" y="52">one loop</text>
+<rect class="chip white" x="336" y="62" width="152" height="22" rx="11"></rect>
+<text class="m" x="412" y="77" text-anchor="middle">chrom1 start1 end1</text>
+<rect class="chip white" x="336" y="90" width="152" height="22" rx="11"></rect>
+<text class="m" x="412" y="105" text-anchor="middle">chrom2 start2 end2</text>
+<text class="ms" x="498" y="78">mid1, mid2</text>
+<text class="ms" x="498" y="106">distance</text>
+<text class="s" x="336" y="138">distance = |mid2 − mid1|, ∞ across chromosomes</text>
+<rect class="bx" x="650" y="18" width="210" height="42" rx="8"></rect>
+<text class="tm" x="755" y="36" text-anchor="middle">Architecture.make</text>
+<text class="s" x="755" y="52" text-anchor="middle">anchors (mid ± r) → CRE edges</text>
+<polyline class="ln" points="572,89 610,89 610,39 644,39"/>
+<polygon class="hd" points="648.0,39.0 641.8,42.3 641.8,35.7"/>
+<rect class="bx" x="650" y="70" width="210" height="42" rx="8"></rect>
+<text class="tm" x="755" y="88" text-anchor="middle">browser</text>
+<text class="s" x="755" y="104" text-anchor="middle">half-sine arcs</text>
+<polyline class="ln" points="572,89 610,89 610,91 644,91"/>
+<polygon class="hd" points="648.0,91.0 641.8,94.3 641.8,87.7"/>
+<rect class="bx" x="650" y="122" width="210" height="42" rx="8"></rect>
+<text class="tm" x="755" y="140" text-anchor="middle">Loci.pair_to_bed</text>
+<text class="s" x="755" y="156" text-anchor="middle">loops touching a set</text>
+<polyline class="ln" points="572,89 610,89 610,143 644,143"/>
+<polygon class="hd" points="648.0,143.0 641.8,146.3 641.8,139.7"/>
+</svg>
