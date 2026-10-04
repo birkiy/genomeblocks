@@ -1,9 +1,10 @@
 """BEDPE file operations and pair intersection utilities."""
+from __future__ import annotations
 from typing import Union, Optional, List, Tuple, Iterator, TYPE_CHECKING
 from dataclasses import dataclass
-import pandas as pd
 
 if TYPE_CHECKING:
+    import pandas as pd
     from .loci import Loci
 
 
@@ -208,6 +209,7 @@ def pairs_to_frame(pairs: List[Pair]) -> pd.DataFrame:
     Returns:
         DataFrame with standard BEDPE columns
     """
+    import pandas as pd
     return pd.DataFrame([
         {
             'chrom1': p.chrom1, 'start1': p.start1, 'end1': p.end1,
@@ -283,6 +285,7 @@ def read_pairs_chunks(
             override for non-standard layouts. Wins over `format` if provided.
         chunksize: rows per pandas chunk.
     """
+    import pandas as pd
     if columns is not None:
         usecols = list(columns)
     else:
@@ -346,21 +349,13 @@ def count_pairs(
         target_chrom is set) or one int column per partner chromosome.
     """
     import numpy as np
-    from collections import defaultdict
+    import pandas as pd
 
-    by_chrom: dict = {}
-    for gi, locus in enumerate(loci):
-        d = by_chrom.setdefault(locus.chrom, {"starts": [], "ends": [], "gidx": []})
-        d["starts"].append(locus.start)
-        d["ends"].append(locus.end)
-        d["gidx"].append(gi)
-    for d in by_chrom.values():
-        order = np.argsort(d["starts"])
-        d["starts"] = np.asarray(d["starts"], dtype=np.int64)[order]
-        d["ends"] = np.asarray(d["ends"], dtype=np.int64)[order]
-        d["gidx"] = np.asarray(d["gidx"], dtype=np.int64)[order]
-
-    counts: dict = defaultdict(lambda: np.zeros(len(loci), dtype=np.int64))
+    n = len(loci)
+    index = _window_index(loci)
+    names: dict = {}                       # partner chrom -> column of `mat`
+    mat = np.zeros((n, 0), dtype=np.int64)
+    target = np.zeros(n, dtype=np.int64)
     n_seen = 0
 
     for chunk in read_pairs_chunks(pairs_file, format=format, columns=columns, chunksize=chunksize):
@@ -370,43 +365,21 @@ def count_pairs(
             ("chrom1", "pos1", "chrom2"),
             ("chrom2", "pos2", "chrom1"),
         ):
-            self_chroms = chunk[self_chrom_col].astype(str).to_numpy()
-            self_pos = chunk[self_pos_col].to_numpy(dtype=np.int64, copy=False)
-            other_chroms = chunk[other_chrom_col].astype(str).to_numpy()
-
+            w = _locate_codes(index, chunk[self_chrom_col],
+                              chunk[self_pos_col].to_numpy(dtype=np.int64, copy=False))
+            other = chunk[other_chrom_col].astype("category")
+            other_names = [str(c) for c in other.cat.categories] + ["nan"]  # code -1 = NaN
             if target_chrom is not None:
-                m = other_chroms == target_chrom
-                if not m.any():
-                    continue
-                self_chroms = self_chroms[m]
-                self_pos = self_pos[m]
-                other_chroms = other_chroms[m]
-
-            for chrom, d in by_chrom.items():
-                m = self_chroms == chrom
-                if not m.any():
-                    continue
-                positions = self_pos[m]
-                partner = other_chroms[m]
-
-                idx = np.searchsorted(d["starts"], positions, side="right") - 1
-                ok = idx >= 0
-                if ok.any():
-                    safe = idx[ok]
-                    ok2 = positions[ok] < d["ends"][safe]
-                    final = np.zeros_like(ok)
-                    final[ok] = ok2
-                    if not final.any():
-                        continue
-                    gidx_hit = d["gidx"][idx[final]]
-                    partner_hit = partner[final]
-
-                    if target_chrom is not None:
-                        np.add.at(counts[target_chrom], gidx_hit, 1)
-                    else:
-                        for up in np.unique(partner_hit):
-                            pm = partner_hit == up
-                            np.add.at(counts[str(up)], gidx_hit[pm], 1)
+                hit = (w >= 0) & np.array([c == target_chrom for c in other_names])[other.cat.codes.to_numpy()]
+                target += np.bincount(w[hit], minlength=n)
+                continue
+            p_lut = np.array([names.setdefault(c, len(names)) for c in other_names], dtype=np.int64)
+            if len(names) > mat.shape[1]:
+                mat = np.pad(mat, ((0, 0), (0, len(names) - mat.shape[1])))
+            hit = w >= 0
+            p = p_lut[other.cat.codes.to_numpy()][hit]
+            P = mat.shape[1]
+            mat += np.bincount(w[hit] * P + p, minlength=n * P).reshape(n, P)
 
         if verbose:
             print(f"[INFO] processed {n_seen:,} pairs", end="\r")
@@ -421,43 +394,49 @@ def count_pairs(
         "uid":   [l.uid   for l in loci],
     })
     if target_chrom is not None:
-        out["count"] = counts[target_chrom]
+        out["count"] = target
     else:
-        for chrom in sorted(counts.keys()):
-            out[chrom] = counts[chrom]
+        for chrom in sorted(names):
+            col = mat[:, names[chrom]]
+            if col.any():                  # only partners with at least one hit
+                out[chrom] = col
     return out
 
 
-def _group_loci_by_chrom(loci):
-    """Group a Loci into per-chrom sorted (starts, ends, gidx) arrays for searchsorted."""
-    import numpy as np
-    by_chrom: dict = {}
-    for gi, locus in enumerate(loci):
-        d = by_chrom.setdefault(locus.chrom, {"starts": [], "ends": [], "gidx": []})
-        d["starts"].append(locus.start)
-        d["ends"].append(locus.end)
-        d["gidx"].append(gi)
-    for d in by_chrom.values():
-        order = np.argsort(d["starts"])
-        d["starts"] = np.asarray(d["starts"], dtype=np.int64)[order]
-        d["ends"] = np.asarray(d["ends"], dtype=np.int64)[order]
-        d["gidx"] = np.asarray(d["gidx"], dtype=np.int64)[order]
-    return by_chrom
+_KEY_SHIFT = 40     # window key = chrom code << 40 | start; positions < 1.1e12
 
 
-def _locate(d, positions):
-    """Vectorized window lookup: returns (idx, ok) where ok[i] is True iff
-    positions[i] falls inside d['gidx'][idx[i]]."""
+def _window_index(loci):
+    """Windows on one genome-wide sorted key for vectorised lookup.
+
+    Returns ``(chrom -> code, keys, codes, ends, rows)`` sorted by
+    (chrom, start); ``rows`` maps back to positions in ``loci``.
+    """
     import numpy as np
-    idx = np.searchsorted(d["starts"], positions, side="right") - 1
-    ok = idx >= 0
-    if ok.any():
-        safe = idx[ok]
-        ok2 = positions[ok] < d["ends"][safe]
-        final = np.zeros_like(ok)
-        final[ok] = ok2
-        return idx, final
-    return idx, ok
+    n = len(loci)
+    cid: dict = {}
+    code = np.fromiter((cid.setdefault(l.chrom, len(cid)) for l in loci), dtype=np.int64, count=n)
+    start = np.fromiter((l.start for l in loci), dtype=np.int64, count=n)
+    end = np.fromiter((l.end for l in loci), dtype=np.int64, count=n)
+    order = np.lexsort((start, code))
+    return cid, (code[order] << _KEY_SHIFT) + start[order], code[order], end[order], order
+
+
+def _locate_codes(index, chroms, pos):
+    """Row in ``loci`` of the window holding each (chrom, pos); -1 if none.
+
+    ``chroms`` is a (categorical) Series, so chromosome names are matched
+    once per category rather than once per row.
+    """
+    import numpy as np
+    cid, keys, wcode, wend, rows = index
+    chroms = chroms.astype("category")
+    lut = np.array([cid.get(str(c), -1) for c in chroms.cat.categories] + [-1], dtype=np.int64)
+    c = lut[chroms.cat.codes.to_numpy()]               # NaN code -1 -> trailing -1
+    i = np.searchsorted(keys, (c << _KEY_SHIFT) + pos, side="right") - 1
+    j = np.maximum(i, 0)
+    ok = (c >= 0) & (i >= 0) & (wcode[j] == c) & (pos < wend[j])
+    return np.where(ok, rows[j], -1)
 
 
 def count_pairs_2d(
@@ -502,8 +481,8 @@ def count_pairs_2d(
     if same:
         loci_b = loci_a
 
-    by_a = _group_loci_by_chrom(loci_a)
-    by_b = by_a if same else _group_loci_by_chrom(loci_b)
+    index_a = _window_index(loci_a)
+    index_b = index_a if same else _window_index(loci_b)
 
     n_a, n_b = len(loci_a), len(loci_b)
 
@@ -515,38 +494,28 @@ def count_pairs_2d(
     for chunk in read_pairs_chunks(pairs_file, format=format, columns=columns, chunksize=chunksize):
         n_seen += len(chunk)
 
-        c1 = chunk["chrom1"].astype(str).to_numpy()
-        c2 = chunk["chrom2"].astype(str).to_numpy()
         p1 = chunk["pos1"].to_numpy(dtype=np.int64, copy=False)
         p2 = chunk["pos2"].to_numpy(dtype=np.int64, copy=False)
+        a1 = _locate_codes(index_a, chunk["chrom1"], p1)
+        a2 = _locate_codes(index_a, chunk["chrom2"], p2)
+        if same:
+            b1, b2 = a1, a2
+        else:
+            b1 = _locate_codes(index_b, chunk["chrom1"], p1)
+            b2 = _locate_codes(index_b, chunk["chrom2"], p2)
 
-        for cA_arr, pA_arr, cB_arr, pB_arr in (
-            (c1, p1, c2, p2),
-            (c2, p2, c1, p1),
-        ):
-            for chrom_a, d_a in by_a.items():
-                ma = cA_arr == chrom_a
-                if not ma.any():
-                    continue
-                for chrom_b, d_b in by_b.items():
-                    mab = ma & (cB_arr == chrom_b)
-                    if not mab.any():
-                        continue
-                    pos_a = pA_arr[mab]
-                    pos_b = pB_arr[mab]
-                    idx_a, ok_a = _locate(d_a, pos_a)
-                    idx_b, ok_b = _locate(d_b, pos_b)
-                    ok = ok_a & ok_b
-                    if not ok.any():
-                        continue
-                    ga = d_a["gidx"][idx_a[ok]]
-                    gb = d_b["gidx"][idx_b[ok]]
-
-                    keys = ga.astype(np.int64) * n_b + gb.astype(np.int64)
-                    uk, uc = np.unique(keys, return_counts=True)
-                    rows_acc.append((uk // n_b).astype(np.int64))
-                    cols_acc.append((uk %  n_b).astype(np.int64))
-                    data_acc.append(uc.astype(np.int64))
+        # both directions: anchor 1 in a row window and anchor 2 in a column
+        # window, then the reverse
+        keys = []
+        for ga, gb in ((a1, b2), (a2, b1)):
+            ok = (ga >= 0) & (gb >= 0)
+            keys.append(ga[ok] * n_b + gb[ok])
+        keys = np.concatenate(keys)
+        if keys.size:
+            uk, uc = np.unique(keys, return_counts=True)
+            rows_acc.append(uk // n_b)
+            cols_acc.append(uk % n_b)
+            data_acc.append(uc.astype(np.int64))
 
         if verbose:
             print(f"[INFO] processed {n_seen:,} pairs", end="\r")
@@ -584,6 +553,7 @@ def pair_2d_to_frame(mat, loci_a, loci_b) -> pd.DataFrame:
     """Convert a count_pairs_2d sparse matrix to a long-format DataFrame of non-zero cells:
     chrom1 start1 end1 chrom2 start2 end2 count.
     """
+    import pandas as pd
     coo = mat.tocoo()
     rows = [int(i) for i in coo.row]
     cols = [int(j) for j in coo.col]
