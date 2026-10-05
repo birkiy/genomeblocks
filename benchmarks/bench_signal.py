@@ -20,14 +20,13 @@ from pathlib import Path
 
 import numpy as np
 
-from common import DATA, Recorder, timeit
+from common import DATA, Recorder, timeit, tool
 
 import genomeblocks.signal as gs
 from genomeblocks import Loci
 
 FLANK, NBINS = 3_000, 200
 BWS = [str(DATA / f"signal_{k}.bw") for k in range(4)]
-BIN = Path(sys.executable).parent
 
 
 def pick_loci(n: int, seed: int = 0) -> Loci:
@@ -90,7 +89,7 @@ def deeptools(L, bws, procs):
     with tempfile.TemporaryDirectory() as td:
         bed = Path(td) / "r.bed"
         bed.write_text("".join(f"{l.chrom}\t{l.start}\t{l.end}\n" for l in L))
-        cmd = [str(BIN / "computeMatrix"), "reference-point", "--referencePoint",
+        cmd = [tool("computeMatrix"), "reference-point", "--referencePoint",
                "center", "-a", str(FLANK), "-b", str(FLANK), "--binSize", "30",
                "-R", str(bed), "-S", *bws, "-p", str(procs),
                "-o", str(Path(td) / "m.gz"), "--outFileNameMatrix",
@@ -144,7 +143,7 @@ def part_scaling(rec):
         L = pick_loci(n)
         for name, kw in (("genomeblocks · pybigtools (exact)", {}),
                          ("genomeblocks · pybigtools (zoom, exact=False)", {"exact": False}),
-                         ("genomeblocks · pure-Python reader", {"backend": "bigwig"})):
+                         ("genomeblocks · pure-Python reader", {"backend": "python"})):
             t = timeit(lambda: gb(L, [BWS[0]], **kw), repeat=3 if n <= 20_000 else 1)
             rec.add(part="scaling", engine=name, n_loci=n, n_tracks=1,
                     seconds=t["median"], runs=t["runs"], rate=n / t["median"])

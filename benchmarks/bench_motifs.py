@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Motif scanning: ``scan_motifs_matrix`` (lightmotif SIMD) vs alternatives.
+"""Motif scanning: ``scan_motifs_matrix`` vs alternatives.
 
-Engines: genomeblocks (lightmotif), MEME FIMO, MOODS, Biopython, numpy.
+Engines: genomeblocks on MOODS (the default) and on lightmotif, MEME FIMO,
+MOODS and lightmotif called directly, Biopython, numpy.
 
 Task: count forward-strand hits (log2-odds >= 13, pseudocount 0.1, uniform
 background — genomeblocks' defaults) of JASPAR CORE vertebrate motifs in
@@ -61,9 +62,9 @@ def logodds(counts):
 
 # ── engines: each returns {motif: total forward hits over all sequences} ─────
 
-def eng_genomeblocks(L, genome, limit, path):
+def eng_genomeblocks(L, genome, limit, path, backend=None):
     df = scan_motifs_matrix(L, genome, path, format="jaspar16", r=R,
-                            threshold=THR, norm=False, workers=1, verbose=False)
+                            threshold=THR, norm=False, workers=1, backend=backend, verbose=False)
     return df.sum(axis=0).to_dict()
 
 
@@ -188,7 +189,8 @@ def part_engines(rec, genome):
     write_fasta(seqs, fa); write_meme(mats, meme)
     res = {}
     engines = [
-        ("genomeblocks scan_motifs_matrix (lightmotif)", lambda: eng_genomeblocks(L, genome, M, path), 3),
+        ("genomeblocks scan_motifs_matrix (MOODS)", lambda: eng_genomeblocks(L, genome, M, path, "moods"), 3),
+        ("genomeblocks scan_motifs_matrix (lightmotif)", lambda: eng_genomeblocks(L, genome, M, path, "lightmotif"), 3),
         ("MEME FIMO --text (CLI)", lambda: eng_fimo(fa, meme, mats), 3),
         ("lightmotif, re-striped per motif", lambda: eng_lightmotif_restripe(seqs, path), 3),
         ("MOODS (C++, all motifs per pass)", lambda: eng_moods(seqs, mats), 3),
@@ -212,10 +214,11 @@ def part_library(rec, genome):
         L = windows(genome, N, seed=1)
         seqs = L.sequences(genome, r=R, upper=True)
         bp = N * 2 * R * len(mats)
-        t = timeit(lambda: eng_genomeblocks(L, genome, None, JASPAR), repeat=3)
-        rec.add(part="library", engine="genomeblocks scan_motifs_matrix (lightmotif)",
-                n_seqs=N, n_motifs=len(mats), seconds=t["median"], runs=t["runs"],
-                gbp_motif_per_s=bp / t["median"] / 1e9)
+        for b, label in (("moods", "MOODS"), ("lightmotif", "lightmotif")):
+            t = timeit(lambda: eng_genomeblocks(L, genome, None, JASPAR, b), repeat=3)
+            rec.add(part="library", engine=f"genomeblocks scan_motifs_matrix ({label})",
+                    n_seqs=N, n_motifs=len(mats), seconds=t["median"], runs=t["runs"],
+                    gbp_motif_per_s=bp / t["median"] / 1e9)
         t = timeit(lambda: eng_moods(seqs, mats), repeat=3 if N == 1000 else 1)
         rec.add(part="library", engine="MOODS (C++, all motifs per pass)",
                 n_seqs=N, n_motifs=len(mats), seconds=t["median"], runs=t["runs"],

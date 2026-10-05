@@ -16,17 +16,14 @@ from __future__ import annotations
 import contextlib
 import io
 import subprocess
-import sys
 import tempfile
-from pathlib import Path
 
 
-from common import DATA, Recorder, timeit
+from common import DATA, Recorder, timeit, tool
 
 import genomeblocks as gb
 from genomeblocks import Architecture, Genes, Loci
 
-BIN = Path(sys.executable).parent
 MCOOL = DATA / "hic_5kb.mcool"
 
 
@@ -42,10 +39,10 @@ def build_mcool():
     if MCOOL.exists():
         return
     cool = DATA / "hic_5kb.cool"
-    subprocess.run([str(BIN / "cooler"), "cload", "pairs", "-c1", "2", "-p1", "3",
+    subprocess.run([tool("cooler"), "cload", "pairs", "-c1", "2", "-p1", "3",
                     "-c2", "4", "-p2", "5", f"{DATA / 'hg38.chrom.sizes'}:5000",
                     str(DATA / "hic.pairs"), str(cool)], check=True)
-    subprocess.run([str(BIN / "cooler"), "zoomify", "-r", "5000", "-o", str(MCOOL), str(cool)], check=True)
+    subprocess.run([tool("cooler"), "zoomify", "-r", "5000", "-o", str(MCOOL), str(cool)], check=True)
 
 
 if __name__ == "__main__":

@@ -23,6 +23,12 @@ for _d in (DATA, RESULTS, FIGURES):
     _d.mkdir(parents=True, exist_ok=True)
 
 
+def tool(name: str) -> str:
+    """An external program: the one on PATH, else the one next to this Python."""
+    import shutil
+    return shutil.which(name) or str(Path(sys.executable).parent / name)
+
+
 def timeit(fn, *, repeat: int = 5, warmup: int = 1, setup=None) -> dict:
     """Run ``fn`` ``warmup + repeat`` times; return median/min/max seconds.
 
@@ -41,6 +47,17 @@ def timeit(fn, *, repeat: int = 5, warmup: int = 1, setup=None) -> dict:
         runs.append(time.perf_counter() - t0)
     return {"median": statistics.median(runs), "min": min(runs),
             "max": max(runs), "runs": runs}
+
+
+def _relative(x):
+    """Paths under the data directory as ``data/...``, so results hold no machine paths."""
+    if isinstance(x, dict):
+        return {k: _relative(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [_relative(v) for v in x]
+    if isinstance(x, (str, Path)) and str(x).startswith(str(DATA)):
+        return "data/" + Path(x).relative_to(DATA).as_posix()
+    return x
 
 
 class Recorder:
@@ -67,7 +84,7 @@ class Recorder:
             mine = {r["part"] for r in rows}
             rows = [r for r in old["rows"] if r.get("part") not in mine] + rows
             meta = {**old.get("meta", {}), **meta}
-        out = {"bench": self.name, "env": env_info(), "meta": meta, "rows": rows}
+        out = {"bench": self.name, "env": env_info(), "meta": _relative(meta), "rows": rows}
         p.write_text(json.dumps(out, indent=1, default=float))
         print(f"[saved] {p}")
 

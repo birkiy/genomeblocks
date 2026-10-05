@@ -11,20 +11,18 @@ Input: 5M read pairs (4DN .pairs, 75% cis, P(s) ~ s^-1).
 from __future__ import annotations
 
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
 import numpy as np
 
-from common import DATA, Recorder, read_chromsizes, timeit
+from common import DATA, Recorder, read_chromsizes, timeit, tool
 
 from genomeblocks import Loci
 from genomeblocks.bedpe import count_pairs, count_pairs_2d, read_pairs_chunks
 
 PAIRS = str(DATA / "hic.pairs")
 N_PAIRS = 5_000_000
-BIN = Path(sys.executable).parent
 
 
 def naive_count(loci, path, limit):
@@ -57,7 +55,7 @@ def parse_only(path):
 def cooler_cload(path, binsize):
     with tempfile.TemporaryDirectory() as td:
         out = Path(td) / "m.cool"
-        subprocess.run([str(BIN / "cooler"), "cload", "pairs", "-c1", "2", "-p1", "3",
+        subprocess.run([tool("cooler"), "cload", "pairs", "-c1", "2", "-p1", "3",
                         "-c2", "4", "-p2", "5",
                         f"{DATA / 'hg38.chrom.sizes'}:{binsize}", path, str(out)],
                        check=True, capture_output=True)
