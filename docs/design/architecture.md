@@ -137,7 +137,7 @@ A.ep["d"], A.ep["n"].round(3)
   several assignments side by side.
 - `strength(key)` is two `bincount`s over `src` and `tgt`.
 - `elbow(key)` / `prime_hubs` use `se.knee`, the same slope-1 rule on the
-  smoothed, [0, 1]-scaled ranked curve that `call_se` uses for
+  smoothed, 0–1-scaled ranked curve that `call_se` uses for
   super-enhancers.
 - `support(genes, r=5000)` finds the linked CREs within `r` of every gene's
   TSS in one `overlap_pairs` call, as `{gene_name: [uid, ...]}` (or row

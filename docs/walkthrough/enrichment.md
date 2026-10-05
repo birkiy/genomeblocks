@@ -51,7 +51,7 @@ each cell is the motif's hit count in that locus's **centre ± `r`** window
 (normalised by motif width by default). `MOTIF_DB` is a JASPAR-format file
 (`format='jaspar'`, the raw four-row count layout, is the default; pass
 `format='jaspar16'` for the bracketed layout, or `'meme'`). The scan runs on
-lightmotif; `backend='moods'` or `'biopython'` give the same hits.
+MOODS (lightmotif when only it is installed); `backend='lightmotif'` or `'biopython'` give the same hits.
 
 {: .note }
 > Scanning the full accessible pool can be the slow step — it is the largest set.

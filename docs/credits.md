@@ -33,6 +33,7 @@ Used by `gb.as_loci` / `genomeblocks.interop.frame` to read any pandas, polars (
 
 > Gorelli, M. et al. (2024). *Narwhals: an extremely lightweight compatibility layer between dataframe libraries.* GitHub: narwhals-dev/narwhals.
 
+{% raw %}
 ```bibtex
 @misc{narwhals,
   author = {Gorelli, Marco and the Narwhals contributors},
@@ -41,6 +42,7 @@ Used by `gb.as_loci` / `genomeblocks.interop.frame` to read any pandas, polars (
   url    = {https://github.com/narwhals-dev/narwhals}
 }
 ```
+{% endraw %}
 
 ### Apache Arrow (pyarrow) — the exchange format
 {: #pyarrow }
@@ -53,6 +55,7 @@ Every container's `to_arrow()` is the basis of `to_polars()`, the Arrow C stream
 
 > Apache Arrow Developers (2016–). *Apache Arrow: A cross-language development platform for in-memory data.* https://arrow.apache.org/
 
+{% raw %}
 ```bibtex
 @misc{arrow,
   author = {{Apache Arrow Developers}},
@@ -61,6 +64,7 @@ Every container's `to_arrow()` is the basis of `to_polars()`, the Arrow C stream
   url    = {https://arrow.apache.org/}
 }
 ```
+{% endraw %}
 
 ### polars — table parsing and a hand-off target
 {: #polars }
@@ -73,6 +77,7 @@ The default `tables` backend when installed (`pip install "genomeblocks[fast]"`)
 
 > Vink, R. et al. (2023). *Polars: Blazingly fast DataFrames in Rust, Python, Node.js, R and SQL.* GitHub: pola-rs/polars.
 
+{% raw %}
 ```bibtex
 @misc{polars,
   author = {Vink, Ritchie and the Polars contributors},
@@ -81,6 +86,7 @@ The default `tables` backend when installed (`pip install "genomeblocks[fast]"`)
   url    = {https://github.com/pola-rs/polars}
 }
 ```
+{% endraw %}
 
 ---
 
@@ -97,6 +103,7 @@ An optional `intervals` backend (`backend="cgranges"`) for overlap and point loo
 
 > Li, H. (2021). *cgranges: a C library for computing genomic interval overlaps.* GitHub: lh3/cgranges.
 
+{% raw %}
 ```bibtex
 @misc{cgranges,
   author = {Li, Heng},
@@ -105,6 +112,7 @@ An optional `intervals` backend (`backend="cgranges"`) for overlap and point loo
   url    = {https://github.com/lh3/cgranges}
 }
 ```
+{% endraw %}
 
 ### PyRanges — genomic interval DataFrames
 {: #pyranges }
@@ -117,6 +125,7 @@ An optional `intervals` backend (`backend="pyranges"`: overlap, nearest, merge, 
 
 > Stovner, E. B. and Sætrom, P. (2020). *PyRanges: efficient comparison of genomic intervals in Python.* Bioinformatics 36(3): 918–919. doi: [10.1093/bioinformatics/btz615](https://doi.org/10.1093/bioinformatics/btz615)
 
+{% raw %}
 ```bibtex
 @article{stovner2020pyranges,
   author  = {Stovner, Endre Bakken and S{\ae}trom, P{\aa}l},
@@ -129,6 +138,7 @@ An optional `intervals` backend (`backend="pyranges"`: overlap, nearest, merge, 
   doi     = {10.1093/bioinformatics/btz615}
 }
 ```
+{% endraw %}
 
 ### NCLS — nested containment lists
 {: #ncls }
@@ -141,6 +151,7 @@ An optional `intervals` backend (`backend="ncls"`) for overlap and point lookups
 
 > Alekseyenko, A. V. and Lee, C. J. (2007). *Nested Containment List (NCList): a new algorithm for accelerating interval query of genome alignment and interval databases.* Bioinformatics 23(11): 1386–1393. doi: [10.1093/bioinformatics/btl647](https://doi.org/10.1093/bioinformatics/btl647)
 
+{% raw %}
 ```bibtex
 @article{alekseyenko2007ncls,
   author  = {Alekseyenko, Alexander V. and Lee, Christopher J.},
@@ -153,6 +164,7 @@ An optional `intervals` backend (`backend="ncls"`) for overlap and point lookups
   doi     = {10.1093/bioinformatics/btl647}
 }
 ```
+{% endraw %}
 
 ### bioframe — genomic intervals in pandas
 {: #bioframe }
@@ -165,6 +177,7 @@ An optional `intervals` backend (`backend="bioframe"`: overlap, nearest, merge, 
 
 > Open2C, Abdennur, N., Fudenberg, G., Flyamer, I. M., Galitsyna, A. A., Goloborodko, A., Imakaev, M. and Venev, S. V. (2024). *Bioframe: operations on genomic intervals in Pandas dataframes.* Bioinformatics 40(2): btae088. doi: [10.1093/bioinformatics/btae088](https://doi.org/10.1093/bioinformatics/btae088)
 
+{% raw %}
 ```bibtex
 @article{open2c2024bioframe,
   author  = {{Open2C} and Abdennur, Nezar and Fudenberg, Geoffrey and Flyamer, Ilya M. and Galitsyna, Aleksandra A. and Goloborodko, Anton and Imakaev, Maxim and Venev, Sergey V.},
@@ -177,6 +190,7 @@ An optional `intervals` backend (`backend="bioframe"`: overlap, nearest, merge, 
   doi     = {10.1093/bioinformatics/btae088}
 }
 ```
+{% endraw %}
 
 ### pybedtools / BEDTools
 {: #pybedtools }
@@ -191,6 +205,7 @@ An optional `intervals` backend (`backend="bedtools"`: overlap, nearest, merge, 
 >
 > Quinlan, A. R. and Hall, I. M. (2010). *BEDTools: a flexible suite of utilities for comparing genomic features.* Bioinformatics 26(6): 841–842. doi: [10.1093/bioinformatics/btq033](https://doi.org/10.1093/bioinformatics/btq033)
 
+{% raw %}
 ```bibtex
 @article{dale2011pybedtools,
   author  = {Dale, Ryan K. and Pedersen, Brent S. and Quinlan, Aaron R.},
@@ -213,6 +228,7 @@ An optional `intervals` backend (`backend="bedtools"`: overlap, nearest, merge, 
   doi     = {10.1093/bioinformatics/btq033}
 }
 ```
+{% endraw %}
 
 ---
 
@@ -229,6 +245,7 @@ The default `graph` backend when installed (scipy otherwise): `Architecture.comp
 
 > Peixoto, T. P. (2014). *The graph-tool python library.* figshare. doi: [10.6084/m9.figshare.1164194](https://doi.org/10.6084/m9.figshare.1164194)
 
+{% raw %}
 ```bibtex
 @article{peixoto_graph-tool_2014,
   author  = {Peixoto, Tiago P.},
@@ -239,6 +256,7 @@ The default `graph` backend when installed (scipy otherwise): `Architecture.comp
   url     = {https://graph-tool.skewed.de/}
 }
 ```
+{% endraw %}
 
 {: .note }
 > If you run block-model inference, community detection or SBM layouts on `A.to_graph_tool()`, please also cite the specific method paper — Peixoto maintains [a citation guide](https://graph-tool.skewed.de/static/doc/index.html) for each algorithm.
@@ -254,6 +272,7 @@ An optional `graph` backend (`backend="igraph"`) and a converter target: `Archit
 
 > Csárdi, G. and Nepusz, T. (2006). *The igraph software package for complex network research.* InterJournal, Complex Systems 1695.
 
+{% raw %}
 ```bibtex
 @article{csardi2006igraph,
   author  = {Cs{\'a}rdi, G{\'a}bor and Nepusz, Tam{\'a}s},
@@ -265,6 +284,7 @@ An optional `graph` backend (`backend="igraph"`) and a converter target: `Archit
   url     = {https://igraph.org}
 }
 ```
+{% endraw %}
 
 ### NetworkX
 {: #networkx }
@@ -277,6 +297,7 @@ An optional `graph` backend (`backend="networkx"`) and a converter target: `Arch
 
 > Hagberg, A. A., Schult, D. A. and Swart, P. J. (2008). *Exploring network structure, dynamics, and function using NetworkX.* Proceedings of the 7th Python in Science Conference (SciPy 2008), 11–15.
 
+{% raw %}
 ```bibtex
 @inproceedings{hagberg2008networkx,
   author    = {Hagberg, Aric A. and Schult, Daniel A. and Swart, Pieter J.},
@@ -286,6 +307,7 @@ An optional `graph` backend (`backend="networkx"`) and a converter target: `Arch
   year      = {2008}
 }
 ```
+{% endraw %}
 
 ---
 
@@ -304,6 +326,7 @@ The default `motifs` backend: `scan_motifs`, `scan_motifs_matrix`, `scan_motifs_
 >
 > Korhonen, J. H., Palin, K., Taipale, J. and Ukkonen, E. (2017). *Fast motif matching revisited: high-order PWMs, SNPs and indels.* Bioinformatics 33(4): 514–521. doi: [10.1093/bioinformatics/btw683](https://doi.org/10.1093/bioinformatics/btw683)
 
+{% raw %}
 ```bibtex
 @article{korhonen2009moods,
   author  = {Korhonen, Janne and Martinm{\"a}ki, Petri and Pizzi, Cinzia and Rastas, Pasi and Ukkonen, Esko},
@@ -316,6 +339,7 @@ The default `motifs` backend: `scan_motifs`, `scan_motifs_matrix`, `scan_motifs_
   doi     = {10.1093/bioinformatics/btp554}
 }
 ```
+{% endraw %}
 
 ### lightmotif — Rust-backed PSSM scanning
 {: #lightmotif }
@@ -328,6 +352,7 @@ The alternative `motifs` backend (`backend="lightmotif"`, `pip install 'genomebl
 
 > Larralde, M. (2023). *lightmotif: PSSM scoring with SIMD in Python and Rust.* GitHub: althonos/lightmotif.
 
+{% raw %}
 ```bibtex
 @misc{lightmotif,
   author = {Larralde, Martin},
@@ -336,6 +361,7 @@ The alternative `motifs` backend (`backend="lightmotif"`, `pip install 'genomebl
   url    = {https://github.com/althonos/lightmotif}
 }
 ```
+{% endraw %}
 
 ### pyfaidx — indexed FASTA access
 {: #pyfaidx }
@@ -348,6 +374,7 @@ An optional `fasta` backend (`backend="pyfaidx"`) for `Loci.sequences`, motif sc
 
 > Shirley, M. D., Ma, Z., Pedersen, B. S. and Wheelan, S. J. (2015). *Efficient "pythonic" access to FASTA files using pyfaidx.* PeerJ PrePrints 3: e1196. doi: [10.7287/peerj.preprints.970v1](https://doi.org/10.7287/peerj.preprints.970v1)
 
+{% raw %}
 ```bibtex
 @article{shirley2015pyfaidx,
   author  = {Shirley, Matthew D. and Ma, Zhaorong and Pedersen, Brent S. and Wheelan, Sarah J.},
@@ -359,6 +386,7 @@ An optional `fasta` backend (`backend="pyfaidx"`) for `Loci.sequences`, motif sc
   doi     = {10.7287/peerj.preprints.970v1}
 }
 ```
+{% endraw %}
 
 ### pyliftover — assembly lift-over
 {: #pyliftover }
@@ -371,6 +399,7 @@ An optional `fasta` backend (`backend="pyfaidx"`) for `Loci.sequences`, motif sc
 
 > Tretyakov, K. (2013). *pyliftover: pure-Python implementation of UCSC liftOver genome coordinate conversion.* GitHub: konstantint/pyliftover.
 
+{% raw %}
 ```bibtex
 @misc{pyliftover,
   author = {Tretyakov, Konstantin},
@@ -379,6 +408,7 @@ An optional `fasta` backend (`backend="pyfaidx"`) for `Loci.sequences`, motif sc
   url    = {https://github.com/konstantint/pyliftover}
 }
 ```
+{% endraw %}
 
 ---
 
@@ -395,6 +425,7 @@ The default `bigwig` backend: `loci.signal()`, `compare_heatmap`, `select_isofor
 
 > Huey, J. (2023). *bigtools: A high-performance BigWig and BigBed library in Rust, with Python bindings.* GitHub: jackh726/bigtools.
 
+{% raw %}
 ```bibtex
 @misc{pybigtools,
   author = {Huey, Jack},
@@ -403,6 +434,7 @@ The default `bigwig` backend: `loci.signal()`, `compare_heatmap`, `select_isofor
   url    = {https://github.com/jackh726/bigtools}
 }
 ```
+{% endraw %}
 
 ---
 
@@ -419,6 +451,7 @@ The default `bigwig` backend: `loci.signal()`, `compare_heatmap`, `select_isofor
 
 > Virshup, I., Rybakov, S., Theis, F. J., Angerer, P. and Wolf, F. A. (2024). *anndata: Access and store annotated data matrices.* Journal of Open Source Software 9(101): 4371. doi: [10.21105/joss.04371](https://doi.org/10.21105/joss.04371)
 
+{% raw %}
 ```bibtex
 @article{virshup2024anndata,
   author  = {Virshup, Isaac and Rybakov, Sergei and Theis, Fabian J. and Angerer, Philipp and Wolf, F. Alexander},
@@ -431,6 +464,7 @@ The default `bigwig` backend: `loci.signal()`, `compare_heatmap`, `select_isofor
   doi     = {10.21105/joss.04371}
 }
 ```
+{% endraw %}
 
 ### xarray
 {: #xarray }
@@ -443,6 +477,7 @@ The default `bigwig` backend: `loci.signal()`, `compare_heatmap`, `select_isofor
 
 > Hoyer, S. and Hamman, J. (2017). *xarray: N-D labeled arrays and datasets in Python.* Journal of Open Research Software 5(1): 10. doi: [10.5334/jors.148](https://doi.org/10.5334/jors.148)
 
+{% raw %}
 ```bibtex
 @article{hoyer2017xarray,
   author  = {Hoyer, Stephan and Hamman, Joe},
@@ -455,6 +490,7 @@ The default `bigwig` backend: `loci.signal()`, `compare_heatmap`, `select_isofor
   doi     = {10.5334/jors.148}
 }
 ```
+{% endraw %}
 
 ---
 
@@ -497,6 +533,7 @@ Altintas, U. B. (2024). genomeblocks: Fluent building blocks for regulatory geno
 https://github.com/birkiy/genomeblocks
 ```
 
+{% raw %}
 ```bibtex
 @misc{genomeblocks,
   author = {Altintas, Umut Berkay},
@@ -505,3 +542,4 @@ https://github.com/birkiy/genomeblocks
   url    = {https://github.com/birkiy/genomeblocks}
 }
 ```
+{% endraw %}
