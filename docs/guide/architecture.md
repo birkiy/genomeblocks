@@ -61,12 +61,24 @@ Arrow and dataframe protocols, so `pl.DataFrame(A)` or `duckdb.sql("select
 * from A")` work as they are. `len(A)` counts the vertices with at least one
 edge.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/columnar-edges.svg %}
+</div><figcaption>
+<strong>Views are slices.</strong> Edges are stored sorted by block — each chromosome's cis edges together, the trans edges last — so <code>A.chrom('chr2')</code>, <code>A.cis</code> and <code>A.trans</code> are two offsets into the same arrays, not copies, and <code>A.blocks</code> is that offset table. Neighbour lookups use one adjacency over every block, so a trans partner is never missed; <code>A.graph(backend=)</code> builds the engine's object from the arrays on demand.
+</figcaption></figure>
+
 {: .note }
 > The core pipeline is small: **make → add_mcool → normalize → annotate →
 > strength → prime_hubs**. Drawing lives in `genomeblocks.architecture_draw`
 > (reached as `A.draw`) so the graph object stays free of matplotlib, and graph
 > algorithms run through the graph backend so the object stays free of
 > graph-tool.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-pipeline.svg %}
+</div><figcaption>
+<strong>Six calls, each writing one column.</strong> <code>make</code> builds the vertex and edge tables; <code>add_mcool</code> fills <code>ep.w</code>; <code>normalize</code> adds <code>ep.d</code> and <code>ep.n</code>; <code>annotate</code> writes <code>vp.annot</code> and <code>vp.gene</code>; <code>strength</code> sums <code>ep.n</code> per vertex into <code>vp.strength</code>; <code>prime_hubs</code> reads that column back and returns genes. Every method returns the object, so the chain reads top to bottom.
+</figcaption></figure>
 
 ---
 
@@ -82,7 +94,7 @@ collapse into one edge.
 import genomeblocks as gb
 
 cre = gb.Loci.make("cre.bed")
-A = gb.Architecture.make(cre, "loops.bedpe", r=2500)
+A = gb.Architecture.make(cre, "loops.bedpe", r=100)        # r: bp around each anchor midpoint (default 2500)
 # -> [INFO] 4 loops | 4 mapped (100.0%) | loci=6, links=4 (1 trans)
 A
 # -> Architecture(name='Skeleton', loci=6, links=4 [3 cis · 1 trans], edge_props=[w], vertex_props=[])
@@ -124,7 +136,7 @@ A.n_links, A.n_trans, A.n_loci
 
 ```python
 # from vertex rows: src[k]–tgt[k] is edge k; keyword arrays become edge columns
-B = gb.Architecture.from_edges(L, [0, 0, 1], [1, 2, 3], w=[5.0, 2.0, 6.0])
+B = gb.Architecture.from_edges(cre, [0, 0, 1], [2, 5, 4], w=[5.0, 2.0, 6.0])
 
 # from an edge table (pandas / polars / arrow) with src / tgt rows or uid1 / uid2
 B = gb.Architecture.from_frame(cre, A.edges_frame())
@@ -145,9 +157,9 @@ becomes an edge column. A uid that is not in the Loci raises.
 ```python
 A.add_mcool("hic.mcool", resolution=5000)        # .mcool: pick a resolution
 A.add_mcool("hic.cool")                          # .cool: single resolution
-# -> [INFO] Set distributed weights for 3/4 edges from cooler. [w]
+# -> [INFO] Set distributed weights for 4/4 edges from cooler. [w]
 A.ep.w
-# -> array([6., 3., 0., 9.])
+# -> array([6., 3., 4., 9.])
 ```
 
 Each CRE is assigned to the bin holding its start; the count of the (bin, bin)
@@ -156,6 +168,12 @@ pixel, and lands in `ep.w` (or the `name=` you pass — call it again with
 another file and name to stack weights from several experiments). Pixels are
 read one chromosome block at a time, so memory stays bounded and trans pixels
 are found in the same pass.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-weights.svg %}
+</div><figcaption>
+<strong>From a loop to an O/E weight in three steps.</strong> <code>make</code> links every CRE under one anchor (midpoint ± <code>r</code>) to every CRE under the other, never two CREs under the same anchor. <code>add_mcool</code> reads the pixel each edge spans and shares its count equally among the edges in that pixel, so two edges in one 12-count pixel get <code>ep.w = 6</code> each. <code>normalize</code> fits <code>E(d) = C / d^α</code> over the cis edges and stores <code>w / E(d)</code> in <code>ep.n</code>; a trans edge has <code>d = ∞</code> and is divided by the mean trans weight instead.
+</figcaption></figure>
 
 The file type is checked: a multi-resolution file without `resolution=`
 raises and lists the resolutions it holds; a single-resolution file with
@@ -168,7 +186,7 @@ raises and lists the resolutions it holds; a single-resolution file with
 
 ```python
 A.normalize(source="w", name="n")
-# -> [INFO] Power-law fit: alpha=..., C=... on 3 cis edges; 1 trans edges use the mean trans weight → ep.n
+# -> [INFO] Power-law fit: alpha=0.802, C=4.143e+03 on 3 cis edges; 1 trans edges use the mean trans weight → ep.n
 A.ep.d
 # -> array([4000., 9000., 4500.,   inf])
 ```
@@ -216,6 +234,12 @@ Two-stage gene assignment:
 Both columns have one value per Loci row, including rows without edges. Pass a
 distinct `name=` per `key` to keep several assignments side by side.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-hubs.svg %}
+</div><figcaption>
+<strong>Enhancers take their gene from their strongest promoter contact; hubs are cut at the knee.</strong> <code>annotate</code> gives a promoter CRE the gene of its nearest TSS and every other CRE the <code>vp.gene</code> of the promoter neighbour with the highest <code>ep[key]</code> (O/E by default), cis or trans. <code>prime_hubs</code> ranks vertices by <code>vp.strength</code>, cuts the [0, 1]-scaled curve where its slope reaches 1, and collects the hubs' genes — split into promoter and enhancer hubs by <code>vp.annot</code>.
+</figcaption></figure>
+
 ---
 
 ## Hub genes
@@ -225,6 +249,7 @@ distinct `name=` per `key` to keep several assignments side by side.
 
 ```python
 A.strength(key="n", name="strength")     # vp.strength = sum of ep.n per vertex
+# -> [INFO] Summed ep.n → vp.strength (node strength).
 ```
 
 Two `bincount`s over `src` and `tgt`. No normalization is applied.
@@ -233,6 +258,7 @@ Two `bincount`s over `src` and `tgt`. No normalization is applied.
 
 ```python
 cutoff, uids = A.elbow("strength")
+# -> [INFO] Slope-1 on vp.strength (value≈1.12 at cutoff): cutoff at 3/6 (50.0%)
 hub_uids = uids[:cutoff]
 ```
 
@@ -244,12 +270,19 @@ super-enhancers). Returns the cutoff and the uids in descending order.
 
 ```python
 res = A.prime_hubs(key="n")
+# -> [INFO] Slope-1 on vp.strength (value≈1.12 at cutoff): cutoff at 3/6 (50.0%)
+# -> [INFO] Prime hubs: 3 hubs (1 promoters, 2 enhancers)
+# -> [INFO] Prime genes: 1 = 1 promoter + 1 enhancer (overlap: 1)
 res["prime_genes"]       # genes of all hub CREs
+# -> {'GENE_A'}
 res["promoter_genes"]    # genes of hub CREs that are promoters
 res["enhancer_genes"]    # genes of hub CREs that are not promoters
 res["hub_uids"]          # all hub CRE uids, strongest first
+# -> ['chr1:900-1100(+)', 'chr2:500-600(+)', 'chr1:4900-5100(+)']
 res["promoter_uids"], res["enhancer_uids"]
+# -> (['chr1:900-1100(+)'], ['chr2:500-600(+)', 'chr1:4900-5100(+)'])
 res["cutoff"]            # number of hubs
+# -> 3
 ```
 
 `prime_hubs` runs `strength` (if `vp.strength` is missing) → `elbow` → splits
@@ -274,6 +307,12 @@ keeps CREs that intersect the window, `mode="center"` only those whose midpoint
 is inside it. `rows=True` returns row arrays instead of uids; `linked=False`
 includes CREs without edges. The single-window form is `A.near("chr1:0-3,000")`
 (a Loci) or `A.near_rows(...)`.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-support.svg %}
+</div><figcaption>
+<strong><code>support()</code> keeps the linked CREs inside <code>TSS ± r</code>.</strong> With <code>mode='overlap'</code> (the default) a CRE counts when its interval touches the window, so <code>a</code> and <code>b</code> both count — <code>b</code> straddles the window's edge. With <code>mode='center'</code> only the midpoint decides, and <code>b</code>'s midpoint lies outside, so <code>a</code> alone remains. <code>c</code> is inside the window but has no edge in the Architecture, so it is left out unless <code>linked=False</code>; <code>d</code> is outside; <code>e</code> is the partner of <code>a</code> and <code>b</code>. <code>rows=True</code> returns row numbers in place of uids.
+</figcaption></figure>
 
 ---
 

@@ -1,0 +1,48 @@
+<svg class="gbd" viewBox="0 0 880 308" role="img" aria-label="nearest_tss measures to the promoter window TSS ± promoter_r, not to the TSS base: anything inside the window is 0 bp from that gene, a row outside is the gap to the window&#x27;s edge, and a chromosome without a gene gives (&#x27;&#x27;, −1)." xmlns="http://www.w3.org/2000/svg">
+<text class="ms" x="40" y="30">chr1</text>
+<text class="ms" x="760" y="30">chr5</text>
+<polyline class="ln faint" points="40,86 670,86"/>
+<polyline class="ln faint" points="720,86 860,86"/>
+<rect class="iv fnl" x="250" y="79" width="560" height="14" rx="2"></rect>
+<polygon class="hd navy" points="664.0,86.0 656.1,90.2 656.1,81.8"/>
+<text class="s" x="270" y="62">GENE_A  [5000, 9000) &#x27;+&#x27; · TSS = [5000, 5001)</text>
+<rect class="bx hl" x="110" y="70" width="280.14" height="32" rx="4"></rect>
+<rect class="iv fh" x="248" y="76" width="5" height="20" rx="1"></rect>
+<text class="ms" x="242" y="116" text-anchor="end">TSS</text>
+<polyline class="ln navy" points="110,124 110,130 390.14,130 390.14,124"/>
+<text class="ms" x="260.07" y="146">window = TSS ± promoter_r (1000) = [4000, 6001)</text>
+<text class="cap" x="40" y="192">CRE ROWS</text>
+<polyline class="ln faint" points="40,214 670,214"/>
+<polyline class="ln faint" points="720,214 860,214"/>
+<rect class="iv fg" x="278" y="207" width="14" height="14" rx="2"></rect>
+<text class="ms" x="278" y="236">cre[0]  [5200, 5300)</text>
+<rect class="iv fg" x="530.14" y="207" width="14" height="14" rx="2"></rect>
+<text class="ms" x="530.14" y="236">cre[1]  [7001, 7101)</text>
+<rect class="iv fg" x="760" y="207" width="54" height="14" rx="2"></rect>
+<text class="ms" x="760" y="236">cre[2]  [100, 200)</text>
+<polyline class="ln green" points="285,206 285,108"/>
+<polygon class="hd green" points="285.0,104.0 288.3,110.2 281.7,110.2"/>
+<text class="lbl" x="279" y="180" text-anchor="end">inside the window → 0</text>
+<polyline class="ln navy" points="394.14,194 526.14,194"/>
+<polygon class="hd navy" points="530.1,194.0 524.0,197.3 524.0,190.7"/>
+<polygon class="hd navy" points="390.1,194.0 396.3,190.7 396.3,197.3"/>
+<text class="ms" x="460.14" y="187" text-anchor="middle">1000 to the window edge, not 2000 to the TSS</text>
+<polyline class="ln faint dash" points="390.14,104 390.14,194"/>
+<polyline class="ln faint dash" points="250.07,106 250.07,170 526.14,170"/>
+<polygon class="hd faint" points="530.1,170.0 524.0,173.3 524.0,166.7"/>
+<text class="ms" x="394.14" y="166">2000 from the TSS base: not what is measured</text>
+<text class="s" x="40" y="270">names</text>
+<text class="s" x="40" y="294">dist</text>
+<rect class="bx hl" x="246" y="254" width="78" height="22" rx="4"></rect>
+<text class="m" x="285" y="270" text-anchor="middle">&#x27;GENE_A&#x27;</text>
+<rect class="bx hl" x="260" y="278" width="50" height="22" rx="4"></rect>
+<text class="m" x="285" y="294" text-anchor="middle">0</text>
+<rect class="bx hl" x="498.14" y="254" width="78" height="22" rx="4"></rect>
+<text class="m" x="537.14" y="270" text-anchor="middle">&#x27;GENE_A&#x27;</text>
+<rect class="bx hl" x="512.14" y="278" width="50" height="22" rx="4"></rect>
+<text class="m" x="537.14" y="294" text-anchor="middle">1000</text>
+<rect class="bx" x="748" y="254" width="78" height="22" rx="4"></rect>
+<text class="m" x="787" y="270" text-anchor="middle">&#x27;&#x27;</text>
+<rect class="bx" x="762" y="278" width="50" height="22" rx="4"></rect>
+<text class="m" x="787" y="294" text-anchor="middle">−1</text>
+</svg>

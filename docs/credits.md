@@ -291,30 +291,10 @@ An optional `graph` backend (`backend="networkx"`) and a converter target: `Arch
 
 ## Sequence and motif engines
 
-### lightmotif — Rust-backed PSSM scanning
-{: #lightmotif }
-
-The default `motifs` backend: `scan_motifs`, `scan_motifs_matrix`, `scan_motifs_matrix_masked` and `scan_motifs_profile` score the matrices of a `Library` along sequences with lightmotif's SIMD core.
-
-- **Author:** Martin Larralde (EMBL)
-- **Repository:** [github.com/althonos/lightmotif](https://github.com/althonos/lightmotif)
-- **License:** MIT
-
-> Larralde, M. (2023). *lightmotif: PSSM scoring with SIMD in Python and Rust.* GitHub: althonos/lightmotif.
-
-```bibtex
-@misc{lightmotif,
-  author = {Larralde, Martin},
-  title  = {lightmotif: A lightweight library for PSSM scoring, with SIMD backends},
-  year   = {2023},
-  url    = {https://github.com/althonos/lightmotif}
-}
-```
-
 ### MOODS — motif occurrence detection
 {: #moods }
 
-An optional `motifs` backend (`backend="moods"`, `pip install MOODS-python`); `Library.to_moods()` hands the matrices over.
+The default `motifs` backend: `scan_motifs`, `scan_motifs_matrix`, `scan_motifs_matrix_masked` and `scan_motifs_profile` hand each log-odds matrix — a whole batch of them for a library — to a `MOODS.scan.Scanner`, and `Library.to_moods()` exports the matrices. The conda package depends on bioconda's `moods`; on pip it is `pip install 'genomeblocks[motifs]'` (MOODS-python, compiled at install).
 
 - **Authors:** Janne H. Korhonen, Petri Martinmäki, Cinzia Pizzi, Pasi Rastas, Esko Ukkonen
 - **Repository:** [github.com/jhkorhonen/MOODS](https://github.com/jhkorhonen/MOODS)
@@ -334,6 +314,26 @@ An optional `motifs` backend (`backend="moods"`, `pip install MOODS-python`); `L
   pages   = {3181--3182},
   year    = {2009},
   doi     = {10.1093/bioinformatics/btp554}
+}
+```
+
+### lightmotif — Rust-backed PSSM scanning
+{: #lightmotif }
+
+The alternative `motifs` backend (`backend="lightmotif"`, `pip install 'genomeblocks[lightmotif]'`, prebuilt wheels), picked automatically only when MOODS is absent: its SIMD core scans the striped block one matrix at a time and reports the same hits. genomeblocks' `logodds_matrix` reproduces lightmotif's float32 log-odds arithmetic bit for bit, and `load_motifs` accepts lightmotif motif objects.
+
+- **Author:** Martin Larralde (EMBL)
+- **Repository:** [github.com/althonos/lightmotif](https://github.com/althonos/lightmotif)
+- **License:** MIT
+
+> Larralde, M. (2023). *lightmotif: PSSM scoring with SIMD in Python and Rust.* GitHub: althonos/lightmotif.
+
+```bibtex
+@misc{lightmotif,
+  author = {Larralde, Martin},
+  title  = {lightmotif: A lightweight library for PSSM scoring, with SIMD backends},
+  year   = {2023},
+  url    = {https://github.com/althonos/lightmotif}
 }
 ```
 
@@ -482,7 +482,7 @@ The default `bigwig` backend: `loci.signal()`, `compare_heatmap`, `select_isofor
 | [Genes]({{ '/guide/genes/' | relative_url }}) — annotation tables | polars / pandas parsing | the interval engines above; PyRanges frames in |
 | [Architecture]({{ '/guide/architecture/' | relative_url }}) — contact networks | graph-tool, else scipy | igraph, networkx, AnnData; cooler for Hi-C weights |
 | [Signal]({{ '/guide/signal/' | relative_url }}) — bigWig cubes | pybigtools | pyBigWig, the pure-Python reader; xarray, AnnData out; edgeR TMM |
-| [Motifs]({{ '/guide/motifs/' | relative_url }}) — PSSM scanning | lightmotif | MOODS, Biopython; FASTA via genomeblocks, pysam, pyfaidx, Biopython |
+| [Motifs]({{ '/guide/motifs/' | relative_url }}) — PSSM scanning | MOODS, else lightmotif (`genomeblocks[motifs]` / `[lightmotif]`) | Biopython; FASTA via genomeblocks, pysam, pyfaidx, Biopython |
 | [Browser]({{ '/guide/browser/' | relative_url }}) — views | matplotlib | pysam for BAM tracks; igv.js for `igv_html` |
 | [Atlas]({{ '/guide/atlas/' | relative_url }}) — enrichment | genomeblocks (scipy sparse) | — |
 

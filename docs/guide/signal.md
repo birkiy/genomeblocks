@@ -41,6 +41,12 @@ table built from them (vertex columns of an
 [Architecture]({{ '/guide/architecture/' | relative_url }}), motif matrices,
 annotations). The result is a plain `numpy.ndarray`.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/signal-cube.svg %}
+</div><figcaption>
+<strong>One row of the cube per locus, one grid per track.</strong> Each row becomes the window centre ± <code>flank</code> (or the interval itself with <code>span=True</code>); the bigwig backend returns its <code>n_bins</code> summaries in one call, and they land in <code>cube[i, t, :]</code>. Row <em>i</em> is still locus <em>i</em>, so a mask over the loci selects the same rows of the cube, and the tracks keep the order you passed.
+</figcaption></figure>
+
 | arg | default | meaning |
 |---|---|---|
 | `bigwigs` | | one bigWig or several: paths, open pyBigWig / pybigtools handles, or a `{name: path}` dict (tracks in its order) |
@@ -72,7 +78,7 @@ own library, so `backend=` cannot apply to it — pass the path instead:
 import pyBigWig
 h = pyBigWig.open("atac.bw")
 S = cre.signal([h, "h3k27ac.bw"], n_bins=50, flank=1_000)        # fine
-S = cre.signal([h], n_bins=50, flank=1_000, backend="python")
+S = cre.signal([h], n_bins=50, flank=1_000, backend="python", verbose=False)
 # -> ValueError: the track is an open pybigwig handle, so backend='python' cannot apply: pass the file path instead, or drop backend=
 ```
 
@@ -86,10 +92,10 @@ A row on a chromosome the file lacks stays 0 for that track.
 
 ```python
 edges = gb.as_loci([("chr1", 20, 80), ("chr1", 19_950, 20_000), ("chr3", 10, 20)])
-edges.signal("atac.bw", n_bins=5, flank=100)[:, 0]
+edges.signal("atac.bw", n_bins=5, flank=100, verbose=False)[:, 0].round(2)
 # -> array([[0.  , 6.73, 6.73, 3.43, 3.43],      # window starts before base 0
-#           [0.  , 0.  , 0.  , 0.  , 0.  ],      # no data in the last 100 bp of chr1
-#           [0.  , 0.  , 0.  , 0.  , 0.  ]])     # chr3 is not in the file
+# ->        [0.  , 0.  , 0.  , 0.  , 0.  ],      # no data in the last 100 bp of chr1
+# ->        [0.  , 0.  , 0.  , 0.  , 0.  ]], dtype=float32)     # chr3 is not in the file
 ```
 
 ### Aggregators
@@ -98,7 +104,7 @@ edges.signal("atac.bw", n_bins=5, flank=100)[:, 0]
 the bin's bases with data). A bin without data is 0. Anything else raises:
 
 ```python
-cre.signal("atac.bw", n_bins=4, flank=100, agg="median")
+cre.signal("atac.bw", n_bins=4, flank=100, agg="median", verbose=False)
 # -> ValueError: unknown stat 'median'; use mean, min, max, sum, std or coverage
 ```
 
@@ -117,6 +123,12 @@ All three give the same numbers. Bin `b` of a window of `n` bases covers
 `[floor(n·b/n_bins), floor(n·(b+1)/n_bins))` for every engine — the integer
 edges libBigWig and pybigtools use — so fractional bin widths bin alike, and
 bins outside the chromosome are 0.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/signal-bins-rule.svg %}
+</div><figcaption>
+<strong>One binning rule for every engine.</strong> A 10-base window with <code>n_bins = 4</code> has edges <code>floor(10·b/4) = 0, 2, 5, 7, 10</code>, so the bins are 2, 3, 2 and 3 bases wide and the per-bin means are 2, 3.33, 4 and 4.67; pybigtools, pyBigWig and the pure-Python reader place the edges identically and report the same numbers. A window that hangs off the start of the chromosome keeps the same edge rule; its first bin lies entirely before base 0, has no data, and reads 0 (the <code>missing</code> value).
+</figcaption></figure>
 
 ```python
 for name in ("pybigtools", "pybigwig", "python"):
@@ -146,12 +158,19 @@ the same thing there.
 ```python
 tiles = gb.Loci.tile_genome("genome.chrom.sizes", 500)
 S_tiles = tiles.signal(["atac.bw", "h3k27ac.bw"], n_bins=8, flank=400, workers=2)   # same cube as workers=1
-cre.signal([pyBigWig.open("atac.bw")], n_bins=8, workers=2)
+cre.signal([pyBigWig.open("atac.bw"), pyBigWig.open("h3k27ac.bw")], n_bins=8, workers=2, verbose=False)
 # -> ValueError: workers > 1 needs bigWig paths (open handles cannot be shared between processes); pass the file paths, or workers=1.
 ```
 
-- An explicit `workers` is capped at `min(workers, n_tracks · ⌈n_loci / 1000⌉, cpu_count)`.
-  `workers=None` asks for half the cores.
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/signal-parallel.svg %}
+</div><figcaption>
+<strong>Workers fill one shared cube in place.</strong> With <code>workers &gt; 1</code> the cube lives in shared memory; each process opens its own handles for its slab of tracks and loci and writes straight into it, so nothing is copied back through pipes. That is why the call needs file paths rather than open handles, and why the cube is identical to the one <code>workers=1</code> produces.
+</figcaption></figure>
+
+- An explicit `workers` is capped at `min(workers, n_tracks · ⌈n_loci / 1000⌉, cpu_count)`,
+  so a small job (one track, under 1000 loci) runs sequentially even with
+  `workers=2`, handles and all. `workers=None` asks for half the cores.
 - The cube takes `n_loci × n_tracks × n_bins × itemsize` bytes. A cube over
   half of the available RAM is refused before anything is read:
 
@@ -172,14 +191,18 @@ The cube is a numpy array; `genomeblocks.interop` labels it with the loci:
 ```python
 from genomeblocks.interop import cube_to_xarray, cube_to_anndata, cube_to_pandas
 
+S = cre.signal(["atac.bw", "h3k27ac.bw"], n_bins=20, flank=500, verbose=False)
 da = cube_to_xarray(S, cre, ["ATAC", "H3K27ac"], flank=500)
-# -> <xarray.DataArray 'signal' (region: 7, track: 2, bin: 20)>
-#    Coordinates: region (names), chrom / start / end, track, bin (bp from the centre: -475 ... 475)
+da.dims, da.shape
+# -> (('region', 'track', 'bin'), (7, 2, 20))
+da.coords["bin"].values[:3], da.coords["region"].values[:2]
+# -> (array([-475., -425., -375.]), array(['chr1:900-1100', 'chr1:1900-2100'], dtype=object))
 
 ad = cube_to_anndata(S, cre, ["ATAC", "H3K27ac"])        # obs = tracks, var = loci
+ad
 # -> AnnData object with n_obs × n_vars = 2 × 7
-#        var: 'chrom', 'start', 'end', 'strand'
-#        varm: 'bins:ATAC', 'bins:H3K27ac'
+# ->     var: 'chrom', 'start', 'end', 'strand'
+# ->     varm: 'bins:ATAC', 'bins:H3K27ac'
 
 df = cube_to_pandas(S, cre, ["ATAC", "H3K27ac"])         # (track, bin) columns, indexed by region name
 df.shape
@@ -192,12 +215,16 @@ With a single bin, `cube_to_pandas` gives one column per track — the natural
 "signal per region" table:
 
 ```python
-cube_to_pandas(cre.signal("atac.bw", n_bins=1, span=True), cre, ["ATAC"])
+cube_to_pandas(cre.signal("atac.bw", n_bins=1, span=True, verbose=False), cre, ["ATAC"])
 # ->                       ATAC
 # -> region
 # -> chr1:900-1100     8.879168
 # -> chr1:1900-2100    3.029531
-# -> ...
+# -> chr1:4900-5100    8.288841
+# -> chr1:9950-10050   5.319891
+# -> chr1:10900-11100  7.058707
+# -> chr2:500-600      0.000000
+# -> chr2:5000-5100    0.000000
 ```
 
 ---

@@ -98,6 +98,12 @@ list(axes)
 Only the region is read: bigWigs give `bw_n_bins` binned values, intervals
 and genes are looked up by overlap.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/browser-tracks.svg %}
+</div><figcaption>
+<strong>Every track is its own axis on one x range.</strong> <code>browser()</code> picks the drawer from the value — a bigWig path becomes binned means of the region only (one native call through the bigwig backend), a list of bigWigs is averaged per bin, anything <code>as_loci</code> reads becomes a row of rectangles, a <code>Pairs</code> or BEDPE path becomes arcs between anchor midpoints, a <code>Genes</code> becomes stacked models from its three tables — and stacks them over a shared ruler, so you mix sources without converting anything first.
+</figcaption></figure>
+
 ### bigWig tracks
 
 ```python
@@ -174,7 +180,7 @@ gb.browser("chr1:100-50", {"CREs": cre})
 {: .sec-navy }
 
 ```python
-A = (gb.Architecture.make(cre, "loops.bedpe", r=2500)
+A = (gb.Architecture.make(cre, "loops.bedpe", r=100)
        .add_mcool("hic.mcool", resolution=5000).normalize())
 
 sizes = gb.igv_html(
@@ -190,7 +196,7 @@ sizes = gb.igv_html(
     title="demo",
 )
 sizes
-# -> {'ATAC': 2005, 'CREs': 197, 'frame': 197, 'loops (n)': 149, 'genes': 185, 'total': 7313}
+# -> {'ATAC': 2005, 'CREs': 197, 'frame': 197, 'loops (n)': 149, 'genes': 185, 'total': 7312}
 ```
 
 Every track is embedded in the page as a gzipped data URI and igv.js draws it.

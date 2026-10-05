@@ -130,7 +130,7 @@ uses half the cores. Open handles cannot cross a process boundary, so
 L = gb.Loci.tile_genome({"chr1": 20_000, "chr2": 8_000}, 500)
 a = L.signal(["signal.bw", "signal2.bw"], n_bins=8, flank=400, verbose=False, progress=False)
 b = L.signal(["signal.bw", "signal2.bw"], n_bins=8, flank=400, workers=2, verbose=False, progress=False)
-a.shape, (a == b).all()
+a.shape, bool((a == b).all())
 # -> ((56, 2, 8), True)
 ```
 

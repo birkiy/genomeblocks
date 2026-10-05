@@ -35,6 +35,12 @@ tables share one `Genome`.
 | `P.b` | a `Loci`: `chrom2`, `start2`, `end2`, `strand2` |
 | `P.cols` | `name`, `score` when the file has them, then any further columns (`col11`, ...) |
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/bedpe-reader.svg %}
+</div><figcaption>
+<strong>One BEDPE parser, two aligned Loci.</strong> <code>Pairs.make</code> reads the file through the tables backend into anchor <code>a</code> and anchor <code>b</code> — two <code>Loci</code> whose row <em>i</em> is pair <em>i</em> — plus the name / score columns, and <code>is_cis</code> / <code>distance</code> are computed from the two coordinate arrays. Everything that takes loops (<code>Architecture.make</code>, the browser, <code>overlapping</code>) calls <code>as_pairs</code> on its argument, so a path, a frame or a <code>Pairs</code> all work there.
+</figcaption></figure>
+
 ```python
 import genomeblocks as gb
 
@@ -273,6 +279,12 @@ windows counts once per end. The result is a DataFrame aligned to the rows of
 `loci` — `chrom, start, end, uid`, then one column per partner chromosome
 that has at least one contact.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/bedpe-count.svg %}
+</div><figcaption>
+<strong>Each read end lands in at most one window.</strong> Windows are keyed by (chromosome code, start) once; every end of every pair is placed with one <code>searchsorted</code> and dropped when it falls past its window's end, then the counts are a <code>bincount</code> per partner chromosome. That is why windows on one chromosome must not overlap, why both ends of a cis pair add to the table, and why the file streams in chunks without a matrix.
+</figcaption></figure>
+
 ```python
 W = gb.Loci.tile_genome({"chr1": 10_000, "chr2": 10_000}, 2500)
 df = bedpe.count_pairs(W, "sample.allValidPairs")
@@ -325,9 +337,15 @@ both orientations of every pair are counted, so a pair with both ends in
 window *i* adds 2 to cell `(i, i)`, and a pair between *i* and *j* adds 1 to
 `(i, j)` and 1 to `(j, i)`.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/bedpe-count-2d.svg %}
+</div><figcaption>
+<strong><code>count_pairs_2d</code> counts both orientations of every pair.</strong> Three read pairs over four windows: p0 joins w0 and w2 and adds 1 to <code>(0, 2)</code> and 1 to <code>(2, 0)</code>; p1 has both ends inside w1 and adds 1 per end, so <code>(1, 1) = 2</code>; p2 joins w3 and w0. The matrix over one set is symmetric and sums to twice the number of pairs. With <code>loci_b</code> given, rows are windows of <code>loci_a</code> and columns windows of <code>loci_b</code>, and nothing is symmetric: the same three pairs give w0 → b1 = 2, w1 → b0 = 2, w2 → b0 = 1 and w3 → b0 = 1.
+</figcaption></figure>
+
 ```python
 M = bedpe.count_pairs_2d(W, "sample.allValidPairs", verbose=False)
-M.shape, M.nnz, M.sum(), (M != M.T).nnz
+M.shape, M.nnz, int(M.sum()), (M != M.T).nnz
 # -> ((8, 8), 64, 800, 0)
 M.toarray()[:4, :4]                                    # the chr1 x chr1 block
 # -> array([[18, 22,  8, 17],
@@ -371,9 +389,9 @@ first:
 cre = gb.Loci.make("peaks.bed")
 loops = gb.Pairs.make("loops.bedpe").filter(min_score=2)
 A = gb.Architecture.make(cre, loops, r=100)
-# -> [INFO] 3 loops | 3 mapped (100.0%) | loci=5, links=3 (0 trans)
+# -> [INFO] 3 loops | 3 mapped (100.0%) | loci=6, links=3 (0 trans)
 A
-# -> Architecture(name='Skeleton', loci=5, links=3 [3 cis · 0 trans], edge_props=[w], vertex_props=[])
+# -> Architecture(name='Skeleton', loci=6, links=3 [3 cis · 0 trans], edge_props=[w], vertex_props=[])
 ```
 
 The browser draws a `Pairs` or a BEDPE path as loop arcs
@@ -399,14 +417,16 @@ pa, pb = loops.anchors_overlap(promoters, r=500)
 ea, eb = loops.anchors_overlap(enhancers, r=500)
 ep = loops[(pa & eb) | (pb & ea)]
 
-ep["gene_a"], _ = genes.nearest_tss(ep.a)      # the gene at each anchor
-ep["gene_b"], _ = genes.nearest_tss(ep.b)
+ep.cols["gene_a"], _ = genes.nearest_tss(ep.a)      # the gene at each anchor, as a column on the pairs
+ep.cols["gene_b"], _ = genes.nearest_tss(ep.b)
 ep.to_bedpe("ep_loops.bedpe")
 ep.to_pandas()
 ```
 
 `ep.a` and `ep.b` are `Loci`, so `nearest_tss` labels each anchor, and the
-result is a column on the pairs.
+result goes into `ep.cols` — the extra-column dict, which `to_pandas()` and
+`to_bedpe()` write out (a `Pairs` has no `P["name"] = ...` shorthand; `P["name"]`
+reads a column).
 
 ---
 

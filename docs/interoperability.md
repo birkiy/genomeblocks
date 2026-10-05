@@ -52,6 +52,12 @@ L.columns            # -> ['chrom', 'start', 'end', 'strand', 'name', 'score']
 L.to_polars()        # the same rows, chrom and strand as categoricals
 ```
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/interop-path.svg %}
+</div><figcaption>
+<strong>In through narwhals, out through Arrow.</strong> <code>interop.frame</code> turns any frame — pandas, polars, pyarrow, DuckDB, bioframe, PyRanges, a BedTool, a dict or a structured array — into one eager narwhals DataFrame; <code>loci_from_frame</code> finds the chromosome, start, end and strand columns by name and casts them into the numpy columns of a <code>Loci</code>. On the way out, <code>to_arrow</code> wraps the numeric columns without copying, and the Arrow C stream, interchange and narwhals protocols give polars, DuckDB, seaborn, plotly and altair that table as it is.
+</figcaption></figure>
+
 ---
 
 ## In: `as_loci` takes everything
@@ -253,7 +259,8 @@ Architecture.
 | **AnnData** (scATAC) | `Loci.from_anndata(adata, axis='var')`: chrom/start/end columns, else names `chr1:100-200`, `chr1-100-200`, `chr1_100_200` | `to_anndata(X, obs=)` (loci as `var`, names `chrom:start-end`); `Architecture.to_anndata()` (vertices as `obs`, one adjacency per edge column in `obsp`); `interop.cube_to_anndata(S, L, tracks)` |
 | **Biopython** | `SeqIO.index` / `SeqIO.to_dict` mappings as FASTA sources; `Bio.motifs` objects in `load_motifs` and every motif function; `backend='biopython'` for scanning and FASTA | `to_seqrecords(fasta)`, `to_fasta(path, fasta)`, `Library.to_biopython()` |
 | **xarray** | — | `interop.cube_to_xarray(S, L, tracks, flank=)`: `(region, track, bin)` with chrom / start / end coordinates and bin centres in bp |
-| **MOODS** | `backend='moods'` for scanning | `Library.to_moods()`: 4 x W log-odds lists |
+| **MOODS** | the default scanning engine (`backend='moods'`; `genomeblocks[motifs]` or conda `moods`) | `Library.to_moods()`: 4 x W log-odds lists |
+| **lightmotif** | the alternative scanning engine (`backend='lightmotif'`; `genomeblocks[lightmotif]`); lightmotif motif objects in `load_motifs` | — |
 | **pyBigWig / pybigtools** | open handles anywhere a bigWig path goes (`Loci.signal`, `browser`, `call_se`) | — (`backends.bigwig.open_bigwig` wraps a path or a handle) |
 | **pysam / pyfaidx** | `pysam.FastaFile` / `pyfaidx.Fasta` handles as FASTA sources; pysam for BAM | — |
 | **networkx / igraph / scipy / graph-tool** | `Architecture.from_scipy(loci, M)`; `backend=` for algorithms | `to_networkx()`, `to_igraph()`, `to_scipy(weight)`, `to_graph_tool()`; `A.graph(backend=)` |

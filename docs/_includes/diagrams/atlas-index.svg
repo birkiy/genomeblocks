@@ -166,6 +166,6 @@
 <rect class="bx navy" x="520" y="224" width="340" height="44" rx="8"></rect>
 <text class="t" x="690" y="244" text-anchor="middle">Fisher&#x27;s exact test</text>
 <text class="s" x="690" y="259" text-anchor="middle">log2 odds · p · GIGGLE-style score per track</text>
-<text class="s" x="520" y="292">ref = a second set replaces the genome in b, c, d</text>
+<text class="s" x="520" y="292">ref = a second set replaces the genome in c and d</text>
 <text class="s" x="520" y="308">bootstrap() reshuffles the query per chromosome</text>
 </svg>

@@ -1,0 +1,204 @@
+<svg class="gbd" viewBox="0 0 880 318" role="img" aria-label="genomeblocks turns a motif&#x27;s count matrix into one log-odds matrix and, from that matrix&#x27;s exact score distribution, one cutoff per motif, so every engine scores the same matrix against the same cutoff and reports identical hits." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="34">COUNTS · W × 4 (JASPAR)</text>
+<text class="tm" x="20" y="56">A</text>
+<rect class="chip" x="36" y="43" width="23" height="17" rx="2"></rect>
+<text class="ms" x="47.5" y="56" text-anchor="middle">12</text>
+<rect class="chip" x="62" y="43" width="23" height="17" rx="2"></rect>
+<text class="ms" x="73.5" y="56" text-anchor="middle">0</text>
+<rect class="chip" x="88" y="43" width="23" height="17" rx="2"></rect>
+<text class="ms" x="99.5" y="56" text-anchor="middle">1</text>
+<rect class="chip" x="114" y="43" width="23" height="17" rx="2"></rect>
+<text class="ms" x="125.5" y="56" text-anchor="middle">20</text>
+<rect class="chip" x="140" y="43" width="23" height="17" rx="2"></rect>
+<text class="ms" x="151.5" y="56" text-anchor="middle">2</text>
+<rect class="chip" x="166" y="43" width="23" height="17" rx="2"></rect>
+<text class="ms" x="177.5" y="56" text-anchor="middle">9</text>
+<text class="tm" x="20" y="74">C</text>
+<rect class="chip" x="36" y="61" width="23" height="17" rx="2"></rect>
+<text class="ms" x="47.5" y="74" text-anchor="middle">3</text>
+<rect class="chip" x="62" y="61" width="23" height="17" rx="2"></rect>
+<text class="ms" x="73.5" y="74" text-anchor="middle">1</text>
+<rect class="chip" x="88" y="61" width="23" height="17" rx="2"></rect>
+<text class="ms" x="99.5" y="74" text-anchor="middle">0</text>
+<rect class="chip" x="114" y="61" width="23" height="17" rx="2"></rect>
+<text class="ms" x="125.5" y="74" text-anchor="middle">0</text>
+<rect class="chip" x="140" y="61" width="23" height="17" rx="2"></rect>
+<text class="ms" x="151.5" y="74" text-anchor="middle">16</text>
+<rect class="chip" x="166" y="61" width="23" height="17" rx="2"></rect>
+<text class="ms" x="177.5" y="74" text-anchor="middle">5</text>
+<text class="tm" x="20" y="92">G</text>
+<rect class="chip" x="36" y="79" width="23" height="17" rx="2"></rect>
+<text class="ms" x="47.5" y="92" text-anchor="middle">4</text>
+<rect class="chip" x="62" y="79" width="23" height="17" rx="2"></rect>
+<text class="ms" x="73.5" y="92" text-anchor="middle">19</text>
+<rect class="chip" x="88" y="79" width="23" height="17" rx="2"></rect>
+<text class="ms" x="99.5" y="92" text-anchor="middle">1</text>
+<rect class="chip" x="114" y="79" width="23" height="17" rx="2"></rect>
+<text class="ms" x="125.5" y="92" text-anchor="middle">0</text>
+<rect class="chip" x="140" y="79" width="23" height="17" rx="2"></rect>
+<text class="ms" x="151.5" y="92" text-anchor="middle">1</text>
+<rect class="chip" x="166" y="79" width="23" height="17" rx="2"></rect>
+<text class="ms" x="177.5" y="92" text-anchor="middle">4</text>
+<text class="tm" x="20" y="110">T</text>
+<rect class="chip" x="36" y="97" width="23" height="17" rx="2"></rect>
+<text class="ms" x="47.5" y="110" text-anchor="middle">1</text>
+<rect class="chip" x="62" y="97" width="23" height="17" rx="2"></rect>
+<text class="ms" x="73.5" y="110" text-anchor="middle">0</text>
+<rect class="chip" x="88" y="97" width="23" height="17" rx="2"></rect>
+<text class="ms" x="99.5" y="110" text-anchor="middle">18</text>
+<rect class="chip" x="114" y="97" width="23" height="17" rx="2"></rect>
+<text class="ms" x="125.5" y="110" text-anchor="middle">0</text>
+<rect class="chip" x="140" y="97" width="23" height="17" rx="2"></rect>
+<text class="ms" x="151.5" y="110" text-anchor="middle">1</text>
+<rect class="chip" x="166" y="97" width="23" height="17" rx="2"></rect>
+<text class="ms" x="177.5" y="110" text-anchor="middle">2</text>
+<polyline class="ln navy" points="198,72 292,72"/>
+<polygon class="hd navy" points="296.0,72.0 289.8,75.3 289.8,68.7"/>
+<text class="ms" x="247" y="60" text-anchor="middle">logodds_matrix()</text>
+<text class="ms" x="20" y="132">log2((c + 0.1) / (total + 0.4) / 0.25)</text>
+<text class="ms" x="20" y="146">float32, lightmotif&#x27;s summation order</text>
+<text class="cap" x="302" y="34">LOG-ODDS · bits, float32</text>
+<text class="tm" x="302" y="56">A</text>
+<rect class="iv fnl" x="318" y="43" width="31" height="17" rx="2"></rect>
+<text class="ms" x="333.5" y="56" text-anchor="middle">+1.2</text>
+<rect class="iv fnl" x="352" y="43" width="31" height="17" rx="2"></rect>
+<text class="ms" x="367.5" y="56" text-anchor="middle">−5.7</text>
+<rect class="iv fnl" x="386" y="43" width="31" height="17" rx="2"></rect>
+<text class="ms" x="401.5" y="56" text-anchor="middle">−2.2</text>
+<rect class="iv fnl" x="420" y="43" width="31" height="17" rx="2"></rect>
+<text class="ms" x="435.5" y="56" text-anchor="middle">+2.0</text>
+<rect class="iv fnl" x="454" y="43" width="31" height="17" rx="2"></rect>
+<text class="ms" x="469.5" y="56" text-anchor="middle">−1.3</text>
+<rect class="iv fnl" x="488" y="43" width="31" height="17" rx="2"></rect>
+<text class="ms" x="503.5" y="56" text-anchor="middle">+0.8</text>
+<text class="tm" x="302" y="74">C</text>
+<rect class="iv fnl" x="318" y="61" width="31" height="17" rx="2"></rect>
+<text class="ms" x="333.5" y="74" text-anchor="middle">−0.7</text>
+<rect class="iv fnl" x="352" y="61" width="31" height="17" rx="2"></rect>
+<text class="ms" x="367.5" y="74" text-anchor="middle">−2.2</text>
+<rect class="iv fnl" x="386" y="61" width="31" height="17" rx="2"></rect>
+<text class="ms" x="401.5" y="74" text-anchor="middle">−5.7</text>
+<rect class="iv fnl" x="420" y="61" width="31" height="17" rx="2"></rect>
+<text class="ms" x="435.5" y="74" text-anchor="middle">−5.7</text>
+<rect class="iv fnl" x="454" y="61" width="31" height="17" rx="2"></rect>
+<text class="ms" x="469.5" y="74" text-anchor="middle">+1.7</text>
+<rect class="iv fnl" x="488" y="61" width="31" height="17" rx="2"></rect>
+<text class="ms" x="503.5" y="74" text-anchor="middle">−0.0</text>
+<text class="tm" x="302" y="92">G</text>
+<rect class="iv fnl" x="318" y="79" width="31" height="17" rx="2"></rect>
+<text class="ms" x="333.5" y="92" text-anchor="middle">−0.3</text>
+<rect class="iv fnl" x="352" y="79" width="31" height="17" rx="2"></rect>
+<text class="ms" x="367.5" y="92" text-anchor="middle">+1.9</text>
+<rect class="iv fnl" x="386" y="79" width="31" height="17" rx="2"></rect>
+<text class="ms" x="401.5" y="92" text-anchor="middle">−2.2</text>
+<rect class="iv fnl" x="420" y="79" width="31" height="17" rx="2"></rect>
+<text class="ms" x="435.5" y="92" text-anchor="middle">−5.7</text>
+<rect class="iv fnl" x="454" y="79" width="31" height="17" rx="2"></rect>
+<text class="ms" x="469.5" y="92" text-anchor="middle">−2.2</text>
+<rect class="iv fnl" x="488" y="79" width="31" height="17" rx="2"></rect>
+<text class="ms" x="503.5" y="92" text-anchor="middle">−0.3</text>
+<text class="tm" x="302" y="110">T</text>
+<rect class="iv fnl" x="318" y="97" width="31" height="17" rx="2"></rect>
+<text class="ms" x="333.5" y="110" text-anchor="middle">−2.2</text>
+<rect class="iv fnl" x="352" y="97" width="31" height="17" rx="2"></rect>
+<text class="ms" x="367.5" y="110" text-anchor="middle">−5.7</text>
+<rect class="iv fnl" x="386" y="97" width="31" height="17" rx="2"></rect>
+<text class="ms" x="401.5" y="110" text-anchor="middle">+1.8</text>
+<rect class="iv fnl" x="420" y="97" width="31" height="17" rx="2"></rect>
+<text class="ms" x="435.5" y="110" text-anchor="middle">−5.7</text>
+<rect class="iv fnl" x="454" y="97" width="31" height="17" rx="2"></rect>
+<text class="ms" x="469.5" y="110" text-anchor="middle">−2.2</text>
+<rect class="iv fnl" x="488" y="97" width="31" height="17" rx="2"></rect>
+<text class="ms" x="503.5" y="110" text-anchor="middle">−1.3</text>
+<text class="s" x="302" y="132">the one matrix every engine scans</text>
+<text class="cap" x="20" y="176">EXACT SCORE DISTRIBUTION OF THAT MATRIX · 0.001-bit grid</text>
+<polyline class="ln navy" points="362,136 362,166"/>
+<polygon class="hd navy" points="362.0,170.0 358.7,163.8 365.3,163.8"/>
+<text class="ms" x="354" y="160" text-anchor="end">threshold_from_pvalue(matrix, p)</text>
+<rect class="iv fm" x="20" y="253.278" width="9" height="16.722" rx="0"></rect>
+<rect class="iv fm" x="30" y="238.716" width="9" height="31.284" rx="0"></rect>
+<rect class="iv fm" x="40" y="241.037" width="9" height="28.9634" rx="0"></rect>
+<rect class="iv fm" x="50" y="234.527" width="9" height="35.4727" rx="0"></rect>
+<rect class="iv fm" x="60" y="225.758" width="9" height="44.2423" rx="0"></rect>
+<rect class="iv fm" x="70" y="223.448" width="9" height="46.5521" rx="0"></rect>
+<rect class="iv fm" x="80" y="222.703" width="9" height="47.297" rx="0"></rect>
+<rect class="iv fm" x="90" y="206.876" width="9" height="63.1242" rx="0"></rect>
+<rect class="iv fm" x="100" y="203.637" width="9" height="66.3634" rx="0"></rect>
+<rect class="iv fm" x="110" y="207.432" width="9" height="62.568" rx="0"></rect>
+<rect class="iv fm" x="120" y="206.692" width="9" height="63.3085" rx="0"></rect>
+<rect class="iv fm" x="130" y="199.219" width="9" height="70.7811" rx="0"></rect>
+<rect class="iv fm" x="140" y="204.165" width="9" height="65.8346" rx="0"></rect>
+<rect class="iv fm" x="150" y="201.053" width="9" height="68.9466" rx="0"></rect>
+<rect class="iv fm" x="160" y="196" width="9" height="74" rx="0"></rect>
+<rect class="iv fm" x="170" y="205.056" width="9" height="64.9437" rx="0"></rect>
+<rect class="iv fm" x="180" y="199.219" width="9" height="70.7811" rx="0"></rect>
+<rect class="iv fm" x="190" y="207.432" width="9" height="62.568" rx="0"></rect>
+<rect class="iv fm" x="200" y="201.562" width="9" height="68.4378" rx="0"></rect>
+<rect class="iv fm" x="210" y="203.286" width="9" height="66.7136" rx="0"></rect>
+<rect class="iv fm" x="220" y="212.883" width="9" height="57.1165" rx="0"></rect>
+<rect class="iv fm" x="230" y="207.618" width="9" height="62.3815" rx="0"></rect>
+<rect class="iv fm" x="240" y="215.173" width="9" height="54.8268" rx="0"></rect>
+<rect class="iv fm" x="250" y="216.682" width="9" height="53.3185" rx="0"></rect>
+<rect class="iv fm" x="260" y="219.372" width="9" height="50.6284" rx="0"></rect>
+<rect class="iv fm" x="270" y="222.703" width="9" height="47.297" rx="0"></rect>
+<rect class="iv fm" x="280" y="223.198" width="9" height="46.8017" rx="0"></rect>
+<rect class="iv fm" x="290" y="239.091" width="9" height="30.9093" rx="0"></rect>
+<rect class="iv fm" x="300" y="230.194" width="9" height="39.8063" rx="0"></rect>
+<rect class="iv fm" x="310" y="236.209" width="9" height="33.7906" rx="0"></rect>
+<rect class="iv fm" x="320" y="240.243" width="9" height="29.757" rx="0"></rect>
+<rect class="iv fm" x="330" y="242.27" width="9" height="27.7303" rx="0"></rect>
+<rect class="iv fm" x="340" y="247.879" width="9" height="22.1211" rx="0"></rect>
+<rect class="iv fm" x="350" y="248.412" width="9" height="21.588" rx="0"></rect>
+<rect class="iv fm" x="360" y="249.52" width="9" height="20.4802" rx="0"></rect>
+<rect class="iv fm" x="370" y="252.595" width="9" height="17.4048" rx="0"></rect>
+<rect class="iv fm" x="380" y="254.735" width="9" height="15.265" rx="0"></rect>
+<rect class="iv fm" x="390" y="261.639" width="9" height="8.361" rx="0"></rect>
+<rect class="iv fm" x="400" y="260.346" width="9" height="9.65446" rx="0"></rect>
+<rect class="iv fm" x="410" y="261.639" width="9" height="8.361" rx="0"></rect>
+<rect class="iv fg" x="420" y="261.639" width="9" height="8.361" rx="0"></rect>
+<rect class="iv fg" x="430" y="265.173" width="9" height="4.82723" rx="0"></rect>
+<polyline class="ln" points="20,270 440,270"/>
+<polyline class="ln green thick" points="415.048,182 415.048,274"/>
+<text class="ms" x="409.048" y="194" text-anchor="end">P(score ≥ s) ≤ 0.001</text>
+<text class="m" x="409.048" y="208" text-anchor="end">→ s = 7.49 bits</text>
+<text class="s" x="421.048" y="194">hits</text>
+<text class="ms" x="20" y="286" text-anchor="middle">−23</text>
+<text class="ms" x="317.391" y="286" text-anchor="middle">0</text>
+<text class="ms" x="440" y="286" text-anchor="middle">9.4</text>
+<text class="ms" x="167" y="286" text-anchor="middle">score, bits · 4⁶ sequences, uniform background</text>
+<text class="s" x="20" y="306">threshold= skips this step: that number is the cutoff for every motif</text>
+<text class="cap" x="500" y="162">ENGINES · MATRIX + CUTOFF IN, NEVER THE COUNTS</text>
+<polyline class="ln navy" points="528,72 576,72 576,182 824,182"/>
+<text class="lbl" x="584" y="68">matrix</text>
+<polyline class="ln green" points="415.048,182 415.048,176 784,176"/>
+<text class="lbl" x="423.048" y="172">cutoff</text>
+<polyline class="ln green" points="536,176 536,194"/>
+<polygon class="hd green" points="536.0,198.0 532.7,191.8 539.3,191.8"/>
+<polyline class="ln navy" points="576,182 576,194"/>
+<polygon class="hd navy" points="576.0,198.0 572.7,191.8 579.3,191.8"/>
+<rect class="bx navy" x="500" y="198" width="112" height="46" rx="8"></rect>
+<text class="t" x="556" y="218" text-anchor="middle">MOODS</text>
+<text class="s" x="556" y="234" text-anchor="middle">default · C++</text>
+<polyline class="ln faint" points="556,246 556,258"/>
+<polygon class="hd faint" points="556.0,262.0 552.7,255.8 559.3,255.8"/>
+<polyline class="ln green" points="660,176 660,194"/>
+<polygon class="hd green" points="660.0,198.0 656.7,191.8 663.3,191.8"/>
+<polyline class="ln navy" points="700,182 700,194"/>
+<polygon class="hd navy" points="700.0,198.0 696.7,191.8 703.3,191.8"/>
+<rect class="bx" x="624" y="198" width="112" height="46" rx="8"></rect>
+<text class="t" x="680" y="218" text-anchor="middle">lightmotif</text>
+<text class="s" x="680" y="234" text-anchor="middle">if MOODS is absent</text>
+<polyline class="ln faint" points="680,246 680,258"/>
+<polygon class="hd faint" points="680.0,262.0 676.7,255.8 683.3,255.8"/>
+<polyline class="ln green" points="784,176 784,194"/>
+<polygon class="hd green" points="784.0,198.0 780.7,191.8 787.3,191.8"/>
+<polyline class="ln navy" points="824,182 824,194"/>
+<polygon class="hd navy" points="824.0,198.0 820.7,191.8 827.3,191.8"/>
+<rect class="bx" x="748" y="198" width="112" height="46" rx="8"></rect>
+<text class="t" x="804" y="218" text-anchor="middle">Biopython</text>
+<text class="s" x="804" y="234" text-anchor="middle">on request</text>
+<polyline class="ln faint" points="804,246 804,258"/>
+<polygon class="hd faint" points="804.0,262.0 800.7,255.8 807.3,255.8"/>
+<rect class="bx green" x="500" y="264" width="360" height="30" rx="8"></rect>
+<text class="t" x="680" y="283" text-anchor="middle">identical hits: positions, strands, counts</text>
+</svg>

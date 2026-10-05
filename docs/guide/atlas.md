@@ -23,12 +23,19 @@ scored in one vectorised pass.
 ---
 
 ## The idea
+{: .sec-navy }
 
 Tile the genome at a fixed resolution (default 1 kb) and store one bit per
 `(bin, track)` cell in a single CSR matrix. A query set is reduced to the bins
 it covers; `M[query_bins].sum(0)` then returns the shared-bin count for
 **every track at once**. From those counts the `Atlas` computes a Fisher 2x2
 enrichment (the GIGGLE score) or an empirical Monte-Carlo null.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/atlas-index.svg %}
+</div><figcaption>
+<strong>One sparse product scores every track.</strong> The index holds one bit per (bin, track). A query becomes the bins it covers; <code>M[query_bins].sum(axis=0)</code> gives, for every track at once, the shared-bin count <em>a</em>, and the track's size and the query's size fill the other three cells of the Fisher table. <code>ref=</code> swaps the genome for a second set in those cells; <code>bootstrap()</code> reshuffles the query positions instead.
+</figcaption></figure>
 
 At ChIP-Atlas scale (~25k tracks, 1 kb bins) the index is a few GB resident
 and each query is sub-second.
@@ -48,6 +55,7 @@ from genomeblocks import Atlas
 ---
 
 ## Building an index — `Atlas.make`
+{: .sec-navy }
 
 ```python
 atlas = Atlas.make(
@@ -102,6 +110,7 @@ atlas = Atlas.load("chipatlas_hg38_1kb.npz")       # tracks, bins, matrix and me
 ---
 
 ## The track table
+{: .sec-navy }
 
 An `Atlas` is a table of its tracks — one row per track with `name`,
 `n_peaks` (intervals read), `n_bins` (bins covered) and any metadata columns:
@@ -146,6 +155,7 @@ The matrix itself is `atlas.M` (scipy CSR, `bins x tracks`, uint8).
 ---
 
 ## Enrichment search — `atlas.search(query)`
+{: .sec-navy }
 
 Fisher 2x2 of each track against the genome null, in bin units:
 
@@ -164,6 +174,12 @@ res.head()[["name", "overlaps", "log2_odds", "p", "giggle_score"]]
 | `log2_odds` | log2 odds ratio (0.5 added to every cell) |
 | `p` | exact hypergeometric p (`alternative='two-sided'`, `'greater'` or `'less'`) |
 | `giggle_score` | `-log10(p) · log2(OR)` — negative for depletion; the sort key |
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/atlas-search-table.svg %}
+</div><figcaption>
+<strong>Three numbers fill the four cells, for every track at once.</strong> <code>a</code> is the number of query bins the track also covers, read off <code>M[query_bins].sum(0)</code>; <code>b = n_query_bins − a</code>, <code>c = track_n_bins − a</code> and <code>d = n_bins − a − b − c</code> follow from the query's bins, the track's bins and the genome's bins, as vectors over all tracks. From them come <code>log2_odds</code> (0.5 added to every cell), the exact hypergeometric <code>p</code> and <code>giggle_score = −log10(p) · log2_odds</code>, the sort key. With <code>ref=</code> the reference set takes the genome's place in <code>c</code> and <code>d</code>: <code>c</code> becomes the reference bins the track covers and <code>d = n_ref_bins − c</code>, so the test asks whether the track is more enriched in the query than in <code>ref</code>.
+</figcaption></figure>
 
 Metadata columns are merged in when attached. The query is anything
 `as_loci` takes, so these all work and give the same table:
@@ -198,6 +214,7 @@ res = up.enrich(atlas, ref=all_cre)
 ---
 
 ## Monte-Carlo null — `atlas.bootstrap(query, n=...)`
+{: .sec-navy }
 
 When you want an empirical null instead of the analytic Fisher test:
 
@@ -246,6 +263,7 @@ Fluent form: `cre.enrich_mc(atlas, n=1000, seed=0)`.
 ---
 
 ## Attaching metadata — `attach_meta`
+{: .sec-navy }
 
 Track names alone are rarely enough — you want antigen / cell-type labels
 alongside the scores. Attach a table keyed on the track name:
@@ -292,6 +310,7 @@ at build time, and `save` / `load` carry the metadata along.
 ---
 
 ## See also
+{: .sec-navy }
 
 - [API → Atlas]({{ '/api/atlas/' | relative_url }}) for full signatures.
 - [Design → Atlas]({{ '/design/atlas/' | relative_url }}) for the sparse index.

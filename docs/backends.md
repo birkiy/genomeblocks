@@ -9,9 +9,11 @@ permalink: /backends/
 {: .no_toc }
 
 The heavy work on genomeblocks tables runs through a *backend*: one library
-per family of operations. The defaults install with `pip install genomeblocks`
-and are chosen for correctness and installability. Any other engine is a
-request, per call or per block of code, and a request that cannot be met
+per family of operations. The defaults are chosen for correctness and
+installability, and all but the motif engine install with
+`pip install genomeblocks` (a motif engine is compiled: `genomeblocks[motifs]`
+for MOODS, `genomeblocks[lightmotif]` for lightmotif; the conda package ships
+MOODS). Any other engine is a request, per call or per block of code, and a request that cannot be met
 raises with the install command. Whatever engine runs, the answer is the same.
 {: .fs-5 .fw-300 }
 
@@ -30,7 +32,7 @@ raises with the install command. Whatever engine runs, the answer is the same.
 |---|---|---|---|
 | `intervals` | overlap, nearest, merge, point lookups | `genomeblocks` (numpy kernels) | `cgranges`, `ncls`, `bioframe`, `pyranges`, `bedtools` |
 | `bigwig` | reading bigWig signal | `pybigtools` | `pybigwig`, `python` |
-| `motifs` | scoring motif matrices along sequences | `lightmotif` | `moods`, `biopython` |
+| `motifs` | scoring motif matrices along sequences | `moods`, else `lightmotif` | `lightmotif`, `biopython` |
 | `fasta` | fetching sequence | `genomeblocks` (indexed `.fai` reader) | `pysam`, `pyfaidx`, `memory`, `biopython` |
 | `tables` | parsing text tables (BED, BEDPE, GTF, pairs) | `polars`, else `pandas` | `pandas` |
 | `graph` | graph algorithms on an `Architecture` | `graph-tool`, else `scipy` | `igraph`, `networkx`, `scipy` |
@@ -51,8 +53,8 @@ intervals     bedtools      False    False   False
    bigwig   pybigtools       True     True    True
    bigwig     pybigwig       True    False   False
    bigwig       python       True    False   False
-   motifs   lightmotif       True     True    True
-   motifs        moods       True    False   False
+   motifs        moods       True     True    True
+   motifs   lightmotif       True    False   False
    motifs    biopython       True    False   False
     fasta genomeblocks       True     True    True
     fasta        pysam       True    False   False
@@ -74,8 +76,9 @@ backend. `gb.backends.families()` returns the same names as a dict,
 
 ### Why these defaults
 
-Every default is pure pip, so `pip install genomeblocks` gives a working
-package with no conda step and no compiler:
+Every default but the motif engine is pure pip, so `pip install genomeblocks`
+gives a working package with no conda step and no compiler, and a motif engine
+is one extra away:
 
 - **intervals → genomeblocks.** Overlap, merge and nearest are a handful of
   numpy calls on one genome-wide axis (`code · 2⁴⁰ + position`), so they need
@@ -87,8 +90,14 @@ package with no conda step and no compiler:
   binning in one call per region; pyBigWig (libBigWig, C) gives identical
   numbers, and the pure-Python reader (`python`, numpy + mmap) exists so the
   package works where neither wheel does.
-- **motifs → lightmotif.** SIMD scanning of a striped sequence; MOODS and
-  Biopython score the same log-odds matrices.
+- **motifs → MOODS, else lightmotif.** Both are compiled (C++ and Rust), so
+  neither is a core dependency: the conda package depends on bioconda's
+  `moods`, and on pip `genomeblocks[motifs]` compiles MOODS-python while
+  `genomeblocks[lightmotif]` installs prebuilt wheels. genomeblocks parses the
+  motif files, computes the log-odds matrices and the p-value cutoffs itself,
+  so MOODS, lightmotif and Biopython score the same matrices against the same
+  cutoffs and report the same hits; MOODS scans a whole library in one pass,
+  which is why it is first.
 - **fasta → genomeblocks.** A reader on the samtools `.fai` index (built next
   to the file when missing), so only the requested bases are read. pysam,
   pyfaidx and Biopython give the same bases; `memory` reads the whole file
@@ -113,7 +122,7 @@ to give the same result and takes the first one installed.
 |---|---|
 | `intervals` | `genomeblocks` |
 | `bigwig` | `pybigtools`, `python` |
-| `motifs` | `lightmotif` |
+| `motifs` | `moods`, `lightmotif` |
 | `fasta` | `genomeblocks` |
 | `tables` | `polars`, `pandas` |
 | `graph` | `graph-tool`, `scipy` |
@@ -127,6 +136,12 @@ gb.backends.resolve("intervals")      # -> 'genomeblocks'
 gb.backends.resolve("graph")          # -> 'scipy'        (graph-tool not installed here)
 gb.backends.resolve("tables")         # -> 'polars'
 ```
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/backend-dispatch.svg %}
+</div><figcaption>
+<strong>Three ordered steps, then the engine, then one answer.</strong> <code>resolve()</code> takes <code>backend=</code> from the call, else the name set by an enclosing <code>use_backend</code> block, else the first installed candidate in <code>AUTO[family]</code>. A named engine that is not installed raises <code>ImportError</code> with its install command — there is no fallback. The family module runs the chosen engine and normalises its result (half-open filter, sorted rows, int64 columns), so the caller gets the same <code>Loci</code> whichever engine ran.
+</figcaption></figure>
 
 ---
 
@@ -224,8 +239,10 @@ a.nearest(b, backend="ncls")
 {: .tip }
 > `pip install "genomeblocks[interop]"` installs every pip-installable
 > engine (ncls, bioframe, pyranges, pybedtools, pyBigWig, MOODS, Biopython,
-> pysam, pyfaidx, networkx, igraph). cgranges, bedtools and graph-tool are
-> conda extras; see [Installation]({{ '/installation/' | relative_url }}).
+> pysam, pyfaidx, networkx, igraph); `genomeblocks[motifs]` (MOODS) or
+> `genomeblocks[lightmotif]` installs a motif engine alone. cgranges, bedtools
+> and graph-tool are conda extras; see
+> [Installation]({{ '/installation/' | relative_url }}).
 
 ---
 
@@ -304,18 +321,22 @@ so, naming `memory` / `pysam` / `pyfaidx` as the way out, when a file is not.
 
 ### Motifs
 
-Every engine scans the same `(W × 4)` log-odds matrix,
-`log2((count + 0.1) / (total + 0.4) / 0.25)`, lightmotif's own
-`normalize(0.1).log_odds()`. A hit is a window position whose score reaches
-the threshold; windows containing `N` never hit; a hit that would straddle two
-windows is dropped. lightmotif, MOODS and Biopython report the same counts:
+Every engine scans the same `(W × 4)` log-odds matrix, computed by
+genomeblocks' `logodds_matrix` as `log2((count + 0.1) / (total + 0.4) / 0.25)`
+in float32, in lightmotif's summation order, so it matches that library bit
+for bit. A `pvalue=` cutoff comes from genomeblocks' `threshold_from_pvalue`
+(the matrix's exact score distribution on a 0.001-bit grid, within a few
+thousandths of a bit of MOODS' `threshold_from_p`) and is handed to whichever
+engine scans. A hit is a window position whose score reaches the threshold;
+windows containing `N` never hit; a hit that would straddle two windows is
+dropped. MOODS, lightmotif and Biopython report the same counts:
 
 ```python
 from genomeblocks import motifs as gm
 {be: gm.scan_motifs_matrix(cre, "genome.fa", "motifs.jaspar", r=50, threshold=7.0,
                            norm=False, backend=be, verbose=False).sum().to_dict()
- for be in ("lightmotif", "moods", "biopython")}
-# -> {'lightmotif': {'M1': 8, 'M2': 7}, 'moods': {'M1': 8, 'M2': 7}, 'biopython': {'M1': 8, 'M2': 7}}
+ for be in ("moods", "lightmotif", "biopython")}
+# -> {'moods': {'M1': 8, 'M2': 7}, 'lightmotif': {'M1': 8, 'M2': 7}, 'biopython': {'M1': 8, 'M2': 7}}
 ```
 
 ### Tables
@@ -385,9 +406,9 @@ gzip files.
 
 **motifs**: all three engines support single-matrix scans and both strands;
 MOODS additionally scans many matrices in one pass, which
-`scan_motifs_matrix` uses when `backend="moods"`. A `pvalue=` threshold is
-turned into a score with lightmotif's exact score distribution for every
-engine, so it needs lightmotif installed.
+`scan_motifs_matrix` uses when it runs on MOODS. A `pvalue=` threshold is
+turned into a score by genomeblocks' own `threshold_from_pvalue` before any
+engine is called, so it works the same on all three and needs nothing extra.
 
 **tables**: polars and pandas parse the BED-like files of `Loci.make`, the
 BEDPE of `Pairs.make` and the GTF / GFF3 of `Genes.make`; polars is faster on

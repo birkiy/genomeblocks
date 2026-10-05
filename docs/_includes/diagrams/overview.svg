@@ -105,9 +105,9 @@
 <text class="ms" x="311.6" y="502" text-anchor="middle"></text>
 <rect class="bx navy" x="373.2" y="434" width="104" height="80" rx="8"></rect>
 <text class="t" x="425.2" y="452" text-anchor="middle">motifs</text>
-<text class="m" x="425.2" y="470" text-anchor="middle">lightmotif</text>
-<text class="ms" x="425.2" y="488" text-anchor="middle">moods · biopython</text>
-<text class="ms" x="425.2" y="502" text-anchor="middle"></text>
+<text class="m" x="425.2" y="470" text-anchor="middle">moods</text>
+<text class="ms" x="425.2" y="488" text-anchor="middle">else lightmotif</text>
+<text class="ms" x="425.2" y="502" text-anchor="middle">biopython</text>
 <rect class="bx navy" x="486.8" y="434" width="104" height="80" rx="8"></rect>
 <text class="t" x="538.8" y="452" text-anchor="middle">fasta</text>
 <text class="m" x="538.8" y="470" text-anchor="middle">genomeblocks</text>

@@ -96,10 +96,10 @@ DataFrame per track, joined with the metadata, sorted by score.
 
 ```python
 atlas.search(cre)
-# ->   name  n_query_bins  n_track_bins  track_n_bins  track_n_peaks  overlaps  log2_odds         p  giggle_score
-# -> 0   t2            12             7             7              7         3   1.729352  0.320905      0.853650
-# -> 1   t1            12             7             7              7         2   0.773960  0.939026      0.021147
-# -> 2   t0            12             7             7              7         0  -2.321928  0.330467     -1.116549
+# ->   name  n_query_bins  track_n_bins  track_n_peaks  overlaps  log2_odds         p  giggle_score
+# -> 0   t2            12             7              7         3   1.729352  0.320905      0.853650
+# -> 1   t1            12             7              7         2   0.773960  0.939026      0.021147
+# -> 2   t0            12             7              7         0  -2.321928  0.330467     -1.116549
 
 atlas.bootstrap(cre, n=5, seed=0, verbose=False)[["name", "observed", "expected", "z", "p_emp"]]
 # ->   name  observed  expected         z     p_emp

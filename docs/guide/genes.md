@@ -34,6 +34,12 @@ tables on one `Genome`. The links between them are row numbers:
 | `genes.transcripts` | transcript | `transcript_id`, `gene` | `gene` = row in `genes.genes` |
 | `genes.features` | exon / CDS / UTR | `kind` (0 exon, 1 CDS, 2 5'UTR, 3 3'UTR), `transcript`, `exon_number` | `transcript` = row in `genes.transcripts` |
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/genes-model.svg %}
+</div><figcaption>
+<strong>Three Loci linked by row number.</strong> <code>genes.transcripts['gene'][k]</code> is the row of transcript <em>k</em>'s gene in <code>genes.genes</code>; <code>genes.features['transcript'][j]</code> the row of feature <em>j</em>'s transcript. The GTF's 1-based start loses one on the way in, so <code>genes.genes</code>, <code>get_tss()</code> and <code>annot[...]</code> compare directly with your peaks, with no off-by-one to remember.
+</figcaption></figure>
+
 ```python
 import genomeblocks as gb
 
@@ -60,6 +66,12 @@ genes["GENE_A"].tss                 # GTF: chr1 1001-5000 (+)  ->  [1000, 5000)
 genes["GENE_B"].tss                 # GTF: chr1 10001-11000 (-) -> [10000, 11000)
 # -> Locus(chrom='chr1', start=10999, end=11000, strand='-')
 ```
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/genes-tss-rule.svg %}
+</div><figcaption>
+<strong>The TSS is the 1-bp interval <code>[t, t+1)</code>, with <code>t = start</code> on '+' and <code>t = end − 1</code> on '−'.</strong> A GTF row <code>1001 5000 +</code> is stored as <code>[1000, 5000)</code> — the 1-based start loses one, the end stays — and its TSS is <code>[1000, 1001)</code> at the left edge. A '−' gene <code>10001 11000</code> is stored as <code>[10000, 11000)</code> and its TSS is <code>[10999, 11000)</code>, the last base, at the right edge. The promoter window <code>TSS ± promoter_r</code> (<code>genes.annot['prom']</code>) is <code>get_tss().slop(promoter_r)</code> around that base. The 1-bp boxes are drawn wider than scale.
+</figcaption></figure>
 
 As a table, the object is its genes table: `len`, `shape`, `columns`,
 `head()`, `tail()`, `describe()`, iteration, and the Arrow / dataframe
@@ -320,6 +332,12 @@ what you want to store as a column. The highest-priority class a row overlaps
 wins: **Promoter-TSS > 5UTR > 3UTR > Exonic > Intronic > Intergenic**. A row
 inside a gene body that touches no exon is Intronic.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/genes-annot.svg %}
+</div><figcaption>
+<strong>The first set a CRE touches names it.</strong> <code>labels()</code> tests each row against <code>annot['prom']</code>, then the 5′ UTRs, 3′ UTRs, exons and gene bodies; the first hit wins, so a CRE on a promoter is <em>Promoter-TSS</em> even when it also lies in an exon, and one inside a body that touches no exon is <em>Intronic</em>. <code>promoter_r</code> sets the width of the first set and so moves the first boundary.
+</figcaption></figure>
+
 ```python
 from genomeblocks.genes import LABELS
 cre["annot"] = LABELS[genes.labels(cre)]
@@ -356,6 +374,12 @@ genes.nearest_genes(cre)                    # a DataFrame; rows with no gene on 
 A row on a chromosome with no gene gets `('', -1)` from `nearest_tss`. Ties
 between two equally near windows go to the one with the lower start.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/genes-nearest-tss.svg %}
+</div><figcaption>
+<strong><code>nearest_tss</code> measures to the promoter window, not to the TSS base.</strong> GENE_A's window is <code>TSS ± promoter_r = [4000, 6001)</code>. <code>cre[0]</code> lies inside it: <code>('GENE_A', 0)</code>. <code>cre[1] = [7001, 7101)</code> starts 1000 bases past the window's edge at 6001, so its distance is 1000 — not the 2000 to the TSS base. <code>cre[2]</code> is on a chromosome with no gene: <code>('', −1)</code>. Both arrays line up with the rows of the query.
+</figcaption></figure>
+
 Every annotation call accepts anything `as_loci` takes (a frame, a path, a
 list of regions) and takes `backend=` to pick the interval engine; the labels
 are identical on every engine, and `nearest_*` on the engines that implement
@@ -380,6 +404,12 @@ nearest-gene calls and the browser view.
 `select_isoforms` keeps the isoforms whose TSS window (TSS ± `r`) overlaps a
 peak in `cre` and, with `bw`, carries signal; it then points each gene at one
 of them.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/genes-isoforms.svg %}
+</div><figcaption>
+<strong>Your open chromatin picks the TSS.</strong> Each isoform's TSS ± <code>r</code> is tested against the peaks (and, with <code>bw</code>, must carry signal above <code>min_signal</code> and <code>min_frac</code> of the gene's best); the longest supported isoform becomes <code>canonical</code> (<code>rank="signal"</code> takes the strongest instead) and, with <code>collapse=True</code>, the gene's body and TSS move onto it. Unsupported isoforms stay in <code>transcripts</code>; a gene with none keeps its longest.
+</figcaption></figure>
 
 ```python
 peaks = gb.as_loci([("chr1", 1900, 2100)])          # open over T1b's TSS, not T1's
@@ -412,7 +442,7 @@ constructors run it for you:
 
 ```python
 genes = gb.Genes.make("gencode.v44.annotation.gtf", cre="atac.narrowPeak", bw="atac.bw", r=200)
-# -> [INFO] Isoform support: 2/3 genes with an open TSS (3/4 isoforms), 1 fell back to the longest isoform.
+# -> [INFO] Isoform support: 2/3 genes with an open TSS (2/4 isoforms), 1 fell back to the longest isoform.
 ```
 
 What it writes:
@@ -433,8 +463,12 @@ when selected, else the longest — and is what `to_bed12` and the browser draw:
 
 ```python
 genes.representative(), genes.representative(canonical=False)
-# -> (array([1, 2, 3]), array([0, 2, 3]))
+# -> (array([0, 2, 3]), array([0, 2, 3]))
 ```
+
+(Here the ATAC peak sits over `T1`'s TSS, so `GENE_A`'s canonical isoform is
+`T1` — row 0 — which is also its longest; in the `select_isoforms(peaks, r=200)`
+example above it was `T1b`, row 1.)
 
 ---
 

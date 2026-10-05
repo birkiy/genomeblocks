@@ -53,6 +53,12 @@ The other tables are built from `Loci`:
 | `Architecture` | vertices = the `Loci`; edges = `src`, `tgt` + `ep` columns | `vp` columns are aligned to the `Loci` rows, `ep` columns to the edges |
 | `Atlas` | a sparse bins × tracks matrix | tracks are rows of the track table |
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/columnar-rows.svg %}
+</div><figcaption>
+<strong>The row number is the join key.</strong> An Architecture's edges store row numbers of the CRE table, not uids; the annotation labels, the signal cube's first axis and every vertex column have one entry per row, in the table's order; and a <code>Genes</code> object's three tables point at each other by row (<code>transcripts['gene']</code>, <code>features['transcript']</code>). One mask or row array selects the same rows everywhere.
+</figcaption></figure>
+
 `L[i]` hands out a `LocusView` — a real `Locus` whose fields read (and write through to) the columns; `genes['TP53']` a `GeneView` with `.tss`, `.transcripts`, `.exons`. Whole-set work never iterates over views.
 
 ---
@@ -70,6 +76,12 @@ a.genome.names, b.genome.names        # -> ['chr2', 'chr1'], ['chr1', 'chrX']
 a & b                                 # -> Loci(n=1, chroms=1)
 a.genome.names                        # -> ['chr2', 'chr1', 'chrX']   b was re-coded onto a's Genome
 ```
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/genome-recode.svg %}
+</div><figcaption>
+<strong>One <code>Genome</code> per table, re-coded on contact.</strong> <code>a</code> and <code>b</code> were read separately, so chr1 is code 1 in <code>a</code> and code 0 in <code>b</code>. <code>Loci._check</code> builds a two-entry lookup from <code>b</code>'s names to <code>a</code>'s codes — appending chrX to <code>a</code>'s Genome — and rewrites <code>b</code>'s codes column; the overlap then runs on integer codes of one Genome, and <code>a.genome.names</code> has grown by chrX.
+</figcaption></figure>
 
 Pass one `Genome` to several constructors to skip even that:
 
@@ -109,6 +121,12 @@ genes["GENE_B"].tss        # -> Locus(chrom='chr1', start=10999, end=11000, stra
 genes.get_tss()            # one row per gene, with gene_name / gene_id / gene (row) columns
 ```
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/coords-tss.svg %}
+</div><figcaption>
+<strong>0-based, half-open, and the TSS rule on one axis.</strong> <code>[2, 6)</code> covers bases 2, 3, 4, 5 and has 6 − 2 = 4 of them; <code>[4, 4)</code> has no bases — it is the point between bases 3 and 4 — and lies inside <code>[2, 6)</code>. A gene's TSS is one base: <code>[8, 9)</code> at the start of a '+' gene, <code>[22, 23)</code> at <code>end − 1</code> of a '−' gene.
+</figcaption></figure>
+
 Promoter windows are `get_tss().slop(r)`; `annotations()` labels Promoter-TSS > 5UTR > 3UTR > Exonic > Intronic > Intergenic from that same index. Two intervals overlap when `s1 < e2 and s2 < e1`; a zero-length interval `[p, p)` is a point between two bases and overlaps `[s, e)` when `s < p < e`. Every interval backend is held to these rules.
 
 ---
@@ -133,6 +151,12 @@ as_loci(pd.DataFrame({"a": [1], "b": [2], "c": [3]}))
 # ValueError: expected columns for the chromosome, start and end, e.g. chrom/start/end (bioframe),
 #   Chromosome/Start/End (pyranges), seqnames/start/end or chr/chromStart/chromEnd — or pass chrom=, start=, end= to name them
 ```
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/boundary.svg %}
+</div><figcaption>
+<strong>One way in, explicit ways out.</strong> Every input kind — a <code>Loci</code>, a region string, a file path, a frame from any library, a dict of columns, an AnnData, a protocol object — becomes a <code>Loci</code> inside <code>as_loci</code>, which every public function calls on its inputs; <code>Genes</code>, <code>Pairs</code>, <code>Architecture</code> and <code>Atlas</code> are built from those <code>Loci</code>. Converters leave by copying into the target's layout, and the three protocols hand the Arrow columns over without converting.
+</figcaption></figure>
 
 Normalising once at the boundary means no function branches on input type inside. See [Interoperability]({{ '/interoperability/' | relative_url }}).
 
@@ -189,14 +213,14 @@ The heavy work on the tables runs through a *backend*, one per family of operati
 |---|---|---|---|
 | `intervals` | genomeblocks (numpy) | cgranges, ncls, bioframe, pyranges, bedtools | overlap, nearest, merge, point lookups (cgranges and ncls: overlap and point lookups only) |
 | `bigwig` | pybigtools | pybigwig, python | reading signal |
-| `motifs` | lightmotif | moods, biopython | scoring matrices along sequences |
+| `motifs` | MOODS, else lightmotif (neither comes with a bare `pip install genomeblocks`: see [Installation]({{ '/installation/' | relative_url }})) | lightmotif, biopython | scoring matrices along sequences |
 | `fasta` | genomeblocks (indexed) | pysam, pyfaidx, memory, biopython | fetching sequence |
 | `tables` | polars, else pandas | pandas | parsing BED / GTF / pairs text |
 | `graph` | graph-tool, else scipy | igraph, networkx | components, PageRank, layouts |
 
 Three rules:
 
-1. **Automatic only where the answers are identical.** polars and pandas parse to the same columns; graph-tool and scipy give the same components; pybigtools and the pure-Python reader bin alike. Anything else is a request.
+1. **Automatic only where the answers are identical.** polars and pandas parse to the same columns; graph-tool and scipy give the same components; pybigtools and the pure-Python reader bin alike; MOODS and lightmotif report the same motif hits. Anything else is a request.
 2. **A request is per call or per block**, never global state:
    ```python
    import genomeblocks as gb

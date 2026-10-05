@@ -84,16 +84,16 @@ Column names are lenient on the way in (`chrom` / `chr` / `Chromosome` / `seqnam
 ### Backends
 {: .no_toc }
 
-| Family | Default (installed by `pip install genomeblocks`) | Others on request |
+| Family | Default | Others on request |
 |---|---|---|
 | `intervals` — overlap, nearest, merge, point lookups | genomeblocks (numpy) | cgranges, ncls, bioframe, pyranges, bedtools |
 | `bigwig` — reading signal | pybigtools | pybigwig, python |
-| `motifs` — scoring matrices along sequences | lightmotif | moods, biopython |
+| `motifs` — scoring matrices along sequences | MOODS, else lightmotif (an extra: `genomeblocks[motifs]` or `genomeblocks[lightmotif]`; conda ships MOODS) | lightmotif, biopython |
 | `fasta` — fetching sequence | genomeblocks (indexed `.fai` reader) | pysam, pyfaidx, memory, biopython |
 | `tables` — parsing BED / GTF / pairs text | polars, else pandas | pandas |
 | `graph` — algorithms on an `Architecture` | graph-tool, else scipy | igraph, networkx |
 
-`gb.backends()` lists them; `backend=` on a call or `with gb.use_backend(intervals="bioframe"):` picks one; a requested backend that is not installed raises an `ImportError` with the install command — nothing falls back silently. See [Backends]({{ '/backends/' | relative_url }}).
+Every default but the motif engine comes with `pip install genomeblocks`. `gb.backends()` lists them; `backend=` on a call or `with gb.use_backend(intervals="bioframe"):` picks one; a requested backend that is not installed raises an `ImportError` with the install command — nothing falls back silently. See [Backends]({{ '/backends/' | relative_url }}).
 
 ---
 
@@ -145,7 +145,7 @@ df = cre.to_pandas()                                                 # or to_pol
 
 | Section | When to read it |
 |---|---|
-| [Installation]({{ '/installation/' | relative_url }}) | `pip install genomeblocks`, the extras, and the three conda-only engines. |
+| [Installation]({{ '/installation/' | relative_url }}) | `pip install genomeblocks`, the extras (including the motif engine), and the three conda-only engines. |
 | [Quickstart]({{ '/quickstart/' | relative_url }}) | A 10-minute tour end to end, with the outputs. |
 | [Concepts]({{ '/concepts/' | relative_url }}) | The mental model — tables, the row as join key, Genome codes, 0-based coordinates, the boundary, backends. |
 | [Interoperability]({{ '/interoperability/' | relative_url }}) | Every input `as_loci` takes and every `to_*` exit, with round trips. |

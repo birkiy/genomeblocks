@@ -14,7 +14,7 @@
 <polygon class="hd" points="320.0,86.0 316.7,79.8 323.3,79.8"/>
 <text class="lbl" x="328" y="76">join, stripe once</text>
 <text class="cap" x="20" y="100">ONE STRIPED BLOCK</text>
-<text class="s" x="152" y="100">· hits of motif j from one engine call (lightmotif · MOODS · Biopython)</text>
+<text class="s" x="152" y="100">· hits of motif j from one engine call (MOODS · lightmotif · Biopython)</text>
 <rect class="iv fnl" x="20" y="128" width="120" height="22" rx="0"></rect>
 <text class="ms" x="20" y="166" text-anchor="middle">0</text>
 <rect class="iv fl" x="140" y="128" width="120" height="22" rx="0"></rect>

@@ -9,10 +9,12 @@ nav_order: 8
 {: .no_toc }
 
 Scan transcription-factor motifs (JASPAR / TRANSFAC / MEME / your own matrices)
-over the windows of a `Loci` table, read straight from a FASTA. The scan runs on
-[lightmotif](https://github.com/althonos/lightmotif) by default (Martin
-Larralde, EMBL — see [Credits]({{ '/credits/#lightmotif' | relative_url }})),
-or on MOODS / Biopython on request, and every engine reports the same hits.
+over the windows of a `Loci` table, read straight from a FASTA. genomeblocks
+parses the motif files, builds the log-odds matrices and the p-value cutoffs
+itself, and hands them to a scanning engine: [MOODS](https://github.com/jhkorhonen/MOODS)
+by default, [lightmotif](https://github.com/althonos/lightmotif) when only it
+is installed, Biopython on request (see [Credits]({{ '/credits/' | relative_url }})).
+Every engine reports the same hits.
 {: .fs-5 .fw-300 }
 
 ## Table of contents
@@ -24,6 +26,7 @@ or on MOODS / Biopython on request, and every engine reports the same hits.
 ---
 
 ## The pieces
+{: .sec-navy }
 
 | piece | what it is |
 |---|---|
@@ -45,15 +48,28 @@ import genomeblocks as gb
 from genomeblocks import motifs as gm
 ```
 
+{: .warning }
+> **A bare `pip install genomeblocks` has no motif engine.** MOODS is C++ and
+> lightmotif is Rust, so neither is a core dependency. Install one:
+>
+> - `conda install -c bioconda moods` — the conda package of genomeblocks already depends on it;
+> - `pip install 'genomeblocks[motifs]'` — MOODS-python, compiled at install time;
+> - `pip install 'genomeblocks[lightmotif]'` — prebuilt wheels, used automatically when MOODS is absent.
+>
+> Without one, every `scan_*` call raises
+> `ImportError: no motifs backend is installed: conda install -c bioconda moods  (or pip install 'genomeblocks[motifs]', which compiles MOODS-python) or pip install 'genomeblocks[lightmotif]'  (prebuilt wheels)`.
+> Reading libraries, the statistics and the archetypes need no engine.
+
 ---
 
 ## Motif libraries — `load_motifs` and `Library`
+{: .sec-navy }
 
 `gb.load_motifs` reads one motif collection into a `Library`: a list of
 `(W x 4)` count matrices (columns A C G T) with names and descriptions.
 
 ```python
-lib = gb.load_motifs("JASPAR2024_CORE.jaspar")                  # raw 4-row counts (lightmotif's 'jaspar')
+lib = gb.load_motifs("JASPAR2024_CORE.jaspar")                  # raw 4-row counts (JASPAR's .pfm layout)
 lib = gb.load_motifs("JASPAR2024_CORE.txt", format="jaspar16")  # bracketed  A [ 1 2 3 ]  layout
 lib = gb.load_motifs("matrix.dat", format="transfac")
 lib = gb.load_motifs("uniprobe.txt", format="uniprobe")         # probabilities (scaled to 100 sites)
@@ -67,6 +83,10 @@ lib = gb.load_motifs("archetypes.meme", format="meme")          # MEME minimal o
 | `transfac` | TRANSFAC `ID / P0 / 01 ...` blocks |
 | `uniprobe` | UniPROBE `A:` `C:` `G:` `T:` probability rows |
 | `meme` | MEME `MOTIF` blocks with a `letter-probability matrix` |
+
+All five are parsed by genomeblocks itself (`genomeblocks.backends.motifs`),
+not by the scanning engine, so a library reads the same way whichever engine
+is installed; `.gz` files are fine.
 
 {: .warning }
 > `jaspar` is the **raw four-line count** layout, not the bracketed JASPAR-2016
@@ -145,15 +165,18 @@ Indexing gives matrices:
 lib["M1"]                 # the (W x 4) count matrix, by name ...
 lib[0]                    # ... or by position
 lib.names, lib.descriptions, lib.widths
-# -> ['M1', 'M2'] ['TFA', 'TFB'] array([4, 4])
+# -> (['M1', 'M2'], ['TFA', 'TFB'], array([4, 4]))
 lib.consensus(1)          # -> 'GGAA'
 lib.logodds(0)            # (W x 4) log2-odds matrix — what the scanners score
 lib.pfm(0)                # (4 x W) probabilities (rows A C G T), for logos and archetypes
 ```
 
 Every motif is scored with one log-odds matrix,
-`log2((count + 0.1) / (column total + 0.4) / 0.25)` — lightmotif's own
-`normalize(0.1).log_odds()` — and every engine scans that same matrix.
+`log2((count + 0.1) / (column total + 0.4) / 0.25)`, which genomeblocks
+computes (`genomeblocks.backends.motifs.logodds_matrix`: float32, summed in
+the same order lightmotif uses, so it matches that library bit for bit) and
+every engine scans that same matrix — MOODS, lightmotif and Biopython never
+see the counts, only this matrix and a cutoff.
 
 ### Selecting motifs
 
@@ -174,7 +197,7 @@ same way when exactly one motif matches.
 lib.to_jaspar("lib.jaspar16")              # bracketed JASPAR counts (read back with format='jaspar16')
 lib.to_meme("lib.meme")                    # MEME minimal format, probabilities
 lib.to_biopython()                         # list[Bio.motifs.Motif] (counts; name = description, matrix_id = name)
-lib.to_moods()                             # MOODS matrices: one 4 x W log-odds list per motif
+lib.to_moods()                             # MOODS matrices: one 4 x W log-odds list of lists per motif
 ```
 
 `gm.write_meme({name: pfm}, path)` writes any `{name: (4 x W) probabilities}`
@@ -183,6 +206,7 @@ dict — the archetypes below, for example — as MEME.
 ---
 
 ## Sequence — the FASTA side
+{: .sec-navy }
 
 Scanning reads each window from a FASTA. Pass the path and the fasta backend
 does the rest:
@@ -230,6 +254,7 @@ FASTA) as zero hits and say how many rows that affected.
 ---
 
 ## Per-locus x per-motif matrix — `scan_motifs_matrix`
+{: .sec-navy }
 
 The workhorse. One row per locus, one column per motif, each cell the number
 of positions in the locus's **centre ± `r`** window whose log-odds score
@@ -243,7 +268,7 @@ M = gm.scan_motifs_matrix(
     norm=True,             # divide counts by motif width
     both_strands=False,    # also count reverse-strand matches
     workers=None,          # processes over motifs; None = half the cores
-    backend=None,          # 'lightmotif' (default), 'moods', 'biopython'
+    backend=None,          # 'moods' (default; lightmotif when MOODS is absent), 'lightmotif', 'biopython'
     fasta_backend=None,    # 'genomeblocks' (default), 'pysam', 'pyfaidx', 'memory', 'biopython'
 )
 # -> pandas.DataFrame, index = uid (in the loci's order), columns = motif names
@@ -269,9 +294,19 @@ M
 
 `threshold` is a log2-odds score: a scalar for every motif, or one value per
 motif. `pvalue` replaces it with a per-motif cutoff — the score each motif
-reaches with that probability under a uniform background (lightmotif's exact
-score distribution), so motifs of different widths and information content are
-cut at a comparable stringency.
+reaches with that probability under a uniform background — so motifs of
+different widths and information content are cut at a comparable stringency.
+The cutoff comes from genomeblocks' own `threshold_from_pvalue`: the exact
+score distribution of the log-odds matrix on a 0.001-bit grid (it agrees with
+MOODS' `threshold_from_p` to a few thousandths of a bit), computed once per
+motif and handed to whichever engine scans, so the hits do not depend on the
+engine.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/motifs-threshold.svg %}
+</div><figcaption>
+<strong>One matrix, one cutoff, every engine.</strong> The count matrix becomes a log-odds matrix through <code>logodds_matrix()</code> — <code>log2((c + 0.1) / (total + 0.4) / 0.25)</code> in float32, summed in lightmotif's order — and that is the only matrix any engine sees. <code>threshold_from_pvalue()</code> builds the matrix's exact score distribution on a 0.001-bit grid and returns the smallest score whose upper tail is at most <code>p</code>: 7.49 bits for <code>p = 0.001</code> on this matrix (MOODS' <code>threshold_from_p</code> gives 7.4875). MOODS, lightmotif and Biopython each receive the same matrix and the same cutoff, so their hits are identical; <code>threshold=</code> skips the distribution and uses the number as given.
+</figcaption></figure>
 
 ```python
 gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=[7.0, 5.0], norm=False)   # per motif
@@ -303,6 +338,7 @@ gm.scan_motifs_matrix(gb.as_loci(["chr1:10-30", "chrZ:100-200"]), "genome.fa", "
 ---
 
 ## Totals per motif — `scan_motifs`
+{: .sec-navy }
 
 When you only need the per-motif total over all windows:
 
@@ -320,23 +356,33 @@ It is `scan_motifs_matrix(...).sum(axis=0)` with the same arguments (minus
 ---
 
 ## What the scan does
+{: .sec-navy }
 
 1. `load_motifs` turns the source into a `Library`; each motif gets one
-   log-odds matrix.
+   log-odds matrix and one cutoff (`threshold`, or `pvalue` through
+   `threshold_from_pvalue`), both computed by genomeblocks.
 2. Every window (centre ± `r`) is read from the FASTA once, upper-cased, and
    the windows are laid end to end into one block.
-3. Each motif is scanned once over that block by the chosen engine; hits are
-   split back per window (a hit spanning two windows is dropped), so the result
-   equals scanning each window on its own.
+3. Each motif is scanned once over that block by the engine — MOODS scans the
+   whole library in one pass, lightmotif and Biopython one matrix at a time;
+   hits are split back per window (a hit spanning two windows is dropped), so
+   the result equals scanning each window on its own.
 4. Counts are divided by the motif width when `norm=True` and returned as a
    DataFrame indexed by `uid`.
 
 A window containing a letter other than A C G T N never hits; `N` positions
 score `-inf`.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/motifs-block.svg %}
+</div><figcaption>
+<strong>One engine call per motif over all windows.</strong> The windows are joined into one block once; each motif is scanned over the whole block (MOODS takes the whole library in one call), and every hit is mapped back to its window by position, with hits that straddle a boundary dropped. The result equals scanning each window alone, at a fraction of the calls; with <code>workers</code> the motifs are split across processes that each hold the block.
+</figcaption></figure>
+
 ---
 
 ## Masking an anchor motif — `scan_motifs_matrix_masked`
+{: .sec-navy }
 
 "Which co-factors set these regions apart *besides* CTCF?" Mask every match of
 the anchor motifs before scanning the library:
@@ -362,10 +408,11 @@ gm.scan_motifs_matrix_masked(L, "genome.fa", "motifs.jaspar", ["M1"], r=50, thre
 # -> uid
 # -> chr1:950-1050(.)    0
 # -> chr1:4950-5050(.)   4
-# -> chr1:7000-7100(.)   0
+# -> chr1:7000-7100(.)   1
 ```
 
-`threshold` may be a list with one value per library motif, and `pvalue` works
+(The third window had two `M1` sites; the random bases that replaced them
+happen to contain one `GGAA`.) `threshold` may be a list with one value per library motif, and `pvalue` works
 as in `scan_motifs_matrix`. With `skip_anchors=False` the anchor columns stay
 (and show the hits left after masking).
 
@@ -377,6 +424,7 @@ as in `scan_motifs_matrix`. With `skip_anchors=False` the anchor columns stay
 ---
 
 ## Positional profiles — `scan_motifs_profile` and `plot_motif_heatmap`
+{: .sec-navy }
 
 Where in the window do the hits fall? `scan_motifs_profile` returns a
 `(rows, motifs, bins)` cube — the layout of a [signal cube]({{ '/guide/signal/' | relative_url }}),
@@ -417,6 +465,7 @@ of the non-zero cells; the top of the group mean profiles). The method form is
 ---
 
 ## Enrichment and differential tests
+{: .sec-navy }
 
 All three take the matrices `scan_motifs_matrix` (or the masked variant)
 returns. Columns are aligned by name, so the matrices need not share a motif
@@ -476,6 +525,7 @@ non-zero column mean so it does not dominate small rates.
 ---
 
 ## Motif archetypes — clustering to consensus matrices
+{: .sec-navy }
 
 A motif library is redundant (dozens of forkhead matrices). Collapse it:
 pairwise Sandelin-Wasserman similarity → hierarchical clustering → one
@@ -531,35 +581,51 @@ plot_dendrogram(Z, names=names, cutoff=0.5)                          # the clust
 ---
 
 ## The three engines agree
+{: .sec-navy }
 
-The `motifs` backend family has three members. All score the same log-odds
-matrices and report the same hits; they differ in speed and in what they need
-installed.
+The `motifs` backend family has three members. genomeblocks parses the
+library, builds the log-odds matrices and turns a p-value into a cutoff; the
+engine only slides those matrices along the block. So all three report the
+same hits, and they differ in speed and in what they need installed.
 
 | backend | engine | install |
 |---|---|---|
-| `lightmotif` (default) | SIMD scanner, Rust | comes with `pip install genomeblocks` |
-| `moods` | MOODS, C++ (scans the whole library in one pass) | `pip install MOODS-python` |
-| `biopython` | `Bio.motifs` PSSM, numpy | `pip install biopython` |
+| `moods` (default) | MOODS, C++ — scans the whole library in one pass | `conda install -c bioconda moods`, or `pip install 'genomeblocks[motifs]'` (MOODS-python, compiled at install) |
+| `lightmotif` | SIMD scanner, Rust — one matrix per call | `pip install 'genomeblocks[lightmotif]'` (prebuilt wheels); picked automatically only when MOODS is absent |
+| `biopython` | `Bio.motifs` PSSM, numpy | `pip install biopython`; never picked automatically |
+
+With `backend=None` the choice is automatic between the two engines that are
+interchangeable (`moods`, then `lightmotif`); Biopython is always a request.
 
 ```python
 ref = gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, verbose=False)
-for b in ["lightmotif", "moods", "biopython"]:
+for b in ["moods", "lightmotif", "biopython"]:
     assert gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, backend=b,
                                  verbose=False).equals(ref)
 
-with gb.use_backend(motifs="moods", fasta="pyfaidx"):          # for a block of code
+with gb.use_backend(motifs="lightmotif", fasta="pyfaidx"):     # for a block of code
     M = gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, verbose=False)
+M.equals(ref)
+# -> True
+gb.backends().query("family == 'motifs'")
+# ->     family     backend  installed  default  in use install
+# -> 9   motifs       moods       True     True    True
+# -> 10  motifs  lightmotif       True    False   False
+# -> 11  motifs   biopython       True    False   False
 ```
 
-A backend that is not installed raises `ImportError` with the install command;
-an unknown name raises `ValueError` listing the choices. There is no silent
-switch. `gb.backends()` shows what is installed and which engine each family
-uses; see [Backends]({{ '/backends/' | relative_url }}).
+A backend that is requested but not installed raises `ImportError` with its
+install command (`the 'lightmotif' motifs backend is not installed: pip install
+'genomeblocks[lightmotif]'  (prebuilt wheels)`); an unknown name raises
+`ValueError` listing the choices; with no engine at all the error names both
+extras (see the top of this page). There is no silent switch. `gb.backends()`
+shows what is installed and which engine each family uses; see
+[Backends]({{ '/backends/' | relative_url }}).
 
 ---
 
 ## Tips
+{: .sec-navy }
 
 - `threshold=13.0` is a reasonable default for JASPAR counts (log2-odds in
   bits). Pick an empirical value by scanning a shuffled control, or use

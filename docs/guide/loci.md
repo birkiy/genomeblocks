@@ -39,11 +39,23 @@ Every table is 0-based, half-open: `[start, end)` covers `end - start` bases,
 and two intervals overlap when `s1 < e2 and s2 < e1`. A BED file is read as it
 is; a GTF is shifted by one on the way in ([Genes]({{ '/guide/genes/' | relative_url }})).
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/loci-halfopen.svg %}
+</div><figcaption>
+<strong>Half-open coordinates make lengths and overlaps plain arithmetic.</strong> <code>[3, 7)</code> covers bases 3–6, so its length is <code>end − start = 4</code>. <code>[7, 10)</code> starts exactly where it ends: 3 &lt; 10 holds but 7 &lt; 7 does not, so the two do not overlap. <code>[5, 9)</code> shares bases 5 and 6 with it because both <code>s1 &lt; e2</code> and <code>s2 &lt; e1</code> hold. <code>[5, 5)</code> has no bases — it is the point between bases 4 and 5 — and lies inside <code>[3, 7)</code> because 3 &lt; 5 &lt; 7. A GTF row's 1-based start 4 is stored as 3; its end stays 7.
+</figcaption></figure>
+
 **The row number is the join key.** A signal cube, a motif matrix, an
 annotation vector or an Architecture vertex column computed from a `Loci` has
 one row per locus, in this order. Selecting rows (`L[mask]`, `L.take(rows)`)
 gives a new table whose rows line up with `mask` / `rows`, so you subset the
 other arrays the same way.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/columnar-rows.svg %}
+</div><figcaption>
+<strong>The row number is the join key.</strong> Every array you build from a <code>Loci</code> — annotation labels, a signal cube, the vertex columns of an Architecture — has one entry per row, in this order, and an Architecture's edges store row numbers rather than uids. Subset them together: <code>L[mask]</code> and <code>cube[mask]</code> keep lining up, and <code>cube[i]</code> is always locus <code>L[i]</code>.
+</figcaption></figure>
 
 Each `Loci` has a [`Genome`]({{ '/concepts/' | relative_url }}) mapping
 chromosome names to codes. Tables derived from one another share it; two tables
@@ -268,6 +280,12 @@ least one row of `b` under the half-open rule (`s1 < e2 and s2 < e1`, same
 chromosome). Book-ended intervals (`[100, 200)` and `[200, 300)`) do not
 overlap. Rows come back whole, in their original order, with their columns.
 
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/loci-setops.svg %}
+</div><figcaption>
+<strong>Set operators keep whole rows.</strong> <code>a &amp; b</code> keeps each row of <code>a</code> that touches any row of <code>b</code>; <code>a - b</code> keeps the rest. Neither clips, splits or reorders an interval, so a mask over <code>a</code> (<code>a.overlap_any(b)</code>) gives the same rows. <code>(a + b).merge()</code> is the one call here that changes coordinates: overlapping or book-ended rows fuse into one.
+</figcaption></figure>
+
 ```python
 a = gb.as_loci([("chr1", 100, 200), ("chr1", 300, 400), ("chr1", 500, 600), ("chr2", 0, 100)])
 b = gb.as_loci([("chr1", 200, 300), ("chr1", 350, 360), ("chr2", 50, 60)])
@@ -372,6 +390,12 @@ rows, dist
 | book-ended (`[100, 110)` next to `[110, 120)`) | that row | `0` |
 | a gap | the closer of the left and right neighbour (the left one on an exact tie) | the gap in bases (`[200, 210)` to `[150, 160)` is 40) |
 | nothing on the query's chromosome | `-1` | `-1` |
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/loci-nearest.svg %}
+</div><figcaption>
+<strong><code>nearest()</code> measures the gap between interval ends.</strong> <code>q[0] = [100, 110)</code> is book-ended with <code>r[0] = [110, 120)</code>: row 0, distance 0. <code>q[2] = [150, 155)</code> lies inside <code>r[1]</code>: row 1, distance 0. <code>q[1] = [200, 210)</code> touches nothing; the gap to <code>r[1]</code> is 200 − 160 = 40 and the gap to <code>r[0]</code> would be 80, so the closer row wins (the left one on an exact tie). <code>q[3]</code> is on chr3, where <code>r</code> has no rows: row −1, distance −1. Both output arrays are in <code>q</code>'s row order.
+</figcaption></figure>
 
 Distances are gaps between interval ends, not centre-to-centre. Rows with
 `-1` must be masked before indexing `r`:

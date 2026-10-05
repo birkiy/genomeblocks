@@ -156,7 +156,7 @@ df
 
 from genomeblocks import bedpe
 M = bedpe.count_pairs_2d(W, "hic.allValidPairs", verbose=False)
-type(M).__name__, M.shape, M.nnz, (M.toarray() == M.toarray().T).all()
+type(M).__name__, M.shape, M.nnz, bool((M.toarray() == M.toarray().T).all())
 # -> ('csr_matrix', (6, 6), 31, True)
 ```
 

@@ -1,0 +1,99 @@
+<svg class="gbd" viewBox="0 0 880 306" role="img" aria-label="Every bigWig engine bins a window of n bases into n_bins bins with integer edges floor(n·b / n_bins), so fractional bins split the same way everywhere, and a bin that lies entirely outside the chromosome has no data and reads 0." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="40" y="24">WINDOW [0, 10) · n = 10 · n_bins = 4</text>
+<text class="ms" x="40" y="40">edges floor(10·b/4) = 0, 2, 5, 7, 10 · widths 2, 3, 2, 3</text>
+<text class="ms" x="58" y="196" text-anchor="middle">1</text>
+<text class="ms" x="94" y="196" text-anchor="middle">3</text>
+<text class="ms" x="130" y="196" text-anchor="middle">4</text>
+<text class="ms" x="166" y="196" text-anchor="middle">4</text>
+<text class="ms" x="202" y="196" text-anchor="middle">2</text>
+<text class="ms" x="238" y="196" text-anchor="middle">2</text>
+<text class="ms" x="274" y="196" text-anchor="middle">6</text>
+<text class="ms" x="310" y="196" text-anchor="middle">6</text>
+<text class="ms" x="346" y="196" text-anchor="middle">6</text>
+<text class="ms" x="382" y="196" text-anchor="middle">2</text>
+<polyline class="ln thin" points="40,130 76,130 76,110 112,110 112,100 148,100 148,100 184,100 184,120 220,120 220,120 256,120 256,80 292,80 292,80 328,80 328,80 364,80 364,120 400,120"/>
+<polyline class="ln" points="40,140 400,140"/>
+<polyline class="ln navy" points="40,64 40,148"/>
+<text class="m" x="40" y="162" text-anchor="middle">0</text>
+<polyline class="ln navy" points="112,64 112,148"/>
+<text class="m" x="112" y="162" text-anchor="middle">2</text>
+<rect class="iv fgl" x="43" y="120" width="66" height="20" rx="2"></rect>
+<text class="m" x="76" y="133" text-anchor="middle">2</text>
+<text class="ms" x="76" y="180" text-anchor="middle">2 bases</text>
+<polyline class="ln navy" points="220,64 220,148"/>
+<text class="m" x="220" y="162" text-anchor="middle">5</text>
+<rect class="iv fgl" x="115" y="106.67" width="102" height="33.33" rx="2"></rect>
+<text class="m" x="166" y="133" text-anchor="middle">3.333</text>
+<text class="ms" x="166" y="180" text-anchor="middle">3 bases</text>
+<polyline class="ln navy" points="292,64 292,148"/>
+<text class="m" x="292" y="162" text-anchor="middle">7</text>
+<rect class="iv fgl" x="223" y="100" width="66" height="40" rx="2"></rect>
+<text class="m" x="256" y="133" text-anchor="middle">4</text>
+<text class="ms" x="256" y="180" text-anchor="middle">2 bases</text>
+<polyline class="ln navy" points="400,64 400,148"/>
+<text class="m" x="400" y="162" text-anchor="middle">10</text>
+<rect class="iv fgl" x="295" y="93.33" width="102" height="46.67" rx="2"></rect>
+<text class="m" x="346" y="133" text-anchor="middle">4.667</text>
+<text class="ms" x="346" y="180" text-anchor="middle">3 bases</text>
+<text class="ms" x="40" y="212" text-anchor="middle">0</text>
+<text class="ms" x="76" y="212" text-anchor="middle">1</text>
+<text class="ms" x="112" y="212" text-anchor="middle">2</text>
+<text class="ms" x="148" y="212" text-anchor="middle">3</text>
+<text class="ms" x="184" y="212" text-anchor="middle">4</text>
+<text class="ms" x="220" y="212" text-anchor="middle">5</text>
+<text class="ms" x="256" y="212" text-anchor="middle">6</text>
+<text class="ms" x="292" y="212" text-anchor="middle">7</text>
+<text class="ms" x="328" y="212" text-anchor="middle">8</text>
+<text class="ms" x="364" y="212" text-anchor="middle">9</text>
+<text class="ms" x="400" y="212" text-anchor="middle">10</text>
+<text class="s" x="220" y="228" text-anchor="middle">rows: per-base value · base index · bars = per-bin mean</text>
+<text class="cap" x="480" y="24">WINDOW [−5, 5) · n = 10 · n_bins = 2</text>
+<text class="ms" x="480" y="40">edges floor(10·b/2) = 0, 5, 10 · the first bin is off the chromosome</text>
+<rect class="iv fl" x="480" y="70" width="36" height="70" rx="0"></rect>
+<rect class="iv fl" x="516" y="70" width="36" height="70" rx="0"></rect>
+<rect class="iv fl" x="552" y="70" width="36" height="70" rx="0"></rect>
+<rect class="iv fl" x="588" y="70" width="36" height="70" rx="0"></rect>
+<rect class="iv fl" x="624" y="70" width="36" height="70" rx="0"></rect>
+<text class="ms" x="678" y="196" text-anchor="middle">1</text>
+<text class="ms" x="714" y="196" text-anchor="middle">3</text>
+<text class="ms" x="750" y="196" text-anchor="middle">4</text>
+<text class="ms" x="786" y="196" text-anchor="middle">4</text>
+<text class="ms" x="822" y="196" text-anchor="middle">2</text>
+<polyline class="ln thin" points="660,130 696,130 696,110 732,110 732,100 768,100 768,100 804,100 804,120 840,120"/>
+<polyline class="ln" points="480,140 840,140"/>
+<polyline class="ln navy" points="480,64 480,148"/>
+<text class="m" x="480" y="162" text-anchor="middle">0</text>
+<polyline class="ln navy" points="660,64 660,148"/>
+<text class="m" x="660" y="162" text-anchor="middle">5</text>
+<rect class="iv fgl" x="483" y="137" width="174" height="3" rx="2"></rect>
+<text class="m" x="570" y="132" text-anchor="middle">0</text>
+<text class="ms" x="570" y="180" text-anchor="middle">5 bases</text>
+<polyline class="ln navy" points="840,64 840,148"/>
+<text class="m" x="840" y="162" text-anchor="middle">10</text>
+<rect class="iv fgl" x="663" y="112" width="174" height="28" rx="2"></rect>
+<text class="m" x="750" y="133" text-anchor="middle">2.8</text>
+<text class="ms" x="750" y="180" text-anchor="middle">5 bases</text>
+<text class="ms" x="480" y="212" text-anchor="middle">−5</text>
+<text class="ms" x="516" y="212" text-anchor="middle">−4</text>
+<text class="ms" x="552" y="212" text-anchor="middle">−3</text>
+<text class="ms" x="588" y="212" text-anchor="middle">−2</text>
+<text class="ms" x="624" y="212" text-anchor="middle">−1</text>
+<text class="ms" x="660" y="212" text-anchor="middle">0</text>
+<text class="ms" x="696" y="212" text-anchor="middle">1</text>
+<text class="ms" x="732" y="212" text-anchor="middle">2</text>
+<text class="ms" x="768" y="212" text-anchor="middle">3</text>
+<text class="ms" x="804" y="212" text-anchor="middle">4</text>
+<text class="ms" x="840" y="212" text-anchor="middle">5</text>
+<text class="s" x="660" y="228" text-anchor="middle">rows: per-base value · base index · bars = per-bin mean</text>
+<text class="s" x="570" y="92" text-anchor="middle">before base 0:</text>
+<text class="s" x="570" y="106" text-anchor="middle">no data → 0</text>
+<rect class="chip green" x="40" y="268" width="106" height="24" rx="12"></rect>
+<text class="m" x="93" y="284" text-anchor="middle">pybigtools</text>
+<rect class="chip" x="158" y="268" width="106" height="24" rx="12"></rect>
+<text class="m" x="211" y="284" text-anchor="middle">pybigwig</text>
+<rect class="chip" x="276" y="268" width="106" height="24" rx="12"></rect>
+<text class="m" x="329" y="284" text-anchor="middle">python</text>
+<polyline class="ln faint" points="392,280 416,280"/>
+<polygon class="hd faint" points="420.0,280.0 413.8,283.3 413.8,276.7"/>
+<text class="s" x="428" y="284">same edges, same numbers on all three: [2, 3.33, 4, 4.67] and [0, 2.8]</text>
+</svg>

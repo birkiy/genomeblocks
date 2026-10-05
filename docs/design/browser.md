@@ -83,7 +83,7 @@ axes["ATAC"].get_ylim() == axes["ATAC x2"].get_ylim()
 ```python
 fig, axes = gb.browser(("chr1", 0, 12_000), {"genes": genes, "ATAC": "signal.bw"},
                        genes_max_transcripts=1, bw_ymax=5, colors={"ATAC": "#aa3377"}, backend="python")
-axes["ATAC"].get_ylim()
+tuple(map(float, axes["ATAC"].get_ylim()))
 # -> (0.0, 5.0)
 with gb.use_backend(bigwig="pybigwig"):
     fig, axes = gb.browser("chr1:0.5-1.5 kb", {"ATAC": "signal.bw"})

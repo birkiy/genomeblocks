@@ -1,0 +1,80 @@
+<svg class="gbd" viewBox="0 0 880 282" role="img" aria-label="Every input kind enters through one function, as_loci, which finds the columns by name and builds the numpy columns of a Loci on one Genome; the other tables are built from Loci, and every container leaves through explicit to_* converters or the Arrow, interchange and narwhals protocols." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="22">IN · ANYTHING INTERVAL-LIKE</text>
+<rect class="chip white" x="20" y="34" width="210" height="22" rx="11"></rect>
+<text class="ms" x="125" y="49" text-anchor="middle">Loci · Locus</text>
+<polyline class="ln faint" points="232,45 254,45"/>
+<polygon class="hd faint" points="258.0,45.0 251.8,48.3 251.8,41.7"/>
+<rect class="chip white" x="20" y="61" width="210" height="22" rx="11"></rect>
+<text class="ms" x="125" y="76" text-anchor="middle">&#x27;chr1:1,000-2,000&#x27; · lists of regions</text>
+<polyline class="ln faint" points="232,72 254,72"/>
+<polygon class="hd faint" points="258.0,72.0 251.8,75.3 251.8,68.7"/>
+<rect class="chip white" x="20" y="88" width="210" height="22" rx="11"></rect>
+<text class="ms" x="125" y="103" text-anchor="middle">BED · narrowPeak · CSV · TSV · parquet</text>
+<polyline class="ln faint" points="232,99 254,99"/>
+<polygon class="hd faint" points="258.0,99.0 251.8,102.3 251.8,95.7"/>
+<rect class="chip white" x="20" y="115" width="210" height="22" rx="11"></rect>
+<text class="ms" x="125" y="130" text-anchor="middle">pandas · polars (eager or lazy) · pyarrow</text>
+<polyline class="ln faint" points="232,126 254,126"/>
+<polygon class="hd faint" points="258.0,126.0 251.8,129.3 251.8,122.7"/>
+<rect class="chip white" x="20" y="142" width="210" height="22" rx="11"></rect>
+<text class="ms" x="125" y="157" text-anchor="middle">bioframe · PyRanges · pybedtools</text>
+<polyline class="ln faint" points="232,153 254,153"/>
+<polygon class="hd faint" points="258.0,153.0 251.8,156.3 251.8,149.7"/>
+<rect class="chip white" x="20" y="169" width="210" height="22" rx="11"></rect>
+<text class="ms" x="125" y="184" text-anchor="middle">dicts of columns · structured arrays</text>
+<polyline class="ln faint" points="232,180 254,180"/>
+<polygon class="hd faint" points="258.0,180.0 251.8,183.3 251.8,176.7"/>
+<rect class="chip white" x="20" y="196" width="210" height="22" rx="11"></rect>
+<text class="ms" x="125" y="211" text-anchor="middle">AnnData (its var)</text>
+<polyline class="ln faint" points="232,207 254,207"/>
+<polygon class="hd faint" points="258.0,207.0 251.8,210.3 251.8,203.7"/>
+<rect class="chip white" x="20" y="223" width="210" height="22" rx="11"></rect>
+<text class="ms" x="125" y="238" text-anchor="middle">__arrow_c_stream__ · __dataframe__</text>
+<polyline class="ln faint" points="232,234 254,234"/>
+<polygon class="hd faint" points="258.0,234.0 251.8,237.3 251.8,230.7"/>
+<rect class="bx green" x="260" y="34" width="196" height="211" rx="8"></rect>
+<text class="tm" x="358" y="60" text-anchor="middle">as_loci(x)</text>
+<text class="s" x="358" y="80" text-anchor="middle">the one boundary</text>
+<text class="s" x="358" y="112" text-anchor="middle">columns found by name:</text>
+<text class="ms" x="358" y="130" text-anchor="middle">chrom · chr · Chromosome …</text>
+<text class="ms" x="358" y="148" text-anchor="middle">start · Start · chromStart …</text>
+<text class="s" x="358" y="166" text-anchor="middle">names → codes, one Genome</text>
+<text class="s" x="358" y="184" text-anchor="middle">int64 starts and ends</text>
+<text class="s" x="358" y="202" text-anchor="middle">rows kept in input order</text>
+<text class="s" x="358" y="232" text-anchor="middle">no type branching inside</text>
+<polyline class="ln green" points="458,140 482,140"/>
+<polygon class="hd green" points="486.0,140.0 479.8,143.3 479.8,136.7"/>
+<rect class="bx navy" x="488" y="34" width="136" height="211" rx="8"></rect>
+<text class="t" x="556" y="60" text-anchor="middle">Loci</text>
+<text class="s" x="556" y="76" text-anchor="middle">numpy columns</text>
+<text class="s" x="556" y="90" text-anchor="middle">row = join key</text>
+<rect class="chip white" x="500" y="100" width="112" height="22" rx="11"></rect>
+<text class="m" x="556" y="115" text-anchor="middle">Genes</text>
+<rect class="chip white" x="500" y="126" width="112" height="22" rx="11"></rect>
+<text class="m" x="556" y="141" text-anchor="middle">Pairs</text>
+<rect class="chip white" x="500" y="152" width="112" height="22" rx="11"></rect>
+<text class="m" x="556" y="167" text-anchor="middle">Architecture</text>
+<rect class="chip white" x="500" y="178" width="112" height="22" rx="11"></rect>
+<text class="m" x="556" y="193" text-anchor="middle">Atlas</text>
+<text class="s" x="556" y="218" text-anchor="middle">built from Loci:</text>
+<text class="s" x="556" y="232" text-anchor="middle">same codes, same rows</text>
+<polyline class="ln navy" points="626,140 648,140"/>
+<polygon class="hd navy" points="652.0,140.0 645.8,143.3 645.8,136.7"/>
+<text class="cap" x="654" y="22">OUT · CONVERTERS · PROTOCOLS</text>
+<rect class="chip white" x="654" y="34" width="206" height="22" rx="11"></rect>
+<text class="ms" x="757" y="49" text-anchor="middle">to_pandas · to_polars · to_arrow</text>
+<rect class="chip white" x="654" y="61" width="206" height="22" rx="11"></rect>
+<text class="ms" x="757" y="76" text-anchor="middle">to_bioframe · to_pyranges · to_bedtool</text>
+<rect class="chip white" x="654" y="88" width="206" height="22" rx="11"></rect>
+<text class="ms" x="757" y="103" text-anchor="middle">to_cgranges · to_anndata · to_records</text>
+<rect class="chip white" x="654" y="115" width="206" height="22" rx="11"></rect>
+<text class="ms" x="757" y="130" text-anchor="middle">to_numpy · to_bed · save (parquet)</text>
+<text class="s" x="654" y="157">protocols, no conversion:</text>
+<rect class="chip white" x="654" y="169" width="206" height="22" rx="11"></rect>
+<text class="ms" x="757" y="184" text-anchor="middle">__arrow_c_stream__ → polars · DuckDB</text>
+<rect class="chip white" x="654" y="196" width="206" height="22" rx="11"></rect>
+<text class="ms" x="757" y="211" text-anchor="middle">__dataframe__ → seaborn · pandas</text>
+<rect class="chip white" x="654" y="223" width="206" height="22" rx="11"></rect>
+<text class="ms" x="757" y="238" text-anchor="middle">__narwhals_dataframe__ → altair · plotly</text>
+<text class="s" x="20" y="270">every public function calls as_loci on its inputs: signal(peaks_df) · genes.annotations(&#x27;peaks.bed&#x27;) · Architecture.make(cre, loops_df)</text>
+</svg>

@@ -20,13 +20,13 @@ nav_order: 2
 - **Python** ≥ 3.10
 - Everything else is declared in `pyproject.toml` and installed by pip.
 
-`pip install genomeblocks` brings the **default backend of every family**, so every module works after a plain pip install:
+`pip install genomeblocks` brings the **default backend of every family except motif scanning** — the motif engines are compiled, so they are extras (below) — and everything else works after a plain pip install:
 
 | Family | Default engine | Pulled in by pip |
 |---|---|---|
 | intervals (overlap, nearest, merge) | genomeblocks' numpy kernel | — (built in) |
 | bigWig reading | [pybigtools](https://github.com/jackh726/bigtools) | `pybigtools` |
-| motif scanning | [lightmotif](https://github.com/althonos/lightmotif) | `lightmotif` |
+| motif scanning | [MOODS](https://github.com/jhkorhonen/MOODS), else [lightmotif](https://github.com/althonos/lightmotif) | — (an extra: `genomeblocks[motifs]` or `genomeblocks[lightmotif]`; conda: `moods`) |
 | FASTA | genomeblocks' indexed (`.fai`) reader | — (built in) |
 | text tables (BED, GTF, pairs) | pandas (polars when installed) | `pandas`, `pyarrow` |
 | graph algorithms | scipy (graph-tool when installed) | `scipy` |
@@ -43,24 +43,28 @@ TMM normalisation (`gb.tmm`) is vendored — the edgeR algorithm ships inside `g
 pip install genomeblocks
 ```
 
-That is the whole default install. Optional extras add engines and converter targets:
+That is the default install: everything but a motif engine. Optional extras add the motif engines, other backends and converter targets:
 
 | Extra | Adds | Use it for |
 |---|---|---|
+| `motifs` | `MOODS-python` | the default motif engine, [MOODS](https://github.com/jhkorhonen/MOODS) (C++, compiled at install) |
+| `lightmotif` | `lightmotif` | the alternative motif engine (prebuilt wheels, no compiler); same hits; used automatically only when MOODS is absent |
 | `fast` | `polars` | faster GTF / GFF3 / BED / pairs parsing (same columns as pandas) |
 | `bam` | `pysam` | BAM pileups in `browser` / `gb.coverage`, FASTA through pysam |
 | `viz` | `logomaker` | motif logos (`genomeblocks.motifs_draw`) |
 | `interop` | `polars`, `bioframe`, `pyranges`, `pybedtools`, `anndata`, `xarray`, `biopython`, `networkx`, `igraph`, `MOODS-python`, `pyBigWig`, `ncls`, `pyfaidx`, `pyliftover` | every other backend and every `from_*` / `to_*` target |
-| `all` | `fast` + `bam` + `viz` + `interop` | everything that pip can install |
-| `test` | the above plus `pytest`, `duckdb`, `seaborn`, `plotly`, `altair` | running the test suite |
+| `all` | `motifs` + `fast` + `bam` + `viz` + `interop` | everything that pip can install |
+| `test` | the above plus `lightmotif`, `pytest`, `duckdb`, `seaborn`, `plotly`, `altair` | running the test suite |
 
 ```bash
+pip install "genomeblocks[motifs]"     # + MOODS, the motif engine (compiled at install)
+pip install "genomeblocks[lightmotif]" # or lightmotif (prebuilt wheels); same hits
 pip install "genomeblocks[all]"        # every pip-installable backend
 pip install "genomeblocks[fast,bam]"   # pick the ones you need
 ```
 
 {: .note }
-> Extras only add *choices*. The default engine of each family is already there, and results are identical across engines (the test suite checks it), so install an extra for speed on your data or to hand results to a library you already use — not to make a module work.
+> Apart from `motifs` / `lightmotif`, extras only add *choices*: the default engine of every other family is already there, and results are identical across engines (the test suite checks it), so install an extra for speed on your data or to hand results to a library you already use. The motif functions are the one exception — without an engine they raise `ImportError` naming both extras (see below).
 
 ---
 
@@ -73,6 +77,8 @@ Three engines cannot come from PyPI. They are optional backends; `genomeblocks` 
 | [graph-tool](https://graph-tool.skewed.de/) | graph | `conda install -c conda-forge graph-tool` | the default graph engine when installed (scipy otherwise; identical components, centralities within tolerance); `A.to_graph_tool()` |
 | [cgranges](https://github.com/lh3/cgranges) | intervals | `conda install -c bioconda cgranges` (or `pip install git+https://github.com/lh3/cgranges`) | a C interval index; `L.to_cgranges()` |
 | [bedtools](https://bedtools.readthedocs.io/) | intervals | `conda install -c bioconda bedtools` + `pip install pybedtools` | the `bedtools` backend (the binary must be on `PATH`); `L.to_bedtool()` |
+
+The conda package of `genomeblocks` (Bioconda) depends on `moods`, so a conda install has the motif engine from the start; `conda install -c bioconda moods` adds it to a pip environment too.
 
 The repository ships an `environment.yml` with every backend, including these three:
 
@@ -115,7 +121,7 @@ gb.backends()
 gb.backends.families()
 # -> {'intervals': ['genomeblocks', 'cgranges', 'ncls', 'bioframe', 'pyranges', 'bedtools'],
 #     'bigwig': ['pybigtools', 'pybigwig', 'python'],
-#     'motifs': ['lightmotif', 'moods', 'biopython'],
+#     'motifs': ['moods', 'lightmotif', 'biopython'],
 #     'fasta': ['genomeblocks', 'pysam', 'pyfaidx', 'memory', 'biopython'],
 #     'tables': ['polars', 'pandas'],
 #     'graph': ['graph-tool', 'scipy', 'igraph', 'networkx']}
@@ -162,6 +168,10 @@ with gb.use_backend(graph="graph-tool"):     # checked on entry, before any work
 
 loci.merge(backend="nope")
 # ValueError: unknown intervals backend 'nope'; choose from: genomeblocks, cgranges, ncls, bioframe, pyranges, bedtools
+
+from genomeblocks import motifs as gm        # a bare pip install: no motif engine
+gm.scan_motifs_matrix(loci, "genome.fa", "motifs.jaspar")
+# ImportError: no motifs backend is installed: conda install -c bioconda moods  (or pip install 'genomeblocks[motifs]', which compiles MOODS-python) or pip install 'genomeblocks[lightmotif]'  (prebuilt wheels)
 ```
 
 {: .warning }

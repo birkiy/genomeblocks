@@ -26,15 +26,22 @@ order.
 
 | Source | How it is read |
 |---|---|
-| JASPAR (raw counts), `jaspar16` (bracketed), TRANSFAC, uniprobe | lightmotif's parsers; uniprobe probabilities become counts at 100 sites |
-| MEME (minimal or full) | the package's own reader; probabilities × `nsites` (100 when absent) |
+| JASPAR (raw counts), `jaspar16` (bracketed), TRANSFAC, uniprobe, `.gz` of any | genomeblocks' own pure-Python readers (`backends.motifs._read_jaspar`, `_read_transfac`, `_read_uniprobe`): the name is the JASPAR ID (TRANSFAC `NA`, else `ID`, else `AC`), the description the rest of the header (`DE`); TRANSFAC frequency rows and uniprobe probabilities become counts at 100 sites |
+| MEME (minimal or full) | `_read_meme`; probabilities × `nsites` (100 when absent) |
 | Biopython `Bio.motifs.Motif` objects, lightmotif motifs | their count dictionaries / arrays |
 | `{name: matrix}` dicts, lists of arrays, one array | `4 × W` or `W × 4`; a matrix whose rows sum to 1 is scaled to 100 sites |
 
+No motif engine is needed to read a library: the parsers are part of the
+package, and `tests/test_motifs.py::test_parsers_match_lightmotif` checks that
+they return lightmotif's names, descriptions and counts for every format.
+
 Each motif is scored with one log-odds matrix,
-`log2((count + 0.1) / (column total + 0.4) / 0.25)`, which is lightmotif's
-own `normalize(0.1).log_odds()`. Every engine scans that same matrix, so
-their hits agree; `lib.logodds(i)` is cached per motif.
+`log2((count + 0.1) / (column total + 0.4) / 0.25)`, built by
+`backends.motifs.logodds_matrix` in float32, in lightmotif's summation order
+and through the platform `log2f`, so it is bit for bit the matrix lightmotif's
+`normalize(0.1).log_odds()` would build. Every engine scans that same matrix
+(MOODS receives it as `4 × W` lists from `lib.to_moods()`), so their hits
+agree; `lib.logodds(i)` is cached per motif.
 
 ```python
 import genomeblocks as gb
@@ -50,6 +57,13 @@ lib.logodds(0).round(2)[0]
 # -> array([ 1.96, -4.7 , -4.7 , -4.7 ])
 gb.load_motifs(lib.to_biopython()).names
 # -> ['M1', 'M2']
+
+import numpy as np, lightmotif
+theirs = np.asarray(next(iter(lightmotif.load("motifs.jaspar"))).counts.normalize(0.1).log_odds())
+theirs.shape, theirs.dtype                                 # rows A C T G N, columns = positions
+# -> ((5, 4), dtype('float32'))
+np.array_equal(lib.logodds(0).astype(np.float32).view(np.int32), theirs[[0, 1, 3, 2], :].T.view(np.int32))
+# -> True
 ```
 
 As a table the `Library` is `(name, description, width, consensus)`, with
@@ -95,7 +109,7 @@ for b in ("genomeblocks", "pysam", "pyfaidx", "memory", "biopython"):
 <figure class="gb-fig"><div class="gb-fig-body">
 {% include diagrams/motifs-block.svg %}
 </div><figcaption>
-<strong>One scan per motif, not per window.</strong> A 500-bp window is so short that calling the scanner once per window costs more in call overhead than in scoring. The windows are joined once into a <code>Block</code>, and each motif is scanned over the whole block in a single engine call. Each hit is assigned to its window by binary search on the window offsets; a hit that would span two windows is dropped, so the counts equal scanning each window on its own.
+<strong>One scan per motif, not per window.</strong> A 500-bp window is so short that calling the scanner once per window costs more in call overhead than in scoring. The windows are joined once into a <code>Block</code>, and each motif is scanned over the whole block in a single engine call (MOODS takes a whole batch of matrices in one call). Each hit is assigned to its window by binary search on the window offsets; a hit that would span two windows is dropped, so the counts equal scanning each window on its own.
 </figcaption></figure>
 
 `backends.motifs.Block(seqs, backend)` keeps the valid windows' text, their
@@ -103,11 +117,20 @@ offsets and the map back to input rows. `block.hits(mat, threshold,
 both)` returns `(row, position in window, strand)` for every hit;
 `block.counts` is the `bincount`.
 
-| Backend | Engine call | Notes |
-|---|---|---|
-| `lightmotif` (default) | `lightmotif.scan(ScoringMatrix, striped block, threshold=)` | SIMD; the striped sequence is prepared once per block |
-| `moods` | `MOODS.scan.Scanner.scan` | scans all matrices of a batch in one pass (`moods_counts`) |
-| `biopython` | `PositionSpecificScoringMatrix.calculate` | numpy; no compiled dependency beyond Biopython |
+| Backend | Engine call | Notes | Install |
+|---|---|---|---|
+| `moods` (default) | `MOODS.scan.Scanner(7).scan(block)` | C++; `scan_motifs_matrix` hands a whole batch of matrices to one `Scanner` (`Block.moods_counts`, up to 64 motifs per call), so the library is scanned in one pass over the block | conda `moods` (the conda package of genomeblocks depends on it); pip `genomeblocks[motifs]` (MOODS-python, compiled at install) |
+| `lightmotif` | `lightmotif.scan(ScoringMatrix, striped block, threshold=)` | Rust, SIMD; the striped sequence is prepared once per block, one matrix per call; picked automatically only when MOODS is absent | pip `genomeblocks[lightmotif]` (prebuilt wheels) |
+| `biopython` | `PositionSpecificScoringMatrix.calculate` | numpy; always a request (`backend="biopython"`) | pip `biopython` |
+
+`AUTO['motifs'] = ['moods', 'lightmotif']`: the two are interchangeable
+because they score the same matrix and report the same hits. A bare
+`pip install genomeblocks` has no motif engine, so `Block(...)` and every
+`scan_*` function raise an `ImportError` naming both extras:
+
+```
+ImportError: no motifs backend is installed: conda install -c bioconda moods  (or pip install 'genomeblocks[motifs]', which compiles MOODS-python) or pip install 'genomeblocks[lightmotif]'  (prebuilt wheels)
+```
 
 ```python
 from genomeblocks.backends.motifs import Block
@@ -116,26 +139,44 @@ seqs = L.sequences("genome.fa", r=50, upper=True)
 blk = Block(seqs)
 blk.n, blk.offsets, len(blk.text)
 # -> (3, array([  0, 100, 200, 300]), 300)
-blk.hits(lib.logodds(0), 7.0)              # rows, positions, strands
-# -> (array([0, 2, 0, 2, 0]), array([58, 35, 54, 43, 50]), array([0, 0, 0, 0, 0], dtype=int8))
-for b in ("lightmotif", "moods", "biopython"):
+blk.backend
+# -> 'moods'
+blk.hits(lib.logodds(0), 7.0)              # rows, positions, strands (in the engine's order)
+# -> (array([0, 0, 0, 2, 2]), array([50, 54, 58, 35, 43]), array([0, 0, 0, 0, 0], dtype=int8))
+for b in ("moods", "lightmotif", "biopython"):
     print(b, Block(seqs, b).counts(lib.logodds(0), 7.0).tolist())
-# -> lightmotif [3, 0, 2]
 # -> moods [3, 0, 2]
+# -> lightmotif [3, 0, 2]
 # -> biopython [3, 0, 2]
 ```
 
 - **Thresholds.** A hit is any position scoring at least `threshold` (13
   log2-odds by default, scalar or one per motif); `pvalue=` instead sets a
-  per-motif cutoff from lightmotif's exact score distribution under a uniform
-  background. `norm=True` divides counts by motif width; `both_strands=True`
-  also scans the reverse complement.
+  per-motif cutoff with `backends.motifs.threshold_from_pvalue`: the exact
+  distribution of the motif's score under a uniform background, built by a
+  dynamic program over the columns on a 0.001-bit grid (a coarse pass first
+  bounds the answer from below, so only the upper tail is built). The cutoff
+  is computed once per motif, before any engine runs, so it is the same
+  whichever engine scans, and it agrees with MOODS' `threshold_from_p` to a
+  few thousandths of a bit. A motif too short to reach `pvalue` (a 4-mer at
+  `p < 1/256`) keeps only perfect matches. `norm=True` divides counts by
+  motif width; `both_strands=True` also scans the reverse complement.
 - **Parallelism.** Motifs are independent, so they are split into batches
   across a process pool whose initializer builds the block once per worker.
   Jobs with fewer than 16 motifs or 200 windows run serially (`_workers`),
   because process start-up would dominate.
 - **Output.** A DataFrame with one row per input interval (index = uid, in
   the input's order) and one column per motif.
+
+```python
+from genomeblocks.backends.motifs import logodds_matrix, threshold_from_pvalue
+import MOODS.tools
+lo = logodds_matrix(np.random.default_rng(0).integers(0, 40, (12, 4)))
+for p in (1e-3, 1e-4):
+    print(p, round(threshold_from_pvalue(lo, p), 3), round(MOODS.tools.threshold_from_p(lo.T.tolist(), [0.25] * 4, p), 3))
+# -> 0.001 6.92 6.92
+# -> 0.0001 8.19 8.19
+```
 
 ```python
 from genomeblocks import motifs as gm
@@ -235,7 +276,8 @@ arch["members"]
 - **Scanning:** one engine call per motif over the whole block, then one
   `searchsorted` and one `bincount` per motif; the block itself is built once
   per worker.
-- **Thresholds from p-values:** one exact score distribution per motif.
+- **Thresholds from p-values:** one exact score distribution per motif,
+  upper tail only, in numpy; no engine is involved.
 - **Masking:** one extra pass of `hits` per anchor motif before the scan.
 - **Profiles:** one `add.at` per motif into the cube, one Gaussian filter
   along the bins.
