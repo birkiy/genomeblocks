@@ -235,7 +235,7 @@ def part_workers(rec, genome):
     N = 5000
     L = windows(genome, N, seed=2)
     for w in (1, 2, 4, 8):
-        t = timeit(lambda: scan_motifs_matrix(L, genome, JASPAR, motif_format="jaspar16",
+        t = timeit(lambda: scan_motifs_matrix(L, genome, JASPAR, format="jaspar16",
                                               r=R, threshold=THR, workers=w, verbose=False),
                    repeat=3)
         rec.add(part="workers", workers=w, n_seqs=N, n_motifs=1019, seconds=t["median"],
