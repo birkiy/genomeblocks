@@ -11,9 +11,9 @@ nav_order: 9
 Motif scanning over loci windows, enrichment statistics on the resulting
 count matrices, and motif clustering into archetypes. Scanning reads each
 window (centre ± `r`) through the fasta backend and scores a motif library
-with the motifs backend (lightmotif by default; MOODS or Biopython on
-request); every engine scores the same log-odds matrices and reports the same
-hits. See the [Motifs guide]({{ '/guide/motifs/' | relative_url }}) for the
+with the motifs backend (MOODS by default, lightmotif when MOODS is absent,
+Biopython on request); every engine scores the same log-odds matrices and
+reports the same hits. See the [Motifs guide]({{ '/guide/motifs/' | relative_url }}) for the
 workflow.
 {: .fs-5 .fw-300 }
 
@@ -50,7 +50,7 @@ these keywords.
 | `format` | The file format when `motifs` is a path: `'jaspar'` (default, raw 4-line counts), `'jaspar16'` (bracketed), `'transfac'`, `'uniprobe'`, `'meme'`. |
 | `r` | Half-window around each locus centre; windows are `2r` bp. |
 | `threshold` | Log2-odds cutoff, a scalar or one value per motif. |
-| `pvalue` | Instead of `threshold`: the score each motif reaches with that probability under a uniform background (lightmotif's exact distribution), one cutoff per motif. |
+| `pvalue` | Instead of `threshold`: the score each motif reaches with that probability under a uniform background — the exact score distribution computed by [`threshold_from_pvalue`]({{ '/api/backends/' | relative_url }}), the same cutoff whichever engine scans — one value per motif. |
 | `norm` | Divide counts by motif width. |
 | `both_strands` | Also count reverse-strand matches. |
 | `workers` | Processes over motifs; `None` = half the cores. Small jobs (fewer than 16 motifs or 200 windows) stay serial. |
