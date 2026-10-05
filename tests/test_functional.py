@@ -2,7 +2,7 @@
 import numpy as np
 
 import genomeblocks as gb
-from genomeblocks import Architecture, Genes, Loci, as_loci
+from genomeblocks import Architecture, Genes, Loci
 
 
 def test_pipeline(bed_path, gtf_path, bedpe_path, bw_path, bw2_path, fasta_path, jaspar_path, tmp_path):

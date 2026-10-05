@@ -15,9 +15,12 @@ leaves such rows at 0).
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import numpy as np
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 from .backends.motifs import Block, Library, load_motifs, write_meme  # noqa: F401  (re-exported)
 
@@ -577,7 +580,6 @@ def _pwm_align(p_anchor, p_other, *, min_overlap=5):
     p_other's first column in p_anchor's coordinate frame (may be negative)
     and similarity is the Sandelin-Wasserman score normalized to [0, 1].
     """
-    import numpy as np
     W1, W2 = p_anchor.shape[1], p_other.shape[1]
     candidates = ((False, p_other), (True, _pwm_rc(p_other)))
     best = (0, False, -1.0)

@@ -5,7 +5,7 @@ import pytest
 import genomeblocks as gb
 from genomeblocks import as_loci, motifs as gm
 from genomeblocks.backends.fasta import open_fasta, read_fasta
-from genomeblocks.backends.motifs import Library, load_motifs
+from genomeblocks.backends.motifs import load_motifs
 
 from conftest import installed_backends
 
@@ -33,7 +33,7 @@ def test_load_formats(jaspar_path, tmp_path):
     assert load_motifs({"X": np.eye(4)[[0, 1, 2, 3]]}).counts[0].sum() == pytest.approx(400)   # probabilities x 100
     assert load_motifs([np.ones((5, 4)), np.ones((6, 4))]).names == ["motif1", "motif2"]
     assert load_motifs(np.ones((5, 4))).widths.tolist() == [5]
-    bio = pytest.importorskip("Bio.motifs")
+    pytest.importorskip("Bio.motifs")
     assert load_motifs(lib.to_biopython()).names == ["M1", "M2"]
     with pytest.raises(ValueError, match="unknown motif format"):
         load_motifs(jaspar_path, format="homer")
@@ -85,17 +85,38 @@ def test_matrix_masked_profile_and_totals(fasta_path, jaspar_path, cre):
     assert cre.scan_motifs_matrix(fasta_path, jaspar_path, r=50, threshold=7.0, verbose=False).shape == (7, 2)
 
 
-def test_bootstrap_and_archetypes(fasta_path, jaspar_path, cre):
-    L = as_loci([("chr1", s, s + 100) for s in range(500, 6500, 200)])
-    M = gm.scan_motifs_matrix(L, fasta_path, jaspar_path, r=50, threshold=7.0, norm=False, verbose=False)
-    res = gm.bootstrap_enrichment({"a": M.iloc[:10], "b": M.iloc[10:]}, M, boot=20, sample=5, seed=0, verbose=False)
-    assert res is not None
+def test_bootstrap_enrichment_recovers_a_planted_difference():
+    import pandas as pd
+    rng = np.random.default_rng(0)
+    # 'a' is rich in M1 and poor in M2, 'b' the other way round; the reference is the pool of both
+    a = pd.DataFrame({"M1": rng.poisson(4.0, 200), "M2": rng.poisson(0.5, 200)})
+    b = pd.DataFrame({"M1": rng.poisson(0.5, 200), "M2": rng.poisson(4.0, 200)})
+    ref = pd.concat([a, b], ignore_index=True)
+    res = gm.bootstrap_enrichment({"a": a, "b": b}, ref, boot=50, sample=100, seed=1, verbose=False)
+    res = res.set_index("Factor")
+    assert list(res.index) == ["M1", "M2"]
+    assert res.loc["M1", "mean_a"] == pytest.approx(a["M1"].mean(), rel=0.15)
+    assert res.loc["M1", "mean_ref"] == pytest.approx(ref["M1"].mean(), rel=0.15)
+    assert res.loc["M1", "LFC_a"] > 0.5 > -0.5 > res.loc["M1", "LFC_b"]       # M1 up in a, down in b
+    assert res.loc["M2", "LFC_a"] < -0.5 < 0.5 < res.loc["M2", "LFC_b"]
+    assert res.loc["M1", "LFC"] > 1 and res.loc["M2", "LFC"] < -1              # LFC = LFC_a - LFC_b
+    assert res.loc["M1", "LFC_a"] == pytest.approx(np.log2((0.1 + res.loc["M1", "mean_a"]) / (0.1 + res.loc["M1", "mean_ref"])))
+
+
+def test_motif_distances_and_archetypes(jaspar_path):
+    lib = load_motifs(jaspar_path)
     D, names, pwms = gm.pwm_distance_matrix(jaspar_path, min_overlap=3, verbose=False)
-    assert D.shape == (2, 2) and D[0, 0] == 0 and names == ["M1", "M2"]
-    Z = gm.cluster_motifs(D, cutoff=0.5)
-    assert Z is not None
-    pfm = gm.archetype([load_motifs(jaspar_path).pfm(0), load_motifs(jaspar_path).pfm(1)], min_overlap=3)
-    assert pfm.shape[0] == 4
+    assert names == ["M1", "M2"] and D.shape == (2, 2)
+    assert D[0, 0] == 0 == D[1, 1] and D[0, 1] == D[1, 0] and 0 < D[0, 1] <= 1   # ACGT vs GGAA differ
+    same = gm.pwm_distance_matrix({"x": lib.counts[0], "y": lib.counts[0]}, min_overlap=3, verbose=False)[0]
+    assert same[0, 1] == pytest.approx(0.0, abs=1e-9)                   # identical motifs: distance 0
+    labels, Z = gm.cluster_motifs(D, cutoff=D[0, 1] / 2)
+    assert Z.shape == (1, 4) and Z[0, 2] == pytest.approx(D[0, 1])        # one merge at the pairwise distance
+    assert labels.tolist() == [1, 2]                                       # cut below it: two clusters
+    assert gm.cluster_motifs(D, cutoff=2.0)[0].tolist() == [1, 1]          # cut above it: one
+    pfm = gm.archetype([lib.pfm(0), lib.pfm(0)], min_overlap=3)
+    assert pfm.shape == (4, 4) and np.allclose(pfm.sum(0), 1.0)
+    assert "".join("ACGT"[k] for k in pfm.argmax(0)) == "ACGT"           # the archetype of ACGT with itself
 
 
 # ── FASTA backends ────────────────────────────────────────────────────────────

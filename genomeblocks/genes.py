@@ -300,7 +300,7 @@ def _tables_ucsc(path, g, chr_map, keep_alt_contigs):
     try:
         tx_s, tx_e = raw[sc + 1].astype(np.int64).to_numpy(), raw[sc + 2].astype(np.int64).to_numpy()
         cds_s, cds_e = raw[sc + 3].astype(np.int64).to_numpy(), raw[sc + 4].astype(np.int64).to_numpy()
-        n_ex = raw[sc + 5].astype(np.int64).to_numpy()
+        raw[sc + 5].astype(np.int64)                            # exonCount: integer, else not a genePred
     except ValueError as e:
         raise ValueError(f"{path}: expected {layout}; {e}") from None
     with_bin = sc == 3 and raw[0].str.fullmatch(r"\d+").all()

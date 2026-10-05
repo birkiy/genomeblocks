@@ -777,7 +777,6 @@ class Architecture(TableMixin):
     def vertices_frame(self, linked: bool = True):
         """One row per vertex (with links, unless ``linked=False``): coordinates,
         uid and every vertex column."""
-        import pandas as pd
         rows = np.flatnonzero(self.degree > 0) if linked else np.arange(len(self.loci))
         df = self.loci.take(rows).to_pandas(uid=True)
         df.index = rows

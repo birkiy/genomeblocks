@@ -20,7 +20,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-import numpy as np
 
 from common import DATA, Recorder, timeit
 

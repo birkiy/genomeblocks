@@ -1,6 +1,5 @@
 """bigWig signal: the three backends agree, windows at chromosome ends, tmm."""
 import numpy as np
-import pandas as pd
 import pytest
 
 import genomeblocks as gb
@@ -89,9 +88,14 @@ def test_multiprocess_matches_sequential(bw_path, bw2_path):
 
 def test_tmm():
     rng = np.random.default_rng(0)
-    cube = np.abs(rng.normal(size=(50, 3, 4))) + 0.1
+    base = np.abs(rng.normal(size=(50, 1, 4))) + 0.1
+    cube = np.concatenate([base, 3.0 * base, 0.5 * base], axis=1)        # three scaled copies of one track
     out = tmm(cube)
     assert out.shape == cube.shape and np.isfinite(out).all()
+    assert np.allclose(out[:, 0], out[:, 1]) and np.allclose(out[:, 0], out[:, 2])   # scaling undone
+    lib = out.mean(axis=2).sum(axis=0)
+    assert np.allclose(lib, lib[0])                                        # equal library sizes after TMM + CPM
+    cube = np.abs(rng.normal(size=(50, 3, 4))) + 0.1
     cube[:, 2] = 0
     with pytest.warns(RuntimeWarning, match="no signal"):
         out = tmm(cube)

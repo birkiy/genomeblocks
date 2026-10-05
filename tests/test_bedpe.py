@@ -88,7 +88,14 @@ def test_count_pairs_matches_brute_force(tmp_path):
                 if L.chroms[i] == ca and L.starts[i] <= pa < L.ends[i]:
                     want[i, 0 if cb == "chr1" else 1] += 1
     assert df[["chr1", "chr2"]].to_numpy().tolist() == want.tolist()
-    M = count_pairs_2d(L, str(tmp_path / "x.avp"), verbose=False)
-    assert M.shape == (len(L), len(L)) and (M.toarray() == M.toarray().T).all()
+    M = count_pairs_2d(L, str(tmp_path / "x.avp"), verbose=False).toarray()
+    want2 = np.zeros((len(L), len(L)), int)
+    for a, x, b, y in zip(chroms, p1, c2, p2):
+        i = next((k for k in range(len(L)) if L.chroms[k] == a and L.starts[k] <= x < L.ends[k]), None)
+        j = next((k for k in range(len(L)) if L.chroms[k] == b and L.starts[k] <= y < L.ends[k]), None)
+        if i is not None and j is not None:
+            want2[i, j] += 1
+            want2[j, i] += 1                                        # both orientations counted
+    assert M.tolist() == want2.tolist()
     only = L.count_pairs(str(tmp_path / "x.avp"), target_chrom="chr2", verbose=False)
     assert len(only) == len(L) and "count" in only.columns and only["count"].tolist() == want[:, 1].tolist()

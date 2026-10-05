@@ -26,7 +26,7 @@ import numpy as np
 from common import DATA, Recorder, timeit
 
 import genomeblocks as gb
-from genomeblocks import Architecture, Genes, Loci, Pairs
+from genomeblocks import Architecture, Genes, Loci
 from genomeblocks.motifs import scan_motifs_matrix
 
 SIZES = [int(x) for x in os.environ.get("GB_BENCH_SIZES", "1000,10000,100000,1000000").split(",")]

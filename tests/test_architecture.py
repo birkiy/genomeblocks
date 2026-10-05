@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 import genomeblocks as gb
-from genomeblocks import Architecture, Genes, Pairs, as_loci
+from genomeblocks import Architecture, as_loci
 
 from conftest import installed_backends
 
@@ -68,12 +68,54 @@ def test_views_and_lookups(arch, cre):
     assert sub.n_links == 1
 
 
+def _brute_components(A):
+    """Connected components by BFS over the edge list; -1 for rows without links; numbered by first row."""
+    n = len(A.loci)
+    adj = {i: set() for i in range(n)}
+    for s, t in A:
+        adj[s].add(t)
+        adj[t].add(s)
+    lab = np.full(n, -1)
+    k = 0
+    for i in range(n):
+        if A.degree[i] == 0 or lab[i] >= 0:
+            continue
+        stack = [i]
+        while stack:
+            v = stack.pop()
+            if lab[v] >= 0:
+                continue
+            lab[v] = k
+            stack.extend(adj[v])
+        k += 1
+    return lab
+
+
+def _brute_pagerank(A, w, damping=0.85, iters=5000):
+    n = len(A.loci)
+    M = np.zeros((n, n))
+    for (s, t), x in zip(A, w):
+        M[s, t] += x
+        M[t, s] += x
+    out = M.sum(1)
+    x = np.full(n, 1 / n)
+    for _ in range(iters):
+        contrib = np.where(out > 0, x / np.where(out > 0, out, 1), 0)
+        x_new = damping * (M.T @ contrib + x[out == 0].sum() / n) + (1 - damping) / n
+        if np.abs(x_new - x).sum() < 1e-13:
+            break
+        x = x_new
+    return x / x.sum()
+
+
 @pytest.mark.parametrize("backend", installed_backends("graph"))
-def test_graph_backends_agree(arch, backend):
-    assert arch.components(backend=backend).tolist() == arch.components().tolist()
-    assert np.allclose(arch.pagerank("w", backend=backend), arch.pagerank("w"), atol=1e-6)
+def test_graph_backends_match_brute_force(arch, backend):
+    assert arch.components(backend=backend).tolist() == _brute_components(arch).tolist()
+    assert np.allclose(arch.pagerank("w", backend=backend), _brute_pagerank(arch, arch.ep["w"]), atol=1e-6)
     g = arch.graph(backend=backend)
-    assert g is not None
+    n_edges = {"scipy": lambda g: g.nnz // 2, "igraph": lambda g: g.ecount(),
+               "networkx": lambda g: g.number_of_edges(), "graph-tool": lambda g: g.num_edges()}[backend](g)
+    assert n_edges == arch.n_links                                         # no parallel edges here
 
 
 def test_networkx_merges_parallel_edges_like_scipy():

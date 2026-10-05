@@ -1,5 +1,4 @@
 """Atlas: build, search, bootstrap, metadata, persistence, table protocols."""
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -37,9 +36,18 @@ def test_bin_ranges_are_columnar(atlas, cre):
 
 
 def test_search_accepts_any_interval_input(atlas, cre, tmp_path):
+    # brute force: query bins (500 bp) shared with each track's bins
+    def bins(L):
+        return {(c, b) for c, s, e in zip(L.chroms, L.starts, L.ends) for b in range(s // 500, (e - 1) // 500 + 1)}
+    qb = bins(cre)
+    want = {f"t{k}": len(qb & bins(as_loci(str(tmp_path / f"t{k}.bed")))) for k in range(3)}
     for q in (cre, cre.to_pandas(), cre.to_polars(), str(tmp_path / "t0.bed")):
         df = atlas.search(q)
         assert set(df.columns) >= {"name", "overlaps", "log2_odds", "p", "giggle_score"} and len(df) == 3
+    df = atlas.search(cre).set_index("name")
+    assert df["overlaps"].to_dict() == want and (df["n_query_bins"] == len(qb)).all()
+    assert (df["p"] > 0).all() and (df["p"] <= 1).all()
+    assert df["giggle_score"].is_monotonic_decreasing
     df = atlas.search(cre, ref=str(tmp_path / "t1.bed"))
     assert "n_ref_bins" in df.columns
     assert cre.enrich(atlas).shape == df.shape
@@ -50,6 +58,9 @@ def test_search_accepts_any_interval_input(atlas, cre, tmp_path):
 def test_bootstrap_modes(atlas, cre, tmp_path):
     single = atlas.bootstrap(cre, n=3, seed=0, verbose=False)
     assert set(single.columns) >= {"name", "observed", "expected", "z", "p_emp"} and len(single) == 3
+    exact = atlas.search(cre).set_index("name")["overlaps"]
+    assert single.set_index("name")["observed"].to_dict() == exact.to_dict()   # observed = the exact counts
+    assert (single["expected"] >= 0).all() and ((single["p_emp"] > 0) & (single["p_emp"] <= 1)).all()
     groups = atlas.bootstrap({"a": cre.to_pandas(), "b": str(tmp_path / "t1.bed")}, n=3, seed=0, verbose=False)
     assert "group" in groups.columns and len(groups) == 6
     cols = atlas.bootstrap({"chrom": ["chr1"], "start": [100], "end": [900]}, n=2, verbose=False)   # a dict of columns is one query

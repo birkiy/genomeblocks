@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 import genomeblocks as gb
-from genomeblocks import as_loci
 from genomeblocks.browserview import _detect_track_type
 from genomeblocks.view import View
 
@@ -29,6 +28,15 @@ def test_browser_draws_every_track_kind(genes, pairs, cre, bw_path, bw2_path, be
                            bw_share=[["ATAC", "ATAC x2"]], backend="python")
     assert set(axes) >= {"ATAC", "genes", "_axis"} and len(fig.axes) == len(axes)
     assert axes["ATAC"].get_ylim() == axes["ATAC x2"].get_ylim()        # shared scale
+    from matplotlib.collections import LineCollection, PatchCollection
+    n_rects = sum(len(c.get_paths()) for c in axes["CRE"].collections if isinstance(c, PatchCollection))
+    assert n_rects == 5                                                  # the five chr1 CREs in view
+    arcs = [c for c in axes["loops"].collections if isinstance(c, LineCollection)]
+    assert sum(len(c.get_paths()) for c in arcs) == 2                     # the two cis chr1 loops
+    assert sum(len(c.get_paths()) for c in axes["regions"].collections) == 2
+    gene_boxes = sum(len(c.get_paths()) for c in axes["genes"].collections if isinstance(c, PatchCollection))
+    assert gene_boxes == 6 + 3                                           # exons (T1 3 + T1b 1 + T2 2) + CDS (3)
+    assert len(axes["genes"].texts) == 2                                 # one label per gene on chr1
     fig, axes = gb.browser(("chr1", 0, 12_000), {"genes": genes}, genes_max_transcripts=1, bw_ymax=5)
     assert "genes" in axes
     with pytest.raises(ValueError, match="end"):

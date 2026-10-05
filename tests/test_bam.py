@@ -73,8 +73,18 @@ def test_hichip_short_range_track(tmp_path, sizes_path):
     h = open_bigwig(bw)
     assert h.stats_array("chr1", 100, 200, n_bins=1, stat="max")[0] > 0
     h.close()
-    runs = list(hichip.coverage(hichip.fragments(ends)))
-    assert runs[0][0] == "chr1" and (runs[0][3] > 0).all()
+    frags = hichip.fragments(ends)
+    runs = list(hichip.coverage(frags))
+    assert [r[0] for r in runs] == ["chr1"]
+    chrom, a, z, d = runs[0]
+    depth = np.zeros(int(frags.ends.max()) + 1, int)
+    for s, e in zip(frags.starts, frags.ends):
+        depth[s:e] += 1
+    got = np.zeros_like(depth)
+    for s, e, v in zip(a, z, d):
+        got[s:e] = v
+    assert np.array_equal(got, depth)                                      # the runs are the per-base depth
+    assert (a[1:] != z[:-1]).any() or (d[1:] != d[:-1]).all()               # adjacent equal runs merged
     out = hichip.shortrange_track(str(tmp_path / "t.allValidPairs"), str(tmp_path / "sr"), CHROM_SIZES)
     assert set(out) == {"ends", "bed", "bigwig"}
     with pytest.raises(RuntimeError, match="not found"):

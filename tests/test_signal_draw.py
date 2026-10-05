@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 
 import genomeblocks as gb
-from genomeblocks import as_loci
 from genomeblocks import signal_draw as sd
 
 
@@ -47,7 +46,6 @@ def test_plot_motif_heatmap(cre):
 
 
 def test_group_mask_inputs(cre):
-    import pandas as pd
     assert np.flatnonzero(sd.group_mask(cre, [0, 2])).tolist() == [0, 2]
     assert np.flatnonzero(sd.group_mask(cre, cre.head(2))).tolist() == [0, 1]
     assert np.flatnonzero(sd.group_mask(cre, cre.head(2).to_pandas())).tolist() == [0, 1]

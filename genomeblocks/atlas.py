@@ -22,13 +22,16 @@ from __future__ import annotations
 import glob
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import Dict, Iterable, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Sequence, Union
 
 import numpy as np
 
 from ._table import TableMixin
 from .genome import read_sizes
-from .loci import Loci
+
+if TYPE_CHECKING:                                   # names used in annotations only
+    import pandas as pd
+    from scipy.sparse import csr_matrix
 # scipy.sparse is imported where the matrix is built, so `import genomeblocks`
 # does not pay for scipy. Loci.enrich / Loci.enrich_mc live in loci.py and call
 # Atlas.search / Atlas.bootstrap.

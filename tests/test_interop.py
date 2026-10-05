@@ -81,7 +81,7 @@ def test_arrow_export_with_nulls_in_object_columns():
 def test_cube_converters(cre):
     S = np.random.default_rng(0).random((len(cre), 2, 5))
     from genomeblocks import interop
-    xr = pytest.importorskip("xarray")
+    pytest.importorskip("xarray")
     da = interop.cube_to_xarray(S, cre, ["a", "b"], flank=250)
     assert da.dims == ("region", "track", "bin") and da.coords["bin"].values[0] == -200
     df = interop.cube_to_pandas(S, cre, ["a", "b"])

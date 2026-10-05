@@ -89,6 +89,20 @@ JASPAR = """\
 CHROM_SIZES = {"chr1": 20_000, "chr2": 8_000}
 
 
+def _write_bigwig(pybigtools, path, recs):
+    """Write and read back: a truncated file (disk full, an interrupted writer)
+    would otherwise surface far away as a BBIReadError inside signal()."""
+    pybigtools.open(str(path), "w").write(CHROM_SIZES, recs)
+    h = pybigtools.open(str(path), "r")
+    try:
+        for chrom in h.chroms():
+            n = sum(1 for _ in h.records(chrom))
+            if n != sum(r[0] == chrom for r in recs):
+                raise RuntimeError(f"{path} is incomplete after writing ({n} records on {chrom})")
+    except Exception as exc:
+        raise RuntimeError(f"bigWig fixture {path} did not write completely (disk full?): {exc}") from exc
+
+
 @pytest.fixture(scope="session")
 def data_dir(tmp_path_factory):
     """All the synthetic files, written once per session."""
@@ -102,10 +116,10 @@ def data_dir(tmp_path_factory):
     import pybigtools
     rng = np.random.default_rng(0)
     recs = [("chr1", s, s + 50, float(v)) for s, v in zip(range(0, 19_900, 100), rng.uniform(1, 10, 199))]
-    pybigtools.open(str(d / "signal.bw"), "w").write(CHROM_SIZES, recs)
+    _write_bigwig(pybigtools, d / "signal.bw", recs)
     recs2 = [("chr1", s, s + 50, float(v)) for s, v in zip(range(0, 19_900, 100), rng.uniform(1, 10, 199))]
     recs2 += [("chr2", s, s + 20, 2.0) for s in range(0, 7_900, 100)]
-    pybigtools.open(str(d / "signal2.bw"), "w").write(CHROM_SIZES, recs2)
+    _write_bigwig(pybigtools, d / "signal2.bw", recs2)
     # a FASTA with planted motif sites (M1 = ACGT, M2 = GGAA), 60-column lines
     seq = "".join(rng.choice(list("ACGT"), 20_000))
     seq = seq[:1000] + "ACGT" * 3 + seq[1012:5000] + "GGAA" * 3 + seq[5012:]
