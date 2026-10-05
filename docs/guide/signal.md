@@ -27,6 +27,7 @@ or the pure-Python reader on request.
 {: .sec-green }
 
 ```python
+import numpy as np
 import genomeblocks as gb
 
 cre = gb.Loci.make("cre.bed")
@@ -175,8 +176,8 @@ cre.signal([pyBigWig.open("atac.bw"), pyBigWig.open("h3k27ac.bw")], n_bins=8, wo
   half of the available RAM is refused before anything is read:
 
 ```python
-gb.Loci.tile_genome({"chr1": 10**9}, 10).signal("atac.bw", n_bins=200)
-# -> MemoryError: The signal cube needs ~80.0 GB, over half of the available RAM; extract in chunks of loci (L[a:b].signal(...)).
+cre.signal("atac.bw", n_bins=10**12)
+# -> MemoryError: The signal cube needs ~28000.0 GB, over half of the available RAM; extract in chunks of loci (L[a:b].signal(...)).
 ```
 
 Chunk by rows (`cre[a:b].signal(...)`) and stream to disk when you need more.
@@ -345,7 +346,8 @@ shared, b-only, and `groups` maps each block name to a boolean mask over
 `union`. `samples` may be a list of titles (no merging) or a
 `{column: [track indices]}` dict that averages replicate tracks into one
 column; per-column `cmap`, `vmax` and `ymax` lists then have one entry per
-merged column. `sets` controls block order (default `[a_name, common_name, b_name]`);
+merged column (a list of another length raises `ValueError: vmax must have
+one entry per plotted column (merged sample), got 2 for 1 columns`). `sets` controls block order (default `[a_name, common_name, b_name]`);
 `sort`, `cmap`, `vmax`, `ymax`, `colors`, `profile` are passed through to
 `plot_heatmap`. Extra extraction arguments go in `signal_kw`
 (`signal_kw={"backend": "python", "workers": 4}`).

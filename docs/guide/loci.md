@@ -473,7 +473,7 @@ site = gb.as_loci([("chr1", 1000, 1012, "-")])
 site.sequences("genome.fa"), site.sequences("genome.fa", strand=True)
 # -> (['ACGTACGTACGT'], ['ACGTACGTACGT'])
 peaks.sequences("genome.fa", r=5)[:2]      # 10 bp around each centre
-# -> ['TCCCTACGTA', 'TTATCGACCA']
+# -> ['TCAGCACGTA', 'TGATGTTGTG']
 ```
 
 `to_fasta(path, fasta, r=None)` writes them as FASTA with uids as headers;

@@ -442,7 +442,7 @@ constructors run it for you:
 
 ```python
 genes = gb.Genes.make("gencode.v44.annotation.gtf", cre="atac.narrowPeak", bw="atac.bw", r=200)
-# -> [INFO] Isoform support: 2/3 genes with an open TSS (2/4 isoforms), 1 fell back to the longest isoform.
+# -> [INFO] Isoform support: 2/3 genes with an open TSS (3/4 isoforms), 1 fell back to the longest isoform.
 ```
 
 What it writes:
@@ -495,7 +495,7 @@ The genes table also flows through the protocols: `pl.DataFrame(genes)`,
 ```python
 genes.to_gtf("out.gtf")              # 1-based GTF: genes, then transcripts, then features
 print(genes.to_bed12().splitlines()[0])    # one BED12 line per gene: its representative isoform, exons as blocks, CDS as thick
-# -> chr1	2000	5000	GENE_A	0	+	5000	5000	0	1	3000	0
+# -> chr1	1000	5000	GENE_A	0	+	1100	4300	0	3	200,500,1000	0,1000,3000
 genes.save("genes_v44")              # a directory: genes / transcripts / features .parquet + meta.json
 gb.Genes.load("genes_v44")
 # -> Genes(3 genes, 4 transcripts, 7 exons)

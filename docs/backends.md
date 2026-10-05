@@ -92,8 +92,10 @@ is one extra away:
   package works where neither wheel does.
 - **motifs → MOODS, else lightmotif.** Both are compiled (C++ and Rust), so
   neither is a core dependency: the conda package depends on bioconda's
-  `moods`, and on pip `genomeblocks[motifs]` compiles MOODS-python while
-  `genomeblocks[lightmotif]` installs prebuilt wheels. genomeblocks parses the
+  `moods`, and on pip `genomeblocks[motifs]` compiles MOODS-python (with
+  `-march=native`: build it on the machine that runs it, never from a wheel
+  cached on another CPU) while `genomeblocks[lightmotif]` installs portable
+  prebuilt wheels. genomeblocks parses the
   motif files, computes the log-odds matrices and the p-value cutoffs itself,
   so MOODS, lightmotif and Biopython score the same matrices against the same
   cutoffs and report the same hits; MOODS scans a whole library in one pass,
@@ -159,6 +161,7 @@ a.overlap_pairs(b)                        # -> (array([0, 1, 5, 6]), array([0, 2
 a.overlap_pairs(b, backend="bioframe")    # the same pairs
 cre = gb.Loci.make("peaks.bed", backend="pandas")               # table parser
 S = cre.signal("atac.bw", backend="pybigwig", verbose=False)    # bigWig reader
+A = gb.Architecture.make(cre, "loops.bedpe", r=100, verbose=False)
 A.components(backend="networkx")                                # graph algorithm
 ```
 
@@ -213,13 +216,13 @@ A requested backend that is not installed raises `ImportError` with the
 install command. There is no fallback to another engine:
 
 ```python
-gb.backends.resolve("intervals", "cgranges")
+gb.backends.resolve("intervals", "cgranges")      # without cgranges
 # ImportError: the 'cgranges' intervals backend is not installed: conda install -c bioconda cgranges
 #   (or pip install git+https://github.com/lh3/cgranges)
 with gb.use_backend(graph="graph-tool"):
     ...
 # ImportError: the 'graph-tool' graph backend is not installed: conda install -c conda-forge graph-tool
-gb.backends.resolve("intervals", "bedtools")
+gb.backends.resolve("intervals", "bedtools")      # without bedtools
 # ImportError: the 'bedtools' intervals backend is not installed: pip install pybedtools;
 #   conda install -c bioconda bedtools  (the bedtools binary must be on PATH)
 ```
@@ -336,7 +339,7 @@ from genomeblocks import motifs as gm
 {be: gm.scan_motifs_matrix(cre, "genome.fa", "motifs.jaspar", r=50, threshold=7.0,
                            norm=False, backend=be, verbose=False).sum().to_dict()
  for be in ("moods", "lightmotif", "biopython")}
-# -> {'moods': {'M1': 8, 'M2': 7}, 'lightmotif': {'M1': 8, 'M2': 7}, 'biopython': {'M1': 8, 'M2': 7}}
+# -> {'moods': {'M1': 4, 'M2': 4}, 'lightmotif': {'M1': 4, 'M2': 4}, 'biopython': {'M1': 4, 'M2': 4}}
 ```
 
 ### Tables

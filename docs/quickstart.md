@@ -274,10 +274,10 @@ cre.save("cre.parquet"); Loci.load("cre.parquet")
 
 import polars as pl, duckdb
 pl.DataFrame(cre).shape                # -> (7, 4)                      Arrow C stream
-duckdb.sql("select chrom, count(*) n from cre group by chrom").df()
+duckdb.sql("select chrom, count(*) n from cre group by chrom order by chrom").df()
 #   chrom  n
-# 0  chr2  2
-# 1  chr1  5
+# 0  chr1  5
+# 1  chr2  2
 
 Loci.from_frame(cre.to_polars()).equals(cre)       # -> True   round trips are exact
 ```

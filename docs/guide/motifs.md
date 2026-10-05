@@ -234,7 +234,7 @@ genome.sizes                                # {'chr1': <length>, 'chr2': <length
 L = gb.as_loci(["chr1:950-1050", "chr1:4950-5050", "chr1:7000-7100"])
 L.sequences("genome.fa")                    # one string per row, as stored
 L.sequences("genome.fa", r=6)               # centre ± 6 bp
-# -> ['TCCGGAACGTAC', 'GGCCGAGGAAGG', 'AAGCAAAACGTT']
+# -> ['ATCAGCACGTAC', 'TCGTTAGGAAGG', 'CGTATATGAGGA']
 L.sequences("genome.fa", r=6, backend="pysam")       # same bases, another reader
 L.sequences("genome.fa", strand=True, upper=True)    # reverse-complement '-' rows, upper-case
 L.to_seqrecords("genome.fa", r=6)           # Biopython SeqRecords, id = uid
@@ -285,8 +285,8 @@ M = gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, 
 M
 # ->                    M1  M2
 # -> uid
-# -> chr1:950-1050(.)    4   1
-# -> chr1:4950-5050(.)   0   4
+# -> chr1:950-1050(.)    3   1
+# -> chr1:4950-5050(.)   0   3
 # -> chr1:7000-7100(.)   2   0
 ```
 
@@ -345,7 +345,7 @@ When you only need the per-motif total over all windows:
 ```python
 counts = gm.scan_motifs(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, norm=False, verbose=False)
 counts
-# -> {'M1': 6.0, 'M2': 5.0}
+# -> {'M1': 5.0, 'M2': 4.0}
 import pandas as pd
 pd.Series(counts).sort_values(ascending=False).head(20)
 ```
@@ -406,8 +406,8 @@ gm.scan_motifs_matrix_masked(L, "genome.fa", "motifs.jaspar", ["M1"], r=50, thre
                              seed=0, verbose=False)
 # ->                    M2
 # -> uid
-# -> chr1:950-1050(.)    0
-# -> chr1:4950-5050(.)   4
+# -> chr1:950-1050(.)    1
+# -> chr1:4950-5050(.)   3
 # -> chr1:7000-7100(.)   1
 ```
 
@@ -452,7 +452,7 @@ M, names = gm.scan_motifs_profile(L, "genome.fa", "motifs.jaspar", ["M1", "M2"],
 M.shape, names
 # -> ((3, 2, 12), ['M1', 'M2'])
 M[0, 0]                      # M1 hits along the first window: three overlapping ACGT at the centre
-# -> array([0., 0., 0., 0., 0., 2., 4., 2., 0., 0., 0., 0.], dtype=float32)
+# -> array([0., 0., 0., 0., 0., 0., 4., 2., 0., 0., 0., 0.], dtype=float32)
 ```
 
 `gb.plot_motif_heatmap(loci, M, names, *, r=500, groups=None, vmax=None, ymax=None, cmap="Purples")`

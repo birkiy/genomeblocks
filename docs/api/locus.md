@@ -112,7 +112,7 @@ chr10). `__eq__` and `__hash__` use the `uid`, so strand matters for equality.
 
 ```python
 sorted([Locus("chr2", 5, 9), Locus("chr1", 50, 60), Locus("chr1", 5, 9)])
-# -> [Locus('chr1', 5, 9), Locus('chr1', 50, 60), Locus('chr2', 5, 9)]
+# -> [Locus(chrom='chr1', start=5, end=9, strand='.'), Locus(chrom='chr1', start=50, end=60, strand='.'), Locus(chrom='chr2', start=5, end=9, strand='.')]
 a == Locus("chr1", 100, 200, "+"), a != b, hash(a) == hash(Locus("chr1", 100, 200, "+"))
 # -> (True, True, True)
 ```
@@ -154,7 +154,7 @@ v, type(v).__name__, isinstance(v, Locus)
 v.row, v.name, v.score                 # extra columns come along
 # -> (0, 'p1', 10.0)
 v.start = 850                          # writes into cre.starts[0]
-cre.starts[0], cre[0]
+int(cre.starts[0]), cre[0]
 # -> (850, Locus[0](chr1:850-1100(+)))
 v.strand = "-"
 cre.strand[:2]

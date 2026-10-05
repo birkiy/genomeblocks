@@ -64,6 +64,7 @@ of the available RAM (extract in chunks of loci), and `ValueError` for an
 empty input or an unknown `agg`.
 
 ```python
+import numpy as np
 import genomeblocks as gb
 cre = gb.Loci.make("peaks.bed", keep=True)
 
@@ -83,9 +84,14 @@ h = pyBigWig.open("signal.bw")
 cre.signal([h], n_bins=20, flank=500, verbose=False, progress=False)        # an open handle is a track too
 cre.signal("signal.bw", agg="median", verbose=False, progress=False)
 # -> ValueError: unknown stat 'median'; use mean, min, max, sum, std or coverage
-cre.signal([h], workers=2, verbose=False, progress=False)
+tiles = gb.Loci.tile_genome({"chr1": 20_000}, 10)       # 2,000 rows: enough work for two processes
+tiles.signal([h], workers=2, verbose=False, progress=False)
 # -> ValueError: workers > 1 needs bigWig paths (open handles cannot be shared between processes); pass the file paths, or workers=1.
 ```
+
+`workers` is capped at one process per track per 1,000 loci, so
+`cre.signal([h], workers=2)` on the seven rows above runs in one process and
+accepts the handle.
 
 The cube converts with `genomeblocks.interop`:
 `cube_to_xarray(S, L, tracks=None, *, flank=None, name="signal")` (dims
@@ -112,7 +118,7 @@ same shape. A track with no signal anywhere is left at 0 with a
 
 ```python
 N = gb.tmm(S)
-N.shape, np.isfinite(N).all()
+N.shape, bool(np.isfinite(N).all())
 # -> ((7, 2, 20), True)
 S0 = S.copy(); S0[:, 1] = 0
 gb.tmm(S0)
@@ -186,6 +192,8 @@ fig = sd.plot_heatmap(cre.to_pandas(), S, groups={"up": np.arange(3), "down": cr
                       samples=["ATAC", "H3K27ac"], cmap=["Blues", "Reds"], sort="global", profile=False, height=500)
 sd.plot_heatmap(cre, S, samples=["only one"])
 # -> ValueError: samples must have length 2 (one label per track), got 1
+sd.plot_heatmap(cre, S, vmax=[8, 8, 8])
+# -> ValueError: vmax must have one entry per track, got 3 for 2 tracks
 sd.plot_heatmap(cre, S[:3])
 # -> ValueError: S must be (rows, tracks, bins) with 7 rows, got shape (3, 2, 20)
 ```
@@ -204,12 +212,12 @@ sd.plot_profiles(loci, S, *,
 ```
 
 Also available as `Loci.plot_profiles(S, **kw)`. One panel per group, all
-for the same `track`.
+for the same `track`; the x ticks read like `plot_heatmap`'s.
 
 ```python
 fig = sd.plot_profiles(cre, S, groups={"strong": cre["score"] > 30, "weak": cre["score"] <= 30}, track=1, height=500)
-len(fig.axes)
-# -> 2
+len(fig.axes), [t.get_text() for t in fig.axes[0].get_xticklabels()]
+# -> (2, ['-0.5kb', 'center', '+0.5kb'])
 ```
 
 ### `compare_heatmap`
@@ -233,6 +241,8 @@ Re-exported as `genomeblocks.compare_heatmap`. `a` and `b` are anything
 `as_loci` takes. The cube is extracted for their union in the order a-only,
 common, b-only; `groups` maps each block name to a boolean mask over
 `union_loci`, so the returned cube and loci can be re-plotted or saved.
+`cmap`, `vmax` and `ymax` lists have one entry per plotted column, that is
+per `samples` key once replicates are merged.
 
 ```python
 a, b = cre.head(4), cre.tail(5)
@@ -241,6 +251,8 @@ len(union), S_u.shape, {k: int(v.sum()) for k, v in groups.items()}
 # -> (7, (7, 2, 20), {'A': 2, 'common': 2, 'B': 3})
 fig, *_ = gb.compare_heatmap(a.to_pandas(), b, ["signal.bw", "signal2.bw"], n_bins=20, flank=500,
                              samples={"mean": [0, 1]})                      # two replicates, one column
+gb.compare_heatmap(a, b, [], S=S_u, samples={"mean": [0, 1]}, vmax=[8, 8])
+# -> ValueError: vmax must have one entry per plotted column (merged sample), got 2 for 1 columns
 ```
 
 ---

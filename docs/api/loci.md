@@ -20,6 +20,7 @@ kernels behind the interval operations.
 {: .fs-5 .fw-300 }
 
 ```python
+import numpy as np
 import genomeblocks as gb
 from genomeblocks import Loci, Genome, as_loci
 ```
@@ -194,6 +195,7 @@ cre["score2"] = cre["score"] * 2                  # a new column
 cre["flag"] = True                                # a scalar is broadcast
 cre.columns
 # -> ['chrom', 'start', 'end', 'strand', 'name', 'score', 'score2', 'flag']
+del cre.cols["score2"], cre.cols["flag"]          # cols is a plain dict
 cre["start"] = np.zeros(7)
 # -> KeyError: "'start' is a coordinate; build a new Loci instead"
 ```
@@ -367,7 +369,7 @@ as_loci([("chr10", 5, 6), ("chr2", 5, 6), ("chr1", 9, 10)]).sort().chroms
 with gb.use_backend(intervals="pyranges"):
     cre.intersect(other).to_records()
 # -> [('chr1', 900, 1100, '+'), ('chr2', 500, 600, '+'), ('chr2', 5000, 5100, '+')]
-cre.intersect(other, backend="cgranges")
+cre.intersect(other, backend="cgranges")          # without cgranges
 # -> ImportError: the 'cgranges' intervals backend is not installed: conda install -c bioconda cgranges  (or pip install git+https://github.com/lh3/cgranges)
 ```
 
@@ -437,8 +439,8 @@ cre.to_pandas().head(3)
 #    2  chr1   4900  5100      +   p3   30.0
 cre.to_pandas(uid=True).columns.tolist()
 # -> ['chrom', 'start', 'end', 'strand', 'name', 'score', 'uid']
-cre.to_polars().schema
-# -> Schema([('chrom', Categorical), ('start', Int64), ('end', Int64), ('strand', Categorical), ('name', String), ('score', Float64)])
+dict(cre.to_polars().schema)
+# -> {'chrom': Categorical, 'start': Int64, 'end': Int64, 'strand': Categorical, 'name': String, 'score': Float64}
 cre.to_arrow().schema.names
 # -> ['chrom', 'start', 'end', 'strand', 'name', 'score']
 cre.to_bioframe().dtypes.to_dict()

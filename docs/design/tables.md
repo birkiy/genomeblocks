@@ -147,8 +147,8 @@ TSS is the 1-bp interval `[t, t+1)` with `t = start` on `+` and `end - 1` on
 
 ```python
 genes = gb.Genes.make("genes.gtf")
-genes.transcripts["gene"]      # -> array([0, 0, 1, 2])          the gene row of each transcript
-genes.features["transcript"]   # -> array([0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 3, 3])
+genes.transcripts["gene"]      # -> array([0, 0, 1, 2], dtype=int32)   the gene row of each transcript
+genes.features["transcript"]   # -> array([0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 3, 3], dtype=int32)
 genes.features["kind"]         # -> 0 exon, 1 CDS, 2 5'UTR, 3 3'UTR
 genes.get_tss().to_records()[:2]
 # -> [('chr1', 1000, 1001, '+'), ('chr1', 10999, 11000, '-')]
@@ -236,8 +236,8 @@ pq.read_table("arch/vertices.parquet").schema.names
 B = gb.Architecture.load("arch/")                     # same edges, vp['component'] back
 import polars as pl
 pl.read_parquet("arch/edges.parquet").shape           # -> (4, 5)    any parquet reader
-pl.read_parquet("cre.parquet").schema
-# -> chrom: Categorical, start: Int64, end: Int64, strand: Categorical, name: String, score: Float64
+dict(pl.read_parquet("cre.parquet").schema)
+# -> {'chrom': Categorical, 'start': Int64, 'end': Int64, 'strand': Categorical, 'name': String, 'score': Float64, 'signalValue': Float64, 'pValue': Float64, 'qValue': Float64, 'peak': Int64}
 ```
 
 `load(path, genome=g)` reads a table back onto a Genome of your choice; with

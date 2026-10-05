@@ -66,6 +66,9 @@ pip install "genomeblocks[fast,bam]"   # pick the ones you need
 {: .note }
 > Apart from `motifs` / `lightmotif`, extras only add *choices*: the default engine of every other family is already there, and results are identical across engines (the test suite checks it), so install an extra for speed on your data or to hand results to a library you already use. The motif functions are the one exception — without an engine they raise `ImportError` naming both extras (see below).
 
+{: .warning }
+> MOODS-python compiles with `-march=native`, so build an environment that has it on the machine that runs it: a virtualenv copied from another computer, or a wheel cached from another CPU, can stop with an illegal-instruction error. lightmotif's wheels are portable.
+
 ---
 
 ## conda: the three conda-only engines
@@ -103,7 +106,7 @@ import genomeblocks as gb
 gb.__version__
 # -> '2.0.0'
 
-gb.backends()
+gb.backends()                    # here: a pip install with the interop extra, no conda-only engines
 #        family       backend  installed  default  in use   install
 # 0   intervals  genomeblocks       True     True    True
 # 1   intervals      cgranges      False    False   False   conda install -c bioconda cgranges  (or pip install git+https://github.com/lh3/cgranges)
@@ -158,7 +161,7 @@ gb.__all__
 Asking for an engine that is not installed is an error that names the fix — never a silent switch to another engine:
 
 ```python
-loci.merge(backend="cgranges")
+loci.overlap_any(loci, backend="cgranges")
 # ImportError: the 'cgranges' intervals backend is not installed:
 #   conda install -c bioconda cgranges  (or pip install git+https://github.com/lh3/cgranges)
 

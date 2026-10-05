@@ -196,8 +196,10 @@ distance and weight, divides each cis weight by its expectation, and stores
 the ratio in `ep.n`. The fitted `alpha` and `C` are kept in `A.fit`. Trans
 edges have no distance: `ep.d` is `inf` for them and their expectation is the
 mean trans weight, so a trans `ep.n` reads as "times the average trans
-contact". With fewer than three usable cis edges there is no fit (`A.fit`
-holds `nan`) and cis `ep.n` is 0.
+contact". The fit needs at least three cis edges with a positive weight
+and distance, at two distinct distances or more. With fewer, `normalize`
+issues a `UserWarning` that names the usable cis-edge count, `A.fit` holds
+`nan` and the cis `ep.n` is 0.
 
 ```python
 A.prune()          # drop zero-distance (co-located) cis edges; trans edges stay
@@ -348,13 +350,13 @@ Regions are written as `'chr1:1,000-2,000'`, `'chr8:127.5-128.5 Mb'`,
 A.neighbor_rows(0)                 # (partner rows, edge ids), cis and trans
 # -> (array([2, 5], dtype=int32), array([0, 3]))
 A.neighbors(0)                     # the same as a DataFrame with the edge columns
-# ->    row                uid chrom    cis    w       d    n
-# -> 0    2  chr1:4900-5100(+)  chr1   True  6.0  4000.0  0.0
-# -> 1    5    chr2:500-600(+)  chr2  False  9.0     inf  1.0
+# ->    row                uid chrom    cis    w       d         n
+# -> 0    2  chr1:4900-5100(+)  chr1   True  6.0  4000.0  1.124534
+# -> 1    5    chr2:500-600(+)  chr2  False  9.0     inf  1.000000
 A["chr1:900-1100(+)"]              # {partner uid: w}
 # -> {'chr1:4900-5100(+)': 6.0, 'chr2:500-600(+)': 9.0}
 A["chr1:900-1100(+)", "chr1:4900-5100(+)"]   # one edge's columns (None if absent)
-# -> {'w': 6.0, 'd': 4000.0, 'n': 0.0}
+# -> {'w': 6.0, 'd': 4000.0, 'n': 1.1245336516005273}
 "chr1:900-1100(+)" in A            # True when the CRE has at least one edge
 ```
 
@@ -393,7 +395,7 @@ A backend that is requested but not installed raises — there is no silent
 switch:
 
 ```python
-A.components(backend="graph-tool")
+A.components(backend="graph-tool")                  # without graph-tool
 # -> ImportError: the 'graph-tool' graph backend is not installed: conda install -c conda-forge graph-tool
 ```
 

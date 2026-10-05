@@ -211,7 +211,7 @@ view; users can still type any locus or gene name.
 
 | arg | meaning |
 |---|---|
-| `chrom_sizes` | `{chrom: length}`; default: the extent of the embedded loci / architecture plus `flank` |
+| `chrom_sizes` | `{chrom: length}`; default: the sizes in the bigWig headers, and for a chromosome no bigWig names, the extent of the embedded loci / architecture and the regions plus `flank` |
 | `genome_id` | e.g. `'hg38'`: use igv.js's hosted genome (sequence, ideogram, gene search) instead of embedded sizes; needs internet |
 | `igv_js` | `'cdn'` (default: jsDelivr, the page stays small), a path to a local `igv.min.js` to embed (~1.5 MB, works fully offline), or any URL |
 | `standalone` | `False` writes the page content without `<html>` / `<head>` for hosts that add their own |

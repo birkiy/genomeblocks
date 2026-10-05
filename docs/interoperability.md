@@ -40,8 +40,9 @@ genome order, because the index and the Architecture need it); `as_loci(path)`
 keeps file order like every other input.
 
 ```python
-import genomeblocks as gb
+import numpy as np
 import pandas as pd
+import genomeblocks as gb
 
 df = pd.DataFrame({"chrom": ["chr1", "chr1", "chr2"], "start": [900, 1900, 500],
                    "end": [1100, 2100, 600], "name": ["p1", "p2", "p6"],
@@ -254,7 +255,7 @@ Architecture.
 | **pyarrow** Table | the same readers, `Loci.from_arrow` | `to_arrow()`, `save()` (parquet) |
 | **bioframe** | `Loci.from_bioframe(df)` (plain chrom/start/end frame) | `to_bioframe()`: chrom / strand as object columns, bioframe's names |
 | **pyranges** 0.x / 1.x | `Loci.from_pyranges(gr)`, `Genes.from_frame(pr.read_gtf(path))` | `to_pyranges()`: Chromosome / Start / End / Strand + extra columns |
-| **pybedtools** `BedTool` | `Loci.from_bedtool(bt)` | `to_bedtool()`: a BED6 file (name = `cols['name']` or the uid, score = `cols['score']` or 0) |
+| **pybedtools** `BedTool` | `Loci.from_bedtool(bt)`: a BedTool on a BED-like file is read as `as_loci(bt.fn)` reads it (header lines skipped, file order kept); others through their frame | `to_bedtool()`: a BED6 file (name = `cols['name']` or the uid, score = `cols['score']` or 0) |
 | **cgranges** | as an interval backend (`backend='cgranges'`) | `to_cgranges()`: a built index whose label is the row number |
 | **AnnData** (scATAC) | `Loci.from_anndata(adata, axis='var')`: chrom/start/end columns, else names `chr1:100-200`, `chr1-100-200`, `chr1_100_200` | `to_anndata(X, obs=)` (loci as `var`, names `chrom:start-end`); `Architecture.to_anndata()` (vertices as `obs`, one adjacency per edge column in `obsp`); `interop.cube_to_anndata(S, L, tracks)` |
 | **Biopython** | `SeqIO.index` / `SeqIO.to_dict` mappings as FASTA sources; `Bio.motifs` objects in `load_motifs` and every motif function; `backend='biopython'` for scanning and FASTA | `to_seqrecords(fasta)`, `to_fasta(path, fasta)`, `Library.to_biopython()` |
@@ -386,6 +387,8 @@ An open handle is used as it is; its engine is whatever opened it, so
 ### Graph libraries
 
 ```python
+A.ep["w"][:] = [5.0, 3.0, 2.0, 1.0]   # weights (add_mcool fills them from a .cool)
+A.normalize(verbose=False)            # adds ep.d and ep.n
 g = A.to_networkx()                   # node i = row i; chrom/start/end on nodes, edge columns on edges
 dict(g.nodes[0])                      # -> {'chrom': 'chr1', 'start': 900, 'end': 1100}
 dict(g.edges[0, 2])                   # -> {'w': 5.0, 'd': 4000.0, 'n': 1.34...}

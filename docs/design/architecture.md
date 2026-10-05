@@ -107,10 +107,11 @@ A.neighbors(0)
   pixel's count is split evenly across the edges in it, so dense clusters of
   CREs do not multiply one contact. Edges without a pixel keep `w = 0`.
 - **`normalize(source="w", name="n")`** fits `w ≈ C · d^−α` on cis edges with
-  positive distance and weight (a fit needs a few distinct distances;
-  otherwise `n` is left finite with `alpha = NaN`), writes `ep.d` and `ep.n =
-  w / E(d)`. Trans edges have no distance: `ep.d = inf` and their expectation
-  is the mean trans weight.
+  positive distance and weight and writes `ep.d` and `ep.n = w / E(d)`. The
+  fit needs at least three such edges at two distinct distances; without
+  them `normalize` warns (a `UserWarning` naming the usable cis-edge count),
+  `A.fit` holds `alpha = NaN` and the cis `n` is 0. Trans edges have no
+  distance: `ep.d = inf` and their expectation is the mean trans weight.
 - **`prune()`** removes co-located cis edges (`d = 0`); trans edges stay.
 
 ```python
@@ -188,7 +189,7 @@ for b in ("scipy", "igraph", "networkx"):
 # -> networkx [0, 1, 0, -1, 1, 0, 0] [0.2178, 0.1626, 0.1786, 0.0244, 0.1626, 0.1466, 0.1074]
 type(A.graph()).__name__                    # scipy here: graph-tool is not installed
 # -> 'csr_matrix'
-A.components(backend="graph-tool")
+A.components(backend="graph-tool")                  # without graph-tool
 # -> ImportError: the 'graph-tool' graph backend is not installed: conda install -c conda-forge graph-tool
 ```
 

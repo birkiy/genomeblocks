@@ -159,7 +159,7 @@ IGV drops from its coverage track.
 from genomeblocks.bam import pileup_counts, reference_seq, coverage
 
 c = pileup_counts("reads.bam", "chr1", 1000, 1100)
-c.shape, c.sum(axis=0).max()
+c.shape, int(c.sum(axis=0).max())
 # -> ((4, 100), 14)
 reference_seq("ref.fa", "chr1", -4, 8)
 # -> 'NNNNACGTACGT'
@@ -195,8 +195,10 @@ gb.igv_html(path, *,
 One self-contained HTML file: every track is a gzipped data URI and igv.js
 draws it, so the reader needs only a web browser. A region string may hold
 two loci (`'chr1:0-5 kb chr2:0-6 kb'`) to open a split view — how a trans
-loop is shown. Without `genome_id`, the page carries chromosome sizes only
-(from `chrom_sizes`, else the extent of the embedded loci plus `flank`).
+loop is shown. Without `genome_id`, the page carries chromosome sizes only:
+`chrom_sizes` when given, else the sizes in the bigWig headers, and for a
+chromosome no bigWig names, the extent of the embedded loci and the regions
+plus `flank`.
 
 ```python
 A = gb.Architecture.make(cre, pairs, r=100, verbose=False)
@@ -207,7 +209,7 @@ sizes = gb.igv_html("share.html",
                     loci={"CREs": cre}, genes=genes, signal={"ATAC": "signal.bw"}, architecture=A,
                     title="Example", notes={"chr1:0-12 kb": "GENE_A and GENE_B"})
 sizes
-# -> {'ATAC': 2005, 'CREs': 197, 'loops (n)': 149, 'genes': 185, 'total': 6985}
+# -> {'ATAC': 2005, 'CREs': 197, 'loops (n)': 149, 'genes': 185, 'total': 6984}
 ```
 
 Coordinates in the page are 1-based closed, as igv.js expects

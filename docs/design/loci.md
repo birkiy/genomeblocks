@@ -275,7 +275,7 @@ with gb.use_backend(intervals="bioframe"):
     len(L & other), L.nearest(other)[1].tolist()
 # -> (3, [0, 850, 3850, 8900, 9850, 0, 0])
 
-L.overlap_pairs(other, backend="cgranges")
+L.overlap_pairs(other, backend="cgranges")          # without cgranges
 # -> ImportError: the 'cgranges' intervals backend is not installed: conda install -c bioconda cgranges  (or pip install git+https://github.com/lh3/cgranges)
 L.nearest(other, backend="ncls")
 # -> NotImplementedError: the 'ncls' intervals backend has no nearest; use one of: genomeblocks, bioframe, pyranges, bedtools

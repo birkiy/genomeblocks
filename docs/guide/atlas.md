@@ -194,7 +194,7 @@ atlas.search(["chr1:900-1100", "chr1:4900-5100"])
 
 Pass a **reference set** to ask "more enriched in the query than in the
 reference?" — the *c* / *d* cells of the 2x2 come from `ref` instead of the
-genome, and `n_ref_bins` replaces `n_track_bins`:
+genome, and an `n_ref_bins` column is added:
 
 ```python
 res = atlas.search(query=up_cre, ref=all_cre)

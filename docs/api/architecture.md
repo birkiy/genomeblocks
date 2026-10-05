@@ -29,6 +29,7 @@ for the layout of the edge table.
 {: .sec-navy }
 
 ```python
+import os
 import genomeblocks as gb
 from genomeblocks import Architecture
 
@@ -86,8 +87,8 @@ picks the interval engine for the anchor-to-CRE mapping (any
 The new graph has one edge column, `w`, set to 0 — `add_mcool` fills it.
 
 ```python
-A = Architecture.make(cre, gb.Pairs.make("loops.bedpe"), r=100, dmax=5000, trans=False, verbose=False)
-A.n_links, A.n_trans
+A2 = Architecture.make(cre, gb.Pairs.make("loops.bedpe"), r=100, dmax=5000, trans=False, verbose=False)
+A2.n_links, A2.n_trans
 # -> (2, 0)
 ```
 
@@ -113,17 +114,84 @@ column. A table with neither rows nor uids raises a `ValueError` naming the
 accepted columns.
 
 ```python
-df = A.edges_frame()
+df = B.edges_frame()
+df["score"] = [1, 2, 3]
 Architecture.from_frame(cre, df).ep.keys()
-# -> dict_keys(['w', 'd', 'n'])
+# -> dict_keys(['w', 'score'])
 Architecture.from_frame(cre, df[["uid1", "uid2", "w"]]).n_links
-# -> 4
-Architecture.from_scipy(cre, A.to_scipy("w")).ep["w"].tolist()
-# -> [6.0, 3.0, 4.0, 9.0]
+# -> 3
+Architecture.from_scipy(cre, B.to_scipy("w")).ep["w"].tolist()
+# -> [5.0, 3.0, 1.0]
 Architecture.from_frame(cre, df[["w"]])
 # -> ValueError: an edge table needs vertex rows in 'src' / 'tgt' or uids in 'uid1' / 'uid2'
 #    (what edges_frame() writes); got columns ['w']
 ```
+
+---
+
+## Weights: `add_mcool`
+{: .sec-navy }
+
+```python
+A.add_mcool(mcool, *, resolution=None, name="w", verbose=True) -> Architecture
+```
+
+Edge weight = the Hi-C count of the (bin, bin) pixel that holds the two
+CREs, shared equally among the edges that fall in the same pixel. Pixels are
+read one chromosome block at a time, so memory stays bounded and trans
+pixels are found in the same pass. Pass `resolution=` for a multi-resolution
+`.mcool`; a single-resolution `.cool` takes none. Both mistakes raise a
+`ValueError` that lists the resolutions available.
+
+```python
+A.add_mcool("hic.cool")
+# -> [INFO] Set distributed weights for 4/4 edges from cooler. [w]
+A.ep["w"].tolist()
+# -> [6.0, 3.0, 4.0, 9.0]
+A.add_mcool("hic.cool", resolution=1000)
+# -> ValueError: hic.cool is a single-resolution cooler: call add_mcool without resolution=
+```
+
+---
+
+## Normalize, prune, annotate
+{: .sec-navy }
+
+| Method | Signature | One line |
+|---|---|---|
+| `A.normalize` | `normalize(*, source="w", name="n", verbose=True)` | Observed / expected: a power law on distance for cis edges, the mean trans weight for trans edges; writes `ep.d` and `ep[name]`, stores the fit in `A.fit`. When the fit cannot run it warns and sets the cis `ep[name]` to 0. |
+| `A.prune` | `prune(*, dist_prop="d", verbose=True)` | Drop zero-distance (co-located) cis edges; trans edges (`d = inf`) stay. |
+| `A.annotate` | `annotate(genes, *, key="n", name="gene", verbose=True)` | `vp.annot` = region label per CRE; `vp[name]` = the nearest-TSS gene for promoter CREs, else the gene of the highest-`key` promoter neighbour (cis or trans). |
+
+Every one of these returns `self`, so they chain.
+
+```python
+A.normalize()
+# -> [INFO] Power-law fit: alpha=0.802, C=4.143e+03 on 3 cis edges; 1 trans edges use the mean trans weight → ep.n
+list(A.ep), A.ep["d"].tolist()
+# -> (['w', 'd', 'n'], [4000.0, 9000.0, 4500.0, inf])
+A.prune()
+# -> [INFO] prune: removed 0 zero-distance edges → 4 edges.
+A.annotate(genes)
+# -> [INFO] Annotated 6 loci: 3 promoter CREs | 2/3 non-promoter CREs assigned to a top-'n' promoter gene → vp.gene.
+A.vp["annot"].tolist()
+# -> ['Promoter-TSS', 'Promoter-TSS', '3UTR', 'Promoter-TSS', 'Promoter-TSS', 'Intergenic', 'Intergenic']
+A.vp["gene"].tolist()
+# -> ['GENE_A', 'GENE_A', 'GENE_A', 'GENE_B', 'GENE_B', 'GENE_A', '']
+```
+
+{: .warning }
+> `prune` reads `ep.d` and `annotate` ranks promoter contacts by `ep.n`, so
+> both need `normalize()` first; they raise a `ValueError` naming the missing
+> column otherwise. A fit needs at least three cis edges with a positive
+> weight and distance, at two distinct distances or more; with fewer,
+> `normalize` issues a `UserWarning` that names the usable cis-edge count,
+> `A.fit` holds `nan` and the cis `n` values are 0.
+
+Vertex columns are one value per `Loci` row, so unlinked CREs get a label
+too (`annot`) and an empty gene (`''`). `genes` is a
+[`Genes`]({{ '/api/genes/' | relative_url }}) table; a TSS is the gene's
+5'-most base, `[t, t+1)`.
 
 ---
 
@@ -235,70 +303,6 @@ A.near_rows("chr1:0-3,000")
 A.near(genes["GENE_A"].tss, r=2000)           # TSS ± 2 kb
 # -> Loci(n=2, chroms=1, cols=[name, score])
 ```
-
----
-
-## Weights: `add_mcool`
-{: .sec-navy }
-
-```python
-A.add_mcool(mcool, *, resolution=None, name="w", verbose=True) -> Architecture
-```
-
-Edge weight = the Hi-C count of the (bin, bin) pixel that holds the two
-CREs, shared equally among the edges that fall in the same pixel. Pixels are
-read one chromosome block at a time, so memory stays bounded and trans
-pixels are found in the same pass. Pass `resolution=` for a multi-resolution
-`.mcool`; a single-resolution `.cool` takes none. Both mistakes raise a
-`ValueError` that lists the resolutions available.
-
-```python
-A.add_mcool("hic.cool")
-# -> [INFO] Set distributed weights for 4/4 edges from cooler. [w]
-A.ep["w"].tolist()
-# -> [6.0, 3.0, 4.0, 9.0]
-A.add_mcool("hic.cool", resolution=1000)
-# -> ValueError: hic.cool is a single-resolution cooler: call add_mcool without resolution=
-```
-
----
-
-## Normalize, prune, annotate
-{: .sec-navy }
-
-| Method | Signature | One line |
-|---|---|---|
-| `A.normalize` | `normalize(*, source="w", name="n", verbose=True)` | Observed / expected: a power law on distance for cis edges, the mean trans weight for trans edges; writes `ep.d` and `ep[name]`, stores the fit in `A.fit`. |
-| `A.prune` | `prune(*, dist_prop="d", verbose=True)` | Drop zero-distance (co-located) cis edges; trans edges (`d = inf`) stay. |
-| `A.annotate` | `annotate(genes, *, key="n", name="gene", verbose=True)` | `vp.annot` = region label per CRE; `vp[name]` = the nearest-TSS gene for promoter CREs, else the gene of the highest-`key` promoter neighbour (cis or trans). |
-
-Every one of these returns `self`, so they chain.
-
-```python
-A.normalize()
-# -> [INFO] Power-law fit: alpha=0.802, C=4.143e+03 on 3 cis edges; 1 trans edges use the mean trans weight → ep.n
-list(A.ep), A.ep["d"].tolist()
-# -> (['w', 'd', 'n'], [4000.0, 9000.0, 4500.0, inf])
-A.prune()
-# -> [INFO] prune: removed 0 zero-distance edges → 4 edges.
-A.annotate(genes)
-# -> [INFO] Annotated 6 loci: 3 promoter CREs | 2/3 non-promoter CREs assigned to a top-'n' promoter gene → vp.gene.
-A.vp["annot"].tolist()
-# -> ['Promoter-TSS', 'Promoter-TSS', '3UTR', 'Promoter-TSS', 'Promoter-TSS', 'Intergenic', 'Intergenic']
-A.vp["gene"].tolist()
-# -> ['GENE_A', 'GENE_A', 'GENE_A', 'GENE_B', 'GENE_B', 'GENE_A', '']
-```
-
-{: .warning }
-> `prune` reads `ep.d` and `annotate` ranks promoter contacts by `ep.n`, so
-> both need `normalize()` first; they raise a `ValueError` naming the missing
-> column otherwise. A fit needs at least three cis edges at two distinct
-> distances; with fewer, `A.fit` holds `nan` and the cis `n` values are 0.
-
-Vertex columns are one value per `Loci` row, so unlinked CREs get a label
-too (`annot`) and an empty gene (`''`). `genes` is a
-[`Genes`]({{ '/api/genes/' | relative_url }}) table; a TSS is the gene's
-5'-most base, `[t, t+1)`.
 
 ---
 
@@ -458,7 +462,7 @@ Both graphs must be built on the *same* `Loci` object.
 
 | Expression | Result |
 |---|---|
-| `A \| B` | Union of the edge sets; an edge column present in one graph only is 0 on the other's edges. |
+| `A \| B` | Union of the edge sets. An edge in both keeps `A`'s values; the edge columns are `A`'s in order, then `B`'s new ones, 0 on the edges of the graph that lacks them. |
 | `A & B` | The edges of `A` that are also in `B`, with `A`'s edge columns (a view; vertex columns are not carried). |
 
 ```python

@@ -132,8 +132,8 @@ query than in the reference"). `p` is the exact hypergeometric probability;
 so depletion comes out negative. `alternative` is `'two-sided'`, `'greater'`
 or `'less'`.
 
-Columns: `name`, `n_query_bins`, `n_track_bins` (or `n_ref_bins` with
-`ref`), `track_n_bins`, `track_n_peaks`, `overlaps`, `log2_odds`, `p`,
+Columns: `name`, `n_query_bins`, `n_ref_bins` (with `ref` only),
+`track_n_bins`, `track_n_peaks`, `overlaps`, `log2_odds`, `p`,
 `giggle_score`, then the metadata columns. Also `Loci.enrich(atlas, **kw)`.
 A query with no bins on the atlas's chromosomes raises `ValueError`.
 
@@ -147,7 +147,7 @@ atlas.search(cre)[["name", "overlaps", "giggle_score", "factor"]]
 atlas.search(cre.to_pandas(), ref="t1.bed", alternative="greater").columns.tolist()
 # -> ['name', 'n_query_bins', 'n_ref_bins', 'track_n_bins', 'track_n_peaks', 'overlaps', 'log2_odds', 'p', 'giggle_score', 'factor']
 cre.enrich(atlas).shape
-# -> (3, 10)
+# -> (3, 9)
 atlas.search(gb.as_loci([("chrZ", 1, 2)]))
 # -> ValueError: Query has no bins on the atlas's chromosomes.
 ```
@@ -203,8 +203,9 @@ atlas.save(path) -> None        # a compressed .npz, no pickles
 Atlas.load(path) -> Atlas
 ```
 
-Everything is stored, including the metadata (as strings; empty cells come
-back as `NA`).
+Everything is stored, including the metadata (as strings; a missing value
+comes back as `NaN`, as `attach_meta` stores it), so `save` → `load` is an
+exact round trip.
 
 ```python
 atlas.save("atlas.npz")
@@ -233,9 +234,9 @@ so `pl.DataFrame(atlas)` and `duckdb.sql(...)` take it directly.
 
 ```python
 atlas.shape, atlas.columns, list(atlas)
-# -> ((3, 3), ['name', 'n_peaks', 'n_bins'], ['t0', 't1', 't2'])
+# -> ((3, 4), ['name', 'n_peaks', 'n_bins', 'factor'], ['t0', 't1', 't2'])
 atlas["t1"]
-# -> {'name': 't1', 'n_peaks': 7, 'n_bins': 7}
+# -> {'name': 't1', 'n_peaks': 7, 'n_bins': 7, 'factor': 'FOXA1'}
 atlas.describe()
 # ->                        value
 #    tracks                     3
@@ -247,7 +248,7 @@ atlas.describe()
 #    bins per track min         7
 #    bins per track median    7.0
 #    bins per track max         7
-#    metadata columns           —
+#    metadata columns      factor
 ```
 
 ---

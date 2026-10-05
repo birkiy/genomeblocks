@@ -72,6 +72,10 @@ Aliases are accepted anywhere a backend name is: `numpy` → `genomeblocks`,
 `bedtools`, `pyBigWig` → `pybigwig`, `Bio` → `biopython`, `MOODS` → `moods`,
 `dict` → `memory`.
 
+The outputs below come from a pip environment with the `interop` extra and
+none of the conda-only engines (cgranges, bedtools, graph-tool); where those
+are installed, `installed` and `resolve` say so.
+
 ```python
 gb.backends()[["family", "backend", "installed", "default", "in use"]].head(8)
 # ->       family       backend  installed  default  in use

@@ -94,6 +94,7 @@ Pairs.from_frame(P.to_pandas()).a.equals(P.a)
 import pandas as pd
 Pairs.from_frame(pd.DataFrame({"c1": ["chr1"], "s1": [1], "e1": [5], "c2": ["chr1"], "s2": [100], "e2": [105]}))
 # -> Pairs(n=1, cis=1, trans=0)
+P.save("loops.parquet")
 read_bedpe("loops.bedpe"), as_pairs(P) is P, as_pairs("loops.parquet"), as_pairs(P.to_polars())
 # -> (Pairs(n=4, cis=3, trans=1, cols=[name, score]), True, Pairs(n=4, cis=3, trans=1, cols=[name, score]), Pairs(n=4, cis=3, trans=1, cols=[name, score]))
 Pairs.make("x.bedpe")                           # a three-column file
@@ -184,8 +185,8 @@ P.to_pandas()
 #    1   chr1    1900  2100   chr1   10900  11100   l2    3.0       +       +
 #    2   chr1     900  1100   chr2     500    600   l3    1.0       -       +
 #    3   chr2     500   600   chr2    5000   5100   l4    2.0       +       +
-P.to_polars().schema
-# -> Schema([('chrom1', String), ('start1', Int64), ('end1', Int64), ('chrom2', String), ('start2', Int64), ('end2', Int64), ('name', String), ('score', Float64), ('strand1', String), ('strand2', String)])
+dict(P.to_polars().schema)
+# -> {'chrom1': String, 'start1': Int64, 'end1': Int64, 'chrom2': String, 'start2': Int64, 'end2': Int64, 'name': String, 'score': Float64, 'strand1': String, 'strand2': String}
 P.to_numpy()[:1]
 # -> rec.array([('chr1', 900, 1100, 'chr1', 4900, 5100, 'l1', 5., '+', '-')], ...)
 P.to_bedpe("out.bedpe"); open("out.bedpe").readline()
