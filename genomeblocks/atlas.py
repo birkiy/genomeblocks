@@ -26,18 +26,19 @@ from typing import Dict, Iterable, List, Optional, Sequence, Union
 
 import numpy as np
 
-from .loci import Loci
-# scipy.sparse is imported where the matrix is built: loci.py imports this
-# module to attach Loci.enrich, and `from genomeblocks import Loci` should not
-# pay for scipy.
+from ._table import TableMixin
 
 
 _BED_EXT = (".bed", ".bed.gz", ".narrowPeak", ".narrowPeak.gz",
             ".broadPeak", ".broadPeak.gz")
 
 
-class Atlas:
-    """Sparse bin x track index for fast multi-file overlap enrichment."""
+class Atlas(TableMixin):
+    """Sparse bin x track index for fast multi-file overlap enrichment.
+
+    Queries (``search``, ``bootstrap``) take anything :func:`~genomeblocks.as_loci`
+    takes. As a table it is its track list (``to_pandas()``: name, peaks,
+    bins, metadata)."""
 
     def __init__(
         self,
@@ -112,7 +113,7 @@ class Atlas:
         n_bins = cum
 
         if workers is None:
-            workers = max(1, (os.cpu_count() or 2) - 1)
+            workers = max(1, (os.cpu_count() or 2) // 2)
 
         n_tracks = len(files)
         per_track_bins: List[Optional[np.ndarray]] = [None] * n_tracks
@@ -233,42 +234,28 @@ class Atlas:
 
     # ---- bin conversion ------------------------------------------------
 
-    def _intervals_to_bin_ranges(self, loci: Loci) -> np.ndarray:
-        """Map each interval to ``[abs_start_bin, abs_end_bin)``.
+    def _code_tables(self, L):
+        """Per chromosome code of ``L``: atlas bin offset (-1 = not in the atlas) and bin count."""
+        names = L.genome.names
+        off = np.array([self.chrom_offsets.get(n, -1) for n in names], np.int64)
+        cmax = np.array([self._chrom_max_bins.get(n, 0) for n in names], np.int64)
+        return off, cmax
 
-        Intervals on chroms missing from the atlas are silently dropped.
-        Returns an ``(n, 2)`` int64 array; empty if no interval qualifies.
-        """
-        bs = self.bin_size
-        co = self.chrom_offsets
-        cmax = self._chrom_max_bins
-        out_s: List[int] = []
-        out_e: List[int] = []
-        for l in loci:
-            off = co.get(l.chrom)
-            if off is None:
-                continue
-            cb = cmax[l.chrom]
-            s = int(l.start) // bs
-            e = (int(l.end) - 1) // bs + 1
-            if s < 0:
-                s = 0
-            if e <= s:
-                e = s + 1
-            if s > cb:
-                s = cb
-            if e > cb:
-                e = cb
-            if s >= e:
-                continue
-            out_s.append(off + s)
-            out_e.append(off + e)
-        if not out_s:
+    def _intervals_to_bin_ranges(self, loci) -> np.ndarray:
+        """``[abs_start_bin, abs_end_bin)`` per interval (``(n, 2)`` int64); intervals
+        on chromosomes the atlas lacks are dropped."""
+        from .interop import as_loci
+        L = as_loci(loci)
+        if not len(L):
             return np.zeros((0, 2), dtype=np.int64)
-        return np.column_stack(
-            [np.asarray(out_s, dtype=np.int64),
-             np.asarray(out_e, dtype=np.int64)],
-        )
+        off_t, cmax_t = self._code_tables(L)
+        off, cb = off_t[L.codes], cmax_t[L.codes]
+        bs = self.bin_size
+        s = np.maximum(L.starts // bs, 0)
+        e = np.maximum((L.ends - 1) // bs + 1, s + 1)
+        s, e = np.minimum(s, cb), np.minimum(e, cb)
+        keep = (off >= 0) & (s < e)
+        return np.column_stack([off[keep] + s[keep], off[keep] + e[keep]]).astype(np.int64)
 
     def _bins_union(self, ranges: np.ndarray) -> np.ndarray:
         """Sorted unique bin ids covered by any of the input ranges."""
@@ -288,9 +275,9 @@ class Atlas:
 
     def search(
         self,
-        query: Loci,
+        query,
         *,
-        ref: Optional[Loci] = None,
+        ref=None,
         alternative: str = "two-sided",
     ):
         """GIGGLE-style enrichment of each track over the query.
@@ -346,10 +333,10 @@ class Atlas:
 
     def bootstrap(
         self,
-        query: Union[Loci, Dict[str, Loci]],
+        query,
         *,
         n: int = 10,
-        pool: Optional[Loci] = None,
+        pool=None,
         sample: Optional[int] = None,
         replace: bool = False,
         keep_chrom: bool = True,
@@ -452,23 +439,16 @@ class Atlas:
         # Pre-stage the per-group genome-shuffle inputs (only if pool is None)
         gs: Dict[str, dict] = {}
         if pool is None:
+            from .interop import as_loci
             bs = self.bin_size
             for g, q in groups.items():
-                c_ids: List[int] = []
-                lens: List[int] = []
-                for l in q:
-                    ci = chrom_idx.get(l.chrom)
-                    if ci is None:
-                        continue
-                    s_b = int(l.start) // bs
-                    e_b = max((int(l.end) - 1) // bs + 1, s_b + 1)
-                    length = min(e_b - s_b, int(chrom_bins[ci]))
-                    c_ids.append(ci)
-                    lens.append(length)
-                gs[g] = {
-                    "c_ids": np.asarray(c_ids, dtype=np.int64),
-                    "lens": np.asarray(lens, dtype=np.int64),
-                }
+                L = as_loci(q)
+                ci = np.array([chrom_idx.get(n, -1) for n in L.genome.names], np.int64)[L.codes] \
+                    if len(L) else np.zeros(0, np.int64)
+                ok = ci >= 0
+                s_b = L.starts[ok] // bs
+                e_b = np.maximum((L.ends[ok] - 1) // bs + 1, s_b + 1)
+                gs[g] = {"c_ids": ci[ok], "lens": np.minimum(e_b - s_b, chrom_bins[ci[ok]])}
 
         it = range(n)
         if verbose:
@@ -647,6 +627,45 @@ class Atlas:
             atlas.meta = df.replace("", pd.NA)
         return atlas
 
+    # ---- as a table: the track list ---------------------------------------
+
+    def to_pandas(self):
+        """One row per track: name, peaks, bins covered, then any metadata."""
+        import pandas as pd
+        df = pd.DataFrame({"name": self.track_names, "n_peaks": self.track_n_peaks,
+                           "n_bins": self.track_n_bins})
+        return self._with_meta(df)
+
+    def to_arrow(self):
+        import pyarrow as pa
+        return pa.Table.from_pandas(self.to_pandas(), preserve_index=False)
+
+    @property
+    def columns(self) -> list:
+        return list(self.to_pandas().columns)
+
+    def head(self, n: int = 5):
+        return self.to_pandas().head(n)
+
+    def describe(self):
+        import pandas as pd
+        return pd.DataFrame([("tracks", len(self)), ("bin size", self.bin_size), ("bins", self.n_bins),
+                             ("chromosomes", len(self.chrom_names)), ("set cells", int(self.M.nnz)),
+                             ("memory (MB)", round((self.M.data.nbytes + self.M.indices.nbytes
+                                                    + self.M.indptr.nbytes) / 1e6, 1)),
+                             ("metadata", "yes" if self.meta is not None else "no")],
+                            columns=["", "value"]).set_index("")
+
+    summary = describe
+
+    def _repr_html_(self):
+        from ._display import kv_html
+        return kv_html(f"Atlas · {len(self):,} tracks", [
+            ("bins", f"{self.n_bins:,} x {self.bin_size:,} bp over {len(self.chrom_names)} chromosomes"),
+            ("set cells", f"{self.M.nnz:,}"),
+            ("tracks", ", ".join(self.track_names[:4]) + (" ..." if len(self) > 4 else "")),
+            ("metadata", ", ".join(map(str, self.meta.columns[:6])) if self.meta is not None else "none")])
+
     # ---- dunders -------------------------------------------------------
 
     def __len__(self) -> int:
@@ -794,33 +813,5 @@ def _resolve_paths(paths) -> List[str]:
 
 
 def _resolve_chromsizes(chromsizes) -> Dict[str, int]:
-    if isinstance(chromsizes, dict):
-        return {k: int(v) for k, v in chromsizes.items()}
-    if isinstance(chromsizes, str):
-        sizes = {}
-        with open(chromsizes) as f:
-            for line in f:
-                if not line.strip() or line.startswith("#"):
-                    continue
-                parts = line.split()
-                sizes[parts[0]] = int(parts[1])
-        return sizes
-    if hasattr(chromsizes, "chromsizes"):
-        return {k: int(v) for k, v in dict(chromsizes.chromsizes).items()}
-    raise TypeError(f"Unsupported chromsizes type: {type(chromsizes)}")
-
-
-# ---- fluent attachments to Loci ---------------------------------------
-
-
-def _loci_enrich(self: Loci, atlas: Atlas, *,
-                 ref: Optional[Loci] = None, **kw):
-    return atlas.search(self, ref=ref, **kw)
-
-
-def _loci_enrich_mc(self: Loci, atlas: Atlas, *, n: int = 10, **kw):
-    return atlas.bootstrap(self, n=n, **kw)
-
-
-Loci.enrich = _loci_enrich
-Loci.enrich_mc = _loci_enrich_mc
+    from .genome import read_sizes
+    return read_sizes(chromsizes)

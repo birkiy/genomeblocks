@@ -3,8 +3,37 @@
 Split out of ``motifs.py`` so motif scanning/clustering stays free of plotting
 deps. matplotlib, logomaker and scipy are lazy-imported inside each function,
 so importing this module is cheap. These are plain functions over PFM/PWM
-arrays — nothing here is attached to Loci.
+arrays — nothing here is attached to Loci — plus the motif-density heatmap
+for :func:`genomeblocks.motifs.scan_motifs_profile` cubes.
 """
+
+def plot_motif_heatmap(loci, M, names, *, r: int = 500, groups=None, sets=None, colors=None, cmap: str = "Reds",
+                       vmax="auto", ymax="auto", profile: bool = True, sort: str | None = "group", dpi: int = 100):
+    """deeptools-style heatmap of motif density, one column per motif.
+
+    ``M, names`` are what :func:`genomeblocks.motifs.scan_motifs_profile`
+    returns for ``loci`` (row i of M is locus i). ``groups`` blocks the rows
+    as in :func:`genomeblocks.signal_draw.plot_heatmap`. ``vmax`` / ``ymax``
+    'auto' scale each motif on its own (99.5th percentile for the heatmap,
+    1.3x the peak of the mean profile above it): a common motif and a rare
+    one differ by an order of magnitude, so one shared scale blanks the rare
+    ones. ``r`` is the half-window used for scanning (x tick labels).
+    """
+    import numpy as np
+    from .signal_draw import plot_heatmap
+    M = np.asarray(M)
+    n = M.shape[1]
+
+    def _auto(vals):
+        return [v if v > 0 else 1.0 for v in vals]
+    if isinstance(vmax, str) and vmax == "auto":
+        vmax = _auto([float(np.percentile(M[:, i, :], 99.5)) if M.size else 1.0 for i in range(n)])
+    if isinstance(ymax, str) and ymax == "auto":
+        ymax = _auto([float(M[:, i, :].mean(axis=0).max()) * 1.3 if M.size else 1.0 for i in range(n)])
+    return plot_heatmap(loci, M, groups=groups, sets=sets, samples=list(names), colors=colors, ymax=ymax, ymin=0,
+                        height=r, cmap=cmap, vmax=vmax, profile=profile, sort=sort, dpi=dpi,
+                        ylabel="motif hits/bin")
+
 
 def plot_archetype(pfm, ax=None, *, title=None, alphabet: str = 'ACGT',
                    show_xticks: bool = True, ylim=(0, 2)):

@@ -176,6 +176,8 @@ def open_bigwig(src, *, backend=None):
     if isinstance(src, (PyBigToolsHandle, PyBigWigHandle, PythonHandle)):
         return src
     own = handle_backend(src)
+    if own is None and hasattr(src, "stats_array"):     # anything speaking our handle interface
+        return src
     if own is not None:                                  # someone else's open handle
         return _HANDLES[own](src)
     return _HANDLES[resolve("bigwig", backend)](src)
