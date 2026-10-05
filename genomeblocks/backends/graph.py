@@ -152,7 +152,8 @@ def pagerank(A, weight=None, *, damping: float = 0.85, backend=None, tol: float 
         import graph_tool.all as gt
         g = A.graph(backend="graph-tool")
         ep = g.new_ep("double", vals=w) if w is not None else None
-        return np.asarray(gt.pagerank(g, damping=damping, weight=ep, epsilon=tol).a, np.float64).copy()
+        pr = gt.pagerank(g, damping=damping, weight=ep, epsilon=tol)
+        return np.array(pr.a, np.float64)                 # copy while the property map is alive
     if b == "igraph":
         g = native(A, "igraph")
         return np.asarray(g.pagerank(damping=damping, weights=None if w is None else w.tolist(),
