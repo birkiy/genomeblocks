@@ -1,4 +1,7 @@
 """Architecture: build, weights, normalisation, annotation, graph backends, drawing."""
+import logging
+import warnings
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -41,8 +44,22 @@ def test_prune_and_annotate_need_normalize(cre, pairs, genes):
 def test_normalize_with_few_edges():
     L = as_loci([("chr1", 0, 100), ("chr1", 1000, 1100), ("chr2", 0, 100), ("chr2", 1000, 1100)])
     A = Architecture.from_edges(L, [0, 0, 1], [1, 2, 3], w=[5.0, 2.0, 6.0])
-    A.normalize(verbose=False)                                           # one cis edge: no fit, no crash
+    with pytest.warns(UserWarning, match="1 cis edge"):                  # one cis edge: no fit, no crash
+        A.normalize(verbose=False)
     assert np.isnan(A.fit["alpha"]) and np.isfinite(A.ep["n"]).all()
+
+
+def test_normalize_warns_when_the_fit_cannot_run(cre, pairs, arch):
+    A = Architecture.make(cre, pairs, r=100, verbose=False)
+    A.ep["w"][:] = [6, 3, 0, 9]                                          # two cis edges with positive weight
+    with pytest.warns(UserWarning, match=r"2 cis edges.*3.*set to 0") as rec:
+        A.normalize(verbose=False)
+    assert len(rec) == 1
+    assert np.isnan(A.fit["alpha"]) and A.ep["n"].tolist() == [0.0, 0.0, 0.0, 1.0]
+    with warnings.catch_warnings():                                      # a fit that succeeds stays quiet
+        warnings.simplefilter("error")
+        arch.normalize(verbose=False)
+    assert np.isfinite(arch.fit["alpha"]) and (arch.ep["n"][arch.is_cis] > 0).all()
 
 
 def test_annotate_strength_hubs_support(arch, genes):
@@ -167,6 +184,31 @@ def test_add_mcool_weights(cre, pairs, tmp_path):
     assert A.ep["w"].tolist() == [6.0, 3.0, 0.0, 9.0]                  # cis, cis, chr2 (no pixel), trans
     with pytest.raises(ValueError, match="single-resolution"):
         A.add_mcool(str(tmp_path / "t.cool"), resolution=1000)
+
+
+def test_union_keeps_edge_property_order(arch):
+    B = arch.copy()
+    assert list(arch.ep) == ["w", "d", "n"]
+    for _ in range(5):
+        U = arch | B
+        assert list(U.ep) == ["w", "d", "n"]
+        assert list(U.to_pandas().columns)[-3:] == ["w", "d", "n"]
+    C = arch.copy()
+    C.ep = type(C.ep)({"x": np.ones(C.n_links), **{k: v for k, v in C.ep.items()}, "y": np.zeros(C.n_links)})
+    assert list((arch | C).ep) == ["w", "d", "n", "x", "y"]             # self's order, then other's new columns
+    assert list((C | arch).ep) == ["x", "w", "d", "n", "y"]
+
+
+def test_draw_spring_keeps_its_limits(arch, caplog):
+    import matplotlib.pyplot as plt
+    caplog.set_level(logging.WARNING, logger="matplotlib")
+    for layout in ("spring", "circular"):
+        ax = arch.draw("chr1:0-12 kb", layout=layout)
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        ax.figure.canvas.draw()
+        assert ax.get_xlim() == xlim and ax.get_ylim() == ylim
+        plt.close(ax.figure)
+    assert "Ignoring fixed x limits" not in caplog.text
 
 
 def test_draw_layouts(arch, genes):

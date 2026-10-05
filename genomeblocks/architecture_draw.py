@@ -198,7 +198,7 @@ def draw(A, region, *, layout: str = "spring", backend: Optional[str] = None, me
         rng_ = np.maximum(hi - lo, 1e-9)
         ax.set_xlim(lo[0] - pad * rng_[0], hi[0] + pad * rng_[0])
         ax.set_ylim(lo[1] - pad * rng_[1], hi[1] + pad * rng_[1] + 0.1 * rng_[1])
-        ax.set_aspect("equal", adjustable="datalim")
+        ax.set_aspect("equal", adjustable="box")
         ax.axis("off")
     if legend:
         from matplotlib.lines import Line2D

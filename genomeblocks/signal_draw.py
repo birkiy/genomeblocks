@@ -16,13 +16,19 @@ from typing import Dict, List, Sequence
 import numpy as np
 
 
-def _bcast(x, n, name):
+def _bcast(x, n, name, unit="track", units="tracks"):
     """Scalar / str -> [x] * n; a sequence of length n passes through."""
     if isinstance(x, str) or not isinstance(x, SequenceABC):
         return [x] * n
     if len(x) != n:
-        raise ValueError(f"{name} must have length {n}")
+        raise ValueError(f"{name} must have one entry per {unit}, got {len(x)} for {n} {units}")
     return list(x)
+
+
+def _flank_ticklabels(height) -> List[str]:
+    """x tick labels at the left edge, the centre and the right edge, in kb."""
+    kb = round(height / 1000, 1)
+    return [f"-{kb}kb", "center", f"+{kb}kb"]
 
 
 def group_mask(loci, rows) -> np.ndarray:
@@ -136,8 +142,7 @@ def plot_heatmap(loci, S: np.ndarray, *, groups: Dict[str, object] | None = None
                 ax.set_ylabel(sets[j], rotation=0, ha="right", va="center")
             if j == len(g_) - 1:
                 ax.set_xticks([0, nb // 2, nb])
-                kb = round(height / 1000, 1)
-                ax.set_xticklabels([f"-{kb}kb", "center", f"+{kb}kb"])
+                ax.set_xticklabels(_flank_ticklabels(height))
     return fig
 
 
@@ -158,8 +163,7 @@ def plot_profiles(loci, S: np.ndarray, *, groups: Dict[str, object] | None = Non
         ax.plot(m, color=colors[lab], lw=2)
         ax.set_title(lab)
         ax.set_xticks([0, S.shape[-1] // 2, S.shape[-1]])
-        kb = height // 1000
-        ax.set_xticklabels([f"-{kb}kb", "center", f"+{kb}kb"])
+        ax.set_xticklabels(_flank_ticklabels(height))
         top = ylim if ylim is not None else (np.percentile(m, 99) if m.any() else 1.0)
         ax.set_ylim(0, top)
         ax.set_yticks([])
@@ -200,6 +204,9 @@ def compare_heatmap(a, b, bigwigs: Sequence[str], *, a_name: str = "A", b_name: 
     if isinstance(samples, dict):
         S = np.stack([S[:, idx, :].mean(axis=1) for idx in samples.values()], axis=1)
         labels = list(samples)
+        per = dict(unit="plotted column (merged sample)", units="columns")
+        cmap, vmax = _bcast(cmap, len(labels), "cmap", **per), _bcast(vmax, len(labels), "vmax", **per)
+        ymax, ymin = _bcast(ymax, len(labels), "ymax", **per), _bcast(ymin, len(labels), "ymin", **per)
     else:
         labels = samples
     fig = plot_heatmap(union, S, groups=groups, sets=sets or [a_name, common_name, b_name], samples=labels,

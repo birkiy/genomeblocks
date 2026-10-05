@@ -79,6 +79,31 @@ def _bedgraph(bw, windows, bin_size, backend=None) -> str:
     return "\n".join(out)
 
 
+def _bigwig_sizes(signal, backend=None) -> dict:
+    """Chromosome sizes declared by the bigWig tracks (the union; the largest wins)."""
+    from .backends.bigwig import open_bigwig
+    sizes = {}
+    for sig in signal.values():
+        h = open_bigwig(sig, backend=backend)
+        try:
+            for c, n in h.chroms().items():
+                sizes[c] = max(sizes.get(c, 0), int(n))
+        finally:
+            h.close()
+    return sizes
+
+
+def _extent_sizes(tables, windows, flank) -> dict:
+    """Chromosome sizes guessed from the loci tables (last end + flank) and the windows."""
+    sizes = {}
+    for L in tables:
+        for c in np.unique(L.chroms):
+            sizes[c] = max(sizes.get(c, 0), int(L.ends[L.chroms == c].max()) + flank)
+    for c, _, b in windows:
+        sizes[c] = max(sizes.get(c, 0), int(b))
+    return sizes
+
+
 def _interact(A, windows, score) -> str:
     """Edges with at least one end in a window, as BEDPE (score = ep[score])."""
     L = A.loci
@@ -116,7 +141,9 @@ def igv_html(path: str, *, regions: Sequence, loci: Optional[Dict] = None, genes
             ``regions`` only (``backend`` picks the bigWig engine).
         architecture: an Architecture — loops touching ``regions`` as arcs.
         score: edge column shown as arc height (default O/E ``n``).
-        chrom_sizes: {chrom: length}; default from the Loci's genome / bigWig.
+        chrom_sizes: {chrom: length}; default: the sizes declared by the
+            bigWigs, and for chromosomes no bigWig names, the extent of the
+            loci (+ ``flank``) and of ``regions``.
         genome_id: e.g. 'hg38' to use igv.js's hosted genome (sequence,
             ideogram) instead of embedded chromosome sizes. Needs internet.
         notes: optional {region: one-line note} shown next to each button.
@@ -161,10 +188,8 @@ def igv_html(path: str, *, regions: Sequence, loci: Optional[Dict] = None, genes
         genome = genome_id
     else:
         if chrom_sizes is None:
-            chrom_sizes = {}
-            for L in list(loci.values()) + ([architecture.loci] if architecture is not None else []):
-                for c in np.unique(L.chroms):
-                    chrom_sizes[c] = max(chrom_sizes.get(c, 0), int(L.ends[L.chroms == c].max()) + flank)
+            tables = list(loci.values()) + ([architecture.loci] if architecture is not None else [])
+            chrom_sizes = {**_extent_sizes(tables, windows, flank), **_bigwig_sizes(signal, backend)}
         cs = "\n".join(f"{c}\t{n}" for c, n in chrom_sizes.items())
         # chromosome sizes only (no sequence). igv.js 3.8.9 mishandles a data URI
         # here, so the page hands them over as an in-memory File instead.

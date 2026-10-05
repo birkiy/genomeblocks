@@ -29,6 +29,7 @@ them, to a scipy sparse matrix, to AnnData and to plain tables.
 """
 from __future__ import annotations
 
+import warnings
 from typing import Optional
 
 import numpy as np
@@ -523,6 +524,14 @@ class Architecture(TableMixin):
         w = self.ep[source]
         exp = np.empty(self.n_links)
         exp[cis], fit = _pl_expect(d[cis], w[cis])
+        if not np.isfinite(fit["alpha"]):
+            usable = (d[cis] > 0) & (w[cis] > 0) & np.isfinite(w[cis])
+            n_use, n_dist = int(usable.sum()), len(np.unique(d[cis][usable]))
+            warnings.warn(f"Power-law fit of ep.{source} on distance failed: {n_use} cis edge"
+                          f"{'s' if n_use != 1 else ''} with positive weight and distance at {n_dist} distinct "
+                          f"distance{'s' if n_dist != 1 else ''} (the fit needs at least 3 edges at 2 distances); "
+                          f"ep.{name} is set to 0 for all {int(cis.sum())} cis edges. Give the graph more weighted "
+                          f"cis edges (e.g. ep.{source} from add_mcool()) before normalize().", stacklevel=2)
         tw = w[~cis]
         exp[~cis] = tw.mean() if len(tw) and tw.mean() > 0 else np.nan
         self.ep.d = d
@@ -816,9 +825,10 @@ class Architecture(TableMixin):
             raise ValueError("union needs both graphs on the same Loci")
         k = np.concatenate([self._keyset(), other._keyset()])
         _, first = np.unique(k, return_index=True)
+        keys = list(self.ep) + [e for e in other.ep if e not in self.ep]
         ep = {e: np.concatenate([self.ep.get(e, np.zeros(self.n_links)),
                                  other.ep.get(e, np.zeros(other.n_links))])[first]
-              for e in set(self.ep) | set(other.ep)}
+              for e in keys}
         src = np.concatenate([self.src, other.src])[first]
         tgt = np.concatenate([self.tgt, other.tgt])[first]
         return Architecture(self.loci, src, tgt, ep=ep, name=f"{self.name}|{other.name}")

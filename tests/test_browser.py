@@ -1,6 +1,8 @@
 """The three viewers: the matplotlib browser, the IGV page and the one-file View."""
 import base64
 import gzip
+import json
+import re
 
 import numpy as np
 import pytest
@@ -73,6 +75,24 @@ def test_igv_html(tmp_path, genes, cre, arch, bw_path):
     assert page.count("data:application/gzip") == 4
     gz = page.split("genes")[-1]
     assert gz                                                           # the genes track is to_bed12 (0-based starts)
+
+
+def _chrom_sizes(page):
+    m = re.search(r"^const SIZES = (.*);$", page, re.M)
+    cs = json.loads(m.group(1))
+    return {c: int(n) for c, n in (ln.split("\t") for ln in cs.split("\n"))} if cs else cs
+
+
+def test_igv_html_chrom_sizes_from_bigwig(tmp_path, bw_path, bw2_path, cre):
+    out = tmp_path / "s.html"
+    gb.igv_html(str(out), regions=["chr1:0-12 kb"], signal={"ATAC": bw_path})
+    assert _chrom_sizes(out.read_text()) == {"chr1": 20_000}            # no loci: sizes come from the bigWig header
+    gb.igv_html(str(out), regions=["chr1:0-12 kb"], signal={"a": bw_path, "b": bw2_path})
+    assert _chrom_sizes(out.read_text()) == {"chr1": 20_000, "chr2": 8_000}   # union over the tracks
+    gb.igv_html(str(out), regions=["chr1:0-12 kb", ("chr3", 100, 500)], flank=0)
+    assert _chrom_sizes(out.read_text()) == {"chr1": 12_000, "chr3": 500}     # last resort: the regions' extents
+    gb.igv_html(str(out), regions=["chr1:0-12 kb"], signal={"ATAC": bw_path}, genome_id="hg38")
+    assert _chrom_sizes(out.read_text()) is None                        # a hosted genome embeds no sizes
 
 
 def _unpack(p):
