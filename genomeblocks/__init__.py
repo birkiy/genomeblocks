@@ -1,75 +1,64 @@
-"""locus2 package public API with lazy imports.
+"""genomeblocks: building blocks for regulatory genomics, as columnar tables.
 
-This module exposes the original top-level names but delays importing
-their implementation modules until the attribute is accessed. This keeps
-``import locus2`` fast and avoids requiring heavy optional dependencies
-to be installed unless code paths that need them are used.
+    import genomeblocks as gb
 
-Public names preserved: Locus, Exon, CDS, UTR, Transcript,
-Gene, Genes, Loci, Architecture, make_genome, scan_motifs
+    cre   = gb.Loci.make("atac.narrowPeak")            # intervals: numpy columns
+    genes = gb.Genes.make("gencode.gtf")               # genes / transcripts / features tables
+    A     = (gb.Architecture.make(cre, "loops.bedpe")  # vertices = cre rows, edges = a table
+               .add_mcool("hic.mcool", resolution=5000)
+               .normalize().annotate(genes))
 
-Domain visualization lives in ``<domain>_draw`` modules (architecture_draw,
-signal_draw, motifs_draw) to keep the processing modules dependency-light.
+Every table shares one :class:`Genome` and joins on the row number. Heavy
+work runs through swappable backends (:func:`backends`, :func:`set_backend`),
+and every table converts to and from pandas, polars, Arrow, bioframe,
+pyranges, pybedtools, AnnData, Biopython and friends (:mod:`genomeblocks.interop`).
+
+Names are imported on first use, so ``import genomeblocks`` stays light.
 """
-
 from importlib import import_module
 from typing import Dict
 
-# Mapping of public name -> (module_path, attribute_name)
-# attribute_name can be same as public name or a different symbol in module
-_EXPORTS: Dict[str, tuple[str, str]] = {
-	# locus
-	'Locus': ('.locus', 'Locus'),
-	'Exon': ('.locus', 'Exon'),
-	'CDS': ('.locus', 'CDS'),
-	'UTR': ('.locus', 'UTR'),
-	# genes
-	'Transcript': ('.genes', 'Transcript'),
-	'Gene': ('.genes', 'Gene'),
-	'Genes': ('.genes', 'Genes'),
-	# loci
-	'Loci': ('.loci', 'Loci'),
-	# atlas (giggle-style enrichment)
-	'Atlas': ('.atlas', 'Atlas'),
-	# architecture
-	'Architecture': ('.architecture', 'Architecture'),
-	# motifs
-	'make_genome': ('.motifs', 'make_genome'),
-	'scan_motifs': ('.motifs', 'scan_motifs'),
-	# signal (processing in signal.py; heatmaps/profiles in signal_draw.py)
-	'compare_heatmap': ('.signal_draw', 'compare_heatmap'),
-	'tmm': ('.signal', 'tmm'),
-	# bam (per-base pileup coverage for the browser)
-	'coverage': ('.bam', 'coverage'),
-	# browser (function lives in the browserview module so the public
-	# ``browser`` name never collides with a submodule of the same name)
-	'browser': ('.browserview', 'browser'),
+__version__ = "2.0.0"
+
+_EXPORTS: Dict[str, tuple] = {
+    # tables
+    "Genome": (".genome", "Genome"),
+    "Locus": (".locus", "Locus"),
+    "Loci": (".loci", "Loci"),
+    "Genes": (".genes", "Genes"),
+    "Pairs": (".bedpe", "Pairs"),
+    "Architecture": (".architecture", "Architecture"),
+    "Atlas": (".atlas", "Atlas"),
+    # backends
+    "backends": (".backends", None),          # the module; calling it lists the backends
+    "use_backend": (".backends", "use_backend"),
+    # interop
+    "as_loci": (".interop", "as_loci"),
+    "read_fasta": (".backends.fasta", "read_fasta"),
+    "load_motifs": (".backends.motifs", "load_motifs"),
+    # analysis helpers
+    "tmm": (".signal", "tmm"),
+    "compare_heatmap": (".signal_draw", "compare_heatmap"),
+    "plot_motif_heatmap": (".motifs_draw", "plot_motif_heatmap"),
+    "coverage": (".bam", "coverage"),
+    # viewers
+    "browser": (".browserview", "browser"),
+    "View": (".view", "View"),
+    "igv_html": (".igv", "igv_html"),
 }
 
-
-
-
-
-__all__ = sorted(list(_EXPORTS.keys()))
-
-
-def _import_from(module_name: str, attr: str):
-	"""Import `attr` from package-relative `module_name` and cache in globals."""
-	# module_name may be relative (starts with '.')
-	mod = import_module(f"{__package__}{module_name}")
-	value = getattr(mod, attr)
-	globals()[attr] = value
-	return value
+__all__ = sorted(_EXPORTS)
 
 
 def __getattr__(name: str):
-	"""Lazy attribute loader for public names."""
-	if name in _EXPORTS:
-		module_name, attr = _EXPORTS[name]
-		return _import_from(module_name, attr)
-	raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    if name in _EXPORTS:
+        module, attr = _EXPORTS[name]
+        mod = import_module(module, __name__)
+        value = mod if attr is None else getattr(mod, attr)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():
-	return sorted(list(globals().keys()) + __all__)
-
+    return sorted(list(globals()) + __all__)

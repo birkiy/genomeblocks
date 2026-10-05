@@ -1,0 +1,333 @@
+"""Motif backends: one motif library, three scanning engines.
+
+A :class:`Library` holds motifs as count matrices (W x 4, A C G T) whatever
+they were read from — a JASPAR / jaspar16 / TRANSFAC / uniprobe / MEME file,
+Biopython ``Bio.motifs`` objects, lightmotif motifs, or plain arrays. Each
+motif is scored with one log-odds matrix,
+
+    log2( (count + 0.1) / (column total + 0.4) / 0.25 )
+
+(lightmotif's own ``normalize(0.1).log_odds()``), and every engine scans that
+same matrix, so lightmotif (SIMD, the default), MOODS (C++) and Biopython
+(numpy) report the same hits. A hit is a window position whose score is at
+least the threshold; windows containing N never hit.
+
+Sequences are scanned as one block of windows: each motif is scanned once
+over the concatenation and the hits are split back per window (a hit that
+would straddle two windows is dropped), so per-window results equal scanning
+each window on its own.
+"""
+from __future__ import annotations
+
+import re
+from typing import List, Optional, Sequence
+
+import numpy as np
+
+from . import resolve
+
+PSEUDOCOUNT = 0.1
+_ACGT_FROM_LM = [0, 1, 3, 2]                    # lightmotif columns are A C T G N
+_BAD = re.compile(r"[^ACGTN]")
+
+
+# ── the library ────────────────────────────────────────────────────────────
+
+class Library:
+    """Motifs as (W x 4) count matrices plus their names."""
+
+    def __init__(self, names: Sequence[str], counts: Sequence[np.ndarray],
+                 descriptions: Optional[Sequence[str]] = None, *, pseudocount: float = PSEUDOCOUNT,
+                 _logodds: Optional[List[np.ndarray]] = None):
+        self.names = list(names)
+        self.counts = [np.asarray(c, np.float64) for c in counts]
+        self.descriptions = list(descriptions) if descriptions is not None else [""] * len(self.names)
+        self.pseudocount = pseudocount
+        self._lo = _logodds
+
+    def __len__(self):
+        return len(self.names)
+
+    def __repr__(self):
+        head = ", ".join(self.names[:4]) + (", ..." if len(self) > 4 else "")
+        return f"Library({len(self)} motifs: {head})"
+
+    @property
+    def widths(self) -> np.ndarray:
+        return np.array([len(c) for c in self.counts], np.int64)
+
+    def logodds(self, i: int) -> np.ndarray:
+        """(W x 4) log2-odds matrix of motif ``i`` (A C G T columns)."""
+        if self._lo is None:
+            self._lo = [None] * len(self)
+        if self._lo[i] is None:
+            c = self.counts[i]
+            p = self.pseudocount
+            self._lo[i] = np.log2((c + p) / (c.sum(1, keepdims=True) + 4 * p) / 0.25)
+        return self._lo[i]
+
+    def pfm(self, i: int, pseudo: float = 0.01) -> np.ndarray:
+        """(4 x W) probability matrix (rows A C G T)."""
+        c = self.counts[i] + pseudo
+        return (c / c.sum(1, keepdims=True)).T
+
+    def select(self, motifs=None, match: str = "substring") -> "Library":
+        """The motifs named in ``motifs`` (``None`` keeps all). ``match='substring'``
+        is case-insensitive and also searches the descriptions (TF symbols in
+        JASPAR headers); ``'exact'`` compares names verbatim."""
+        idx = self.indices(motifs, match)
+        return self.take(idx)
+
+    def indices(self, motifs=None, match: str = "substring") -> List[int]:
+        if motifs is None:
+            return list(range(len(self)))
+        if isinstance(motifs, str):
+            motifs = [motifs]
+        if match == "exact":
+            wanted = set(motifs)
+            return [i for i, n in enumerate(self.names) if n in wanted]
+        if match == "substring":
+            low = [m.lower() for m in motifs]
+            return [i for i, (n, d) in enumerate(zip(self.names, self.descriptions))
+                    if any(x in n.lower() or (d and x in d.lower()) for x in low)]
+        raise ValueError(f"match must be 'exact' or 'substring', got {match!r}")
+
+    def take(self, idx) -> "Library":
+        lo = None if self._lo is None else [self._lo[i] for i in idx]
+        return Library([self.names[i] for i in idx], [self.counts[i] for i in idx],
+                       [self.descriptions[i] for i in idx], pseudocount=self.pseudocount, _logodds=lo)
+
+    # ── export ──────────────────────────────────────────────────────────
+    def to_biopython(self):
+        """A list of ``Bio.motifs.Motif`` (counts), named like the library."""
+        from Bio import motifs as bm
+        out = []
+        for name, c, d in zip(self.names, self.counts, self.descriptions):
+            m = bm.Motif("ACGT", {b: c[:, k].tolist() for k, b in enumerate("ACGT")})
+            m.name, m.matrix_id = d or name, name
+            out.append(m)
+        return out
+
+    def to_moods(self):
+        """MOODS matrices: one 4 x W log-odds list of lists per motif (A C G T rows)."""
+        return [self.logodds(i).T.tolist() for i in range(len(self))]
+
+    def to_meme(self, path: str, pseudo: float = 0.01):
+        """Write the library as MEME minimal format (probabilities)."""
+        write_meme({n: self.pfm(i, pseudo) for i, n in enumerate(self.names)}, path)
+
+    def to_jaspar(self, path: str):
+        """Write the library as JASPAR (bracketed, jaspar16) counts."""
+        with open(path, "w") as f:
+            for n, c, d in zip(self.names, self.counts, self.descriptions):
+                f.write(f">{n} {d}".rstrip() + "\n")
+                for k, b in enumerate("ACGT"):
+                    f.write(f"{b}  [ " + " ".join(f"{v:g}" for v in c[:, k]) + " ]\n")
+
+
+def write_meme(pfms: dict, path: str, *, alphabet: str = "ACGT", bg=(0.25, 0.25, 0.25, 0.25)):
+    """Write ``{name: (4 x W) probability matrix}`` as MEME minimal format."""
+    bg_str = " ".join(f"{a} {p:.4f}" for a, p in zip(alphabet, bg))
+    with open(path, "w") as f:
+        f.write(f"MEME version 4\n\nALPHABET= {alphabet}\n\nstrands: + -\n\n"
+                f"Background letter frequencies\n{bg_str}\n\n")
+        for name, pfm in pfms.items():
+            pfm = np.asarray(pfm, float)
+            f.write(f"MOTIF {name}\nletter-probability matrix: alength= 4 w= {pfm.shape[1]}\n")
+            for j in range(pfm.shape[1]):
+                f.write(" ".join(f"{pfm[i, j]:.6f}" for i in range(4)) + "\n")
+            f.write("\n")
+
+
+def _read_meme(path, nsites: float = 100.0):
+    """MEME (minimal or full) -> (names, counts, descriptions). Probabilities are
+    scaled by the motif's ``nsites`` (100 when absent) to give counts."""
+    names, counts, descs = [], [], []
+    with open(path) as f:
+        lines = f.read().splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith("MOTIF"):
+            parts = line.split()
+            name = parts[1] if len(parts) > 1 else f"motif{len(names) + 1}"
+            desc = " ".join(parts[2:])
+            i += 1
+            while i < len(lines) and not lines[i].strip().startswith("letter-probability"):
+                i += 1
+            if i >= len(lines):
+                break
+            hdr = lines[i]
+            w = int(re.search(r"w=\s*(\d+)", hdr).group(1))
+            m = re.search(r"nsites=\s*([\d.eE+-]+)", hdr)
+            n = float(m.group(1)) if m else nsites
+            rows = []
+            i += 1
+            while len(rows) < w and i < len(lines):
+                vals = lines[i].split()
+                if vals:
+                    rows.append([float(v) for v in vals[:4]])
+                i += 1
+            names.append(name)
+            counts.append(np.array(rows) * n)
+            descs.append(desc)
+        else:
+            i += 1
+    return names, counts, descs
+
+
+def load_motifs(src, format: str = "jaspar") -> Library:
+    """A :class:`Library` from a motif file or motif objects.
+
+    ``src`` may be a path (``format`` = 'jaspar' (raw counts), 'jaspar16'
+    (bracketed), 'transfac', 'uniprobe' — read by lightmotif — or 'meme'), a
+    ``Library``, one or many Biopython ``Bio.motifs.Motif``, lightmotif
+    motifs, or a ``{name: matrix}`` dict of counts / probabilities (4 x W or
+    W x 4, rows or columns in A C G T order). Probability matrices (columns
+    summing to 1) are scaled to 100 sites.
+    """
+    if isinstance(src, Library):
+        return src
+    if isinstance(src, str) or hasattr(src, "__fspath__"):
+        path = str(src)
+        if format == "meme":
+            return Library(*_read_meme(path))
+        import lightmotif
+        names, counts, descs, lo = [], [], [], []
+        for m in lightmotif.load(path, format=format):
+            c = np.asarray(m.counts, np.float64)[:, _ACGT_FROM_LM]
+            pssm = m.counts.normalize(PSEUDOCOUNT).log_odds()
+            names.append(m.name)
+            descs.append(getattr(m, "description", "") or "")
+            counts.append(c)
+            lo.append(np.array([[pssm[i][j] for j in _ACGT_FROM_LM] for i in range(len(pssm))], np.float64))
+        return Library(names, counts, descs, _logodds=lo)
+    if isinstance(src, dict):
+        names, counts = [], []
+        for k, v in src.items():
+            a = np.asarray(v, np.float64)
+            if a.shape[0] == 4 and a.shape[1] != 4:
+                a = a.T
+            if np.allclose(a.sum(1), 1.0):
+                a = a * 100.0
+            names.append(str(k))
+            counts.append(a)
+        return Library(names, counts)
+    items = list(src) if not hasattr(src, "counts") else [src]
+    names, counts, descs = [], [], []
+    for m in items:
+        c = m.counts
+        if hasattr(c, "keys"):                                       # Biopython
+            a = np.array([c[b] for b in "ACGT"], np.float64).T
+            names.append(getattr(m, "matrix_id", None) or getattr(m, "name", None) or f"motif{len(names) + 1}")
+            descs.append(getattr(m, "name", "") or "")
+        else:                                                         # lightmotif
+            a = np.asarray(c, np.float64)[:, _ACGT_FROM_LM]
+            names.append(m.name)
+            descs.append(getattr(m, "description", "") or "")
+        counts.append(a)
+    return Library(names, counts, descs)
+
+
+# ── scanning ───────────────────────────────────────────────────────────────
+
+def _rc(mat):
+    """Reverse complement of a (W x 4) A C G T matrix."""
+    return mat[::-1, ::-1]
+
+
+class Block:
+    """Windows (strings) laid end to end once, scanned per motif by one engine."""
+
+    def __init__(self, seqs: Sequence[str], backend: Optional[str] = None):
+        self.backend = resolve("motifs", backend)
+        self.n = len(seqs)
+        seqs = [s.upper() for s in seqs]
+        keep = [i for i, s in enumerate(seqs) if s and not _BAD.search(s)]
+        self.rows = np.asarray(keep, np.int64)                       # block window -> input row
+        lens = np.array([len(seqs[i]) for i in keep], np.int64)
+        self.offsets = np.concatenate([[0], np.cumsum(lens)]).astype(np.int64)
+        self.text = "".join(seqs[i] for i in keep)
+        self._engine = None
+
+    def _prepare(self):
+        if self._engine is None and self.text:
+            if self.backend == "lightmotif":
+                import lightmotif
+                self._engine = lightmotif.stripe(self.text)
+            elif self.backend == "biopython":
+                from Bio.Seq import Seq
+                self._engine = Seq(self.text)
+            else:
+                self._engine = self.text
+        return self._engine
+
+    def _positions(self, mat, threshold):
+        """Start positions in the block of hits of one (W x 4) log-odds matrix."""
+        eng = self._prepare()
+        if eng is None:
+            return np.zeros(0, np.int64)
+        if self.backend == "lightmotif":
+            import lightmotif
+            sm = lightmotif.ScoringMatrix({b: mat[:, k].tolist() for k, b in enumerate("ACGT")}
+                                          | {"N": [float("-inf")] * len(mat)})
+            return np.fromiter((h.position for h in lightmotif.scan(sm, eng, threshold=threshold)), np.int64)
+        if self.backend == "moods":
+            import MOODS.scan
+            sc = MOODS.scan.Scanner(7)
+            sc.set_motifs([mat.T.tolist()], [0.25] * 4, [float(threshold)])
+            return np.fromiter((h.pos for h in sc.scan(eng)[0]), np.int64)
+        from Bio.motifs.matrix import PositionSpecificScoringMatrix
+        ps = PositionSpecificScoringMatrix("ACGT", {b: mat[:, k].tolist() for k, b in enumerate("ACGT")})
+        with np.errstate(invalid="ignore"):
+            s = np.asarray(ps.calculate(eng), np.float64)
+        return np.flatnonzero(s >= threshold).astype(np.int64)
+
+    def hits(self, mat, threshold, both: bool = False):
+        """(input row, position in the window, strand) of every hit; strand 0 '+', 1 '-'."""
+        w = len(mat)
+        out_r, out_p, out_s = [], [], []
+        for strand, m in ((0, mat), (1, _rc(mat))) if both else ((0, mat),):
+            pos = self._positions(np.ascontiguousarray(m), threshold)
+            if not len(pos):
+                continue
+            k = np.searchsorted(self.offsets, pos, side="right") - 1
+            ok = (k < len(self.rows)) & (pos + w <= self.offsets[np.minimum(k + 1, len(self.rows))])
+            out_r.append(self.rows[k[ok]])
+            out_p.append(pos[ok] - self.offsets[k[ok]])
+            out_s.append(np.full(int(ok.sum()), strand, np.int8))
+        if not out_r:
+            z = np.zeros(0, np.int64)
+            return z, z.copy(), np.zeros(0, np.int8)
+        return np.concatenate(out_r), np.concatenate(out_p), np.concatenate(out_s)
+
+    def counts(self, mat, threshold, both: bool = False) -> np.ndarray:
+        """Hits per input window."""
+        r, _, _ = self.hits(mat, threshold, both)
+        return np.bincount(r, minlength=self.n).astype(np.int64)
+
+    def moods_counts(self, mats, thresholds, both: bool = False) -> np.ndarray:
+        """MOODS scans many matrices in one pass: (windows x motifs) counts."""
+        import MOODS.scan
+        out = np.zeros((self.n, len(mats)), np.int64)
+        if not self.text:
+            return out
+        thr = np.broadcast_to(np.asarray(thresholds, np.float64), (len(mats),))
+        all_m, owner, widths, all_t = [], [], [], []
+        for j, m in enumerate(mats):
+            for mm in ((m, _rc(m)) if both else (m,)):
+                all_m.append(np.ascontiguousarray(mm).T.tolist())
+                owner.append(j)
+                widths.append(len(m))
+                all_t.append(float(thr[j]))
+        sc = MOODS.scan.Scanner(7)
+        sc.set_motifs(all_m, [0.25] * 4, all_t)
+        res = sc.scan(self.text)
+        for k, hits in enumerate(res):
+            if not hits:
+                continue
+            pos = np.fromiter((h.pos for h in hits), np.int64)
+            i = np.searchsorted(self.offsets, pos, side="right") - 1
+            ok = (i < len(self.rows)) & (pos + widths[k] <= self.offsets[np.minimum(i + 1, len(self.rows))])
+            out[:, owner[k]] += np.bincount(self.rows[i[ok]], minlength=self.n)
+        return out

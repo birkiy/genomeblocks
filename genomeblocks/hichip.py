@@ -19,7 +19,7 @@ from typing import Dict, Optional
 
 import numpy as np
 
-from .genome import Genome, default_genome
+from .genome import Genome
 from .loci import Loci
 
 # HiC-Pro allValidPairs: readID chr1 pos1 strand1 chr2 pos2 strand2 size [frag1 frag2 mapq1 mapq2 ...]
@@ -38,7 +38,7 @@ def shortrange_ends(pairs: str, max_dist: int = 1000, *, columns: Optional[Dict[
     Uses polars when installed, otherwise pandas in chunks (same rows).
     """
     c = dict(_AVP, **(columns or {}))
-    g = genome if genome is not None else default_genome()
+    g = genome if genome is not None else Genome()
     try:
         import polars as pl
     except ImportError:
