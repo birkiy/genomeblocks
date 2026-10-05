@@ -9,7 +9,7 @@ Fluent building blocks for regulatory genomics, as columnar tables.
 - `signal`: bigWig signal cubes, TMM normalisation, heatmaps; `motifs`: motif scanning with any engine; `Atlas`: GIGGLE-style enrichment.
 - `browser`, `igv_html`, `View`: a matplotlib region view, a shareable IGV page and a one-file interactive browser.
 
-Every table hands itself to pandas, polars, Arrow, bioframe, pyranges, pybedtools, AnnData, duckdb, seaborn and friends, and takes their frames back. The heavy work runs through swappable backends (numpy / cgranges / ncls / bioframe / pyranges / bedtools for intervals, pybigtools / pyBigWig / pure Python for bigWigs, lightmotif / MOODS / Biopython for motifs, graph-tool / scipy / igraph / networkx for graphs, ...) with the same answer whichever engine runs.
+Every table hands itself to pandas, polars, Arrow, bioframe, pyranges, pybedtools, AnnData, duckdb, seaborn and friends, and takes their frames back. The heavy work runs through swappable backends (numpy / cgranges / ncls / bioframe / pyranges / bedtools for intervals, pybigtools / pyBigWig / pure Python for bigWigs, MOODS / lightmotif / Biopython for motifs, graph-tool / scipy / igraph / networkx for graphs, ...) with the same answer whichever engine runs.
 
 📖 **Documentation**: [birkiy.github.io/genomeblocks](https://birkiy.github.io/genomeblocks/) — start with the [quickstart](https://birkiy.github.io/genomeblocks/quickstart/).
 
@@ -41,11 +41,13 @@ Setup
 -----
 
 ```bash
-pip install genomeblocks                 # every default backend
+pip install genomeblocks                 # every default backend except a motif engine
+pip install "genomeblocks[motifs]"       # + MOODS, the motif engine (compiled at install)
+pip install "genomeblocks[lightmotif]"   # or lightmotif (prebuilt wheels); same hits
 pip install "genomeblocks[all]"          # + polars, pysam, logomaker and every other engine
 ```
 
-The conda-only engines (graph-tool, cgranges, bedtools) are optional extras; `environment.yml` builds the full development environment:
+The conda package (recipe in `conda-recipe/`, for Bioconda) ships MOODS. The conda-only engines (graph-tool, cgranges, bedtools) are optional extras; `environment.yml` builds the full development environment:
 
 ```bash
 conda env create -f environment.yml

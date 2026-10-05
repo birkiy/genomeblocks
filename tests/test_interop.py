@@ -37,6 +37,9 @@ def test_as_loci_errors_name_the_input():
         as_loci({"chrom": ["chr1", "chr1"], "start": [1], "end": [2, 3]})
     with pytest.raises(TypeError, match="Series"):
         as_loci(pd.Series([1, 2]))
+    import pyarrow as pa
+    with pytest.raises(TypeError, match="ChunkedArray"):        # streams Arrow data, but one column, not a table
+        as_loci(pa.chunked_array([[1, 2]]))                     # (what a pandas >= 3 Series does too)
     with pytest.raises(FileNotFoundError, match="not a region"):
         as_loci("no_such_file.bed")
     with pytest.raises(TypeError, match="cannot read intervals"):
