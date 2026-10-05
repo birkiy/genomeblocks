@@ -31,13 +31,12 @@ Usage:
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 import time
 
 import numpy as np
 import pandas as pd
 
-from common import DATA, read_chromsizes
+from common import DATA, read_chromsizes, tool
 
 CHROMS = [f"chr{i}" for i in range(1, 23)] + ["chrX"]
 PEAK_SIZES = [1_000, 10_000, 100_000, 1_000_000]
@@ -412,8 +411,7 @@ def hic_trans():
     out = DATA / "hic_trans.pairs"
     shutil.copyfile(DATA / "hic.pairs", out)
     extra.to_csv(out, sep="\t", header=False, index=False, mode="a")
-    cooler = Path(sys.executable).parent / "cooler"
-    subprocess.run([str(cooler), "cload", "pairs", "-c1", "2", "-p1", "3", "-c2", "4", "-p2", "5",
+    subprocess.run([tool("cooler"), "cload", "pairs", "-c1", "2", "-p1", "3", "-c2", "4", "-p2", "5",
                     f"{DATA / 'hg38.chrom.sizes'}:5000", str(out), str(DATA / "hic_trans_5kb.cool")],
                    check=True)
     out.unlink()

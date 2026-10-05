@@ -21,7 +21,7 @@ STMTS = [
     ("+ browser (matplotlib)", "from genomeblocks import browser"),
     ("+ Architecture (graph-tool)", "from genomeblocks import Architecture"),
     ("everything", "from genomeblocks import Loci, Genes, Atlas, browser, Architecture, "
-                   "scan_motifs, compare_heatmap, coverage"),
+                   "load_motifs, compare_heatmap, coverage"),
 ]
 
 

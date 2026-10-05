@@ -1,160 +1,180 @@
-from genomeblocks import Genes, Loci
-from genomeblocks.locus import Locus
+"""Genes: GTF / GFF3 / genePred parsing (0-based), TSS, annotation, isoforms, exports."""
+import io
+
+import pandas as pd
+import pytest
+
+from genomeblocks import Genes, Loci, as_loci
+from genomeblocks.genes import LABELS, tss_base
+
+from conftest import GTF, installed_backends
 
 
-def test_make_parses_gene_and_transcript(gtf_path):
-    genes = Genes.make(gtf_path, promoter_r=1000)
-    assert len(genes) == 1
-    g = genes["G1"]
-    assert g.gene_name == "GENE1"
-    assert g.gene_type == "protein_coding"
-    assert "T1" in g.transcripts
-    assert len(g.transcripts["T1"].exons) == 2
+def test_tables_are_zero_based_half_open(genes):
+    G, F = genes.genes, genes.features
+    assert G.to_records()[0] == ("chr1", 1000, 5000, "+")          # GTF 1001-5000 -> [1000, 5000)
+    assert genes.counts() == {"genes": 3, "transcripts": 4, "exons": 7, "CDS": 4, "UTR": 2}
+    assert genes["GENE_A"].tss.start == 1000
+    assert genes["GENE_B"].tss.start == 10_999                      # '-' strand: end - 1
+    assert genes["G2"].row == 1 and "GENE_C" in genes
+    assert tss_base([10], [20], [2]).tolist() == [19]
+    assert set(F.cols["exon_number"].tolist()) == {1, 2, 3}
 
 
-def test_tss_on_plus_strand(gtf_path):
-    genes = Genes.make(gtf_path, promoter_r=1000)
-    tss = genes.get_tss()
-    assert tss["GENE1"].start == 1000           # + strand TSS = gene start
+@pytest.mark.parametrize("backend", installed_backends("tables"))
+def test_parsers_agree(gtf_path, backend):
+    a = Genes.make(gtf_path, backend=backend)
+    b = Genes.make(gtf_path)
+    for t in ("genes", "transcripts", "features"):
+        assert getattr(a, t).equals(getattr(b, t), cols=True), t
 
 
-def test_annot_building_blocks(gtf_path):
-    genes = Genes.make(gtf_path, promoter_r=1000)
-    annot = genes.annot
-    for key in ("body", "prom", "exon"):
-        assert key in annot and len(annot[key]) >= 1
+def test_gff3_and_ensembl_spellings(tmp_path, genes):
+    gff = """##gff-version 3
+chr1\tx\tgene\t1001\t5000\t.\t+\t.\tID=gene:G1;Name=GENE_A;biotype=protein_coding
+chr1\tx\tmRNA\t1001\t5000\t.\t+\t.\tID=transcript:T1;Parent=gene:G1
+chr1\tx\texon\t1001\t1200\t.\t+\t.\tParent=transcript:T1;rank=1
+chr1\tx\texon\t4001\t5000\t.\t+\t.\tParent=transcript:T1;rank=2
+chr1\tx\tfive_prime_utr\t1001\t1100\t.\t+\t.\tParent=transcript:T1
+chr1\tx\tCDS\t1101\t1200\t.\t+\t.\tParent=transcript:T1
+"""
+    p = tmp_path / "e.gff3"
+    p.write_text(gff)
+    for backend in installed_backends("tables"):
+        g = Genes.make(str(p), backend=backend)
+        assert g.genes.to_records() == [("chr1", 1000, 5000, "+")]
+        assert g.features.cols["exon_number"].tolist()[:2] == [1, 2]      # rank= read as exon number
+        assert g.counts()["UTR"] == 1
+    # lower-case Ensembl UTRs in the GTF fixture were counted
+    assert genes.counts()["UTR"] == 2
 
 
-def test_annotations_region_classes(gtf_path):
-    genes = Genes.make(gtf_path, promoter_r=1000)
-    loci = Loci([
-        Locus("chr1", 1050, 1150),    # in promoter window (TSS +-1000) -> Promoter-TSS
-        Locus("chr1", 2500, 2600),    # in gene body, not exon/prom      -> Intronic
-        Locus("chr1", 4850, 4950),    # exon 2                            -> Exonic
-        Locus("chr1", 20000, 20100),  # far away                          -> Intergenic
-    ])
-    df = genes.annotations(loci)
-    by_uid = dict(zip(df["uid"], df["annotation"]))
-    assert by_uid[loci[0].uid] == "Promoter-TSS"
-    assert by_uid[loci[1].uid] == "Intronic"
-    assert by_uid[loci[2].uid] == "Exonic"
-    assert by_uid[loci[3].uid] == "Intergenic"
+def test_duplicate_gene_id_keeps_the_first_record(tmp_path):
+    p = tmp_path / "dup.gtf"
+    p.write_text(GTF + 'chr1\tx\tgene\t20001\t21000\t.\t+\t.\tgene_id "G1"; gene_name "GENE_A_ALT";\n')
+    for backend in installed_backends("tables"):
+        g = Genes.make(str(p), backend=backend)
+        assert g.genes.to_records()[0] == ("chr1", 1000, 5000, "+") and len(g.genes) == 3
 
 
-def test_nearest_genes(gtf_path):
-    genes = Genes.make(gtf_path, promoter_r=1000)
-    loci = Loci([Locus("chr1", 20000, 20100)])
-    df = genes.nearest_genes(loci)
-    assert df.iloc[0]["Name_b"] == "GENE1"
-    assert df.iloc[0]["Distance"] > 0
+def test_ucsc_layouts(tmp_path):
+    # refFlat: geneName name chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds
+    (tmp_path / "refFlat.txt").write_text("GENE_A\tNM_1\tchr1\t+\t1000\t5000\t1100\t4300\t3\t1000,2000,4000,\t1200,2500,5000,\n")
+    g = Genes.make_ucsc(str(tmp_path / "refFlat.txt"))
+    assert g.genes.to_records() == [("chr1", 1000, 5000, "+")] and g.genes.cols["gene_name"].tolist() == ["GENE_A"]
+    assert g.counts() == {"genes": 1, "transcripts": 1, "exons": 3, "CDS": 3, "UTR": 2}
+    # knownGene: ... proteinID alignID — the symbol is the name, not the alignment id
+    (tmp_path / "kg.txt").write_text("ENST1\tchr1\t+\t1000\t5000\t1100\t4300\t3\t1000,2000,4000,\t1200,2500,5000,\tP1\tuc001.1\n")
+    assert Genes.make_ucsc(str(tmp_path / "kg.txt")).genes.cols["gene_name"].tolist() == ["ENST1"]
+    # refGene with bin and name2
+    (tmp_path / "refGene.txt").write_text("585\tNM_1\tchr1\t+\t1000\t5000\t1100\t4300\t3\t1000,2000,4000,\t1200,2500,5000,\t0\tGENE_A\tcmpl\tcmpl\t0,0,0,\n")
+    assert Genes.make_ucsc(str(tmp_path / "refGene.txt")).genes.cols["gene_name"].tolist() == ["GENE_A"]
+    (tmp_path / "x.gtf").write_text(GTF)
+    with pytest.raises(ValueError, match="genePred"):
+        Genes.make_ucsc(str(tmp_path / "x.gtf"))
 
 
-# ── ATAC-supported isoform selection ─────────────────────────────────────────
-
-def test_select_isoforms_peaks_pick_longest_supported(gtf_isoforms_path, atac_bed_path):
-    genes = Genes.make(gtf_isoforms_path, cre=atac_bed_path,
-                       kw={"verbose": False})
-    g1 = genes["G1"]
-    assert g1.canonical == "T_mid"                 # longest isoform with an open TSS
-    assert (g1.start, g1.end) == (4000, 9000)      # body collapsed onto it
-    assert g1.tss.start == 4000
-    assert [t.tss_support for t in g1.transcripts.values()] == [False, True, True]
-    assert len(g1.transcripts) == 3                # nothing dropped
-
-
-def test_select_isoforms_is_strand_aware(gtf_isoforms_path, atac_bed_path):
-    genes = Genes.make(gtf_isoforms_path, cre=atac_bed_path,
-                       kw={"verbose": False})
-    g2 = genes["G2"]                               # '-' strand: TSS is the end
-    assert g2.canonical == "T_near"
-    assert (g2.start, g2.end) == (20000, 26000)
-    assert g2.tss.start == 26000
+def test_from_frame_and_validation(gtf_path):
+    df = pd.read_csv(io.StringIO(GTF), sep="\t", header=None,
+                     names=["chrom", "src", "feature", "start", "end", "score", "strand", "frame", "attr"])
+    df["gene_id"] = df.attr.str.extract(r'gene_id "([^"]+)"')
+    df["transcript_id"] = df.attr.str.extract(r'transcript_id "([^"]+)"')
+    df["gene_name"] = df.attr.str.extract(r'gene_name "([^"]+)"')
+    g = Genes.from_frame(df)                                        # 1-based by default
+    assert g.genes.to_records()[0] == ("chr1", 1000, 5000, "+")
+    assert Genes.from_frame(df.assign(start=df.start - 1), one_based=False).genes.equals(g.genes)
+    with pytest.raises(ValueError, match="gene_id"):
+        Genes.from_frame(df.drop(columns=["gene_id"]))
+    with pytest.raises(ValueError, match="feature"):
+        Genes.from_frame(df.drop(columns=["feature"]))
+    with pytest.raises(ValueError, match="lacks the column"):
+        Genes(Loci(), Loci(), Loci())
 
 
-def test_select_isoforms_fallback_when_nothing_open(gtf_isoforms_path, tmp_path):
-    empty = tmp_path / "none.bed"
-    empty.write_text("chr9\t100\t200\tx\t0\t.\n")
-    genes = Genes.make(gtf_isoforms_path, cre=str(empty),
-                       kw={"verbose": False})
-    g1 = genes["G1"]
-    assert g1.canonical == "T_long"                # longest annotated isoform
-    assert (g1.start, g1.end) == (1000, 9000)
-    assert not any(t.tss_support for t in g1.transcripts.values())
+def test_annotation(genes, cre, gtf_path):
+    # promoter = gene TSS ± promoter_r (1000 by default): GENE_A's window [0, 2001) also covers
+    # chr1:1900-2100, GENE_B's [9999, 12000) covers 9950-10050; 4900-5100 lies in T1's 3' UTR
+    # [4300, 5000); the chr2 CREs are far from GENE_C's TSS at 20000.
+    labels = LABELS[genes.labels(cre)]
+    assert labels.tolist() == ["Promoter-TSS", "Promoter-TSS", "3UTR", "Promoter-TSS", "Promoter-TSS",
+                               "Intergenic", "Intergenic"]
+    # with a 100 bp promoter the exonic rows show: 1900-2100 is T1b's first exon (T1's intron),
+    # 9950-10050 is GENE_B's first exon [10000, 10400)
+    narrow = Genes.make(gtf_path, promoter_r=100)
+    assert LABELS[narrow.labels(cre)].tolist() == ["Promoter-TSS", "Exonic", "3UTR", "Exonic", "Promoter-TSS",
+                                                   "Intergenic", "Intergenic"]
+    ann = genes.annotations(cre.to_pandas())                        # frames accepted everywhere
+    assert list(ann.columns) == ["uid", "annotation"] and len(ann) == len(cre)
+    names, dist = genes.nearest_tss(cre)
+    assert names[0] == "GENE_A" and dist[0] == 0
+    assert dist[5] == -1 or names[5] == "GENE_C"
+    ng = genes.nearest_genes(cre)
+    assert set(ng.columns) == {"uid", "gene_name", "distance"}
+    tss = genes.get_tss("protein_coding")
+    assert tss.to_records()[0] == ("chr1", 1000, 1001, "+") and len(tss) == 2
+    assert genes.find("gene_")[0].gene_name == "GENE_A" if genes.find("gene_") else True
+    assert genes.rows(["GENE_A", "G2"]).tolist() == [0, 1]
 
 
-def test_select_isoforms_collapse_false_keeps_gene_span(gtf_isoforms_path, atac_bed_path):
-    genes = Genes.make(gtf_isoforms_path)
-    genes.select_isoforms(atac_bed_path, collapse=False, verbose=False)
-    g1 = genes["G1"]
-    assert g1.canonical == "T_mid"
-    assert (g1.start, g1.end) == (1000, 9000)
+@pytest.mark.parametrize("backend", installed_backends("intervals"))
+def test_annotation_same_on_every_interval_backend(genes, cre, backend):
+    from genomeblocks.backends.intervals import _NEAREST
+    assert (genes.labels(cre, backend=backend) == genes.labels(cre)).all()
+    if backend in _NEAREST:
+        assert (genes.nearest_tss(cre, backend=backend)[1] == genes.nearest_tss(cre)[1]).all()
+    else:
+        with pytest.raises(NotImplementedError, match="no nearest"):
+            genes.nearest_tss(cre, backend=backend)
 
 
-def test_select_isoforms_signal_relative_cut(gtf_isoforms_path, atac_bw_path):
-    # T_short's TSS is 4x T_mid's: at min_frac=0.5 only T_short survives.
-    genes = Genes.make(gtf_isoforms_path, bw=atac_bw_path,
-                       kw={"verbose": False})
-    g1 = genes["G1"]
-    assert g1.canonical == "T_short"
-    assert g1.transcripts["T_short"].tss_score == 4.0
-    assert g1.transcripts["T_mid"].tss_score == 1.0
-    assert g1.transcripts["T_long"].tss_score == 0.0
-
-    # a looser cut lets T_mid back in, and 'longest' then prefers it
-    genes = Genes.make(gtf_isoforms_path, bw=atac_bw_path,
-                       kw={"min_frac": 0.2, "verbose": False})
-    assert genes["G1"].canonical == "T_mid"
-
-    # ...unless the ranking asks for the strongest TSS instead
-    genes = Genes.make(gtf_isoforms_path, bw=atac_bw_path,
-                       kw={"min_frac": 0.2, "rank": "signal", "verbose": False})
-    assert genes["G1"].canonical == "T_short"
-
-
-def test_select_isoforms_bed_and_signal_intersect(gtf_isoforms_path, atac_bed_path,
-                                                  atac_bw_path):
-    # peaks gate first (T_long is out), then the signal cut (T_mid is out)
-    genes = Genes.make(gtf_isoforms_path, cre=atac_bed_path,
-                       bw=atac_bw_path, kw={"verbose": False})
-    g1 = genes["G1"]
-    assert g1.canonical == "T_short"
-    assert g1.transcripts["T_long"].tss_score is None      # never queried
-    assert g1.transcripts["T_mid"].tss_support is False
+def test_select_isoforms(genes, bw_path, tmp_path, gtf_path):
+    peaks = as_loci([("chr1", 1900, 2100)])                         # over T1b's TSS, not T1's
+    g = genes.select_isoforms(peaks, r=200, verbose=False)         # in place: g is genes
+    assert g is genes
+    c = g.genes.cols["canonical"]
+    assert g.transcripts.cols["transcript_id"][c[0]] == "T1b" and c[2] == 3  # fallback: the only isoform
+    assert g.representative().tolist() == c.tolist()                # canonical isoforms win ...
+    assert genes.representative(canonical=False).tolist() == [0, 2, 3]   # ... over the longest per gene
+    g2 = Genes.make(gtf_path).select_isoforms(peaks, {"s": bw_path}, r=200, verbose=False)  # dict accepted
+    assert g2.transcripts.cols["transcript_id"][g2.genes.cols["canonical"][0]] == "T1b"
+    # a bigWig that is strong at T1's TSS (1000) and silent at T1b's (2000): with rank='signal' T1 wins
+    import pybigtools
+    pybigtools.open(str(tmp_path / "tss.bw"), "w").write({"chr1": 20_000, "chr2": 8_000},
+                                                          [("chr1", 990, 1010, 9.0), ("chr1", 1990, 2010, 0.5)])
+    both = as_loci([("chr1", 900, 1100), ("chr1", 1900, 2100)])
+    g3 = genes.select_isoforms(both, str(tmp_path / "tss.bw"), r=200, rank="signal", verbose=False)
+    assert g3.transcripts.cols["transcript_id"][g3.genes.cols["canonical"][0]] == "T1"
+    g4 = genes.select_isoforms(both, str(tmp_path / "tss.bw"), r=200, rank="longest", verbose=False)
+    assert g4.transcripts.cols["transcript_id"][g4.genes.cols["canonical"][0]] == "T1"      # longest supported
+    g5 = genes.select_isoforms(both, str(tmp_path / "tss.bw"), r=200, rank="signal", min_signal=1.0, verbose=False)
+    assert g5.transcripts.cols["transcript_id"][g5.genes.cols["canonical"][0]] == "T1"      # T1b below min_signal
 
 
-def test_select_isoforms_needs_evidence(gtf_isoforms_path):
-    import pytest
-    genes = Genes.make(gtf_isoforms_path)
-    with pytest.raises(ValueError):
-        genes.select_isoforms()
+def test_exports_round_trip(genes, tmp_path):
+    out = genes.to_gtf(str(tmp_path / "out.gtf"))
+    back = Genes.make(out)
+    for t in ("genes", "transcripts"):
+        assert getattr(back, t).equals(getattr(genes, t))
+    bed12 = genes.to_bed12().split("\n")
+    f = bed12[0].split("\t")
+    assert f[:3] == ["chr1", "1000", "5000"] and f[6:8] == ["1100", "4300"]   # thick = CDS
+    assert bed12[1].split("\t")[6:8] == ["11000", "11000"]                       # non-coding: thickStart == thickEnd
+    for table in ("genes", "transcripts", "features"):
+        assert len(genes.to_pandas(table)) == len(getattr(genes, table))
+        assert genes.to_polars(table).shape[0] == len(getattr(genes, table))
+    with pytest.raises((KeyError, ValueError)):
+        genes.to_pandas("nope")
+    genes.save(str(tmp_path / "genes"))
+    back = Genes.load(str(tmp_path / "genes"))
+    for t in ("genes", "transcripts", "features"):
+        assert getattr(back, t).equals(getattr(genes, t), cols=True)
 
 
-def test_select_isoforms_rebuilds_annot(gtf_isoforms_path, atac_bed_path):
-    genes = Genes.make(gtf_isoforms_path)
-    assert any(l.start == 1000 for l in genes.annot["body"])
-    genes.select_isoforms(atac_bed_path, verbose=False)
-    assert all(l.start != 1000 for l in genes.annot["body"])   # body follows T_mid
-
-
-def test_browser_shows_canonical_first(gtf_isoforms_path, atac_bed_path):
-    from genomeblocks.browserview import _select_transcripts
-    genes = Genes.make(gtf_isoforms_path, cre=atac_bed_path,
-                       kw={"verbose": False})
-    picked = _select_transcripts(genes["G1"], 1)
-    assert [t.transcript_id for t in picked] == ["T_mid"]
-
-
-def test_select_isoforms_takes_loci_and_promoter_r_window(gtf_isoforms_path):
-    # a Loci works wherever a BED path does; the TSS window defaults to promoter_r
-    peak = Loci([Locus("chr1", 6800, 6850)])       # 800 bp from T_short's TSS
-    genes = Genes.make(gtf_isoforms_path, promoter_r=1000, cre=peak,
-                       kw={"verbose": False})
-    assert genes["G1"].canonical == "T_short"
-
-    genes = Genes.make(gtf_isoforms_path, promoter_r=500, cre=peak,
-                       kw={"verbose": False})
-    assert genes["G1"].canonical == "T_long"       # out of reach: fell back
-
-    genes = Genes.make(gtf_isoforms_path, promoter_r=500, cre=peak, r=1000,
-                       kw={"verbose": False})
-    assert genes["G1"].canonical == "T_short"      # explicit r wins
+def test_genes_as_a_table(genes):
+    assert genes.shape == (3, 7) and genes.columns[:4] == ["chrom", "start", "end", "strand"]
+    assert len(genes.head(2)) == 2 and genes.describe().loc["genes", "value"] == 3
+    import polars as pl
+    assert pl.DataFrame(genes).shape == (3, 7)
+    assert "<table" in genes._repr_html_() and "Genes(" in repr(genes)
+    assert [g.gene_name for g in genes] == ["GENE_A", "GENE_B", "GENE_C"]
+    assert len(genes["GENE_A"].transcripts) == 2 and len(genes["GENE_A"].exons) == 4     # T1: 3 exons, T1b: 1

@@ -1,0 +1,34 @@
+<svg class="gbd" viewBox="0 0 880 250" role="img" aria-label="The TSS is the 1-bp interval [t, t+1) in 0-based coordinates, with t = start on &#x27;+&#x27; and t = end − 1 on &#x27;−&#x27;; a GTF&#x27;s 1-based start loses one on the way in, and the promoter window is TSS ± promoter_r around that base." xmlns="http://www.w3.org/2000/svg">
+<rect class="bx dark" x="20" y="18" width="400" height="24" rx="8"></rect>
+<text class="m w" x="32" y="35">GTF · chr1 · gene · 1001 · 5000 · . · + ·  1-based, closed</text>
+<polyline class="ln navy" points="170,44 93.43,89.942"/>
+<polygon class="hd navy" points="90.0,92.0 93.6,86.0 97.0,91.6"/>
+<text class="lbl" x="98" y="66">start − 1 = 1000 · end stays 5000</text>
+<rect class="iv fnl" x="90" y="103" width="280" height="14" rx="2"></rect>
+<polygon class="hd navy" points="372.0,110.0 364.1,114.2 364.1,105.8"/>
+<text class="ms" x="90" y="138" text-anchor="middle">1000</text>
+<text class="ms" x="370" y="138" text-anchor="middle">5000</text>
+<text class="s" x="230" y="138" text-anchor="middle">[1000, 5000) on &#x27;+&#x27;</text>
+<rect class="iv fh" x="90" y="98" width="12" height="24" rx="2"></rect>
+<text class="m" x="112" y="92">TSS = [t, t+1) = [1000, 1001)</text>
+<text class="t" x="96" y="158" text-anchor="middle">t = start</text>
+<rect class="bx hl" x="36" y="169" width="120" height="14" rx="3"></rect>
+<polyline class="ln navy" points="36,188 36,194 156,194 156,188"/>
+<text class="ms" x="20" y="210">window = TSS ± promoter_r  (genes.annot[&#x27;prom&#x27;])</text>
+<rect class="bx dark" x="460" y="18" width="400" height="24" rx="8"></rect>
+<text class="m w" x="472" y="35">GTF · chr1 · gene · 10001 · 11000 · . · − ·  1-based, closed</text>
+<polyline class="ln navy" points="610,44 533.43,89.942"/>
+<polygon class="hd navy" points="530.0,92.0 533.6,86.0 537.0,91.6"/>
+<text class="lbl" x="538" y="66">start − 1 = 10000 · end stays 11000</text>
+<rect class="iv fnl" x="530" y="103" width="280" height="14" rx="2"></rect>
+<polygon class="hd navy" points="528.0,110.0 535.9,105.8 535.9,114.2"/>
+<text class="ms" x="530" y="138" text-anchor="middle">10000</text>
+<text class="ms" x="810" y="138" text-anchor="middle">11000</text>
+<text class="s" x="670" y="138" text-anchor="middle">[10000, 11000) on &#x27;−&#x27;</text>
+<rect class="iv fh" x="798" y="98" width="12" height="24" rx="2"></rect>
+<text class="m" x="788" y="92" text-anchor="end">TSS = [t, t+1) = [10999, 11000)</text>
+<text class="t" x="804" y="158" text-anchor="middle">t = end − 1</text>
+<rect class="bx hl" x="744" y="169" width="120" height="14" rx="3"></rect>
+<polyline class="ln navy" points="744,188 744,194 864,194 864,188"/>
+<text class="ms" x="460" y="210">window = TSS ± promoter_r  (genes.annot[&#x27;prom&#x27;])</text>
+</svg>

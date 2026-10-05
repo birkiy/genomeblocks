@@ -32,31 +32,33 @@ composition and find what is specific to each AR class.
 
 ## Scanning motifs into a matrix
 
-First load the genome sequence, then scan:
+Pass the FASTA path straight to the scanner — the windows are read through the
+indexed FASTA reader, so the genome is never loaded whole — and the motif file:
 
 ```python
-from genomeblocks import make_genome
 from genomeblocks.motifs import scan_motifs_matrix, bootstrap_enrichment
-
-genome = make_genome(GENOME_FA)             # hg38 FASTA -> per-chromosome sequence
 
 pool = accessible                           # background = ATAC union
 
-mat_pf   = scan_motifs_matrix(ARpF, genome, MOTIF_DB, r=250, workers=8)
-mat_mf   = scan_motifs_matrix(ARmF, genome, MOTIF_DB, r=250, workers=8)
-mat_pool = scan_motifs_matrix(pool, genome, MOTIF_DB, r=250, workers=8)
+mat_pf   = scan_motifs_matrix(ARpF, GENOME_FA, MOTIF_DB, r=250, workers=8)
+mat_mf   = scan_motifs_matrix(ARmF, GENOME_FA, MOTIF_DB, r=250, workers=8)
+mat_pool = scan_motifs_matrix(pool, GENOME_FA, MOTIF_DB, r=250, workers=8)
 ```
 
-`scan_motifs_matrix` returns a `pandas.DataFrame` shaped **(loci × motifs)**:
-rows are locus `uid`s, columns are motif names, and each cell is the motif's hit
-count in that locus's **center ± `r`** window (normalised by motif width by
-default). `MOTIF_DB` is a JASPAR-format file (`motif_format='jaspar'` is the
-default).
+`scan_motifs_matrix` returns a `pandas.DataFrame` shaped **(loci x motifs)**:
+rows are the loci in their order (index = `uid`), columns are motif names, and
+each cell is the motif's hit count in that locus's **centre ± `r`** window
+(normalised by motif width by default). `MOTIF_DB` is a JASPAR-format file
+(`format='jaspar'`, the raw four-row count layout, is the default; pass
+`format='jaspar16'` for the bracketed layout, or `'meme'`). The scan runs on
+MOODS (lightmotif when only it is installed); `backend='lightmotif'` or `'biopython'` give the same hits.
 
 {: .note }
 > Scanning the full accessible pool can be the slow step — it is the largest set.
-> `workers` parallelises the scan; if it is still heavy, subsample `pool` to a
-> few thousand regions for the background.
+> `workers` parallelises the scan over motifs; if it is still heavy, subsample
+> `pool` to a few thousand regions for the background. If you would rather
+> hold the genome in memory, `gb.read_fasta(GENOME_FA)` returns a
+> `{chrom: sequence}` dict that every scanner accepts in place of the path.
 
 ## Bootstrapped log-fold-change
 
@@ -106,7 +108,7 @@ AR−F as the reference for AR+F (and vice versa) gives a **differential** answe
 
 ## Building the index
 
-`Atlas.make` builds a sparse **bin × track** matrix: every chromosome is tiled
+`Atlas.make` builds a sparse **bin x track** matrix: every chromosome is tiled
 into `bin_size` (1 kb) bins, and each ChIP-Atlas BED becomes a column marking the
 bins it covers. A query then reduces to one sparse mat-vec — sub-second per
 query after the one-time build.
@@ -121,7 +123,12 @@ atlas = Atlas.make(
     meta_columns=["id", "antigen", "class", "cell_line"],   # meta TSV is header-less
     meta_id_col="id",
 )
+atlas.save("chipatlas_hg38_1kb.npz")       # reuse across sessions: Atlas.load(...)
 ```
+
+`chromsizes` takes a `.chrom.sizes` path as here, a `{chrom: length}` dict, a
+`gb.Genome.from_fasta(GENOME_FA)`, or a cooler. The result is a table of its
+tracks (`atlas.head()`, `atlas.to_pandas()`), with the metadata columns joined.
 
 Two arguments are essential for the metadata to line up — and are a common
 first-run trip-up:
@@ -139,7 +146,7 @@ first-run trip-up:
 
 ## Differential search
 
-`atlas.search(query, ref=...)` runs a per-track Fisher 2×2 of the query against
+`atlas.search(query, ref=...)` runs a per-track Fisher 2x2 of the query against
 the reference (in bin units) and returns a `DataFrame` sorted by `giggle_score`:
 
 ```python
@@ -152,7 +159,9 @@ enr_pf.head(15)[cols]
 
 Columns: `name` (track id), `overlaps` (query bins hit), `log2_odds` and `p`
 (the Fisher test), `giggle_score` (the signed significance used for ranking), and
-the joined `antigen / class / cell_line` metadata.
+the joined `antigen / class / cell_line` metadata. The query and the reference
+are anything `as_loci` takes, and `ARpF.enrich(atlas, ref=ARmF)` is the same
+call as a method.
 
 ## Reading the result
 
@@ -166,6 +175,7 @@ are what make that readable.
 {: .note }
 > `search(query)` with no `ref` tests against a genome-wide null instead, and
 > `bootstrap(query, n)` gives a shuffled-position null — use those when you want
-> "enriched vs the genome" rather than "enriched vs the other set."
+> "enriched vs the genome" rather than "enriched vs the other set." See the
+> [Atlas guide]({{ '/guide/atlas/' | relative_url }}).
 
 Next: **[Genome browser →]({{ '/walkthrough/browser/' | relative_url }})**

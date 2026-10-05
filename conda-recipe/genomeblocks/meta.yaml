@@ -1,21 +1,21 @@
 {% set name = "genomeblocks" %}
-{% set version = "1.0.0" %}
+{% set version = "2.0.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  # genomeblocks is a pure-Python package -> source the PyPI sdist.
-  # Fill in sha256 after `python -m build --sdist && twine upload dist/*`:
-  #   openssl dgst -sha256 dist/{{ name }}-{{ version }}.tar.gz
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  # filled from the PyPI release: see ../README.md
   sha256: 0000000000000000000000000000000000000000000000000000000000000000
 
 build:
   noarch: python
   number: 0
-  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation --no-cache-dir -vvv
+  run_exports:
+    - {{ pin_subpackage(name, max_pin="x") }}
 
 requirements:
   host:
@@ -26,33 +26,40 @@ requirements:
   run:
     - python >=3.10
     - numpy
-    - pandas
+    - pandas >=2.0
+    - pyarrow
+    - narwhals >=1.0
     - scipy
     - matplotlib-base
     - tqdm
-    - graph-tool          # conda-forge
-    - cooler              # bioconda
-    - pyranges            # bioconda
-    - pybigtools          # bioconda
-    - cgranges            # bioconda
-    - lightmotif          # NOT yet on conda — recipe at ~/apps/lightmotif-conda (see README)
+    - cooler
+    - pybigtools >=0.2
+    - moods                 # the motif engine; lightmotif (PyPI only) is an optional alternative
 
 test:
-  imports:
-    - genomeblocks        # lazy __init__, so this does not require graph-tool
-  commands:
-    - pip check
   requires:
     - pip
+  imports:
+    - genomeblocks
+    - genomeblocks.backends.motifs
+    - genomeblocks.loci
+    - genomeblocks.genes
+    - genomeblocks.architecture
+  commands:
+    - pip check
+  # run_test.py: a small end-to-end run (tables, intervals, a MOODS motif scan)
 
 about:
   home: https://github.com/birkiy/genomeblocks
-  summary: Fluent building blocks for regulatory genomics.
+  summary: Building blocks for regulatory genomics, as columnar tables.
   description: |
-    genomeblocks is a Python toolkit for regulatory genomics: Loci interval set
-    algebra, GTF/gene annotation, bigWig signal extraction and heatmaps, JASPAR
-    motif scanning, GIGGLE-style ChIP-Atlas enrichment, graph-tool chromatin
-    architecture from HiChIP/Hi-C, and an IGV-like browser.
+    genomeblocks is a Python toolkit for regulatory genomics: interval tables
+    (Loci) with set algebra, gene annotation tables (Genes), chromatin
+    contact graphs (Architecture) from HiChIP / Hi-C loops, bigWig signal
+    cubes and heatmaps, motif scanning (MOODS), GIGGLE-style enrichment
+    (Atlas) and genome browsers. Every table converts to and from pandas,
+    polars, Arrow, bioframe, pyranges, pybedtools, AnnData and Biopython,
+    and the heavy work runs through swappable backends.
   license: MIT
   license_family: MIT
   license_file: LICENSE

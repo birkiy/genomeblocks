@@ -63,6 +63,18 @@ def load(name):
     return json.loads(p.read_text()) if p.exists() else None
 
 
+def _defaults():
+    """Each family's automatic engine on the benchmark machine: the first AUTO
+    choice that the backends bench ran."""
+    from genomeblocks.backends import AUTO
+    d = load("backends")
+    ran = {(r["part"], r["engine"]) for r in d["rows"]} if d else set()
+    return {f: next((e for e in auto if (f, e) in ran), auto[0]) for f, auto in AUTO.items()}
+
+
+DEFAULTS = _defaults()
+
+
 # ── charts ───────────────────────────────────────────────────────────────────
 
 def _log_ticks(lo, hi):
@@ -175,42 +187,6 @@ def pick(d, **kw):
     return r[0] if r else None
 
 
-def dumbbell(rows, *, kind="green", label="", width=880, left=250, a_name="classic", b_name="columnar"):
-    """rows: (label, a_seconds, b_seconds). Grey dot = a, coloured dot = b, log x axis."""
-    rows = [r for r in rows if r[1] and r[2]]
-    rh, top = 28, 30
-    h = top + rh * len(rows) + 34
-    vals = [v for _, a, b in rows for v in (a, b)]
-    ticks = _log_ticks(min(vals) / 1.6, max(vals) * 1.6)
-    lo, hi = math.log10(ticks[0]), math.log10(ticks[-1])
-    x0, x1 = left, width - 70
-    X = lambda v: x0 + (math.log10(v) - lo) / (hi - lo) * (x1 - x0)
-    out = [f'<svg class="gbc" viewBox="0 0 {width} {h}" role="img" aria-label="{escape(label)}" '
-           f'xmlns="http://www.w3.org/2000/svg">']
-    # legend
-    out.append(f'<circle class="dot a" cx="{x0 + 6}" cy="12" r="5"/><text class="lab" x="{x0 + 16}" y="16">{a_name}</text>')
-    out.append(f'<g class="gb {kind}"><circle class="dot" cx="{x0 + 110}" cy="12" r="5"/></g>'
-               f'<text class="lab" x="{x0 + 120}" y="16">{b_name}</text>')
-    for t in ticks:
-        out.append(f'<line class="grid" x1="{X(t):.1f}" y1="{top}" x2="{X(t):.1f}" y2="{h - 26}"/>')
-        out.append(f'<text class="tick" x="{X(t):.1f}" y="{h - 10}" text-anchor="middle">{ftick(t)}</text>')
-    for i, (lab, a, b) in enumerate(rows):
-        y = top + rh * i + rh / 2
-        out.append(f'<g class="row gb {kind}"><title>{escape(lab)}: {a_name} {ftime(a)} → {b_name} {ftime(b)} '
-                   f'({fx(a / b)} {"faster" if a > b else "slower"})</title>')
-        out.append(f'<rect class="hit" x="0" y="{y - rh / 2:.1f}" width="{width}" height="{rh}"/>')
-        out.append(f'<text class="lab" x="{left - 14}" y="{y + 4:.1f}" text-anchor="end">{escape(lab)}</text>')
-        out.append(f'<line class="span" x1="{X(min(a, b)):.1f}" y1="{y:.1f}" x2="{X(max(a, b)):.1f}" y2="{y:.1f}"/>')
-        out.append(f'<circle class="dot a" cx="{X(a):.1f}" cy="{y:.1f}" r="5"/>')
-        out.append(f'<circle class="dot" cx="{X(b):.1f}" cy="{y:.1f}" r="5.5"/>')
-        out.append(f'<text class="val" x="{x1 + 64}" y="{y + 4:.1f}" text-anchor="end">{fx(a / b)}</text>')
-        out.append("</g>")
-    out.append("</svg>")
-    return "\n".join(out)
-
-
-# ── engine labels ────────────────────────────────────────────────────────────
-
 SHORT = {
     "pandas chunked parse only (I/O floor)": "parse only (I/O floor)",
     "genomeblocks count_pairs (50 kb x partner chrom)": "count_pairs · 50 kb × partner",
@@ -218,7 +194,8 @@ SHORT = {
     "genomeblocks count_pairs_2d (500 kb)": "count_pairs_2d · 500 kb",
     "cooler cload pairs (500 kb, CLI)": "cooler cload · 500 kb (CLI)",
     "naive per-pair loop (cgranges lookup)": "per-pair Python loop",
-    "genomeblocks scan_motifs_matrix (lightmotif)": "genomeblocks scan_motifs_matrix",
+    "genomeblocks scan_motifs_matrix (MOODS)": "genomeblocks · MOODS (default)",
+    "genomeblocks scan_motifs_matrix (lightmotif)": "genomeblocks · lightmotif",
     "MOODS (C++, all motifs per pass)": "MOODS (C++)",
     "MEME FIMO --text (CLI)": "MEME FIMO (CLI)",
     "Atlas.search (incl. Fisher + DataFrame)": "Atlas.search (with Fisher + table)",
@@ -240,20 +217,19 @@ def sec_loci(md, tl):
     d = load("loci")
     if not d:
         return
-    dc = load("loci_columnar")
-    rows = d["rows"] + (dc["rows"] if dc else [])
+    rows = d["rows"]
     lat = {r["engine"]: r["seconds"] for r in rows if r["op"] == "latency"}
-    gbl = lat.get("genomeblocks (cgranges)")
+    gb_lat = {k: v for k, v in lat.items() if is_gb(k)}
+    gbl = min(gb_lat.values()) if gb_lat else None
     md.append('## Loci\n{: .sec-green #loci }\n')
-    if gbl:
+    if gbl and "pyranges" in lat and "bioframe" in lat:
         tl.append(("One overlap lookup", ftime(gbl),
                    f"on 100k indexed peaks: {fx(lat['pyranges'] / gbl)} faster than pyranges, "
                    f"{fx(lat['bioframe'] / gbl)} than bioframe", "green"))
-        md.append(f"A single overlap query against an indexed set is where the object model pays off: "
-                  f"**{ftime(gbl)}** per lookup with cgranges and "
-                  f"{ftime(lat['genomeblocks (pure-Python fallback)'])} with the pure-Python index, against "
-                  f"{ftime(lat['pyranges'])} for pyranges, which has to slice a dataframe per call. "
-                  f"That is the cost of every interactive question (\"what overlaps this peak?\").\n")
+        md.append(f"A single overlap query against an indexed set is the cost of every interactive question "
+                  f"(\"what overlaps this peak?\"): **{ftime(gbl)}** per lookup through the cached point index "
+                  f"({', '.join(f'{ftime(v)} with {escape(k)}' for k, v in sorted(gb_lat.items(), key=lambda kv: kv[1]))}), "
+                  f"against {ftime(lat['pyranges'])} for pyranges, which has to slice a dataframe per call.\n")
         md.append(figure(dotplot([(k, v, is_gb(k), "per query, 100k-peak index") for k, v in lat.items()],
                                  kind="green", label="Single overlap query latency"),
                          "<strong>One overlap lookup</strong> against 100,000 indexed peaks (median per query; log scale)."))
@@ -270,12 +246,12 @@ def sec_loci(md, tl):
     # verdict on bulk ops
     t_i = {r["engine"]: r["seconds"] for r in rows if r["op"] == "intersect" and r["n"] == big}
     t_m = {r["engine"]: r["seconds"] for r in rows if r["op"] == "merge" and r["n"] == big}
-    if "genomeblocks.columnar" in t_i:
-        md.append(f"On whole-set operations at {fnum(big)} intervals the object-per-interval `Loci` is not the "
-                  f"fastest: `A & B` takes {ftime(t_i['genomeblocks (cgranges)'])} and `merge` "
-                  f"{ftime(t_m['genomeblocks'])}, against {ftime(t_i['pyranges'])} and {ftime(t_m['pyranges'])} "
-                  f"for pyranges. The [columnar `Loci`]({{{{ '/design/columnar/' | relative_url }}}}) does the same work on numpy columns: "
-                  f"{ftime(t_i['genomeblocks.columnar'])} and {ftime(t_m['genomeblocks.columnar'])}.\n")
+    if "genomeblocks" in t_i and "pyranges" in t_i and "genomeblocks" in t_m and "pyranges" in t_m:
+        md.append(f"On whole-set operations at {fnum(big)} intervals the numpy kernel does `A & B` in "
+                  f"{ftime(t_i['genomeblocks'])} and `merge` in {ftime(t_m['genomeblocks'])}, against "
+                  f"{ftime(t_i['pyranges'])} and {ftime(t_m['pyranges'])} for pyranges; the "
+                  f"[Backends]({{{{ '/benchmarks/#backends' | relative_url }}}}) section times the other interval engines "
+                  f"behind the same call.\n")
     sizes = sorted({r["n"] for r in rows if r["op"] == "intersect"})
     engines = []
     for r in rows:
@@ -367,8 +343,9 @@ def sec_atlas(md, tl):
                                   f"prebuilt cgranges indexes" if loop else "") + ".\n")
         md.append(figure(dotplot([(short(r["engine"]), r["seconds"], is_gb(r["engine"]), f"{nt} tracks") for r in sel],
                                  kind="navy", label=f"Query against {nt} tracks"),
-                         f"<strong>One query against {nt} peak files</strong> (wall time; log scale). GIGGLE was not "
-                         f"re-run for 1.1 (it has to be built from source)."))
+                         f"<strong>One query against {nt} peak files</strong> (wall time; log scale)."
+                         + ("" if any("GIGGLE" in r["engine"] for r in sel) else
+                            " GIGGLE was not run (it is built from source; set <code>GIGGLE=</code> to include it).")))
     b = rows_where(d, part="build")
     if b:
         md.append('<details class="gb-table"><summary>Index build, load, accuracy</summary><table><thead><tr>'
@@ -412,7 +389,8 @@ def moods_vs_gb(lib):
     parts = []
     for n in sorted({r["n_seqs"] for r in lib}):
         g = next((r["seconds"] for r in lib if r["n_seqs"] == n and is_gb(r["engine"])), None)
-        m = next((r["seconds"] for r in lib if r["n_seqs"] == n and "MOODS" in r["engine"]), None)
+        m = next((r["seconds"] for r in lib if r["n_seqs"] == n and "MOODS" in r["engine"]
+                  and not is_gb(r["engine"])), None)
         if g and m:
             faster = "genomeblocks" if g < m else "MOODS"
             parts.append(f"{faster} is {fx(max(g, m) / min(g, m))} faster at {n:,} windows")
@@ -434,7 +412,8 @@ def sec_motifs(md, tl):
                        "faster than MEME FIMO" + (f", {fx(bio['seconds'] / gb['seconds'])} faster than Biopython"
                                                   if bio else ""), "navy"))
             md.append(f"Counting hits of {gb['n_motifs']} JASPAR motifs in {gb['n_seqs']:,} windows of 500 bp: "
-                      f"**{ftime(gb['seconds'])}** with genomeblocks (one block scan per motif), "
+                      f"**{ftime(gb['seconds'])}** with genomeblocks on MOODS (the windows joined into one block, "
+                      f"the library scanned in one pass), "
                       f"{fx(fimo['seconds'] / gb['seconds'])} faster than FIMO. "
                       + agree_sentence(eng) + "\n")
         md.append(figure(dotplot([(short(r["engine"]), r["seconds"], is_gb(r["engine"]), f"{r['n_seqs']:,} windows × "
@@ -453,7 +432,7 @@ def sec_motifs(md, tl):
                   '<th>time</th><th>speed-up</th></tr></thead><tbody>'
                   + "".join(f"<tr><td>{r['workers']}</td><td>{ftime(r['seconds'])}</td>"
                             f"<td>{fx(w[0]['seconds'] / r['seconds'])}</td></tr>" for r in w)
-                  + f"</tbody></table></details>\n")
+                  + "</tbody></table></details>\n")
 
 
 def sec_pairs(md, tl):
@@ -493,88 +472,57 @@ def sec_genes(md, tl):
 
 def sec_architecture(md, tl):
     d = load("architecture")
-    p = load("prototype")
-    if not d and not p:
+    if not d:
         return
     md.append('## Architecture\n{: .sec-purple #architecture }\n')
-    if d:
-        rows = [(short(r["step"]), r["seconds"], not r["step"].startswith("annotate stage 2: per")
-                 and "graph-tool" not in r["step"], "") for r in d["rows"]]
-        mk = next((r for r in d["rows"] if r["step"].startswith("make")), None)
-        if mk:
-            md.append(f"The classic pipeline on 100k CREs and 50k loops ({mk.get('n_edges', 0):,} edges), "
-                      f"step by step:\n")
-        md.append(figure(dotplot(rows, kind="purple", label="Architecture steps"),
-                         "<strong>Architecture pipeline steps</strong>, classic module (wall time; log scale). The grey "
-                         "rows are the per-vertex loop that annotate's vectorised stage replaced and graph-tool's own "
-                         "reduction for comparison."))
+    rows = [(short(r["step"]) + (f" · {r['engine']}" if r.get("engine") else ""), r["seconds"],
+             r.get("engine") in (None, DEFAULTS.get("graph")), "") for r in d["rows"]]
+    mk = next((r for r in d["rows"] if r["step"].startswith("make")), None)
+    if mk:
+        md.append(f"The pipeline on 100k CREs and 50k loops ({mk.get('n_edges', 0):,} edges), step by step, then "
+                  f"the graph algorithms on every installed graph engine and the parquet round trip:\n")
+    md.append(figure(dotplot(rows, kind="purple", label="Architecture steps"),
+                     "<strong>Architecture pipeline steps</strong> (wall time; log scale). Graph algorithms run "
+                     "once per installed engine, with identical results; the default engine in colour."))
 
 
-def sec_columnar(md, tl):
-    p = load("prototype")
-    if not p:
+def sec_backends(md, tl):
+    d = load("backends")
+    if not d:
         return
-    md.append('## Columnar vs classic\n{: .sec-purple #columnar }\n')
-    steps = rows_where(p, part="steps")
-    names = []
-    for r in steps:
-        if r["step"] not in names:
-            names.append(r["step"])
-    pairs = []
-    for n in names:
-        a = next((r["seconds"] for r in steps if r["step"] == n and r["impl"] == "main"), None)
-        b = next((r["seconds"] for r in steps if r["step"] == n and r["impl"] == "columnar"), None)
-        if a and b:
-            pairs.append((n, a, b))
-    e2e = rows_where(p, part="e2e")
-    tot = {r["impl"]: r["seconds"] for r in e2e if r["step"] == "total"}
-    mem = {r["impl"]: r["peak_mb"] for r in rows_where(p, part="e2e_mem")}
-    if tot.get("main") and tot.get("columnar"):
-        tl.append(("Whole pipeline, fresh process", f"{ftime(tot['main'])} → {ftime(tot['columnar'])}",
-                   "classic vs columnar: load CREs and genes, build the graph, add Hi-C, normalise, annotate, hubs, "
-                   "save", "purple"))
-        md.append(f"The same pipeline (load CREs and genes, build, add Hi-C, normalise, annotate, strength, hubs, "
-                  f"save) in a fresh process: **{ftime(tot['main'])}** with the classic modules, "
-                  f"**{ftime(tot['columnar'])}** with `genomeblocks.columnar`"
-                  + (f", peak memory {mem['main']:,.0f} MB → {mem['columnar']:,.0f} MB" if mem.get("main") else "")
-                  + ". Both give the same edges, weights, O/E, labels and hubs.\n")
-        ld = {r["impl"]: r for r in rows_where(p, part="e2e_load")}
-        meta = pick(p, part="steps_meta") or {}
-        if ld.get("main") and ld.get("columnar"):
-            md.append(f"Reloading the saved graph in a new process takes {ftime(ld['main']['seconds'])} from the classic "
-                      f"pickle and {ftime(ld['columnar']['seconds'])} from the columnar parquet tables"
-                      + (f" ({meta['file_mb_main']:.0f} MB vs {meta['file_mb_columnar']:.1f} MB on disk)"
-                         if meta.get("file_mb_main") else "") + ".\n")
-    if pairs:
-        md.append(figure(dumbbell(pairs, kind="purple", label="Classic vs columnar per step"),
-                         "<strong>Per step, classic (grey) vs columnar</strong> on 100k CREs and 50k loops "
-                         "(in-process medians; log scale; right column = speed-up)."))
-    views = rows_where(p, part="views")
-    if views:
+    md.append('## Backends\n{: .sec-navy #backends }\n')
+    md.append("The same call through every installed engine (`backend=`); every row below returns the same "
+              "answer as the default, so the choice is only about speed and what is installed.\n")
+    rows = [r for r in d["rows"] if r.get("op") != "skipped"]
+    skipped_ = [r["engine"] for r in d["rows"] if r.get("op") == "skipped"]
+    fam_kind = {"intervals": "green", "bigwig": "green", "motifs": "navy", "fasta": "navy", "tables": "green",
+                "graph": "purple"}
+    for fam in ("intervals", "bigwig", "motifs", "fasta", "tables", "graph"):
+        sel = [r for r in rows if r["part"] == fam]
+        if not sel:
+            continue
         ops = []
-        for r in views:
+        for r in sel:
             if r["op"] not in ops:
                 ops.append(r["op"])
-        trs = []
-        for o in ops:
-            a = next((r["seconds"] for r in views if r["op"] == o and r["impl"] == "main"), None)
-            b = next((r["seconds"] for r in views if r["op"] == o and r["impl"] == "columnar"), None)
-            trs.append([escape(o), ftime(a) if a else "–", ftime(b) if b else "–", fx(a / b) if a and b else "–"])
-        md.append('<details class="gb-table" open><summary>Interactive operations</summary><table><thead><tr><th>operation</th>'
-                  '<th>classic</th><th>columnar</th><th>speed-up</th></tr></thead><tbody>'
-                  + "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in trs)
-                  + "</tbody></table></details>\n")
-    sc = rows_where(p, part="scale")
-    if sc:
-        series = []
-        for impl, nm in (("main", "classic"), ("columnar", "columnar")):
-            pts = [(r["loops"], r["seconds"]) for r in sc if r["impl"] == impl]
-            if pts:
-                series.append((nm, pts, impl == "columnar"))
-        md.append(figure(linechart(series, kind="purple", xlab="loops", label="Pipeline time vs loop count",
-                                   yfmt=ftime, ytick=ftick),
-                         "<strong>Pipeline time vs loop count</strong> (make → add_mcool → normalize → annotate → "
-                         "strength; log–log)."))
+        for op in ops:
+            if "warm" in op:
+                continue
+            at = [r for r in sel if r["op"] == op]
+            n = max(r["n"] for r in at)
+            at = [r for r in at if r["n"] == n]
+            if len(at) < 2:
+                continue
+            md.append(figure(dotplot([(r["engine"], r["seconds"], r["engine"] == DEFAULTS.get(fam),
+                                       "agrees" if r.get("agrees", True) else "DIFFERS") for r in at],
+                                     kind=fam_kind[fam], label=f"{fam}: {op}"),
+                             f"<strong>{escape(fam)} · {escape(op)}</strong>" + (f" at n = {n:,}" if n > 1 else "")
+                             + "; the default engine in colour."))
+        best = min((r for r in sel if "warm" not in r["op"]), key=lambda r: r["seconds"], default=None)
+        if best:
+            tl.append((f"{fam}: fastest engine", best["engine"], best["op"], fam_kind[fam]))
+    if skipped_:
+        md.append(f"Not installed on the benchmark machine: {', '.join(sorted(set(skipped_)))}.\n")
 
 
 def sec_shortrange(md, tl):
@@ -588,7 +536,7 @@ def sec_shortrange(md, tl):
         gb = tot.get("genomeblocks")
         if gb:
             md.append(f"From allValidPairs to a coverage bigWig: **{ftime(gb['seconds'])}** and "
-                      f"{gb['peak_mb'] / 1e3:.1f} GB peak memory with `columnar.hichip`, against "
+                      f"{gb['peak_mb'] / 1e3:.1f} GB peak memory with `genomeblocks.hichip`, against "
                       f"{ftime(sh['seconds'])} and {sh['peak_mb'] / 1e3:.1f} GB for the `awk | sort | bedtools` recipe, "
                       f"with the same ends and a byte-identical bedGraph.\n")
     st = rows_where(d, part="steps")
@@ -621,12 +569,13 @@ def sec_import(md, tl):
 
 def build():
     md, tl = [], []
-    secs = [sec_loci, sec_signal, sec_atlas, sec_motifs, sec_pairs, sec_genes, sec_architecture, sec_columnar,
+    secs = [sec_backends, sec_loci, sec_signal, sec_atlas, sec_motifs, sec_pairs, sec_genes, sec_architecture,
             sec_shortrange, sec_import]
     for s in secs:
         s(md, tl)
-    env = next((load(n)["env"] for n in ("loci", "signal", "motifs") if load(n)), {})
+    env = next((load(n)["env"] for n in ("backends", "loci", "signal", "motifs") if load(n)), {})
     v = env.get("versions", {})
+    gbv = v.get("genomeblocks", "")
     vtxt = ", ".join(f"{k} {val}" for k, val in v.items())
     head = f"""---
 title: Benchmarks
@@ -639,8 +588,9 @@ permalink: /benchmarks/
 {{: .no_toc }}
 
 How fast each building block is against the tools people would otherwise use,
-measured on genomeblocks 1.1. Every comparison first checks that the engines
-return the same answer; timings are medians of 3–5 runs after a warm-up.
+and what each swappable backend costs, measured on genomeblocks {gbv or '2.0'}.
+Every comparison first checks that the engines return the same answer;
+timings are medians of 3–5 runs after a warm-up.
 {{: .fs-5 .fw-300 }}
 
 <p class="gb-env">{escape(env.get('cpu', ''))} · {env.get('cores', '?')} cores · {env.get('mem_gb', 0):.0f} GB RAM ·

@@ -48,7 +48,7 @@
 <polyline class="grid" points="561,50 561,158"/>
 <polyline class="ln" points="300,170 300,176 590,176 590,170"/>
 <text class="s" x="445" y="192" text-anchor="middle">centre ± flank, split into n_bins</text>
-<text class="ms" x="445" y="210" text-anchor="middle">values(chrom, L, R, bins=n_bins): one native call</text>
+<text class="ms" x="445" y="210" text-anchor="middle">stats_array(chrom, L, R, n_bins): one call to the bigwig backend</text>
 <polyline class="ln" points="222,81 286,81"/>
 <polygon class="hd" points="290.0,81.0 283.8,84.3 283.8,77.7"/>
 <rect class="chip" x="676" y="38" width="16" height="20" rx="2"></rect>

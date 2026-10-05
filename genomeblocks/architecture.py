@@ -1,972 +1,906 @@
-"""Architecture graph utilities (graph-tool wrapper)."""
+"""Architecture as two tables: vertices = Loci rows, edges = a sorted table.
+
+    vertices   the CRE Loci itself (row i = vertex i), plus vertex columns in ``vp``
+    edges      src | tgt | ep columns (w, n, d, ...)    src < tgt, int32
+
+Edges are kept sorted so that the intra-chromosomal (cis) edges of each
+chromosome form one contiguous block, in genome order, and every
+inter-chromosomal (trans) edge sits in one final block::
+
+    | cis chr1 | cis chr2 | ... | cis chrX | trans |
+    ^offsets['chr1']           ^offsets['chrX']  ^trans
+
+Seen as an adjacency matrix this is block-diagonal plus a few off-diagonal
+dots — one graph, nothing split apart:
+
+    * ``A.chrom('chr2')``, ``A.cis``, ``A.trans`` are slices (zero-copy views);
+      each chromosome can be processed on its own core.
+    * neighbours come from one adjacency index over *all* edges, so a CRE's
+      trans partners are always there.
+    * graph algorithms (components, centrality, ...) use a graph-tool Graph
+      built from the arrays on demand (``A.graph()``) — it sees every edge.
+
+Vertex ids are Loci row numbers, so vertex columns, annotations and signal
+cubes line up with the Loci by position: no uid -> vertex dictionary.
+
+Graph algorithms run through the graph backend (graph-tool by default;
+igraph, networkx or scipy on request), and the graph exports to each of
+them, to a scipy sparse matrix, to AnnData and to plain tables.
+"""
+from __future__ import annotations
+
+import warnings
 from typing import Optional
 
-import graph_tool.all as gt # ignore import
+import numpy as np
+
+from ._table import TableMixin
+from .loci import Loci
 
 
-def _infer_prop_type(values) -> str:
-    """Best-effort graph-tool value type from a list of Python values.
+class Props(dict):
+    """dict with attribute access: ``A.ep.w`` == ``A.ep['w']``."""
 
-    Only used as a fallback for pickles that predate the recorded
-    ``*prop_types`` state — current pickles carry the exact value type.
-    """
-    sample_val = next((v for v in values if v is not None), None)
-    if sample_val is None or isinstance(sample_val, str):
-        return "string"
-    if isinstance(sample_val, bool):
-        return "bool"
-    if isinstance(sample_val, (int, float)):
-        return "float"
-    return "string"
+    def __getattr__(self, k):
+        try:
+            return self[k]
+        except KeyError:
+            raise AttributeError(k) from None
 
+    def __setattr__(self, k, v):
+        self[k] = v
 
-class Architecture(gt.Graph):
-
-    def __init__(s, name: Optional[str]=None):
-        super().__init__(directed=False)
-        s._name = name or "Architecture"
-        # --- Vertex Properties (for loci) ---
-        s.vp.uid = s.new_vertex_property("string")
-        s.index = {}
-
-        # --- Edge Properties (for links) ---
-        s.ep.w = s.new_edge_property("float")
-        s.ep.n = s.new_edge_property("float")
-        s.ep.d = s.new_edge_property("float")
-        print("[INFO] Initialized an empty Architecture graph. 🏗️")
-
-    def _add_vertex(s, uid):
-        if uid not in s.index:
-            v = s.add_vertex()
-            s.vp.uid[v] = uid
-            s.index[uid] = v
-        return s.index[uid]
-
-    @property
-    def n_loci(s) -> int: return s.num_vertices()
-    @property
-    def n_links(s) -> int: return s.num_edges()
-
-    def __str__(s) -> str:
-        eprops = ", ".join(s.ep.keys())
-        vprops = ", ".join(s.vp.keys())
-        return f"Architecture(name='{s._name}', loci={s.n_loci}, links={s.n_links}, vertex_props=[{vprops}], edge_props=[{eprops}])"
-    __repr__ = __str__
-
-    def __len__(s) -> int: return s.num_vertices()
-    def __contains__(s, uid: str) -> bool: return uid in s.index
-
-    def __getitem__(s, key):
-        if isinstance(key, str):
-            if key not in s.index: raise KeyError(f"Locus UID '{key}' not found in the graph.")
-            v = s.index[key]
-            neighbors = {}
-            for neighbor_v in v.all_neighbors():
-                neighbor_uid = s.vp.uid[neighbor_v]
-                edge = s.edge(v, neighbor_v)
-                neighbors[neighbor_uid] = s.ep.w[edge]
-            return neighbors
-        if isinstance(key, tuple) and len(key) == 2:
-            uid1, uid2 = key
-            if uid1 not in s.index or uid2 not in s.index: raise KeyError(f"One or both UIDs ('{uid1}', '{uid2}') not found.")
-            v1, v2 = s.index[uid1], s.index[uid2]
-            edge = s.edge(v1, v2)
-            if edge is None: return None
-            return {name: prop[edge] for name, prop in s.ep.items()}
-        raise TypeError("Key must be a Locus UID (string) or a tuple of two UIDs.")
-
-    def copy(s) -> "Architecture":
-        """Create a deep copy of the Architecture graph.
-        
-        Copies all vertices, edges, and ALL vertex and edge properties.
-        
-        Returns:
-            New Architecture instance with all data copied
-        """
-        new_arch = s.__class__(name=s._name + "_copy")
-        new_arch.set_directed(s.is_directed())
-        
-        # Create all vertex/edge property maps in the new graph, preserving
-        # each map's exact graph-tool value type. Don't infer the type from a
-        # sampled Python value: graph-tool returns bools as ints, so
-        # isinstance-based inference silently downcast bool props to double
-        # (and dropped every property on an empty graph).
-        for vp_name, vp_map in s.vp.items():
-            if vp_name == 'uid':
-                continue  # uid is created by default
-            new_arch.vp[vp_name] = new_arch.new_vertex_property(vp_map.value_type())
-
-        for ep_name, ep_map in s.ep.items():
-            if ep_name in ['w', 'n', 'd']:
-                continue  # These are created by default
-            new_arch.ep[ep_name] = new_arch.new_edge_property(ep_map.value_type())
-
-        # Add vertices and copy all vertex properties
-        for v_old in s.vertices():
-            uid = s.vp.uid[v_old]
-            v_new = new_arch._add_vertex(uid)
-            
-            # Copy all vertex properties
-            for vp_name, vp_map in s.vp.items():
-                if vp_name == 'uid':
-                    continue  # Already set by _add_vertex
-                new_arch.vp[vp_name][v_new] = vp_map[v_old]
-        
-        # Add edges and copy all edge properties
-        for e_old in s.edges():
-            uid1 = s.vp.uid[e_old.source()]
-            uid2 = s.vp.uid[e_old.target()]
-            v1_new = new_arch.index[uid1]
-            v2_new = new_arch.index[uid2]
-            e_new = new_arch.add_edge(v1_new, v2_new)
-            
-            # Copy all edge properties
-            for ep_name, ep_map in s.ep.items():
-                new_arch.ep[ep_name][e_new] = ep_map[e_old]
-        
-        print(f"[INFO] Created a copy of '{s._name}' with all properties. 🐑")
-        return new_arch
-    
-    def subgraph(s, filter_func=None, vp_name=None, vp_values=None, uids=None, name=None) -> "Architecture":
-        """Create a subgraph by filtering vertices.
-        
-        Multiple filtering options (use only one):
-        - filter_func: Custom function that takes vertex and returns bool
-        - vp_name + vp_values: Filter by vertex property values
-        - uids: Filter by specific UIDs
-        
-        Args:
-            filter_func: Function(vertex) -> bool to select vertices
-            vp_name: Name of vertex property to filter by
-            vp_values: Value or list of values to match for vp_name
-            uids: Single UID or list of UIDs to include
-            name: Name for the new subgraph (default: original_name_sub)
-        
-        Returns:
-            New Architecture instance with filtered vertices and their edges
-            
-        Examples:
-            >>> # Filter by UIDs
-            >>> sub = G.subgraph(uids=['chr1:100000', 'chr2:200000'])
-            
-            >>> # Filter by vertex property
-            >>> sub = G.subgraph(vp_name='gene', vp_values=['MYC', 'TP53'])
-            
-            >>> # Filter by custom function
-            >>> sub = G.subgraph(filter_func=lambda v: G.vp.score[v] > 0.5)
-        """
-        if name is None:
-            name = f"{s._name}_sub"
-        
-        new_arch = s.__class__(name=name)
-        new_arch.set_directed(s.is_directed())
-        
-        # Determine which vertices to include
-        include_vertices = set()
-        
-        if uids is not None:
-            # Filter by UIDs
-            if isinstance(uids, str):
-                uids = [uids]
-            for v in s.vertices():
-                if s.vp.uid[v] in uids:
-                    include_vertices.add(v)
-        
-        elif vp_name is not None and vp_values is not None:
-            # Filter by vertex property
-            if vp_name not in s.vp:
-                raise ValueError(f"Vertex property '{vp_name}' not found in graph")
-            
-            if not isinstance(vp_values, (list, set, tuple)):
-                vp_values = [vp_values]
-            
-            for v in s.vertices():
-                if s.vp[vp_name][v] in vp_values:
-                    include_vertices.add(v)
-        
-        elif filter_func is not None:
-            # Filter by custom function
-            for v in s.vertices():
-                if filter_func(v):
-                    include_vertices.add(v)
-        
-        else:
-            raise ValueError("Must provide one of: filter_func, vp_name+vp_values, or uids")
-        
-        if len(include_vertices) == 0:
-            print(f"[WARNING] No vertices matched filter criteria")
-            return new_arch
-        
-        # Create all vertex/edge property maps, preserving exact value types
-        # (see copy() — sampled-value inference downcast bool props to double).
-        for vp_name_iter, vp_map in s.vp.items():
-            if vp_name_iter == 'uid':
-                continue
-            new_arch.vp[vp_name_iter] = new_arch.new_vertex_property(vp_map.value_type())
-
-        for ep_name, ep_map in s.ep.items():
-            if ep_name in ['w', 'n', 'd']:
-                continue
-            new_arch.ep[ep_name] = new_arch.new_edge_property(ep_map.value_type())
-
-        # Add filtered vertices with all properties
-        for v_old in include_vertices:
-            uid = s.vp.uid[v_old]
-            v_new = new_arch._add_vertex(uid)
-            
-            # Copy all vertex properties
-            for vp_name_iter, vp_map in s.vp.items():
-                if vp_name_iter == 'uid':
-                    continue
-                new_arch.vp[vp_name_iter][v_new] = vp_map[v_old]
-        
-        # Add edges between included vertices
-        edge_count = 0
-        for e_old in s.edges():
-            source_old = e_old.source()
-            target_old = e_old.target()
-            
-            # Only add edge if both endpoints are in the subgraph
-            if source_old in include_vertices and target_old in include_vertices:
-                uid1 = s.vp.uid[source_old]
-                uid2 = s.vp.uid[target_old]
-                v1_new = new_arch.index[uid1]
-                v2_new = new_arch.index[uid2]
-                e_new = new_arch.add_edge(v1_new, v2_new)
-                
-                # Copy all edge properties
-                for ep_name, ep_map in s.ep.items():
-                    new_arch.ep[ep_name][e_new] = ep_map[e_old]
-                
-                edge_count += 1
-        
-        print(f"[INFO] Created subgraph '{name}': {new_arch.n_loci} vertices, {new_arch.n_links} edges "
-              f"(from {s.n_loci} vertices, {s.n_links} edges)")
-        return new_arch
-    
-    def __or__(s, other: "Architecture") -> "Architecture":
-        """Union of two Architecture graphs (vertices and edges).
-        
-        Creates a new graph containing all vertices and edges from both graphs.
-        Edge properties are taken from the first graph when edges exist in both.
-        
-        Args:
-            other: Another Architecture instance
-            
-        Returns:
-            New Architecture with union of vertices and edges
-        """
-        if not isinstance(other, Architecture):
-            raise TypeError("Union requires another Architecture instance.")
-        
-        new_arch = s.__class__(name=f"{s._name}|{other._name}")
-        
-        # Add all vertices from both graphs
-        all_uids = set()
-        for v in s.vertices():
-            uid = s.vp.uid[v]
-            all_uids.add(uid)
-            new_arch._add_vertex(uid)
-        
-        for v in other.vertices():
-            uid = other.vp.uid[v]
-            if uid not in all_uids:
-                all_uids.add(uid)
-                new_arch._add_vertex(uid)
-        
-        # Track edges to avoid duplicates
-        edge_set = set()
-        
-        # Add edges from first graph
-        for e in s.edges():
-            uid1 = s.vp.uid[e.source()]
-            uid2 = s.vp.uid[e.target()]
-            edge_key = tuple(sorted([uid1, uid2]))
-            
-            if edge_key not in edge_set:
-                v1 = new_arch.index[uid1]
-                v2 = new_arch.index[uid2]
-                e_new = new_arch.add_edge(v1, v2)
-                
-                # Copy edge properties from first graph
-                for key, prop_map in s.ep.items():
-                    if key not in new_arch.ep:
-                        new_arch.ep[key] = new_arch.new_edge_property("float")
-                    new_arch.ep[key][e_new] = prop_map[e]
-                
-                edge_set.add(edge_key)
-        
-        # Add edges from second graph (only if not already added)
-        for e in other.edges():
-            uid1 = other.vp.uid[e.source()]
-            uid2 = other.vp.uid[e.target()]
-            edge_key = tuple(sorted([uid1, uid2]))
-            
-            if edge_key not in edge_set:
-                v1 = new_arch.index[uid1]
-                v2 = new_arch.index[uid2]
-                e_new = new_arch.add_edge(v1, v2)
-                
-                # Copy edge properties from second graph
-                for key, prop_map in other.ep.items():
-                    if key not in new_arch.ep:
-                        new_arch.ep[key] = new_arch.new_edge_property("float")
-                    new_arch.ep[key][e_new] = prop_map[e]
-                
-                edge_set.add(edge_key)
-        
-        print(f"[INFO] Union: {new_arch.n_loci} vertices, {new_arch.n_links} edges "
-              f"(from {s.n_loci}+{other.n_loci} vertices, {s.n_links}+{other.n_links} edges)")
-        return new_arch
-    
-    def __and__(s, other: "Architecture") -> "Architecture":
-        """Intersection of two Architecture graphs (vertices and edges).
-        
-        Creates a new graph containing only vertices present in both graphs,
-        and only edges that exist in both graphs.
-        
-        Args:
-            other: Another Architecture instance
-            
-        Returns:
-            New Architecture with intersection of vertices and edges
-        """
-        if not isinstance(other, Architecture):
-            raise TypeError("Intersection requires another Architecture instance.")
-        
-        new_arch = s.__class__(name=f"{s._name}&{other._name}")
-        
-        # Find common vertices
-        uids_s = {s.vp.uid[v] for v in s.vertices()}
-        uids_other = {other.vp.uid[v] for v in other.vertices()}
-        common_uids = uids_s & uids_other
-        
-        # Add common vertices
-        for uid in common_uids:
-            new_arch._add_vertex(uid)
-        
-        # Find edges in first graph with both endpoints in common vertices
-        edges_s = set()
-        for e in s.edges():
-            uid1 = s.vp.uid[e.source()]
-            uid2 = s.vp.uid[e.target()]
-            if uid1 in common_uids and uid2 in common_uids:
-                edges_s.add(tuple(sorted([uid1, uid2])))
-        
-        # Find edges in second graph with both endpoints in common vertices
-        edges_other = set()
-        edge_map_other = {}
-        for e in other.edges():
-            uid1 = other.vp.uid[e.source()]
-            uid2 = other.vp.uid[e.target()]
-            if uid1 in common_uids and uid2 in common_uids:
-                edge_key = tuple(sorted([uid1, uid2]))
-                edges_other.add(edge_key)
-                edge_map_other[edge_key] = e
-        
-        # Find common edges and add them
-        common_edges = edges_s & edges_other
-        edge_map_s = {}
-        for e in s.edges():
-            uid1 = s.vp.uid[e.source()]
-            uid2 = s.vp.uid[e.target()]
-            edge_key = tuple(sorted([uid1, uid2]))
-            if edge_key in common_edges:
-                edge_map_s[edge_key] = e
-        
-        for edge_key in common_edges:
-            uid1, uid2 = edge_key
-            v1 = new_arch.index[uid1]
-            v2 = new_arch.index[uid2]
-            e_new = new_arch.add_edge(v1, v2)
-            
-            # Copy edge properties from first graph
-            e_s = edge_map_s[edge_key]
-            for key, prop_map in s.ep.items():
-                if key not in new_arch.ep:
-                    new_arch.ep[key] = new_arch.new_edge_property("float")
-                new_arch.ep[key][e_new] = prop_map[e_s]
-        
-        print(f"[INFO] Intersection: {new_arch.n_loci} vertices, {new_arch.n_links} edges "
-              f"(from {s.n_loci}∩{other.n_loci} vertices, {s.n_links}∩{other.n_links} edges)")
-        return new_arch
-    
-    # lets add getstate and setstate for pickling
-    def __getstate__(s):
-        """Serialize Architecture to a pickleable dict.
-        
-        We can't pickle graph-tool's C++ internals directly, so we extract:
-        - vertex UIDs in order
-        - edges as (uid1, uid2) pairs
-        - all vertex property maps as {name: [values...]}
-        - all edge property maps as {name: [values...]}
-        """
-        verts = list(s.vertices())
-        edges = list(s.edges())
-        
-        # Extract vertex UIDs
-        vertex_uids = [s.vp.uid[v] for v in verts]
-        
-        # Extract edges as UID pairs
-        edge_pairs = [(s.vp.uid[e.source()], s.vp.uid[e.target()]) for e in edges]
-        
-        # Extract vertex properties
-        vprops = {}
-        for name, prop in s.vp.items():
-            vprops[name] = [prop[v] for v in verts]
-        
-        # Extract edge properties
-        eprops = {}
-        for name, prop in s.ep.items():
-            eprops[name] = [prop[e] for e in edges]
-
-        # Record each map's exact graph-tool value type so restore preserves
-        # bool / int / vector props (reading a bool map yields ints, so
-        # value-based inference on restore would downcast them to float).
-        vprop_types = {name: prop.value_type() for name, prop in s.vp.items()}
-        eprop_types = {name: prop.value_type() for name, prop in s.ep.items()}
-
-        return {
-            '_name': s._name,
-            'directed': s.is_directed(),
-            'vertex_uids': vertex_uids,
-            'edge_pairs': edge_pairs,
-            'vprops': vprops,
-            'eprops': eprops,
-            'vprop_types': vprop_types,
-            'eprop_types': eprop_types,
-        }
-
-    def __setstate__(s, state):
-        """Reconstruct Architecture from pickled state.
-        
-        We rebuild the graph from scratch:
-        1. Initialize a new graph-tool Graph
-        2. Add all vertices and recreate vertex properties
-        3. Add all edges and recreate edge properties
-        4. Rebuild the index mapping
-        """
-        # Initialize the graph-tool base class
-        gt.Graph.__init__(s, directed=state.get('directed', False))
-        
-        # Set the name
-        s._name = state.get('_name', 'Architecture')
-        
-        # Create vertex property maps first. Prefer the recorded value type
-        # (added in __getstate__); fall back to value inference for older
-        # pickles that predate vprop_types.
-        vprops_data = state.get('vprops', {})
-        vprop_types = state.get('vprop_types', {})
-        for name in vprops_data.keys():
-            prop_type = vprop_types.get(name) or _infer_prop_type(vprops_data[name])
-            s.vp[name] = s.new_vertex_property(prop_type)
-
-        # Add vertices and set their properties
-        vertex_uids = state.get('vertex_uids', [])
-        vertex_map = []
-        for i, uid in enumerate(vertex_uids):
-            v = s.add_vertex()
-            vertex_map.append(v)
-            # Set all vertex properties for this vertex
-            for name, values in vprops_data.items():
-                s.vp[name][v] = values[i]
-        
-        # Build UID to vertex mapping for edge creation
-        uid_to_vertex = {s.vp.uid[v]: v for v in vertex_map}
-        
-        # Create edge property maps (recorded value type, else inference)
-        eprops_data = state.get('eprops', {})
-        eprop_types = state.get('eprop_types', {})
-        for name in eprops_data.keys():
-            prop_type = eprop_types.get(name) or _infer_prop_type(eprops_data[name])
-            s.ep[name] = s.new_edge_property(prop_type)
-
-        # Add edges and set their properties
-        edge_pairs = state.get('edge_pairs', [])
-        for i, (uid1, uid2) in enumerate(edge_pairs):
-            v1 = uid_to_vertex[uid1]
-            v2 = uid_to_vertex[uid2]
-            e = s.add_edge(v1, v2)
-            # Set all edge properties for this edge
-            for name, values in eprops_data.items():
-                s.ep[name][e] = values[i]
-        
-        # Rebuild the index for fast UID lookup
-        s.index = {s.vp.uid[v]: v for v in s.vertices()}
-
-
-    def to_frame(self):
-        import pandas as pd
-        return pd.DataFrame({k: self.vp[k] for k in self.vp})
-
-
-# ── Construction & contact overlay ──────────────────────────────────────────
-
-@classmethod
-def make(cls, loci, bedpe: str, *, name: str="Skeleton", r: int=2500, dmax=1e9, verbose: bool=True):
-    """Build an Architecture skeleton from a BEDPE loop file.
-
-    BEDPE parsing is delegated to ``genomeblocks.bedpe.read_bedpe`` — the
-    package's single BEDPE reader. Callers never import that module directly;
-    just pass a path here.
-    """
-    from tqdm import tqdm
-    from .bedpe import read_bedpe
-    G = cls(name=name)
-    pairs = read_bedpe(bedpe, verbose=verbose)
-    mapped_loops = 0
-    edge_set = set()
-    for p in tqdm(pairs, desc='[INFO] Building Architecture from loops', disable=not verbose):
-        if abs(p.mid1 - p.mid2) > dmax: continue
-        a1 = [loci[j] for *_, j in loci.cgr.overlap(p.chrom1, p.mid1 - r, p.mid1 + r)]
-        a2 = [loci[j] for *_, j in loci.cgr.overlap(p.chrom2, p.mid2 - r, p.mid2 + r)]
-        if not a1 or not a2: continue
-        mapped_loops += 1
-        for locus1 in a1:
-            for locus2 in a2:
-                if locus1.uid == locus2.uid: continue
-                edge_key = tuple(sorted([locus1.uid, locus2.uid]))
-                if edge_key in edge_set: continue
-                edge_set.add(edge_key)
-                v1 = G._add_vertex(locus1.uid)
-                v2 = G._add_vertex(locus2.uid)
-                G.add_edge(v1, v2)
-    if verbose:
-        total_loops = len(pairs)
-        pct_mapped = 100 * mapped_loops / max(total_loops, 1)
-        print(f"[INFO] {total_loops} loops | {mapped_loops} mapped ({pct_mapped:.1f}%) | "
-              f"loci={G.n_loci}, links={G.n_links}")
-    return G
-
-
-def add_mcool(s: Architecture, loci, mcool: str, *, resolution: Optional[int]=None, name: str="w", verbose: bool=True) -> Architecture:
-    """Overlay Hi-C contacts from a cooler onto the edges as ``ep[name]``.
-
-    Each CRE maps to its nearest cooler bin. An edge gets the pixel count of
-    its (bin1, bin2) pair divided by the number of edges sharing that pair, so
-    a pixel's contacts are counted once however many CRE pairs fall in it.
-    Edges whose bin pair has no pixel keep 0.
-    """
-    import cooler
-    import numpy as np
-    print(f"[INFO] Adding '{name}' weights to the graph. 🏗️")
-    uri = f"{mcool}::resolutions/{resolution}" if resolution else mcool
-    clr = cooler.Cooler(uri)
-    bins = clr.bins()[:][['chrom', 'start', 'end']].reset_index()
-    from .loci import Loci
-    from .locus import Locus
-    bins_l = Loci(Locus(row[1], row[2], row[3]) for row in bins.itertuples(index=False))
-    near = loci.nearest(bins_l)
-    uid_to_bin = dict(zip(near['Name'], near['Name_b'].map(bins_l.uids)))
-
-    # vertex -> bin (-1 = unmapped), then one (bin1, bin2) key per edge
-    vbin = np.fromiter((uid_to_bin.get(u, -1) for u in s.vp.uid), dtype=np.int64, count=s.n_loci)
-    E = s.get_edges([s.edge_index])                  # src, tgt, edge index
-    b1, b2 = vbin[E[:, 0]], vbin[E[:, 1]]
-    mapped = (b1 >= 0) & (b2 >= 0)
-    lo, hi = np.minimum(b1, b2), np.maximum(b1, b2)
-    n_bins = len(bins_l)
-    ekey = lo * n_bins + hi
-
-    # edges sharing a bin pair split its count
-    _, inv, per_pair = np.unique(ekey[mapped], return_inverse=True, return_counts=True)
-    n_share = np.ones(len(E), dtype=np.int64)
-    n_share[mapped] = per_pair[inv]
-
-    # pixel count per edge: cooler pixels are upper-triangular (bin1 <= bin2)
-    # and sorted by (bin1, bin2), so their keys are sorted for searchsorted
-    px = clr.pixels()[:]
-    pkey = px['bin1_id'].to_numpy(np.int64) * n_bins + px['bin2_id'].to_numpy(np.int64)
-    pcount = px['count'].to_numpy(float)
-    if np.any(pkey[1:] < pkey[:-1]):
-        order = np.argsort(pkey, kind='stable')
-        pkey, pcount = pkey[order], pcount[order]
-    total = np.zeros(len(E))
-    if len(pkey):
-        j = np.minimum(np.searchsorted(pkey, ekey), len(pkey) - 1)
-        found = mapped & (pkey[j] == ekey)
-        total[found] = pcount[j[found]]
-    has = total > 0
-
-    s.ep[name] = s.new_edge_property("float")
-    w = s.ep[name].a
-    w[E[has, 2]] = total[has] / n_share[has]
-    if verbose:
-        print(f"[INFO] Set distributed weights for {int(has.sum())}/{s.n_links} edges from cooler. [{name}]")
-    return s
-
-
-# ── Distance-decay normalization ────────────────────────────────────────────
 
 def _pl_model(x, C, alpha):
-    import numpy as np
     x = np.asarray(x, float)
-    out = np.full(x.shape, np.inf)          # x<=0 is singular → inf (→ O/E 0)
+    out = np.full(x.shape, np.inf)
     pos = x > 0
     out[pos] = C * (x[pos] ** (-alpha))
     return out
 
 
 def _pl_expect(x, y):
-    import numpy as np
+    """Power-law fit of y ~ C * x^-alpha (same procedure as the classic normalize)."""
     from scipy.optimize import curve_fit
     x, y = np.asarray(x, float), np.asarray(y, float)
     m = (x > 0) & (y > 0) & np.isfinite(x) & np.isfinite(y)
-    if not m.any():
+    if m.sum() < 3 or len(np.unique(x[m])) < 2:        # a fit needs a few distances
         return np.full_like(y, np.nan), {"alpha": np.nan, "C": np.nan}
     try:
         b, a = np.polyfit(np.log10(x[m]), np.log10(y[m]), 1)
-        guess = [10.0**a, -b]
-        popt, _ = curve_fit(_pl_model, x[m], y[m], p0=guess)
-        C_fit, alpha_fit = popt
-        y_expected = _pl_model(x, C_fit, alpha_fit)
-        return y_expected, {"alpha": float(alpha_fit), "C": float(C_fit)}
-    except (RuntimeError, np.linalg.LinAlgError, ValueError):
+        popt, _ = curve_fit(_pl_model, x[m], y[m], p0=[10.0 ** a, -b])
+        return _pl_model(x, *popt), {"alpha": float(popt[1]), "C": float(popt[0])}
+    except (RuntimeError, TypeError, np.linalg.LinAlgError, ValueError):
         return np.full_like(y, np.nan), {"alpha": np.nan, "C": np.nan}
 
 
-def normalize(s: Architecture, loci, *, source: str = "w", name: str = "n", verbose: bool = True) -> Architecture:
-    """Normalize edge weights by their distance-decay (power-law) expectation.
-
-    Fits a power law to the (distance, ``ep[source]``) cloud across the cis
-    (intra-chromosomal) edges, then stores the observed/expected ratio in
-    ``ep[name]``. Edge distances are computed from ``loci`` and cached in
-    ``ep.d``.
-
-    Trans (inter-chromosomal) edges have no genomic distance: ``ep.d`` is
-    ``inf`` for them and their expectation is the mean trans weight, so their
-    O/E is weight / mean trans weight (0 when every trans weight is 0).
-
-    Zero-distance edges (overlapping/co-located loci) are a power-law
-    singularity: ``_pl_expect`` fits on positive distances only, and
-    ``_pl_model`` returns inf at distance 0 so their O/E falls to 0. They are
-    not removed here — call :meth:`prune` once at the end to drop them (removing
-    edges mid-pipeline desyncs the edge-index range across repeated calls).
-    """
-    import numpy as np
-    if verbose:
-        print(f"[INFO] Normalizing '{source}' by power-law expectation. Storing in '{name}'. 📏")
-    if source not in s.ep:
-        raise ValueError(f"Source edge property '{source}' not found in the graph.")
-    if name not in s.ep:
-        s.ep[name] = s.new_edge_property("float")
-
-    E = s.get_edges([s.edge_index, s.ep[source]])    # src, tgt, edge index, weight
-    src, tgt = E[:, 0].astype(np.int64), E[:, 1].astype(np.int64)
-    # one loci lookup per linked vertex, then everything per edge is array work
-    uids = list(s.vp.uid)
-    n = len(uids)
-    vchrom = np.full(n, -1, dtype=np.int64)
-    vcenter = np.zeros(n, dtype=np.int64)
-    codes: dict = {}
-    for v in np.unique(np.concatenate([src, tgt])):
-        l = loci[uids[v]]
-        vchrom[v] = codes.setdefault(l.chrom, len(codes))
-        vcenter[v] = l.center
-    eidx = E[:, 2].astype(np.int64)
-    raw_weights = E[:, 3].astype(float)
-    cis = vchrom[src] == vchrom[tgt]
-    distances = np.full(len(E), np.inf)
-    distances[cis] = np.abs(vcenter[src[cis]] - vcenter[tgt[cis]])
-
-    expected = np.empty(len(E))
-    expected[cis], fit_params = _pl_expect(distances[cis], raw_weights[cis])
-    tw = raw_weights[~cis]
-    expected[~cis] = tw.mean() if tw.size and tw.mean() > 0 else np.inf
-    if verbose:
-        print(f"[INFO] Power-law fit complete: alpha={fit_params['alpha']:.3f}, C={fit_params['C']:.3e}")
-    norm_weights = raw_weights / np.maximum(expected, 1e-12)
-
-    s.ep.d.a[eidx] = distances
-    s.ep[name].a[eidx] = norm_weights
-    if verbose:
-        n_trans = int((~cis).sum())
-        trans = f" + {n_trans} trans edges (vs the mean trans weight)" if n_trans else ""
-        print(f"[INFO] Set O/E weights for {int(cis.sum())} intra-chromosomal edges{trans} to `ep.{name}`.")
-    return s
+def _cross(k1, i1, k2, j2, n):
+    """Per-group cross product: all (i, j) with i from group k in (k1, i1) and
+    j from the same group in (k2, j2). Both inputs sorted by group."""
+    c2 = np.bincount(k2, minlength=n)
+    off2 = np.concatenate([[0], np.cumsum(c2)[:-1]])
+    rep = c2[k1]
+    src = np.repeat(i1, rep)
+    first = np.repeat(off2[k1], rep)
+    within = np.arange(rep.sum()) - np.repeat(np.cumsum(rep) - rep, rep)
+    return src, j2[first + within]
 
 
-def prune(s: Architecture, *, dist_prop: str = "d", verbose: bool = True) -> Architecture:
-    """Remove zero-distance edges (overlapping/co-located loci).
+class Architecture(TableMixin):
+    """CRE interaction graph stored as a vertex table (the Loci) + an edge table.
 
-    These share a center (``distance_to == 0``) and are a power-law
-    singularity, so they carry no meaningful O/E weight. Distances are read
-    from ``ep[dist_prop]`` (populated by ``normalize``), so run ``normalize``
-    before ``prune``.
+    As a table it is its edge table: ``shape``, ``columns``, ``head()``,
+    ``describe()``, ``to_pandas()`` / ``to_polars()`` / ``to_arrow()`` and the
+    Arrow / dataframe protocols; ``len(A)`` counts the loci (vertices)."""
 
-    Call this **once, at the very end** of a multi-cell pipeline. Removing
-    edges mid-pipeline leaves the edge-index range uncompacted, which desyncs
-    ``new_edge_property().a`` from ``list(edges())`` on the next ``normalize``.
-    """
-    import numpy as np
-    if dist_prop not in s.ep:
-        raise ValueError(
-            f"Edge property '{dist_prop}' not found — run normalize() first "
-            f"(it populates ep.{dist_prop} with edge distances).")
-    # Derive the mask from ep.d's array so it matches new_edge_property().a
-    # sizing (both indexed by edge-index range) — mixing a list-of-edges mask
-    # with a property array is exactly what broke before.
-    keep = np.asarray(s.ep[dist_prop].a) > 0
-    n_zero = int((~keep).sum())
-    if n_zero == 0:
+    def __init__(self, loci: Loci, src=(), tgt=(), *, ep=None, vp=None, name: str = "Architecture",
+                 _canonical: bool = False):
+        if not loci.is_sorted:
+            raise ValueError("Architecture needs genome-sorted Loci (Loci.make sorts by default; "
+                             "or call .sort()).")
+        self.loci = loci
+        self.name = name
+        src = np.asarray(src, np.int32)
+        tgt = np.asarray(tgt, np.int32)
+        ep = {k: np.asarray(v, float) for k, v in (ep or {}).items()}
+        if not _canonical:
+            src, tgt, order = self._canonical_order(src, tgt)
+            ep = {k: v[order] for k, v in ep.items()}
+        self.src, self.tgt = src, tgt
+        self.ep = Props(ep)
+        self.vp = Props(vp or {})
+        self._reset()
+
+    def _reset(self):
+        self._blocks = None
+        self._csr = None
+        self._gt = None
+        self._keys = None
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        d.update(_blocks=None, _csr=None, _gt=None, _keys=None)
+        return d
+
+    def _canonical_order(self, src, tgt):
+        lo, hi = np.minimum(src, tgt), np.maximum(src, tgt)
+        c = self.loci.codes
+        rank = self.loci.genome.rank
+        cis = c[lo] == c[hi]
+        block = np.where(cis, rank[c[lo]], len(rank) + rank[c[lo]])
+        order = np.lexsort((hi, lo, block))
+        return lo[order], hi[order], order
+
+    # ── construction ──────────────────────────────────────────────────────
+    @classmethod
+    def make(cls, loci, bedpe, *, name: str = "Skeleton", r: int = 2500, dmax: float = 1e9,
+             trans: bool = True, verbose: bool = True, backend: Optional[str] = None) -> "Architecture":
+        """Edges between every pair of CREs within ``r`` bp of the two anchor
+        midpoints of a loop.
+
+        ``bedpe`` is a BEDPE path, a :class:`~genomeblocks.Pairs` or a frame
+        with BEDPE columns. Cis loops longer than ``dmax`` are skipped; trans
+        loops are kept unless ``trans=False``. ``backend`` picks the interval
+        engine for the anchor-to-CRE mapping. Vertex ``i`` is ``loci`` row ``i``
+        (``loci`` must be genome-sorted, as ``Loci.make`` returns it).
+        """
+        from .backends.intervals import overlap_pairs
+        from .bedpe import as_pairs
+        from .interop import as_loci
+        loci = as_loci(loci)
+        if not loci.is_sorted:
+            print("[WARN] loci were not in genome order; the Architecture uses a sorted copy "
+                  "(A.loci), so align vertex columns to A.loci rather than to the input.")
+            loci = loci.sort()
+        P = as_pairs(bedpe, genome=loci.genome)
+        P = P.take(loci._check(P.a).codes >= 0) if len(P) else P
+        a, b = loci._check(P.a), loci._check(P.b)
+        m1, m2 = a.centers, b.centers
+        cis = a.codes == b.codes
+        keep = np.where(cis, np.abs(m1 - m2) <= dmax, trans)
+        m1, m2 = m1[keep], m2[keep]
+        A1 = Loci(a.codes[keep], np.maximum(m1 - r, 0), m1 + r, genome=loci.genome)
+        A2 = Loci(b.codes[keep], np.maximum(m2 - r, 0), m2 + r, genome=loci.genome)
+        k1, i1 = overlap_pairs(A1, loci, backend=backend)
+        k2, j2 = overlap_pairs(A2, loci, backend=backend)
+        o1 = np.argsort(k1, kind="stable")
+        o2 = np.argsort(k2, kind="stable")
+        src, tgt = _cross(k1[o1], i1[o1], k2[o2], j2[o2], len(A1))
+        ok = src != tgt
+        lo, hi = np.minimum(src[ok], tgt[ok]), np.maximum(src[ok], tgt[ok])
+        key = np.unique(lo.astype(np.int64) * len(loci) + hi)
+        A = cls(loci, key // len(loci), key % len(loci), name=name)
+        A.ep["w"] = np.zeros(len(A.src))          # add_mcool fills w; normalize adds n and d
         if verbose:
-            print("[INFO] prune: no zero-distance edges to remove.")
-        return s
-    keep_ep = s.new_edge_property("bool")
-    keep_ep.a = keep
-    s.set_edge_filter(keep_ep)
-    s.purge_edges()
-    s.set_edge_filter(None)
-    if verbose:
-        print(f"[INFO] prune: removed {n_zero} zero-distance edges → {s.n_links} edges.")
-    return s
+            mapped = len(np.intersect1d(np.unique(k1), np.unique(k2)))
+            print(f"[INFO] {len(P)} loops | {mapped} mapped ({100 * mapped / max(len(P), 1):.1f}%) | "
+                  f"loci={A.n_loci}, links={A.n_links} ({A.n_trans} trans)")
+        return A
 
+    @classmethod
+    def from_edges(cls, loci, src, tgt, *, name: str = "Architecture", vp=None, **ep) -> "Architecture":
+        """From vertex rows: ``src[k]``–``tgt[k]`` is edge k; keyword arrays become
+        edge columns. Duplicate and reversed pairs are kept as given."""
+        from .interop import as_loci
+        loci = as_loci(loci)
+        return cls(loci, src, tgt, ep=ep, vp=vp, name=name)
 
-# ── Gene annotation ─────────────────────────────────────────────────────────
-
-def annotate(self, loci, genes, *, key='n', name='gene', verbose=True):
-    """Add gene and genomic region annotations to vertices.
-
-    Two-stage gene assignment:
-      1. Region label (``vp.annot``) and promoter genes. A CRE labelled
-         'Promoter-TSS' gets ``vp[name]`` = its nearest gene.
-      2. Every non-promoter CRE is assigned (``vp[name]``) to the gene of its
-         **highest-weight promoter neighbour**, scored by edge property
-         ``key``. CREs with no promoter contact stay unassigned ('').
-
-    Stores per vertex:
-        vp.annot   : region label (Promoter-TSS / 5UTR / 3UTR / Exonic /
-                     Intronic / Intergenic).
-        vp[name]   : promoters → nearest gene; other CREs → gene of the
-                     top-``key``-weight promoter they contact ('' if none).
-                     Use a distinct ``name`` per ``key`` (e.g. key='n_CM',
-                     name='gene_CM') to keep assignments side by side.
-
-    Requires edge property ``key`` (run add_mcool/normalize first) so the
-    interaction-based assignment in stage 2 has weights to rank by.
-    """
-    import numpy as np
-
-    if key not in self.ep:
-        raise ValueError(
-            f"Edge property '{key}' not found — compute edge weights before "
-            f"annotate (e.g. add_mcool/normalize) so promoter assignment can "
-            f"rank by interaction strength.")
-
-    cre_a_df = genes.annotations(loci)
-    annot_map = cre_a_df.set_index('uid')['annotation'].to_dict()
-
-    cre_g_df = genes.nearest_genes(loci)
-    nearest_map = dict(zip(cre_g_df['Name'], cre_g_df['Name_b']))
-
-    self.vp[name] = self.new_vp('string')
-    self.vp.annot = self.new_vp('string')
-    gene_pm = self.vp[name]
-    annot_pm = self.vp.annot
-
-    # ── Stage 1: bulk-extract uids, derive labels/genes, single write pass ──
-    # PropertyMap iteration is C-level vertex-index order — much faster than
-    # per-vertex indexing.
-    uids = list(self.vp.uid)
-    annot_vals = [annot_map.get(u, '') for u in uids]
-    is_prom = np.fromiter(('Promoter' in a for a in annot_vals),
-                          dtype=bool, count=len(annot_vals))
-
-    n_prom = 0
-    for v, a, ip, u in zip(self.vertices(), annot_vals, is_prom, uids):
-        annot_pm[v] = a
-        if ip:
-            gene_pm[v] = nearest_map.get(u, '')
-            n_prom += 1
-
-    # ── Stage 2: vectorized highest-weight promoter neighbour per non-prom ──
-    # Old per-vertex/per-edge loop did ~10M PropertyMap lookups for a
-    # 1.9M-edge graph. Replaced with numpy ops on the edge array.
-    ew = self.get_edges(eprops=[self.ep[key]])     # (E, 3): src, tgt, weight
-    src = ew[:, 0].astype(np.int64, copy=False)
-    tgt = ew[:, 1].astype(np.int64, copy=False)
-    w   = ew[:, 2].astype(float, copy=False)
-
-    gene_arr = np.asarray(list(gene_pm), dtype=object)
-    eligible = is_prom & (gene_arr != '')          # promoter w/ a gene
-
-    # Each edge contributes at most one (non-prom-vertex, prom-gene, weight)
-    # row; self-loops and prom-prom / non-prom-non-prom edges drop out.
-    case1 = ~is_prom[src] & eligible[tgt]
-    case2 = ~is_prom[tgt] & eligible[src]
-
-    np_idx = np.concatenate([src[case1], tgt[case2]])
-    pgene  = np.concatenate([gene_arr[tgt[case1]], gene_arr[src[case2]]])
-    we     = np.concatenate([w[case1], w[case2]])
-
-    n_assigned = 0
-    if np_idx.size:
-        # Sort by (non-prom-vertex asc, weight desc) — first row per vertex
-        # group is the max-weight promoter contact.
-        order = np.lexsort((-we, np_idx))
-        np_sorted = np_idx[order]
-        pgene_sorted = pgene[order]
-        _, first = np.unique(np_sorted, return_index=True)
-        for vi, gn in zip(np_sorted[first], pgene_sorted[first]):
-            if gn:
-                gene_pm[self.vertex(int(vi))] = gn
-                n_assigned += 1
-
-    if verbose:
-        n_others = int((~is_prom).sum())
-        print(f"[INFO] Annotated {self.n_loci} loci: {n_prom} promoter CREs | "
-              f"{n_assigned}/{n_others} non-promoter CREs assigned to a "
-              f"top-'{key}' promoter gene → vp.{name}.")
-    return self
-
-
-# ── Hubs (node strength → slope-1 knee) ─────────────────────────────────────
-
-def strength(s: Architecture, key: str = "n", name: str = "strength", *, verbose: bool = True) -> Architecture:
-    """Compute node strength (sum of incident edge weights) per vertex.
-
-    For each vertex, sums the edge property ``key`` across all incident edges
-    and stores the raw sum in ``vp[name]``. No normalization is applied — if you
-    want a normalized version, divide ``vp[name]`` by its total yourself.
-
-    Args:
-        key:  Edge property to sum (default ``"n"`` = O/E weights).
-        name: Vertex property name for the result (default ``"strength"``).
-
-    Returns:
-        self (for chaining).
-    """
-    if key not in s.ep:
-        raise ValueError(f"Edge property '{key}' not found.")
-
-    import numpy as np
-    E = s.get_edges([s.ep[key]])                     # src, tgt, weight
-    src, tgt, w = E[:, 0].astype(np.int64), E[:, 1].astype(np.int64), E[:, 2]
-    n = s.num_vertices(ignore_filter=True)
-    s.vp[name] = s.new_vp("float")
-    s.vp[name].a = np.bincount(src, w, minlength=n) + np.bincount(tgt, w, minlength=n)
-
-    if verbose:
-        print(f"[INFO] Summed ep.{key} → vp.{name} (node strength).")
-    return s
-
-
-def elbow(s: Architecture, key: str, *, verbose: bool = True):
-    """Find a cutoff on a vertex property's sorted curve via the slope-1 knee.
-
-    Sorts vertices by ``vp[key]`` descending (dropping zeros), then on the
-    ascending curve with both axes normalized to ``[0, 1]`` finds the point
-    where the local tangent slope equals ``1`` (the 45° knee). The slope is
-    measured on a smoothed curve so it reflects the curve's overall shape
-    rather than single-step jitter. Hubs are everything above the cutoff.
-
-    Args:
-        key: Vertex property name to analyze (e.g. ``"strength"``).
-
-    Returns:
-        ``(cutoff_index, sorted_uids)`` where ``cutoff_index`` is the number
-        of elements above the cutoff and ``sorted_uids`` lists UIDs descending.
-    """
-    import numpy as np
-    from scipy.ndimage import uniform_filter1d
-
-    if key not in s.vp:
-        raise ValueError(f"Vertex property '{key}' not found.")
-
-    vals = [(s.vp.uid[v], float(s.vp[key][v])) for v in s.vertices() if s.vp[key][v] > 0]
-    vals.sort(key=lambda x: -x[1])
-    uids = [v[0] for v in vals]
-    y = np.array([v[1] for v in vals])
-
-    if len(y) < 3:
-        return len(y), uids
-
-    # Tangent slope = 1 on the [0, 1]-normalized ascending curve (rank vs node
-    # strength). The slope is computed on a smoothed curve because with many
-    # CREs the normalized x-step is tiny (~1/m), so raw np.gradient is dominated
-    # by single-step jitter and crosses 1 at the very bottom of the curve.
-    ys = y[::-1]                                   # ascending (y is descending)
-    m = len(ys)
-    xn = np.arange(m) / (m - 1)
-    yn = (ys - ys[0]) / (ys[-1] - ys[0])
-    w = max(11, m // 200)
-    yn_s = uniform_filter1d(yn, size=w, mode="nearest")
-    slope = np.gradient(yn_s, xn)
-    crossed = np.where(slope >= 1.0)[0]
-    i = int(crossed[0]) if len(crossed) else m
-    cutoff = m - i                                 # count of hubs above contact
-    if verbose:
-        val = ys[i] if i < m else ys[-1]
-        print(f"[INFO] Slope-1 on vp.{key} (value≈{val:.3g} at cutoff): "
-              f"cutoff at {cutoff}/{m} ({100 * cutoff / m:.1f}%)")
-    return cutoff, uids
-
-
-def prime_hubs(s: Architecture, key: str = "n", gene: str = 'gene', *, verbose: bool = True):
-    """Find prime genes: the genes of hub CREs (slope-1 knee on node strength).
-
-    Pipeline:
-        1. :func:`strength` — node strength (sum of incident ``ep[key]``), if
-           not already present on the graph.
-        2. :func:`elbow` — slope-1 knee on the strength curve → hub CREs.
-        3. Each hub's gene (``vp[gene]``, from :func:`annotate`) is collected,
-           split by whether the hub is a promoter or not.
-
-    Requires ``vp.annot`` and ``vp[gene]`` (from :func:`annotate`).
-
-    Returns:
-        dict with ``'prime_genes'``, ``'promoter_genes'``, ``'enhancer_genes'``,
-        ``'hub_uids'``, ``'cutoff'``, ``'promoter_uids'``, ``'enhancer_uids'``.
-    """
-    for req in ("annot", gene):
-        if req not in s.vp:
-            raise ValueError(f"vp.{req} missing — run annotate() first.")
-
-    strength_name = f"strength_{key.replace('n_', '')}" if key != 'n' else 'strength'
-    if strength_name not in s.vp:
-        s.strength(key=key, name=strength_name, verbose=verbose)
-
-    cutoff, sorted_uids = s.elbow(strength_name, verbose=verbose)
-    hub_uids = sorted_uids[:cutoff]
-
-    p_genes, e_genes = set(), set()
-    prom_hubs, enh_hubs = [], []
-    for uid in hub_uids:
-        v = s.index[uid]
-        g = s.vp[gene][v]
-        if "Promoter" in s.vp.annot[v]:
-            prom_hubs.append(uid)
-            if g: p_genes.add(g)
+    @classmethod
+    def from_frame(cls, loci, df, *, src="src", tgt="tgt", name: str = "Architecture") -> "Architecture":
+        """From an edge table (pandas / polars / arrow) with vertex rows in
+        ``src`` / ``tgt`` or uids in ``uid1`` / ``uid2``; other numeric
+        columns become edge columns (what :meth:`edges_frame` writes)."""
+        from .interop import _as_pandas, as_loci
+        loci = as_loci(loci)
+        pdf = _as_pandas(df)
+        if src in pdf and tgt in pdf:
+            s, t = pdf[src].to_numpy(np.int64), pdf[tgt].to_numpy(np.int64)
+        elif "uid1" in pdf and "uid2" in pdf:
+            u = loci.uids
+            bad = [x for x in pdf["uid1"].tolist() + pdf["uid2"].tolist() if x not in u]
+            if bad:
+                raise ValueError(f"{len(bad)} uid(s) in the edge table are not in the loci, e.g. {bad[:3]}")
+            s = np.array([u[x] for x in pdf["uid1"]], np.int64)
+            t = np.array([u[x] for x in pdf["uid2"]], np.int64)
         else:
-            enh_hubs.append(uid)
-            if g: e_genes.add(g)
+            raise ValueError(f"an edge table needs vertex rows in {src!r} / {tgt!r} or uids in "
+                             f"'uid1' / 'uid2' (what edges_frame() writes); got columns {list(pdf.columns)}")
+        skip = {src, tgt, "uid1", "uid2", "chrom1", "chrom2", "cis"}
+        ep = {k: pdf[k].to_numpy(np.float64) for k in pdf.columns
+              if k not in skip and np.issubdtype(pdf[k].dtype, np.number)}
+        return cls(loci, s, t, ep=ep, name=name)
 
-    prime_genes = p_genes | e_genes
+    @classmethod
+    def from_scipy(cls, loci, M, *, weight: str = "w", name: str = "Architecture") -> "Architecture":
+        """From a square sparse matrix over the loci rows (upper triangle read)."""
+        from scipy.sparse import triu
+        from .interop import as_loci
+        loci = as_loci(loci)
+        U = triu(M, k=1).tocoo()
+        return cls(loci, U.row, U.col, ep={weight: U.data.astype(float)}, name=name)
 
-    if verbose:
-        print(f"[INFO] Prime hubs: {len(hub_uids)} hubs "
-              f"({len(prom_hubs)} promoters, {len(enh_hubs)} enhancers)")
-        print(f"[INFO] Prime genes: {len(prime_genes)} = "
-              f"{len(p_genes)} promoter + {len(e_genes)} enhancer "
-              f"(overlap: {len(p_genes & e_genes)})")
+    # ── sizes ─────────────────────────────────────────────────────────────
+    @property
+    def n_links(self) -> int:
+        return len(self.src)
 
-    return {
-        "prime_genes": prime_genes,
-        "promoter_genes": p_genes,
-        "enhancer_genes": e_genes,
-        "hub_uids": hub_uids,
-        "cutoff": cutoff,
-        "promoter_uids": prom_hubs,
-        "enhancer_uids": enh_hubs,
-    }
+    @property
+    def degree(self) -> np.ndarray:
+        n = len(self.loci)
+        return np.bincount(self.src, minlength=n) + np.bincount(self.tgt, minlength=n)
 
+    @property
+    def n_loci(self) -> int:
+        """Vertices with at least one link (rows of the Loci with degree > 0)."""
+        return int((self.degree > 0).sum())
 
-# attach these utilities to the Architecture class to preserve the method API
-Architecture.make = make
-Architecture.add_mcool = add_mcool
-Architecture.normalize = normalize
-Architecture.prune = prune
-Architecture.annotate = annotate
-Architecture.strength = strength
-Architecture.elbow = elbow
-Architecture.prime_hubs = prime_hubs
+    @property
+    def is_cis(self) -> np.ndarray:
+        c = self.loci.codes
+        return c[self.src] == c[self.tgt]
+
+    @property
+    def n_trans(self) -> int:
+        a, b = self.blocks["trans"]
+        return b - a
+
+    def __len__(self):
+        return self.n_loci
+
+    # ── blocks & views ────────────────────────────────────────────────────
+    @property
+    def blocks(self) -> dict:
+        """{chrom: (lo, hi)} edge ranges for each cis block, plus 'trans'."""
+        if self._blocks is None:
+            c, names = self.loci.codes, self.loci.genome.names
+            cs, ct = c[self.src], c[self.tgt]
+            trans = np.flatnonzero(cs != ct)
+            t0 = int(trans[0]) if len(trans) else len(cs)
+            cut = np.flatnonzero(np.diff(cs[:t0])) + 1
+            lo = np.concatenate([[0], cut]) if t0 else np.zeros(0, int)
+            hi = np.concatenate([cut, [t0]]) if t0 else np.zeros(0, int)
+            b = {names[cs[a]]: (int(a), int(z)) for a, z in zip(lo, hi)}
+            b["trans"] = (t0, len(cs))
+            self._blocks = b
+        return self._blocks
+
+    def _view(self, sel, name) -> "Architecture":
+        """Edges ``sel`` (slice → zero-copy) sharing the same Loci and vertex columns."""
+        v = Architecture.__new__(Architecture)
+        v.loci, v.name = self.loci, name
+        v.src, v.tgt = self.src[sel], self.tgt[sel]
+        v.ep = Props({k: a[sel] for k, a in self.ep.items()})
+        v.vp = self.vp                               # shared: same rows, same columns
+        v._reset()
+        return v
+
+    def chrom(self, chrom: str) -> "Architecture":
+        """Cis edges of one chromosome (a view: no copy)."""
+        a, b = self.blocks.get(chrom, (0, 0))
+        return self._view(slice(a, b), f"{self.name}:{chrom}")
+
+    @property
+    def cis(self) -> "Architecture":
+        return self._view(slice(0, self.blocks["trans"][0]), f"{self.name}:cis")
+
+    @property
+    def trans(self) -> "Architecture":
+        a, b = self.blocks["trans"]
+        return self._view(slice(a, b), f"{self.name}:trans")
+
+    def chroms(self):
+        """Iterate ``(chrom, view)`` over the cis blocks (e.g. to fan out per chromosome)."""
+        for c in self.blocks:
+            if c != "trans":
+                yield c, self.chrom(c)
+
+    def subgraph(self, rows=None, *, mask=None, vp: Optional[str] = None, values=None,
+                 name: Optional[str] = None) -> "Architecture":
+        """Edges whose two ends are both selected (rows, bool mask, or vp in values)."""
+        n = len(self.loci)
+        if mask is None:
+            mask = np.zeros(n, bool)
+            if rows is not None:
+                mask[np.asarray(rows)] = True
+            elif vp is not None:
+                vals = values if isinstance(values, (list, tuple, set, np.ndarray)) else [values]
+                mask = np.isin(self.vp[vp], list(vals))
+        sel = np.flatnonzero(mask[self.src] & mask[self.tgt])
+        return self._view(sel, name or f"{self.name}_sub")
+
+    def region(self, region, start=None, end=None, *, both: bool = True) -> "Architecture":
+        """Edges inside a region ('chr1:1-5,000,000' or chrom, start, end).
+        ``both=False`` also keeps edges with one end inside (trans partners too)."""
+        mask = np.zeros(len(self.loci), bool)
+        mask[self.loci.overlap_rows(region, start, end)] = True
+        hit = (mask[self.src] & mask[self.tgt]) if both else (mask[self.src] | mask[self.tgt])
+        label = region if start is None else f"{region}:{start}-{end}"
+        return self._view(np.flatnonzero(hit), f"{self.name}:{label}")
+
+    # ── adjacency (all edges, both directions) ───────────────────────────
+    def _adj(self):
+        if self._csr is None:
+            n = len(self.loci)
+            a = np.concatenate([self.src, self.tgt])
+            b = np.concatenate([self.tgt, self.src])
+            e = np.concatenate([np.arange(self.n_links), np.arange(self.n_links)])
+            o = np.argsort(a, kind="stable")
+            indptr = np.concatenate([[0], np.cumsum(np.bincount(a, minlength=n))])
+            self._csr = (indptr, b[o], e[o])
+        return self._csr
+
+    def _row(self, x) -> int:
+        if isinstance(x, str):
+            return self.loci.uids[x]
+        if hasattr(x, "row"):
+            return x.row
+        return int(x)
+
+    def neighbor_rows(self, x):
+        """(partner rows, edge ids) of one CRE — cis and trans — as arrays."""
+        i = self._row(x)
+        indptr, nb, eid = self._adj()
+        return nb[indptr[i]:indptr[i + 1]], eid[indptr[i]:indptr[i + 1]]
+
+    def neighbors(self, x):
+        """All partners of one CRE (row / uid / Locus) — cis and trans — as a DataFrame."""
+        import pandas as pd
+        i = self._row(x)
+        j, e = self.neighbor_rows(i)
+        L = self.loci
+        d = {"row": j, "uid": L.uid[j], "chrom": L.chroms[j], "cis": L.codes[j] == L.codes[i]}
+        d.update({k: v[e] for k, v in self.ep.items()})
+        return pd.DataFrame(d)
+
+    def __getitem__(self, key):
+        """``A[uid]`` -> {neighbour uid: w}; ``A[uid1, uid2]`` -> that edge's columns."""
+        if isinstance(key, tuple) and len(key) == 2:
+            i, j = sorted((self._row(key[0]), self._row(key[1])))
+            e = self._edge_id(i, j)
+            return None if e < 0 else {k: float(v[e]) for k, v in self.ep.items()}
+        j, e = self.neighbor_rows(key)
+        w = self.ep["w"][e] if "w" in self.ep else np.zeros(len(e))
+        return dict(zip(self.loci.uid[j].tolist(), w.tolist()))
+
+    def _edge_id(self, i, j) -> int:
+        if self._keys is None:
+            k = self.src.astype(np.int64) * len(self.loci) + self.tgt
+            o = np.argsort(k)
+            self._keys = (k[o], o)
+        k, o = self._keys
+        q = np.int64(i) * len(self.loci) + j
+        p = np.searchsorted(k, q)
+        return int(o[p]) if p < len(k) and k[p] == q else -1
+
+    def __contains__(self, uid) -> bool:
+        i = self.loci.uids.get(uid)
+        return i is not None and self.degree[i] > 0
+
+    # ── CREs near a position (gene support) ──────────────────────────────
+    def near_rows(self, key, start=None, end=None, *, r: int = 0, mode: str = "overlap",
+                  linked: bool = True) -> np.ndarray:
+        """Row numbers of the CREs near a window.
+
+        ``key`` is a Locus, a region string, or a chromosome with ``start`` /
+        ``end``; ``r`` widens the window on each side (a 1-bp TSS gives the
+        window TSS ± r). ``mode='overlap'`` keeps CREs that intersect the
+        window, ``'center'`` only those whose midpoint is in it. ``linked=True``
+        keeps CREs with at least one edge."""
+        if mode not in ("overlap", "center"):
+            raise ValueError(f"mode must be 'overlap' or 'center', got {mode!r}")
+        if hasattr(key, "chrom"):
+            key, start, end = key.chrom, key.start, key.end
+        elif start is None:
+            from .locus import parse_region
+            key, start, end = parse_region(key)
+        if end is None:
+            end = start
+        start, end = sorted((int(start), int(end)))
+        lo, hi = max(0, start - r), end + r
+        rows = self.loci.overlap_rows(key, lo, hi) if hi > lo else np.zeros(0, np.int64)
+        if mode == "center":
+            c = self.loci.centers[rows]
+            rows = rows[(c >= lo) & (c < hi)]
+        if linked:
+            rows = rows[self.degree[rows] > 0]
+        return rows
+
+    def near(self, key, start=None, end=None, *, r: int = 0, mode: str = "overlap") -> Loci:
+        """CREs near a window, as a Loci."""
+        return self.loci.take(self.near_rows(key, start, end, r=r, mode=mode))
+
+    def support(self, genes, *, r: int = 5000, mode: str = "overlap", uids: bool = True,
+                rows: bool = False, linked: bool = True, backend: Optional[str] = None) -> dict:
+        """CREs within ``r`` bp of each gene's TSS: ``{gene_name: [uid, ...]}``.
+
+        The window is TSS ± ``r`` (the TSS is the gene's 5'-most base),
+        computed for every gene at once. ``rows=True`` returns CRE row arrays
+        instead of uids (what you want for array work)."""
+        if mode not in ("overlap", "center"):
+            raise ValueError(f"mode must be 'overlap' or 'center', got {mode!r}")
+        from .backends.intervals import overlap_pairs
+        from .genes import tss_base
+        G, L = genes.genes, self.loci
+        tss = tss_base(G.starts, G.ends, G.strands)
+        win = L._check(Loci(G.codes, np.maximum(tss - r, 0), tss + r + 1, genome=G.genome))
+        gi, ci = overlap_pairs(win, L, backend=backend)
+        if mode == "center":
+            c = L.centers[ci]
+            ok = (c >= win.starts[gi]) & (c < win.ends[gi])
+            gi, ci = gi[ok], ci[ok]
+        if linked:
+            ok = self.degree[ci] > 0
+            gi, ci = gi[ok], ci[ok]
+        o = np.lexsort((L.starts[ci], gi))
+        gi, ci = gi[o], ci[o]
+        cut = np.flatnonzero(np.diff(gi)) + 1
+        names = G.cols["gene_name"]
+        ids = G.cols["gene_id"]
+        out = {}
+        for grp in np.split(np.arange(len(gi)), cut) if len(gi) else []:
+            k = gi[grp[0]]
+            key = names[k] or ids[k]
+            sel = ci[grp]
+            out[key] = sel if rows else (L.uid[sel].tolist() if uids else [L[i] for i in sel])
+        return out
+
+    # ── Hi-C weights ──────────────────────────────────────────────────────
+    def add_mcool(self, mcool: str, *, resolution: Optional[int] = None, name: str = "w",
+                  verbose: bool = True) -> "Architecture":
+        """Edge weight = Hi-C count of the (bin, bin) pixel holding the two CREs,
+        shared equally among the edges that fall in the same pixel.
+
+        Same rule as the classic ``add_mcool``. Pixels are read one chromosome
+        block at a time (rows of the lower bin), so memory stays bounded and
+        trans pixels are found in the same pass.
+        """
+        import cooler
+        uri = f"{mcool}::resolutions/{resolution}" if resolution else mcool
+        try:
+            clr = cooler.Cooler(uri)
+        except (KeyError, OSError) as e:
+            try:
+                groups = cooler.fileops.list_coolers(str(mcool))
+            except Exception:                              # noqa: BLE001 — not a cooler file at all
+                raise ValueError(f"{mcool}: not a .cool / .mcool file ({e})") from None
+            res = [g.rsplit("/", 1)[-1] for g in groups if g.startswith("/resolutions/")]
+            if res:
+                raise ValueError(f"{mcool} is multi-resolution: pass resolution= one of {', '.join(res)}") from None
+            raise ValueError(f"{mcool} is a single-resolution cooler: call add_mcool without resolution=") from None
+        if clr.binsize is None:
+            raise NotImplementedError("variable-size bins")
+        L = self.loci
+        nb = int(clr.info["nbins"])
+        names = L.genome.names
+        off = np.full(len(names), -1, np.int64)
+        last = np.full(len(names), -1, np.int64)
+        for c in clr.chromnames:
+            if c in L.genome.code:
+                lo, hi = clr.extent(c)
+                off[L.genome.code[c]], last[L.genome.code[c]] = lo, hi - 1
+        vb = np.where(off[L.codes] >= 0, np.minimum(off[L.codes] + L.starts // clr.binsize,
+                                                    last[L.codes]), -1)
+        b1, b2 = vb[self.src], vb[self.tgt]
+        ok = (b1 >= 0) & (b2 >= 0)
+        key = np.minimum(b1, b2) * nb + np.maximum(b1, b2)
+        ukey, inv, n_share = np.unique(key[ok], return_inverse=True, return_counts=True)
+        count = np.zeros(len(ukey))
+        ubin1 = ukey // nb
+        with clr.open("r") as h5:
+            bin1_off = h5["indexes/bin1_offset"]
+            px1, px2, pxc = h5["pixels/bin1_id"], h5["pixels/bin2_id"], h5["pixels/count"]
+            for c in clr.chromnames:                     # one chromosome block at a time
+                lo, hi = clr.extent(c)
+                a, z = np.searchsorted(ubin1, [lo, hi])
+                if a == z:
+                    continue
+                p0, p1 = int(bin1_off[ubin1[a]]), int(bin1_off[ubin1[z - 1] + 1])
+                if p1 <= p0:                             # no pixels start in these bins
+                    continue
+                pk = px1[p0:p1].astype(np.int64) * nb + px2[p0:p1]
+                hit = np.searchsorted(pk, ukey[a:z])
+                hit = np.minimum(hit, len(pk) - 1)
+                found = pk[hit] == ukey[a:z]
+                count[a:z][found] = pxc[p0:p1][hit[found]]
+        w = np.zeros(self.n_links)
+        w[ok] = (count / n_share)[inv]
+        self.ep[name] = w
+        self._gt = None
+        if verbose:
+            print(f"[INFO] Set distributed weights for {int((w > 0).sum())}/{self.n_links} edges "
+                  f"from cooler. [{name}]")
+        return self
+
+    # ── distance-decay normalisation ─────────────────────────────────────
+    def normalize(self, *, source: str = "w", name: str = "n", verbose: bool = True) -> "Architecture":
+        """Observed / expected. Cis: power-law fit on distance (classic rule).
+        Trans: no distance, so expected = mean trans weight. ``ep.d`` is inf for trans."""
+        if source not in self.ep:
+            raise ValueError(f"Source edge property '{source}' not found in the graph.")
+        cen = self.loci.centers
+        cis = self.is_cis
+        d = np.full(self.n_links, np.inf)
+        d[cis] = np.abs(cen[self.src[cis]] - cen[self.tgt[cis]])
+        w = self.ep[source]
+        exp = np.empty(self.n_links)
+        exp[cis], fit = _pl_expect(d[cis], w[cis])
+        if not np.isfinite(fit["alpha"]):
+            usable = (d[cis] > 0) & (w[cis] > 0) & np.isfinite(w[cis])
+            n_use, n_dist = int(usable.sum()), len(np.unique(d[cis][usable]))
+            warnings.warn(f"Power-law fit of ep.{source} on distance failed: {n_use} cis edge"
+                          f"{'s' if n_use != 1 else ''} with positive weight and distance at {n_dist} distinct "
+                          f"distance{'s' if n_dist != 1 else ''} (the fit needs at least 3 edges at 2 distances); "
+                          f"ep.{name} is set to 0 for all {int(cis.sum())} cis edges. Give the graph more weighted "
+                          f"cis edges (e.g. ep.{source} from add_mcool()) before normalize().", stacklevel=2)
+        tw = w[~cis]
+        exp[~cis] = tw.mean() if len(tw) and tw.mean() > 0 else np.nan
+        self.ep.d = d
+        self.ep[name] = w / np.maximum(exp, 1e-12)
+        self.ep[name][~np.isfinite(self.ep[name])] = 0.0
+        self.fit = fit
+        self._gt = None
+        if verbose:
+            print(f"[INFO] Power-law fit: alpha={fit['alpha']:.3f}, C={fit['C']:.3e} on "
+                  f"{int(cis.sum())} cis edges; {int((~cis).sum())} trans edges use the mean trans "
+                  f"weight → ep.{name}")
+        return self
+
+    def prune(self, *, dist_prop: str = "d", verbose: bool = True) -> "Architecture":
+        """Drop zero-distance (co-located) cis edges. Trans edges (d = inf) stay."""
+        if dist_prop not in self.ep:
+            raise ValueError(f"Edge property '{dist_prop}' not found — run normalize() first.")
+        keep = self.ep[dist_prop] > 0
+        n0 = int((~keep).sum())
+        if n0:
+            self.src, self.tgt = self.src[keep], self.tgt[keep]
+            for k in list(self.ep):
+                self.ep[k] = self.ep[k][keep]
+            self._reset()
+        if verbose:
+            print(f"[INFO] prune: removed {n0} zero-distance edges → {self.n_links} edges.")
+        return self
+
+    # ── gene annotation ───────────────────────────────────────────────────
+    def annotate(self, genes, *, key: str = "n", name: str = "gene", verbose: bool = True) -> "Architecture":
+        """Region label per CRE + gene assignment (classic two-stage rule):
+        promoter CREs get their nearest TSS gene; every other CRE gets the gene
+        of its highest-``key`` promoter neighbour (cis or trans)."""
+        from .genes import LABELS
+        if key not in self.ep:
+            raise ValueError(f"Edge property '{key}' not found — run add_mcool/normalize first.")
+        L = self.loci
+        lab = genes.labels(L)
+        is_prom = lab == 5
+        gene = np.full(len(L), "", dtype=object)
+        pr = np.flatnonzero(is_prom)
+        gene[pr] = genes.nearest_tss(L.take(pr))[0]
+        src, tgt, w = self.src.astype(np.int64), self.tgt.astype(np.int64), self.ep[key]
+        eligible = is_prom & (gene != "")
+        c1 = ~is_prom[src] & eligible[tgt]
+        c2 = ~is_prom[tgt] & eligible[src]
+        idx = np.concatenate([src[c1], tgt[c2]])
+        pg = np.concatenate([gene[tgt[c1]], gene[src[c2]]])
+        we = np.concatenate([w[c1], w[c2]])
+        n_assigned = 0
+        if idx.size:
+            order = np.lexsort((-we, idx))
+            _, first = np.unique(idx[order], return_index=True)
+            sel = order[first]
+            gene[idx[sel]] = pg[sel]
+            n_assigned = int((pg[sel] != "").sum())
+        self.vp.annot = LABELS[lab]
+        self.vp[name] = gene
+        if verbose:
+            on = self.degree > 0
+            print(f"[INFO] Annotated {int(on.sum())} loci: {int((is_prom & on).sum())} promoter CREs | "
+                  f"{n_assigned}/{int((~is_prom & on).sum())} non-promoter CREs assigned to a "
+                  f"top-'{key}' promoter gene → vp.{name}.")
+        return self
+
+    # ── hubs ──────────────────────────────────────────────────────────────
+    def strength(self, key: str = "n", name: str = "strength", *, verbose: bool = True) -> "Architecture":
+        """Sum of incident ``ep[key]`` per vertex (two bincounts)."""
+        if key not in self.ep:
+            raise ValueError(f"Edge property '{key}' not found.")
+        n = len(self.loci)
+        w = self.ep[key]
+        self.vp[name] = np.bincount(self.src, w, n) + np.bincount(self.tgt, w, n)
+        if verbose:
+            print(f"[INFO] Summed ep.{key} → vp.{name} (node strength).")
+        return self
+
+    def elbow(self, key: str, *, verbose: bool = True):
+        """Slope-1 knee on the sorted ``vp[key]`` curve (classic rule).
+        Returns (cutoff, uids sorted by value, descending)."""
+        from .se import knee
+        v = np.asarray(self.vp[key], float)
+        cutoff, rows = knee(v)
+        uids = self.loci.uid[rows].tolist()
+        ys = v[rows][::-1]
+        m, i = len(ys), len(ys) - cutoff
+        if verbose and m:
+            print(f"[INFO] Slope-1 on vp.{key} (value≈{(ys[i] if i < m else ys[-1]):.3g} at cutoff): "
+                  f"cutoff at {cutoff}/{m} ({100 * cutoff / m:.1f}%)")
+        return cutoff, uids
+
+    def prime_hubs(self, key: str = "n", gene: str = "gene", *, verbose: bool = True) -> dict:
+        for req in ("annot", gene):
+            if req not in self.vp:
+                raise ValueError(f"vp.{req} missing — run annotate() first.")
+        sname = f"strength_{key.replace('n_', '')}" if key != "n" else "strength"
+        if sname not in self.vp:
+            self.strength(key=key, name=sname, verbose=verbose)
+        cutoff, uids = self.elbow(sname, verbose=verbose)
+        hub_uids = uids[:cutoff]
+        rows = np.array([self.loci.uids[u] for u in hub_uids], np.int64)
+        prom = np.char.find(self.vp.annot[rows].astype(str), "Promoter") >= 0 if len(rows) else \
+            np.zeros(0, bool)
+        g = self.vp[gene][rows]
+        p_genes = set(g[prom][g[prom] != ""])
+        e_genes = set(g[~prom][g[~prom] != ""])
+        if verbose:
+            print(f"[INFO] Prime hubs: {len(hub_uids)} hubs ({int(prom.sum())} promoters, "
+                  f"{int((~prom).sum())} enhancers)")
+            print(f"[INFO] Prime genes: {len(p_genes | e_genes)} = {len(p_genes)} promoter + "
+                  f"{len(e_genes)} enhancer (overlap: {len(p_genes & e_genes)})")
+        return {"prime_genes": p_genes | e_genes, "promoter_genes": p_genes, "enhancer_genes": e_genes,
+                "hub_uids": hub_uids, "cutoff": cutoff,
+                "promoter_uids": [u for u, p in zip(hub_uids, prom) if p],
+                "enhancer_uids": [u for u, p in zip(hub_uids, prom) if not p]}
+
+    # ── graph algorithms: through the graph backend ─────────────────────
+    def graph(self, vprops=(), *, backend: Optional[str] = None):
+        """The graph as an object of the graph backend (graph-tool by default;
+        'igraph', 'networkx' or 'scipy'): vertex i = Loci row i, every edge
+        (cis + trans), edge columns as edge properties, ``vprops`` copied too.
+
+        The graph-tool graph is built once and cached; its edge columns are
+        re-synced on every call, so it reflects the current weights."""
+        from .backends import resolve
+        from .backends import graph as G
+        b = resolve("graph", backend)
+        if b != "graph-tool":
+            return G.native(self, b, vprops=vprops)
+        if self._gt is None:
+            self._gt = G.native(self, "graph-tool")
+        g = self._gt
+        for k, v in self.ep.items():
+            if k not in g.ep:
+                g.ep[k] = g.new_ep("double")
+            g.ep[k].a[:] = v
+        for k in vprops:
+            g.vp[k] = g.new_vp("double", vals=np.asarray(self.vp[k], float))
+        return g
+
+    def components(self, name: str = "component", *, backend: Optional[str] = None) -> np.ndarray:
+        """Connected component per vertex, numbered by first row (rows without
+        links get -1); stored as ``vp[name]``. Any graph backend gives the same labels."""
+        from .backends.graph import components
+        c = components(self, backend=backend)
+        self.vp[name] = c
+        return c
+
+    def pagerank(self, weight: Optional[str] = None, *, damping: float = 0.85, name: str = "pagerank",
+                 backend: Optional[str] = None) -> np.ndarray:
+        """PageRank per vertex (``weight`` = an edge column or None), stored as ``vp[name]``."""
+        from .backends.graph import pagerank
+        p = pagerank(self, weight, damping=damping, backend=backend)
+        self.vp[name] = p
+        return p
+
+    def to_graph_tool(self, vprops=()):
+        return self.graph(vprops, backend="graph-tool")
+
+    def to_networkx(self, vprops=(), *, loci_cols: bool = True):
+        """networkx Graph (node i = Loci row i; edge columns and ``vprops`` as attributes)."""
+        from .backends.graph import native
+        return native(self, "networkx", vprops=vprops, loci_cols=loci_cols)
+
+    def to_igraph(self, vprops=(), *, loci_cols: bool = True):
+        """igraph Graph (vertex i = Loci row i; edge columns and ``vprops`` as attributes)."""
+        from .backends.graph import native
+        return native(self, "igraph", vprops=vprops, loci_cols=loci_cols)
+
+    def to_scipy(self, weight: Optional[str] = "w"):
+        """Symmetric CSR adjacency over the Loci rows (``weight=None``: 1 per edge)."""
+        from .backends.graph import to_scipy
+        return to_scipy(self, weight if weight in self.ep or weight is None else None)
+
+    def to_anndata(self, *, weights=None):
+        """AnnData with the vertices as ``obs`` (coordinates + vertex columns) and
+        one sparse adjacency per edge column in ``obsp`` — the layout scanpy's
+        graph tools read (e.g. ``obsp['n']`` as connectivities)."""
+        import anndata as ad
+        import pandas as pd
+        L = self.loci
+        obs = L.to_pandas()
+        for k, v in self.vp.items():
+            obs[k] = np.asarray(v)
+        obs.index = pd.Index(L.names, dtype=str)
+        a = ad.AnnData(X=np.zeros((len(L), 0), np.float32), obs=obs)
+        for k in (weights or list(self.ep)):
+            a.obsp[k] = self.to_scipy(k)
+        a.uns["genomeblocks"] = {"name": self.name, "edges": int(self.n_links)}
+        return a
+
+    def draw(self, region, **kw):
+        """Draw the subgraph of a region; see :func:`genomeblocks.architecture_draw.draw`."""
+        from .architecture_draw import draw
+        return draw(self, region, **kw)
+
+    # ── tables out ────────────────────────────────────────────────────────
+    def edges_frame(self):
+        """One row per edge: src / tgt rows, uids, chromosomes, cis, edge columns."""
+        import pandas as pd
+        L = self.loci
+        d = {"src": self.src, "tgt": self.tgt, "uid1": L.uid[self.src], "uid2": L.uid[self.tgt],
+             "chrom1": L.chroms[self.src], "chrom2": L.chroms[self.tgt], "cis": self.is_cis}
+        d.update(self.ep)
+        return pd.DataFrame(d)
+
+    def to_pandas(self):
+        """The edge table as a DataFrame (same as :meth:`edges_frame`)."""
+        return self.edges_frame()
+
+    def to_arrow(self):
+        """The edge table as a pyarrow Table."""
+        import pyarrow as pa
+        return pa.Table.from_pandas(self.edges_frame(), preserve_index=False)
+
+    def to_polars(self):
+        import polars as pl
+        return pl.from_arrow(self.to_arrow())
+
+    @property
+    def columns(self) -> list:
+        return ["src", "tgt", "uid1", "uid2", "chrom1", "chrom2", "cis"] + list(self.ep)
+
+    @property
+    def shape(self):
+        return (self.n_links, len(self.columns))
+
+    def head(self, n: int = 5):
+        return self.edges_frame().head(n)
+
+    def tail(self, n: int = 5):
+        return self.edges_frame().tail(n)
+
+    def __iter__(self):
+        """The edges as (src row, tgt row) pairs."""
+        for s, t in zip(self.src.tolist(), self.tgt.tolist()):
+            yield s, t
+
+    def describe(self):
+        """One-table summary: loci, linked loci, edges (cis / trans / blocks), columns."""
+        import pandas as pd
+        b = self.blocks
+        rows = [("name", self.name), ("loci (vertices)", self.n_loci),
+                ("loci with links", int((self.degree > 0).sum())), ("edges", self.n_links),
+                ("cis edges", self.n_links - self.n_trans), ("trans edges", self.n_trans),
+                ("cis blocks (chromosomes)", len([k for k in b if k != "trans"])),
+                ("edge columns", ", ".join(self.ep) or "—"), ("vertex columns", ", ".join(self.vp) or "—")]
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("").rename_axis(None)
+
+    summary = describe
+
+    def vertices_frame(self, linked: bool = True):
+        """One row per vertex (with links, unless ``linked=False``): coordinates,
+        uid and every vertex column."""
+        rows = np.flatnonzero(self.degree > 0) if linked else np.arange(len(self.loci))
+        df = self.loci.take(rows).to_pandas(uid=True)
+        df.index = rows
+        for k, v in self.vp.items():
+            df[k] = np.asarray(v)[rows]
+        return df
+
+    def to_frame(self):
+        """Vertex table for vertices with links (uid + vertex columns)."""
+        import pandas as pd
+        rows = np.flatnonzero(self.degree > 0)
+        d = {"uid": self.loci.uid[rows]}
+        d.update({k: np.asarray(v)[rows] for k, v in self.vp.items()})
+        return pd.DataFrame(d)
+
+    def block_counts(self):
+        """chrom x chrom edge counts (cis on the diagonal) as a DataFrame."""
+        import pandas as pd
+        L = self.loci
+        c1, c2 = L.codes[self.src], L.codes[self.tgt]
+        used = np.unique(np.concatenate([c1, c2]))
+        used = used[np.argsort(L.genome.rank[used])]
+        pos = np.full(len(L.genome), -1)
+        pos[used] = np.arange(len(used))
+        M = np.zeros((len(used), len(used)), np.int64)
+        np.add.at(M, (pos[c1], pos[c2]), 1)
+        M = M + M.T - np.diag(np.diag(M))
+        names = [L.genome.names[c] for c in used]
+        return pd.DataFrame(M, index=names, columns=names)
+
+    # ── set operations (edge keys) ────────────────────────────────────────
+    def _keyset(self):
+        return self.src.astype(np.int64) * len(self.loci) + self.tgt
+
+    def __or__(self, other: "Architecture") -> "Architecture":
+        if other.loci is not self.loci:
+            raise ValueError("union needs both graphs on the same Loci")
+        k = np.concatenate([self._keyset(), other._keyset()])
+        _, first = np.unique(k, return_index=True)
+        keys = list(self.ep) + [e for e in other.ep if e not in self.ep]
+        ep = {e: np.concatenate([self.ep.get(e, np.zeros(self.n_links)),
+                                 other.ep.get(e, np.zeros(other.n_links))])[first]
+              for e in keys}
+        src = np.concatenate([self.src, other.src])[first]
+        tgt = np.concatenate([self.tgt, other.tgt])[first]
+        return Architecture(self.loci, src, tgt, ep=ep, name=f"{self.name}|{other.name}")
+
+    def __and__(self, other: "Architecture") -> "Architecture":
+        if other.loci is not self.loci:
+            raise ValueError("intersection needs both graphs on the same Loci")
+        keep = np.isin(self._keyset(), other._keyset())
+        v = self._view(np.flatnonzero(keep), f"{self.name}&{other.name}")
+        v.vp = Props()
+        return v
+
+    def copy(self) -> "Architecture":
+        v = self._view(slice(None), self.name)
+        v.src, v.tgt = v.src.copy(), v.tgt.copy()
+        v.ep = Props({k: a.copy() for k, a in v.ep.items()})
+        v.vp = Props({k: np.array(a, copy=True) for k, a in self.vp.items()})
+        return v
+
+    # ── persistence: parquet tables + a small json ───────────────────────
+    def save(self, path: str):
+        """``path/`` gets vertices.parquet (Loci + vp), edges.parquet (src, tgt, ep), meta.json."""
+        import json
+        import os
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+        os.makedirs(path, exist_ok=True)
+        vt = self.loci.to_arrow()
+        for k, v in self.vp.items():
+            vt = vt.append_column(f"vp:{k}", pa.array(v))
+        pq.write_table(vt, os.path.join(path, "vertices.parquet"))
+        et = pa.table({"src": self.src, "tgt": self.tgt, **{f"ep:{k}": v for k, v in self.ep.items()}})
+        pq.write_table(et, os.path.join(path, "edges.parquet"))
+        with open(os.path.join(path, "meta.json"), "w") as f:
+            json.dump({"name": self.name, "format": "genomeblocks.Architecture/2"}, f)
+
+    @classmethod
+    def load(cls, path: str, *, genome=None) -> "Architecture":
+        import json
+        import os
+        import pyarrow.parquet as pq
+        vt = pq.read_table(os.path.join(path, "vertices.parquet"))
+        vp_cols = [c for c in vt.column_names if c.startswith("vp:")]
+        tmp = os.path.join(path, "vertices.parquet")
+        L = Loci.load(tmp, genome=genome)
+        for c in vp_cols:
+            L.cols.pop(c, None)
+        L._sorted = True
+        vp = {c[3:]: vt.column(c).to_numpy(zero_copy_only=False) for c in vp_cols}
+        et = pq.read_table(os.path.join(path, "edges.parquet"))
+        ep = {c[3:]: et.column(c).to_numpy() for c in et.column_names if c.startswith("ep:")}
+        meta = json.load(open(os.path.join(path, "meta.json")))
+        return cls(L, et.column("src").to_numpy(), et.column("tgt").to_numpy(), ep=ep, vp=vp,
+                   name=meta.get("name", "Architecture"), _canonical=True)
+
+    # ── display ───────────────────────────────────────────────────────────
+    def __repr__(self):
+        return (f"Architecture(name='{self.name}', loci={self.n_loci:,}, links={self.n_links:,} "
+                f"[{self.n_links - self.n_trans:,} cis · {self.n_trans:,} trans], "
+                f"edge_props=[{', '.join(self.ep)}], vertex_props=[{', '.join(self.vp)}])")
+
+    def _repr_html_(self):
+        from ._display import table_html
+        b = self.blocks
+        cis = [(c, hi - lo) for c, (lo, hi) in b.items() if c != "trans"]
+        rows = [[c, f"{lo:,}–{hi:,}", f"{hi - lo:,}"] for c, (lo, hi) in b.items() if c != "trans"]
+        show = rows[:4] + [["⋮", "", ""]] + rows[-2:] if len(rows) > 6 else rows
+        t0, t1 = b["trans"]
+        show.append(["trans", f"{t0:,}–{t1:,}", f"{t1 - t0:,}"])
+        mb = (self.src.nbytes + self.tgt.nbytes + sum(v.nbytes for v in self.ep.values())) / 1e6
+        title = (f"Architecture '{self.name}' · {self.n_loci:,} loci with links · {self.n_links:,} edges "
+                 f"({len(cis)} cis blocks + trans) · {mb:.1f} MB")
+        note = (f"edge columns: {', '.join(self.ep) or '—'}   ·   vertex columns: "
+                f"{', '.join(self.vp) or '—'}   ·   vertex i = Loci row i")
+        return table_html(title, ["block", "edge rows", "edges"], show, note=note)

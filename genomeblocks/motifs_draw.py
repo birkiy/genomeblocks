@@ -3,8 +3,47 @@
 Split out of ``motifs.py`` so motif scanning/clustering stays free of plotting
 deps. matplotlib, logomaker and scipy are lazy-imported inside each function,
 so importing this module is cheap. These are plain functions over PFM/PWM
-arrays — nothing here is attached to Loci.
+arrays — nothing here is attached to Loci — plus :func:`plot_motif_heatmap`,
+which draws the ``(rows, motifs, bins)`` cube of ``scan_motifs_profile``
+like a signal heatmap.
 """
+from __future__ import annotations
+
+from typing import Dict, Optional, Sequence
+
+import numpy as np
+
+
+def plot_motif_heatmap(loci, M, names: Optional[Sequence[str]] = None, *, r: int = 500,
+                       groups: Optional[Dict[str, object]] = None, vmax=None, ymax=None,
+                       cmap="Purples", ylabel: str = "motif hits/bin", **kw):
+    """Heatmap + profile of a motif positional cube ``M`` (rows x motifs x bins)
+    — what :func:`~genomeblocks.motifs.scan_motifs_profile` returns — one
+    column per motif, drawn by :func:`~genomeblocks.signal_draw.plot_heatmap`.
+
+    ``r`` is the half-window used for the scan (x tick labels). ``vmax`` /
+    ``ymax`` default to a per-motif scale: the 98th percentile of the non-zero
+    cells and the top of the group mean profiles. ``groups`` splits the rows
+    like the signal heatmap (``{name: Loci | mask | rows}``).
+    """
+    from .signal_draw import plot_heatmap
+    M = np.asarray(M, float)
+    if M.ndim != 3:
+        raise ValueError(f"M must be (rows, motifs, bins), got shape {M.shape}")
+    n = M.shape[1]
+    if names is None:
+        names = [f"motif_{i}" for i in range(n)]
+    if vmax is None:
+        vmax = []
+        for i in range(n):
+            nz = M[:, i, :][M[:, i, :] > 0]
+            vmax.append(float(np.percentile(nz, 98)) if nz.size else 1.0)
+    if ymax is None:
+        prof = M.mean(axis=0)                                   # motifs x bins
+        ymax = [float(max(prof[i].max() * 1.15, 1e-9)) for i in range(n)]
+    return plot_heatmap(loci, M, groups=groups, samples=list(names), vmax=vmax, ymax=ymax, cmap=cmap,
+                        height=r, ylabel=ylabel, **kw)
+
 
 def plot_archetype(pfm, ax=None, *, title=None, alphabet: str = 'ACGT',
                    show_xticks: bool = True, ylim=(0, 2)):

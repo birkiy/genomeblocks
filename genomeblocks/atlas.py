@@ -22,22 +22,32 @@ from __future__ import annotations
 import glob
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import Dict, Iterable, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Sequence, Union
 
 import numpy as np
 
-from .loci import Loci
-# scipy.sparse is imported where the matrix is built: loci.py imports this
-# module to attach Loci.enrich, and `from genomeblocks import Loci` should not
-# pay for scipy.
+from ._table import TableMixin
+from .genome import read_sizes
+
+if TYPE_CHECKING:                                   # names used in annotations only
+    import pandas as pd
+    from scipy.sparse import csr_matrix
+# scipy.sparse is imported where the matrix is built, so `import genomeblocks`
+# does not pay for scipy. Loci.enrich / Loci.enrich_mc live in loci.py and call
+# Atlas.search / Atlas.bootstrap.
 
 
 _BED_EXT = (".bed", ".bed.gz", ".narrowPeak", ".narrowPeak.gz",
             ".broadPeak", ".broadPeak.gz")
 
 
-class Atlas:
-    """Sparse bin x track index for fast multi-file overlap enrichment."""
+class Atlas(TableMixin):
+    """Sparse bin x track index for fast multi-file overlap enrichment.
+
+    As a table it is its track table (name, n_peaks, n_bins + metadata):
+    ``len``, ``shape``, ``columns``, ``head()``, ``describe()``,
+    ``to_pandas()`` and the Arrow / dataframe protocols. Every query set is
+    anything :func:`~genomeblocks.as_loci` takes."""
 
     def __init__(
         self,
@@ -102,7 +112,10 @@ class Atlas:
         elif len(names) != len(files):
             raise ValueError("names length must match number of input files")
 
-        chrom_sizes = _resolve_chromsizes(chromsizes)
+        chrom_sizes = {str(k): int(v) for k, v in read_sizes(chromsizes).items()}
+        if not chrom_sizes:
+            raise ValueError("chromsizes is empty: pass a {chrom: length} dict, a .chrom.sizes path, "
+                             "a Genome with sizes or a cooler")
         chrom_names = list(chrom_sizes.keys())
         chrom_offsets: Dict[str, int] = {}
         cum = 0
@@ -112,7 +125,7 @@ class Atlas:
         n_bins = cum
 
         if workers is None:
-            workers = max(1, (os.cpu_count() or 2) - 1)
+            workers = max(1, (os.cpu_count() or 2) // 2)
 
         n_tracks = len(files)
         per_track_bins: List[Optional[np.ndarray]] = [None] * n_tracks
@@ -233,42 +246,26 @@ class Atlas:
 
     # ---- bin conversion ------------------------------------------------
 
-    def _intervals_to_bin_ranges(self, loci: Loci) -> np.ndarray:
-        """Map each interval to ``[abs_start_bin, abs_end_bin)``.
+    def _intervals_to_bin_ranges(self, loci) -> np.ndarray:
+        """Map each interval to ``[abs_start_bin, abs_end_bin)`` (columns only).
 
-        Intervals on chroms missing from the atlas are silently dropped.
-        Returns an ``(n, 2)`` int64 array; empty if no interval qualifies.
+        ``loci`` is anything :func:`~genomeblocks.as_loci` takes. Intervals on
+        chromosomes missing from the atlas are dropped. Returns an ``(n, 2)``
+        int64 array; empty if no interval qualifies.
         """
-        bs = self.bin_size
-        co = self.chrom_offsets
-        cmax = self._chrom_max_bins
-        out_s: List[int] = []
-        out_e: List[int] = []
-        for l in loci:
-            off = co.get(l.chrom)
-            if off is None:
-                continue
-            cb = cmax[l.chrom]
-            s = int(l.start) // bs
-            e = (int(l.end) - 1) // bs + 1
-            if s < 0:
-                s = 0
-            if e <= s:
-                e = s + 1
-            if s > cb:
-                s = cb
-            if e > cb:
-                e = cb
-            if s >= e:
-                continue
-            out_s.append(off + s)
-            out_e.append(off + e)
-        if not out_s:
+        from .interop import as_loci
+        L = as_loci(loci)
+        if not len(L):
             return np.zeros((0, 2), dtype=np.int64)
-        return np.column_stack(
-            [np.asarray(out_s, dtype=np.int64),
-             np.asarray(out_e, dtype=np.int64)],
-        )
+        bs = self.bin_size
+        names = L.genome.names
+        off = np.array([self.chrom_offsets.get(n, -1) for n in names], np.int64)[L.codes]
+        cmax = np.array([self._chrom_max_bins.get(n, 0) for n in names], np.int64)[L.codes]
+        s = np.maximum(L.starts // bs, 0)
+        e = np.maximum((L.ends - 1) // bs + 1, s + 1)
+        s, e = np.minimum(s, cmax), np.minimum(e, cmax)
+        ok = (off >= 0) & (s < e)
+        return np.column_stack([off[ok] + s[ok], off[ok] + e[ok]])
 
     def _bins_union(self, ranges: np.ndarray) -> np.ndarray:
         """Sorted unique bin ids covered by any of the input ranges."""
@@ -288,13 +285,14 @@ class Atlas:
 
     def search(
         self,
-        query: Loci,
+        query,
         *,
-        ref: Optional[Loci] = None,
+        ref=None,
         alternative: str = "two-sided",
     ):
         """GIGGLE-style enrichment of each track over the query.
 
+        ``query`` / ``ref`` are anything :func:`~genomeblocks.as_loci` takes.
         With ``ref`` supplied, the c/d cells come from the reference set
         instead of the genome null -- "factors more enriched in query than
         in ref". Returns a ``pandas.DataFrame`` sorted by ``giggle_score``.
@@ -315,29 +313,27 @@ class Atlas:
             n_r = int(len(r_bins))
             b = n_q - a
             d = n_r - c
-            other_label, other_val = "n_ref_bins", n_r
         else:
+            n_r = None
             c = self.track_n_bins - a
             b = n_q - a
             d = self.n_bins - n_q - c
-            other_label, other_val = "n_track_bins", None  # filled below
 
         a, b, c, d = (np.maximum(x, 0).astype(np.int64) for x in (a, b, c, d))
         log_or, p, score = _fisher_vec(a, b, c, d, alternative=alternative)
 
         n_tracks = len(self.track_names)
-        out = {
-            "name": self.track_names,
-            "n_query_bins": np.full(n_tracks, n_q, dtype=np.int64),
-            other_label: (np.full(n_tracks, other_val, dtype=np.int64)
-                          if other_val is not None else self.track_n_bins),
+        out = {"name": self.track_names, "n_query_bins": np.full(n_tracks, n_q, dtype=np.int64)}
+        if n_r is not None:
+            out["n_ref_bins"] = np.full(n_tracks, n_r, dtype=np.int64)
+        out.update({
             "track_n_bins": self.track_n_bins,
             "track_n_peaks": self.track_n_peaks,
             "overlaps": a,
             "log2_odds": log_or,
             "p": p,
             "giggle_score": score,
-        }
+        })
         df = pd.DataFrame(out)
         df = self._with_meta(df)
         return df.sort_values("giggle_score", ascending=False).reset_index(drop=True)
@@ -346,10 +342,10 @@ class Atlas:
 
     def bootstrap(
         self,
-        query: Union[Loci, Dict[str, Loci]],
+        query,
         *,
         n: int = 10,
-        pool: Optional[Loci] = None,
+        pool=None,
         sample: Optional[int] = None,
         replace: bool = False,
         keep_chrom: bool = True,
@@ -372,9 +368,10 @@ class Atlas:
           group comparisons are paired against the same null. Use this
           for differently-sized query groups.
 
-        ``query`` may be a single ``Loci`` or a ``dict[str, Loci]``. With
-        a dict, the result is a long-format DataFrame with a ``group``
-        column.
+        ``query`` may be a single interval set (anything
+        :func:`~genomeblocks.as_loci` takes) or a ``{group: intervals}``
+        dict. With a dict of groups, the result is a long-format DataFrame
+        with a ``group`` column.
 
         With ``sample`` set, ``observed`` and ``expected`` are means over
         the bootstrap distribution of subsamples; ``z`` is the paired z
@@ -386,8 +383,10 @@ class Atlas:
             raise ValueError("n must be positive.")
         rng = np.random.default_rng(seed)
 
-        single = not isinstance(query, dict)
-        groups = {"query": query} if single else dict(query)
+        from .interop import as_loci
+        single = not (isinstance(query, dict) and not _is_columns(query))
+        groups = {"query": as_loci(query)} if single else {k: as_loci(v) for k, v in query.items()}
+        pool = as_loci(pool) if pool is not None else None
         if not groups:
             raise ValueError("query dict is empty.")
 
@@ -454,20 +453,13 @@ class Atlas:
         if pool is None:
             bs = self.bin_size
             for g, q in groups.items():
-                c_ids: List[int] = []
-                lens: List[int] = []
-                for l in q:
-                    ci = chrom_idx.get(l.chrom)
-                    if ci is None:
-                        continue
-                    s_b = int(l.start) // bs
-                    e_b = max((int(l.end) - 1) // bs + 1, s_b + 1)
-                    length = min(e_b - s_b, int(chrom_bins[ci]))
-                    c_ids.append(ci)
-                    lens.append(length)
+                ci = np.array([chrom_idx.get(n, -1) for n in q.genome.names], np.int64)[q.codes]
+                ok = ci >= 0
+                s_b = q.starts[ok] // bs
+                e_b = np.maximum((q.ends[ok] - 1) // bs + 1, s_b + 1)
                 gs[g] = {
-                    "c_ids": np.asarray(c_ids, dtype=np.int64),
-                    "lens": np.asarray(lens, dtype=np.int64),
+                    "c_ids": ci[ok],
+                    "lens": np.minimum(e_b - s_b, chrom_bins[ci[ok]]).astype(np.int64),
                 }
 
         it = range(n)
@@ -644,8 +636,71 @@ class Atlas:
             cols = [str(x) for x in d["meta_columns"].tolist()]
             data = {c: [str(x) for x in d[f"meta__{c}"].tolist()] for c in cols}
             df = pd.DataFrame(data, index=track_names)
-            atlas.meta = df.replace("", pd.NA)
+            atlas.meta = df.replace("", np.nan)
         return atlas
+
+    # ---- the track table -------------------------------------------------
+
+    @property
+    def columns(self) -> list:
+        meta = [] if self.meta is None else [str(c) for c in self.meta.columns]
+        return ["name", "n_peaks", "n_bins"] + meta
+
+    def to_pandas(self):
+        """One row per track: name, n_peaks, n_bins and the metadata columns."""
+        import pandas as pd
+        df = pd.DataFrame({"name": self.track_names, "n_peaks": self.track_n_peaks, "n_bins": self.track_n_bins})
+        if self.meta is not None and not self.meta.empty:
+            m = self.meta.reset_index(drop=True)
+            for c in m.columns:
+                df[str(c)] = m[c].to_numpy()
+        return df
+
+    def to_arrow(self):
+        import pyarrow as pa
+        return pa.Table.from_pandas(self.to_pandas(), preserve_index=False)
+
+    def head(self, n: int = 5):
+        return self.to_pandas().head(n)
+
+    def tail(self, n: int = 5):
+        return self.to_pandas().tail(n)
+
+    def describe(self):
+        import pandas as pd
+        nb = self.track_n_bins
+        rows = [("tracks", len(self)), ("chromosomes", len(self.chrom_names)), ("bin size", self.bin_size),
+                ("bins", self.n_bins), ("nonzero cells", int(self.M.nnz)),
+                ("density", float(self.M.nnz) / max(self.n_bins * max(len(self), 1), 1)),
+                ("bins per track min", int(nb.min()) if len(nb) else 0),
+                ("bins per track median", float(np.median(nb)) if len(nb) else 0.0),
+                ("bins per track max", int(nb.max()) if len(nb) else 0),
+                ("metadata columns", ", ".join(self.columns[3:]) or "—")]
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("").rename_axis(None)
+
+    summary = describe
+
+    def __iter__(self):
+        return iter(self.track_names)
+
+    def __getitem__(self, key):
+        """``atlas['SRX...']`` or ``atlas[i]``: that track's row as a dict."""
+        if isinstance(key, str):
+            if key not in self.track_names:
+                raise KeyError(f"no track named {key!r}")
+            key = self.track_names.index(key)
+        row = self.to_pandas().iloc[int(key)]
+        return {k: (v.item() if hasattr(v, "item") else v) for k, v in row.items()}
+
+    def _repr_html_(self):
+        from ._display import table_html
+        import pandas as pd
+        df = self.to_pandas()
+        n = len(df)
+        show, gap = (pd.concat([df.head(6), df.tail(3)]), 5) if n > 10 else (df, None)
+        return table_html(f"Atlas · {n:,} tracks · {self.n_bins:,} bins of {self.bin_size:,} bp · "
+                          f"{self.M.nnz:,} cells", list(df.columns),
+                          [list(r) for r in show.itertuples(index=False)], gap_after=gap)
 
     # ---- dunders -------------------------------------------------------
 
@@ -657,6 +712,12 @@ class Atlas:
                 f"bins={self.n_bins:,}, bin_size={self.bin_size}, "
                 f"nnz={self.M.nnz:,})")
     __repr__ = __str__
+
+
+def _is_columns(d: dict) -> bool:
+    """A dict of interval columns (chrom / start / end) rather than of groups."""
+    keys = {str(k).lower() for k in d}
+    return bool(keys & {"chrom", "chromosome", "chr", "seqnames", "seqname", "start", "end"})
 
 
 # ---- vectorized stat ---------------------------------------------------
@@ -791,36 +852,3 @@ def _resolve_paths(paths) -> List[str]:
             )
         return [paths]
     return list(paths)
-
-
-def _resolve_chromsizes(chromsizes) -> Dict[str, int]:
-    if isinstance(chromsizes, dict):
-        return {k: int(v) for k, v in chromsizes.items()}
-    if isinstance(chromsizes, str):
-        sizes = {}
-        with open(chromsizes) as f:
-            for line in f:
-                if not line.strip() or line.startswith("#"):
-                    continue
-                parts = line.split()
-                sizes[parts[0]] = int(parts[1])
-        return sizes
-    if hasattr(chromsizes, "chromsizes"):
-        return {k: int(v) for k, v in dict(chromsizes.chromsizes).items()}
-    raise TypeError(f"Unsupported chromsizes type: {type(chromsizes)}")
-
-
-# ---- fluent attachments to Loci ---------------------------------------
-
-
-def _loci_enrich(self: Loci, atlas: Atlas, *,
-                 ref: Optional[Loci] = None, **kw):
-    return atlas.search(self, ref=ref, **kw)
-
-
-def _loci_enrich_mc(self: Loci, atlas: Atlas, *, n: int = 10, **kw):
-    return atlas.bootstrap(self, n=n, **kw)
-
-
-Loci.enrich = _loci_enrich
-Loci.enrich_mc = _loci_enrich_mc

@@ -1,55 +1,128 @@
-<svg class="gbd" viewBox="0 0 880 240" role="img" aria-label="Genes.make reads GTF lines into a dictionary of Gene objects, each holding its Transcripts, which hold their exons, CDS and UTRs; every node is a Locus." xmlns="http://www.w3.org/2000/svg">
-<rect class="bx dark" x="20" y="20" width="330" height="200" rx="8"></rect>
-<text class="cap" x="36" y="42">GTF LINES</text>
-<text class="m w" x="36" y="66">gene</text>
-<text class="ms w2" x="148" y="66">chr8 127735434  +</text>
-<text class="m w" x="334" y="66" text-anchor="end">G1 · MYC</text>
-<text class="m w" x="36" y="85">transcript</text>
-<text class="ms w2" x="148" y="85">chr8 127735434  +</text>
-<text class="m w" x="334" y="85" text-anchor="end">T1</text>
-<text class="m w" x="36" y="104">exon</text>
-<text class="ms w2" x="148" y="104">chr8 127735434  +</text>
-<text class="m w" x="334" y="104" text-anchor="end">T1 #1</text>
-<text class="m w" x="36" y="123">five_prime_UTR</text>
-<text class="ms w2" x="148" y="123">chr8 127735434  +</text>
-<text class="m w" x="334" y="123" text-anchor="end">T1</text>
-<text class="m w" x="36" y="142">CDS</text>
-<text class="ms w2" x="148" y="142">chr8 127736231  +</text>
-<text class="m w" x="334" y="142" text-anchor="end">T1</text>
-<text class="m w" x="36" y="161">exon</text>
-<text class="ms w2" x="148" y="161">chr8 127740396  +</text>
-<text class="m w" x="334" y="161" text-anchor="end">T1 #2</text>
-<text class="m w" x="36" y="180">transcript</text>
-<text class="ms w2" x="148" y="180">chr8 127736623  +</text>
-<text class="m w" x="334" y="180" text-anchor="end">T2</text>
-<text class="m w" x="36" y="199">…</text>
-<text class="ms w2" x="148" y="199"></text>
-<text class="m w" x="334" y="199" text-anchor="end"></text>
-<polyline class="ln" points="352,120 394,120"/>
-<polygon class="hd" points="398.0,120.0 391.8,123.3 391.8,116.7"/>
-<text class="ms" x="375" y="108" text-anchor="middle">make</text>
-<rect class="bx page" x="400" y="20" width="460" height="200" rx="8"></rect>
-<text class="t" x="416" y="42">Genes</text>
-<text class="s" x="466" y="42">dict: gene_id → Gene</text>
-<rect class="bx navy" x="414" y="54" width="432" height="154" rx="8"></rect>
-<text class="t" x="430" y="76">Gene MYC</text>
-<text class="s" x="500" y="76">a Locus: span · tss · gene_id, gene_name, gene_type · canonical</text>
-<rect class="bx" x="428" y="88" width="196" height="108" rx="8"></rect>
-<text class="t" x="442" y="110">Transcript T1</text>
-<text class="s" x="442" y="126">a Locus · tss · tss_score</text>
-<rect class="chip navy" x="442" y="138" width="92" height="22" rx="11"></rect>
-<text class="m" x="488" y="153" text-anchor="middle">exons [Exon]</text>
-<rect class="chip navy" x="540" y="138" width="72" height="22" rx="11"></rect>
-<text class="m" x="576" y="153" text-anchor="middle">cds [CDS]</text>
-<rect class="chip navy" x="442" y="166" width="120" height="22" rx="11"></rect>
-<text class="m" x="502" y="181" text-anchor="middle">utr [UTR 5′ / 3′]</text>
-<rect class="bx" x="636" y="88" width="196" height="108" rx="8"></rect>
-<text class="t" x="650" y="110">Transcript T2</text>
-<text class="s" x="650" y="126">a Locus · tss · tss_support</text>
-<rect class="chip navy" x="650" y="138" width="92" height="22" rx="11"></rect>
-<text class="m" x="696" y="153" text-anchor="middle">exons [Exon]</text>
-<rect class="chip navy" x="748" y="138" width="72" height="22" rx="11"></rect>
-<text class="m" x="784" y="153" text-anchor="middle">cds [CDS]</text>
-<rect class="chip navy" x="650" y="166" width="120" height="22" rx="11"></rect>
-<text class="m" x="710" y="181" text-anchor="middle">utr [UTR 5′ / 3′]</text>
+<svg class="gbd" viewBox="0 0 880 318" role="img" aria-label="Genes.make reads GTF lines into three row-aligned tables: genes, transcripts (gene = the gene&#x27;s row) and features (kind, transcript = the transcript&#x27;s row); every table is a Loci with 0-based starts, so start − 1 is applied once while parsing." xmlns="http://www.w3.org/2000/svg">
+<rect class="bx dark" x="20" y="20" width="300" height="278" rx="8"></rect>
+<text class="cap" x="36" y="42">GTF LINES · 1-BASED, CLOSED</text>
+<text class="m w" x="36" y="68">gene</text>
+<text class="ms w2" x="146" y="68">chr8  127735434  +</text>
+<text class="m w" x="304" y="68" text-anchor="end">MYC</text>
+<text class="m w" x="36" y="88">transcript</text>
+<text class="ms w2" x="146" y="88">chr8  127735434  +</text>
+<text class="m w" x="304" y="88" text-anchor="end">T1</text>
+<text class="m w" x="36" y="108">exon</text>
+<text class="ms w2" x="146" y="108">chr8  127735434  +</text>
+<text class="m w" x="304" y="108" text-anchor="end">T1 #1</text>
+<text class="m w" x="36" y="128">five_prime_UTR</text>
+<text class="ms w2" x="146" y="128">chr8  127735434  +</text>
+<text class="m w" x="304" y="128" text-anchor="end">T1</text>
+<text class="m w" x="36" y="148">CDS</text>
+<text class="ms w2" x="146" y="148">chr8  127736231  +</text>
+<text class="m w" x="304" y="148" text-anchor="end">T1</text>
+<text class="m w" x="36" y="168">exon</text>
+<text class="ms w2" x="146" y="168">chr8  127740396  +</text>
+<text class="m w" x="304" y="168" text-anchor="end">T1 #2</text>
+<text class="m w" x="36" y="188">transcript</text>
+<text class="ms w2" x="146" y="188">chr8  127736623  +</text>
+<text class="m w" x="304" y="188" text-anchor="end">T2</text>
+<text class="m w" x="36" y="208">exon</text>
+<text class="ms w2" x="146" y="208">chr8  127736623  +</text>
+<text class="m w" x="304" y="208" text-anchor="end">T2 #1</text>
+<text class="m w" x="36" y="228">…</text>
+<text class="ms w2" x="146" y="228"></text>
+<text class="m w" x="304" y="228" text-anchor="end"></text>
+<text class="s w2" x="36" y="268">polars (else pandas) parses the file;</text>
+<text class="s w2" x="36" y="284">joins on gene_id / transcript_id give the links</text>
+<polyline class="ln" points="322,150 352,150"/>
+<polygon class="hd" points="356.0,150.0 349.8,153.3 349.8,146.7"/>
+<text class="ms" x="339" y="138" text-anchor="middle">make</text>
+<rect class="bx navy" x="360" y="20" width="520" height="52" rx="8"></rect>
+<text class="t" x="370" y="37">genes</text>
+<text class="s" x="372" y="54">row</text>
+<text class="s" x="406" y="54">chrom</text>
+<text class="s" x="452" y="54">start</text>
+<text class="s" x="534" y="54">end</text>
+<text class="s" x="616" y="54">±</text>
+<text class="s" x="640" y="54">gene_id</text>
+<text class="s" x="710" y="54">gene_name</text>
+<text class="s" x="786" y="54">gene_type</text>
+<text class="m" x="372" y="72">0</text>
+<text class="m" x="406" y="72">chr8</text>
+<text class="m" x="452" y="72">127735433</text>
+<text class="m" x="534" y="72">127742951</text>
+<text class="m" x="616" y="72">+</text>
+<text class="m" x="640" y="72">ENSG…</text>
+<text class="m" x="710" y="72">MYC</text>
+<text class="m" x="786" y="72">protein_coding</text>
+<text class="s" x="370" y="86">0-based: 127735434 − 1 · TSS = start on &#x27;+&#x27;, end − 1 on &#x27;−&#x27;</text>
+<rect class="bx navy" x="360" y="104" width="436" height="72" rx="8"></rect>
+<text class="t" x="370" y="121">transcripts</text>
+<text class="s" x="372" y="138">row</text>
+<text class="s" x="406" y="138">chrom</text>
+<text class="s" x="452" y="138">start</text>
+<text class="s" x="534" y="138">end</text>
+<text class="s" x="616" y="138">±</text>
+<text class="s" x="640" y="138">transcript_id</text>
+<text class="s" x="736" y="138">gene →</text>
+<text class="m" x="372" y="156">0</text>
+<text class="m" x="406" y="156">chr8</text>
+<text class="m" x="452" y="156">127735433</text>
+<text class="m" x="534" y="156">127742951</text>
+<text class="m" x="616" y="156">+</text>
+<text class="m" x="640" y="156">T1</text>
+<text class="m" x="736" y="156">0</text>
+<text class="m" x="372" y="176">1</text>
+<text class="m" x="406" y="176">chr8</text>
+<text class="m" x="452" y="176">127736622</text>
+<text class="m" x="534" y="176">127742951</text>
+<text class="m" x="616" y="176">+</text>
+<text class="m" x="640" y="176">T2</text>
+<text class="m" x="736" y="176">0</text>
+<rect class="bx navy" x="360" y="196" width="500" height="112" rx="8"></rect>
+<text class="t" x="370" y="213">features</text>
+<text class="s" x="372" y="230">row</text>
+<text class="s" x="406" y="230">chrom</text>
+<text class="s" x="452" y="230">start</text>
+<text class="s" x="534" y="230">end</text>
+<text class="s" x="616" y="230">±</text>
+<text class="s" x="640" y="230">kind</text>
+<text class="s" x="684" y="230">transcript →</text>
+<text class="s" x="772" y="230">exon_number</text>
+<text class="m" x="372" y="248">0</text>
+<text class="m" x="406" y="248">chr8</text>
+<text class="m" x="452" y="248">127735433</text>
+<text class="m" x="534" y="248">127736230</text>
+<text class="m" x="616" y="248">+</text>
+<text class="m" x="640" y="248">exon</text>
+<text class="m" x="684" y="248">0</text>
+<text class="m" x="772" y="248">1</text>
+<text class="m" x="372" y="268">1</text>
+<text class="m" x="406" y="268">chr8</text>
+<text class="m" x="452" y="268">127735433</text>
+<text class="m" x="534" y="268">127735582</text>
+<text class="m" x="616" y="268">+</text>
+<text class="m" x="640" y="268">5UTR</text>
+<text class="m" x="684" y="268">0</text>
+<text class="m" x="772" y="268">1</text>
+<text class="m" x="372" y="288">2</text>
+<text class="m" x="406" y="288">chr8</text>
+<text class="m" x="452" y="288">127736230</text>
+<text class="m" x="534" y="288">127736623</text>
+<text class="m" x="616" y="288">+</text>
+<text class="m" x="640" y="288">CDS</text>
+<text class="m" x="684" y="288">0</text>
+<text class="m" x="772" y="288">1</text>
+<text class="m" x="372" y="308">3</text>
+<text class="m" x="406" y="308">chr8</text>
+<text class="m" x="452" y="308">127736622</text>
+<text class="m" x="534" y="308">127737000</text>
+<text class="m" x="616" y="308">+</text>
+<text class="m" x="640" y="308">exon</text>
+<text class="m" x="684" y="308">1</text>
+<text class="m" x="772" y="308">1</text>
+<path class="ln navy" d="M760,150 C806,150 806,66 404,66"/>
+<polygon class="hd navy" points="404.0,66.0 409.3,63.2 409.3,68.8"/>
+<path class="ln navy thin" d="M760,170 C806,170 806,66 404,66"/>
+<path class="ln navy thin" d="M706,246 C744,246 744,156 404,156"/>
+<path class="ln navy thin" d="M706,306 C750,306 750,176 404,176"/>
+<polygon class="hd navy" points="404.0,156.0 409.3,153.2 409.3,158.8"/>
+<polygon class="hd navy" points="404.0,176.0 409.3,173.2 409.3,178.8"/>
+<text class="s" x="370" y="316">links are row numbers: transcripts[&#x27;gene&#x27;][k] indexes the genes table, features[&#x27;transcript&#x27;][j] the transcripts table</text>
 </svg>

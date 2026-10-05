@@ -1,9 +1,10 @@
-<svg class="gbd" viewBox="0 0 880 262" role="img" aria-label="With workers &gt; 1 the cube lives in shared memory; each worker process opens its own bigWig handles and fills one slab in place, so nothing is copied back through pipes." xmlns="http://www.w3.org/2000/svg">
+<svg class="gbd" viewBox="0 0 880 262" role="img" aria-label="With workers &gt; 1 the cube lives in shared memory; the work is split into (track range × locus range) slabs, and each worker process opens its own bigWig handles and fills one slab in place, so nothing is copied back through pipes." xmlns="http://www.w3.org/2000/svg">
 <rect class="bx page" x="20" y="10" width="330" height="242" rx="8"></rect>
 <text class="t" x="36" y="32">main process</text>
 <text class="s" x="36" y="48">SharedMemory cube · copied out once, then unlinked</text>
 <rect class="bx" x="36" y="62" width="298" height="38" rx="4"></rect>
-<text class="m" x="52" y="86">tracks 0–3</text>
+<text class="m" x="52" y="79">tracks 0–3</text>
+<text class="ms" x="52" y="93">loci 0–999</text>
 <rect class="iv fl" x="160" y="71" width="13" height="20" rx="2"></rect>
 <rect class="iv fl" x="176" y="71" width="13" height="20" rx="2"></rect>
 <rect class="iv fl" x="192" y="71" width="13" height="20" rx="2"></rect>
@@ -16,11 +17,12 @@
 <rect class="iv fl" x="304" y="71" width="13" height="20" rx="2"></rect>
 <rect class="bx" x="470" y="62" width="390" height="38" rx="8"></rect>
 <text class="t" x="486" y="79">worker 1</text>
-<text class="s" x="486" y="93">own handles for bigWigs 0–3 · all loci</text>
+<text class="s" x="486" y="93">own handles for bigWigs 0–3 · loci 0–999</text>
 <polyline class="ln faint" points="468,81 342,81"/>
 <polygon class="hd faint" points="338.0,81.0 344.2,77.7 344.2,84.3"/>
 <rect class="bx green" x="36" y="108" width="298" height="38" rx="4"></rect>
-<text class="m" x="52" y="132">tracks 4–7</text>
+<text class="m" x="52" y="125">tracks 0–3</text>
+<text class="ms" x="52" y="139">loci 1000–1999</text>
 <rect class="iv fg" x="160" y="117" width="13" height="20" rx="2"></rect>
 <rect class="iv fg" x="176" y="117" width="13" height="20" rx="2"></rect>
 <rect class="iv fg" x="192" y="117" width="13" height="20" rx="2"></rect>
@@ -33,11 +35,12 @@
 <rect class="iv fg" x="304" y="117" width="13" height="20" rx="2"></rect>
 <rect class="bx green" x="470" y="108" width="390" height="38" rx="8"></rect>
 <text class="t" x="486" y="125">worker 2</text>
-<text class="s" x="486" y="139">own handles for bigWigs 4–7 · all loci</text>
+<text class="s" x="486" y="139">own handles for bigWigs 0–3 · loci 1000–1999</text>
 <polyline class="ln green" points="468,127 342,127"/>
 <polygon class="hd green" points="338.0,127.0 344.2,123.7 344.2,130.3"/>
 <rect class="bx" x="36" y="154" width="298" height="38" rx="4"></rect>
-<text class="m" x="52" y="178">tracks 8–11</text>
+<text class="m" x="52" y="171">tracks 4–7</text>
+<text class="ms" x="52" y="185">loci 0–999</text>
 <rect class="iv fl" x="160" y="163" width="13" height="20" rx="2"></rect>
 <rect class="iv fl" x="176" y="163" width="13" height="20" rx="2"></rect>
 <rect class="iv fl" x="192" y="163" width="13" height="20" rx="2"></rect>
@@ -50,11 +53,12 @@
 <rect class="iv fl" x="304" y="163" width="13" height="20" rx="2"></rect>
 <rect class="bx" x="470" y="154" width="390" height="38" rx="8"></rect>
 <text class="t" x="486" y="171">worker 3</text>
-<text class="s" x="486" y="185">own handles for bigWigs 8–11 · all loci</text>
+<text class="s" x="486" y="185">own handles for bigWigs 4–7 · loci 0–999</text>
 <polyline class="ln faint" points="468,173 342,173"/>
 <polygon class="hd faint" points="338.0,173.0 344.2,169.7 344.2,176.3"/>
 <rect class="bx" x="36" y="200" width="298" height="38" rx="4"></rect>
-<text class="m" x="52" y="224">tracks 12–15</text>
+<text class="m" x="52" y="217">tracks 4–7</text>
+<text class="ms" x="52" y="231">loci 1000–1999</text>
 <rect class="iv fl" x="160" y="209" width="13" height="20" rx="2"></rect>
 <rect class="iv fl" x="176" y="209" width="13" height="20" rx="2"></rect>
 <rect class="iv fl" x="192" y="209" width="13" height="20" rx="2"></rect>
@@ -67,7 +71,7 @@
 <rect class="iv fl" x="304" y="209" width="13" height="20" rx="2"></rect>
 <rect class="bx" x="470" y="200" width="390" height="38" rx="8"></rect>
 <text class="t" x="486" y="217">worker 4</text>
-<text class="s" x="486" y="231">own handles for bigWigs 12–15 · all loci</text>
+<text class="s" x="486" y="231">own handles for bigWigs 4–7 · loci 1000–1999</text>
 <polyline class="ln faint" points="468,219 342,219"/>
 <polygon class="hd faint" points="338.0,219.0 344.2,215.7 344.2,222.3"/>
 <text class="lbl" x="403" y="54" text-anchor="middle">writes its slab in place</text>

@@ -1,138 +1,28 @@
+"""bigWig signal over loci, as a cube of (rows x tracks x bins).
+
+    S = cre.signal(["atac.bw", "h3k27ac.bw"], n_bins=200, flank=3000)
+
+Row ``i`` of the cube is row ``i`` of the loci (rows on chromosomes a
+bigWig lacks stay 0), so it lines up with every other table built from
+them. Files are read through the bigwig backend: pybigtools by default,
+pyBigWig or the pure-Python reader on request (``backend=``); open
+pyBigWig / pybigtools handles are accepted as tracks too.
+
+Convert a cube with :func:`genomeblocks.interop.cube_to_xarray`,
+``cube_to_anndata`` or ``cube_to_pandas``.
+"""
 from __future__ import annotations
+
 import os
 import shutil
 from os import cpu_count
-from typing import List, Tuple, Sequence
+from typing import List, Optional, Tuple
 
 import numpy as np
-from tqdm import tqdm
-
-from .loci import Loci
-
-
-# ── backend selection ────────────────────────────────────────────────────────
-# Prefer pybigtools (Rust, fastest) → fall back to our pure-Python reader.
-# Both are thread-safe, so the threading architecture works with either.
-
-def _open_pybigtools(path):
-    """Adapter wrapping pybigtools handle to match our API."""
-    global _FILL_KW
-    import pybigtools
-    h = pybigtools.open(path, "r")
-    if _FILL_KW is None:
-        _FILL_KW = _fill_kwarg(h)
-    return _PyBigToolsHandle(h)
-
-
-# pybigtools' native summary kinds — anything else falls back to a values() reduction.
-_NATIVE_SUMMARY = {'mean', 'min', 'max'}
-
-
-def _fill_kwarg(h) -> str:
-    """Name of pybigtools' fill-value argument for ``values()``.
-
-    pybigtools 0.3 renamed ``missing=`` to ``fillna=`` and warns on every
-    ``missing=`` call; a later release drops it. Older releases only know
-    ``missing=``.
-    """
-    try:
-        from importlib.metadata import version
-        major, minor = (int(x) for x in version('pybigtools').split('.')[:2])
-        return 'fillna' if (major, minor) >= (0, 3) else 'missing'
-    except Exception:          # no metadata / odd version string: probe the handle
-        import inspect
-        try:
-            params = inspect.signature(h.values).parameters
-        except (TypeError, ValueError):
-            return 'missing'
-        return 'fillna' if 'fillna' in params else 'missing'
-
-
-_FILL_KW: str | None = None    # resolved on the first pybigtools open
-
-
-class _PyBigToolsHandle:
-    """Thin wrapper so pybigtools matches BigWigReader's interface.
-
-    The hot path is ``stats_array`` → one FFI call into Rust that does I/O,
-    decompression, and binning without releasing a single Python list.
-    """
-    __slots__ = ('_h',)
-    def __init__(self, h):
-        self._h = h
-
-    def chroms(self):
-        return dict(self._h.chroms())
-
-    def stats_array(self, chrom, start, end, *, n_bins=1,
-                    stat='mean', exact=True, missing=0.0):
-        if stat in _NATIVE_SUMMARY:
-            return self._h.values(chrom, start, end,
-                                  bins=n_bins, summary=stat,
-                                  exact=exact, **{_FILL_KW: missing})
-        # sum / std / coverage: reduce from per-base values in numpy.
-        vals = self._h.values(chrom, start, end, **{_FILL_KW: np.nan})
-        n = vals.size
-        if n == 0 or n_bins <= 0:
-            return np.full(max(n_bins, 1), missing, dtype=np.float64)
-        if n % n_bins:
-            pad = n_bins - (n % n_bins)
-            vals = np.concatenate([vals, np.full(pad, np.nan)])
-        chunks = vals.reshape(n_bins, -1)
-        with np.errstate(all='ignore'):
-            if stat == 'sum':
-                out = np.nansum(chunks, axis=1)
-            elif stat == 'std':
-                out = np.nanstd(chunks, axis=1)
-            elif stat in ('coverage', 'cov'):
-                out = (~np.isnan(chunks)).mean(axis=1)
-            else:
-                raise ValueError(f"Unknown stat: {stat!r}")
-        return np.where(np.isnan(out), missing, out).astype(np.float64)
-
-    def stats(self, chrom, start, end, *, n_bins=1, nBins=None,
-              stat='mean', type=None, **_):
-        """Legacy list-returning API (used by bench_bigwig.py)."""
-        if nBins is not None:
-            n_bins = nBins
-        if type is not None:
-            stat = type
-        arr = self.stats_array(chrom, start, end, n_bins=n_bins,
-                               stat=stat, missing=np.nan)
-        return [None if np.isnan(v) else float(v) for v in arr]
-
-    def values(self, chrom, start, end):
-        return self._h.values(chrom, start, end, **{_FILL_KW: 0.0}).astype(np.float64, copy=False)
-
-    def close(self):
-        self._h.close()
-
-
-def _detect_backend():
-    """Return (opener_func, backend_name).
-
-    Prefer pybigtools (Rust) — releases GIL, scales with threads,
-    fastest for base-pair resolution.  Falls back to pure-python
-    reader (zero compiled deps, exact pyBigWig match for binned stats).
-    """
-    try:
-        import pybigtools  # noqa: F401
-        return _open_pybigtools, 'pybigtools'
-    except ImportError:
-        from . import bigwig
-        return bigwig.open, 'bigwig'
-
-
-_bw_open, _bw_backend = _detect_backend()
 
 
 def _available_ram_bytes() -> int:
-    """Best-effort available physical RAM in bytes.
-
-    Uses POSIX ``sysconf`` (Linux/macOS); if the keys are unavailable, falls
-    back to free space on ``/`` so the guard still returns *something* rather
-    than crashing the extraction.
-    """
+    """Best-effort available physical RAM in bytes."""
     try:
         return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_AVPHYS_PAGES")
     except (ValueError, AttributeError, OSError):
@@ -140,15 +30,10 @@ def _available_ram_bytes() -> int:
 
 
 def _even_ranges(total: int, n_chunks: int) -> List[Tuple[int, int]]:
-    """Split [0, total) into *n_chunks* non-empty contiguous ranges.
-
-    Unlike naive ceil-div slicing, this distributes the remainder across
-    the early chunks so no chunk is empty even when total % n_chunks != 0.
-    """
+    """Split [0, total) into at most ``n_chunks`` non-empty contiguous ranges."""
     n_chunks = max(1, min(n_chunks, total))
     base, rem = divmod(total, n_chunks)
-    ranges = []
-    off = 0
+    ranges, off = [], 0
     for i in range(n_chunks):
         step = base + (1 if i < rem else 0)
         if step == 0:
@@ -158,91 +43,51 @@ def _even_ranges(total: int, n_chunks: int) -> List[Tuple[int, int]]:
     return ranges
 
 
-def _resolve_opener(backend: str | None):
-    """Return ``(opener, backend_name)`` for a requested backend.
-
-    Pure resolution — does **not** mutate module state, so concurrent
-    ``signal()`` calls with different backends don't race on globals.
-    ``backend=None`` uses the auto-detected default.
-    """
-    if backend is None:
-        return _bw_open, _bw_backend
-    if backend == 'pybigtools':
-        return _open_pybigtools, 'pybigtools'
-    if backend == 'bigwig':
-        from . import bigwig as _bw_mod
-        return _bw_mod.open, 'bigwig'
-    raise ValueError(f"Unknown backend: {backend!r}")
-
-
-def _extract_chunk(cube: np.ndarray, hs: list, ch: dict,
-                   chroms: Sequence[str],
-                   starts: np.ndarray, ends: np.ndarray,
-                   t_lo: int, l_lo: int, l_hi: int,
-                   n_bins: int, flank: int, agg: str,
-                   span: bool, exact: bool):
-    """Write stats into ``cube[l_lo:l_hi, t_lo:t_lo+len(hs), :]``.
-
-    Called on the main thread for the sequential path and inside a child
-    process (attached to SharedMemory) for the multiprocessing path.
-    """
-    native = all(hasattr(h, 'stats_array') for h in hs)
-    for r in range(l_lo, l_hi):
-        chrom = chroms[r]
-        if chrom not in ch:
-            continue
-        cs = int(starts[r]); ce = int(ends[r])
-        chrom_size = ch[chrom]
-        if span:
-            L, R = max(0, cs), min(chrom_size, ce)
-            pre, core = 0, max(1, n_bins)
-        else:
-            c = (cs + ce) // 2
-            L, R = c - flank, c + flank
-            pre = max(0, -L)
-            post = max(0, R - chrom_size)
-            L = max(0, L); R = min(chrom_size, R)
-            core = n_bins - (pre + post)
-        if core <= 0 or R <= L:
-            continue
-        for off, h in enumerate(hs):
-            t = t_lo + off
-            if native:
-                xs = h.stats_array(chrom, L, R, n_bins=core,
-                                   stat=agg, exact=exact, missing=0.0)
-            else:
-                raw = h.stats(chrom, L, R, n_bins=core, stat=agg)
-                xs = np.fromiter(
-                    (0.0 if x is None else x for x in raw),
-                    dtype=np.float64, count=len(raw),
-                )
-            cube[r, t, pre:pre + core] = xs
-
-
-def _mp_worker(bw_paths, shm_name, shape, dtype_str,
-               chrom_list, starts_bytes, ends_bytes,
-               t_lo, t_hi, l_lo, l_hi,
-               n_bins, flank, agg, span, exact, backend_name):
-    """Process-pool worker: attach SharedMemory, extract, detach."""
-    from multiprocessing import shared_memory
-    import numpy as _np
-
-    if backend_name == 'pybigtools':
-        opener = _open_pybigtools
+def _windows(starts, ends, sizes, n_bins, flank, span):
+    """Per row: (left, right, first bin, number of bins) of the window to read
+    and whether the chromosome is in the file. Windows are not clipped: the
+    bigwig handles bin a window that leaves the chromosome over the full grid
+    (bases outside have no data), so edge bins keep the signal they have and
+    every backend agrees."""
+    if span:
+        L, R = starts.astype(np.int64), ends.astype(np.int64)
     else:
-        from . import bigwig as _bw_mod
-        opener = _bw_mod.open
+        c = (starts + ends) // 2
+        L, R = c - flank, c + flank
+    pre = np.zeros(len(L), np.int64)
+    core = np.full(len(L), max(1, n_bins), np.int64)
+    ok = (R > L) & (sizes > 0)
+    return L, R, pre, core, ok
 
-    starts = _np.frombuffer(starts_bytes, dtype=_np.int64)
-    ends = _np.frombuffer(ends_bytes, dtype=_np.int64)
+
+def _extract(cube, handles, chroms, starts, ends, t_lo, l_lo, l_hi, n_bins, flank, agg, span, exact):
+    """Fill cube[l_lo:l_hi, t_lo:t_lo + len(handles), :]."""
+    for off, h in enumerate(handles):
+        sizes_d = h.chroms()
+        rows = np.arange(l_lo, l_hi)
+        sizes = np.array([sizes_d.get(c, 0) for c in chroms[l_lo:l_hi]], np.int64)
+        L, R, pre, core, ok = _windows(starts[l_lo:l_hi], ends[l_lo:l_hi], sizes, n_bins, flank, span)
+        t = t_lo + off
+        stats = h.stats_array
+        for r, c, a, b, p, k in zip(rows[ok].tolist(), chroms[l_lo:l_hi][ok].tolist(), L[ok].tolist(),
+                                    R[ok].tolist(), pre[ok].tolist(), core[ok].tolist()):
+            cube[r, t, p:p + k] = stats(c, a, b, n_bins=k, stat=agg, exact=exact, missing=0.0)
+
+
+def _mp_worker(paths, shm_name, shape, dtype_str, chroms, starts_b, ends_b, t_lo, t_hi, l_lo, l_hi,
+               n_bins, flank, agg, span, exact, backend):
+    """Process-pool worker: attach the shared cube, extract, detach."""
+    from multiprocessing import shared_memory
+    from .backends.bigwig import open_bigwig
+    starts = np.frombuffer(starts_b, dtype=np.int64)
+    ends = np.frombuffer(ends_b, dtype=np.int64)
     shm = shared_memory.SharedMemory(name=shm_name)
     try:
-        cube = _np.ndarray(shape, dtype=_np.dtype(dtype_str), buffer=shm.buf)
-        hs = [opener(p) for p in bw_paths[t_lo:t_hi]]
+        cube = np.ndarray(shape, dtype=np.dtype(dtype_str), buffer=shm.buf)
+        hs = [open_bigwig(p, backend=backend) for p in paths[t_lo:t_hi]]
         try:
-            ch = hs[0].chroms()
-            _extract_chunk(cube, hs, ch, chrom_list, starts, ends,
-                           t_lo, l_lo, l_hi, n_bins, flank, agg, span, exact)
+            _extract(cube, hs, np.asarray(chroms, dtype=object), starts, ends, t_lo, l_lo, l_hi,
+                     n_bins, flank, agg, span, exact)
         finally:
             for h in hs:
                 h.close()
@@ -250,230 +95,159 @@ def _mp_worker(bw_paths, shm_name, shape, dtype_str,
         shm.close()
 
 
-def signal(
-    loci: Loci,
-    bigwigs: Sequence[str],
-    *,
-    n_bins: int = 200,
-    flank: int = 3_000,
-    agg: str = "mean",
-    dtype: str | np.dtype = np.float32,
-    progress: bool = True,
-    workers: int | None = 1,
-    span: bool = False,
-    verbose: bool = True,
-    backend: str | None = None,
-    exact: bool = True,
-    ) -> np.ndarray:
-    """Extract signal from bigwig files for given genomic loci.
+def _tracks(bigwigs) -> list:
+    if isinstance(bigwigs, dict):
+        return list(bigwigs.values())
+    if isinstance(bigwigs, (str, os.PathLike)) or not hasattr(bigwigs, "__iter__"):
+        return [bigwigs]
+    return list(bigwigs)
 
-    Default path is **sequential** — a single native-Rust pass with
-    pybigtools reaches ~50k region-tracks/s, which is fastest for
-    typical heatmap / browser / per-locus-profile workloads.
 
-    For scale (many bigwigs × many loci) pass ``workers > 1``: extraction
-    runs in a ``ProcessPoolExecutor`` writing into a shared-memory cube.
-    Multiprocessing (not threading) is used because pybigtools serialises
-    concurrent Python threads; processes give linear scale up to CPU count.
+def signal(loci, bigwigs, *, n_bins: int = 200, flank: int = 3_000, agg: str = "mean",
+           dtype=np.float32, progress: bool = True, workers: Optional[int] = 1, span: bool = False,
+           verbose: bool = True, backend: Optional[str] = None, exact: bool = True) -> np.ndarray:
+    """bigWig signal of every locus: a ``(rows, tracks, bins)`` array.
 
     Args:
-        loci: Genomic loci to extract signal from
-        bigwigs: BigWig file paths
-        n_bins: Bins per region
-        flank: bp each side of locus center (ignored when ``span=True``)
-        agg: 'mean' | 'min' | 'max' | 'sum' | 'std' | 'coverage'
-        dtype: Output cube dtype (float32 default)
-        progress: Show a tqdm bar
-        workers: 1 (default) = sequential. >1 = multiprocessing with that
-            many processes, capped at ``cpu_count()`` and at the available
-            work. ``None`` = half the cores, the polite choice on a shared
-            machine.
-        span: Use full locus span instead of center±flank
-        backend: 'pybigtools' | 'bigwig' | None (auto-detect)
-        exact: pybigtools base-accurate binning when True (default); zoom
-            interpolation when False (~3× faster, approximate). Ignored by
-            the pure-python backend.
-
-    Returns:
-        ndarray of shape ``(n_loci, n_tracks, n_bins)``.
+        loci: anything :func:`~genomeblocks.as_loci` takes.
+        bigwigs: one bigWig or several (paths, open pyBigWig / pybigtools
+            handles, or a ``{name: path}`` dict — tracks in its order).
+        n_bins: bins per locus.
+        flank: bp each side of the locus centre (ignored with ``span=True``).
+        agg: 'mean' | 'min' | 'max' | 'sum' | 'std' | 'coverage'.
+        span: bin the whole locus instead of centre ± flank.
+        workers: 1 (default) reads sequentially — one native call per region
+            and track; >1 uses that many processes writing into a shared-memory
+            cube (needs paths); ``None`` = half the cores.
+        backend: 'pybigtools' (default), 'pybigwig' or 'python'.
+        exact: base-accurate binning (default); False lets pybigtools /
+            pyBigWig use zoom levels (~3x faster, approximate).
     """
-    opener, backend_name = _resolve_opener(backend)
-
-    n_loci, n_tracks = len(loci), len(bigwigs)
+    from .backends import resolve
+    from .backends.bigwig import open_bigwig
+    from .interop import as_loci
+    L = as_loci(loci)
+    tracks = _tracks(bigwigs)
+    n_loci, n_tracks = len(L), len(tracks)
     if n_loci == 0:
         raise ValueError("No loci provided.")
-
-    bytes_need = n_loci * n_tracks * n_bins * np.dtype(dtype).itemsize
-    if bytes_need > 0.5 * _available_ram_bytes():
-        raise MemoryError(
-            f"Signal cube needs ~{bytes_need / 1e9:.1f} GB, over half of "
-            f"available RAM; extract in loci chunks and stream to disk.")
-
-    # flatten loci into pickle-friendly columns (needed for MP, cheap for seq)
-    chrom_list = [loc.chrom for loc in loci]
-    starts = np.fromiter((loc.start for loc in loci),
-                         dtype=np.int64, count=n_loci)
-    ends = np.fromiter((loc.end for loc in loci),
-                       dtype=np.int64, count=n_loci)
-
-    # workers=None defaults to half the cores: each worker spins up
-    # pybigtools' own tokio pool, so the other half stays free for the OS /
-    # other users. An explicit count is honoured up to the core count.
+    if n_tracks == 0:
+        raise ValueError("No bigWig provided.")
+    need = n_loci * n_tracks * n_bins * np.dtype(dtype).itemsize
+    if need > 0.5 * _available_ram_bytes():
+        raise MemoryError(f"The signal cube needs ~{need / 1e9:.1f} GB, over half of the available RAM; "
+                          f"extract in chunks of loci (L[a:b].signal(...)).")
+    paths = all(isinstance(t, (str, os.PathLike)) for t in tracks)
     if workers is None:
         workers = max(1, (cpu_count() or 2) // 2)
-    workers = max(1, min(workers, n_tracks * max(1, (n_loci + 999) // 1000),
-                         cpu_count() or 1))
-
+    workers = max(1, min(workers, n_tracks * max(1, (n_loci + 999) // 1000), cpu_count() or 1))
+    if workers > 1 and not paths:
+        raise ValueError("workers > 1 needs bigWig paths (open handles cannot be shared between "
+                         "processes); pass the file paths, or workers=1.")
+    name = resolve("bigwig", backend) if paths or backend else "handle"
     if verbose:
-        print(f"[INFO] Extracting {n_tracks} bigwigs for {n_loci} loci "
-              f"into {n_bins} bins (span={span}, agg='{agg}', "
-              f"backend='{backend_name}', exact={exact}, workers={workers}).")
-
+        print(f"[INFO] Extracting {n_tracks} bigwigs for {n_loci} loci into {n_bins} bins (span={span}, "
+              f"agg='{agg}', backend='{name}', exact={exact}, workers={workers}).")
+    chroms = L.chroms
+    starts, ends = L.starts, L.ends
     cube = np.zeros((n_loci, n_tracks, n_bins), dtype=dtype)
-
     if workers <= 1:
-        _run_sequential(cube, bigwigs, chrom_list, starts, ends,
-                        n_bins, flank, agg, span, exact,
-                        opener=opener, progress=progress)
+        hs = [open_bigwig(t, backend=backend) for t in tracks]
+        try:
+            from tqdm import tqdm
+            step = 512
+            bar = tqdm(total=n_loci * n_tracks, dynamic_ncols=True, disable=not progress)
+            for lo in range(0, n_loci, step):
+                hi = min(n_loci, lo + step)
+                _extract(cube, hs, chroms, starts, ends, 0, lo, hi, n_bins, flank, agg, span, exact)
+                bar.update((hi - lo) * n_tracks)
+            bar.close()
+        finally:
+            for h in hs:
+                h.close()
     else:
-        _run_multiprocess(cube, list(bigwigs), chrom_list, starts, ends,
-                          n_bins, flank, agg, span, exact,
-                          backend_name, workers, progress=progress)
-
+        _run_multiprocess(cube, [str(t) for t in tracks], chroms, starts, ends, n_bins, flank, agg, span,
+                          exact, resolve("bigwig", backend), workers, progress)
     return cube
 
 
-def _run_sequential(cube, bigwigs, chrom_list, starts, ends,
-                    n_bins, flank, agg, span, exact, *, opener, progress):
-    if not bigwigs:
-        return
-    hs = [opener(p) for p in bigwigs]
-    try:
-        ch = hs[0].chroms()
-        n_loci = len(chrom_list)
-        n_tracks = len(hs)
-        STEP = 256  # progress granularity — keeps tqdm overhead negligible
-        bar = tqdm(total=n_loci * n_tracks, dynamic_ncols=True,
-                   disable=not progress)
-        try:
-            for l_lo in range(0, n_loci, STEP):
-                l_hi = min(n_loci, l_lo + STEP)
-                _extract_chunk(cube, hs, ch, chrom_list, starts, ends,
-                               0, l_lo, l_hi, n_bins, flank, agg,
-                               span, exact)
-                bar.update((l_hi - l_lo) * n_tracks)
-        finally:
-            bar.close()
-    finally:
-        for h in hs:
-            h.close()
-
-
-def _run_multiprocess(cube, bigwigs, chrom_list, starts, ends,
-                      n_bins, flank, agg, span, exact,
-                      backend_name, workers, *, progress):
-    from multiprocessing import shared_memory
+def _run_multiprocess(cube, paths, chroms, starts, ends, n_bins, flank, agg, span, exact, backend,
+                      workers, progress):
     from concurrent.futures import ProcessPoolExecutor, as_completed
-
-    n_loci = len(chrom_list)
-    n_tracks = len(bigwigs)
-
-    # Prefer splitting by track (each process owns its own bigwig handles).
-    # If workers > n_tracks, sub-split the loci axis.
+    from multiprocessing import shared_memory
+    from tqdm import tqdm
+    n_loci, n_tracks = len(chroms), len(paths)
     t_splits = min(workers, n_tracks)
     l_per_t = max(1, workers // t_splits)
-    t_ranges = _even_ranges(n_tracks, t_splits)
-    l_ranges = _even_ranges(n_loci, l_per_t)
-
     shm = shared_memory.SharedMemory(create=True, size=cube.nbytes)
     try:
-        shm_cube = np.ndarray(cube.shape, dtype=cube.dtype, buffer=shm.buf)
-        shm_cube[:] = 0
-
-        # bytes views of starts/ends avoid re-pickling numpy in each task
-        starts_bytes = starts.tobytes()
-        ends_bytes = ends.tobytes()
-
-        tasks = []
-        for t_lo, t_hi in t_ranges:
-            for l_lo, l_hi in l_ranges:
-                tasks.append((bigwigs, shm.name, cube.shape, cube.dtype.name,
-                              chrom_list, starts_bytes, ends_bytes,
-                              t_lo, t_hi, l_lo, l_hi,
-                              n_bins, flank, agg, span, exact, backend_name))
-
-        bar = tqdm(total=len(tasks), dynamic_ncols=True,
-                   desc='chunks', disable=not progress)
-        try:
-            with ProcessPoolExecutor(max_workers=workers) as ex:
-                futures = [ex.submit(_mp_worker, *t) for t in tasks]
-                for f in as_completed(futures):
-                    f.result()
-                    bar.update()
-        finally:
-            bar.close()
-
-        cube[:] = shm_cube  # copy out before unlink
+        shared = np.ndarray(cube.shape, dtype=cube.dtype, buffer=shm.buf)
+        shared[:] = 0
+        sb, eb = starts.tobytes(), ends.tobytes()
+        chrom_list = chroms.tolist()
+        tasks = [(paths, shm.name, cube.shape, cube.dtype.name, chrom_list, sb, eb, t_lo, t_hi, l_lo, l_hi,
+                  n_bins, flank, agg, span, exact, backend)
+                 for t_lo, t_hi in _even_ranges(n_tracks, t_splits)
+                 for l_lo, l_hi in _even_ranges(n_loci, l_per_t)]
+        bar = tqdm(total=len(tasks), dynamic_ncols=True, desc="chunks", disable=not progress)
+        with ProcessPoolExecutor(max_workers=workers) as ex:
+            for f in as_completed([ex.submit(_mp_worker, *t) for t in tasks]):
+                f.result()
+                bar.update()
+        bar.close()
+        cube[:] = shared
     finally:
         shm.close()
         shm.unlink()
 
 
 def _tmm_norm_factors(data, trim_lfc=0.3, trim_mag=0.05, index_ref=None):
-    """edgeR Trimmed-Mean-of-M-values normalization factors, one per column.
-
-    A self-contained implementation of the standard TMM algorithm (Robinson &
-    Oshlack, *Genome Biology* 2010) so genomeblocks carries no extra dependency
-    for :func:`tmm`. Rows are features, columns are samples; returns a factor
-    per sample, scaled to a geometric mean of 1.
-    """
-    x = np.asarray(data, dtype=float).T                     # (samples, features)
+    """edgeR Trimmed-Mean-of-M-values factors, one per column (Robinson & Oshlack 2010),
+    scaled to a geometric mean of 1. Rows are features, columns samples."""
+    x = np.asarray(data, dtype=float).T
     lib_size = x.sum(axis=1)
     mask = x == 0
     if index_ref is None:
         xr = x.copy()
-        xr[:, np.all(mask, axis=0)] = np.nan                # drop all-zero features
+        xr[:, np.all(mask, axis=0)] = np.nan
         p75 = np.nanpercentile(xr, 75, axis=1)
         index_ref = int(np.argmin(np.abs(p75 - p75.mean())))
     mask = mask.copy()
-    mask[:, mask[index_ref]] = True                          # mask where the ref is 0
-    x = x.copy(); x[mask] = np.nan
+    mask[:, mask[index_ref]] = True
+    x = x.copy()
+    x[mask] = np.nan
     with np.errstate(invalid="ignore", divide="ignore"):
         norm_x = x / lib_size[:, None]
         logs = np.log2(norm_x)
-        m_g = logs - logs[index_ref]                         # log fold-change vs ref
-        a_g = (logs + logs[index_ref]) / 2                   # average abundance
+        m_g = logs - logs[index_ref]
+        a_g = (logs + logs[index_ref]) / 2
         pm = np.nanquantile(m_g, [trim_lfc, 1 - trim_lfc], axis=1, method="nearest")[..., None]
         pa = np.nanquantile(a_g, [trim_mag, 1 - trim_mag], axis=1, method="nearest")[..., None]
         mask = mask | (m_g < pm[0]) | (m_g > pm[1])
         mask = mask | (a_g < pa[0]) | (a_g > pa[1])
-        w = (1 - norm_x) / x                                 # asymptotic variance
+        w = (1 - norm_x) / x
         w = 1 / (w + w[index_ref])
     w[mask] = 0
     m_g[mask] = 0
     w /= w.sum(axis=1)[:, None]
     f = np.sum(w * m_g, axis=1)
-    f -= f.mean()                                            # geometric mean -> 1
+    f -= f.mean()
     return 2 ** f
 
 
 def tmm(cube: np.ndarray) -> np.ndarray:
-    """TMM-normalize a signal cube (regions × tracks × bins).
-
-    Computes per-track TMM normalization factors and library-size
-    scaling so that tracks become comparable.
-
-    Args:
-        cube: Signal array of shape (regions, tracks, bins)
-
-    Returns:
-        Normalized copy of the cube (same shape).
-    """
-    means = np.nanmean(cube, axis=2)                        # (regions, tracks)
-    factors = _tmm_norm_factors(means)                       # (tracks,)
-    lib_size = means.sum(0)                                  # (tracks,)
-    scale = 1.0 / (factors * lib_size / 1_000_000)
+    """TMM-normalise a (regions x tracks x bins) cube: per-track TMM factors and
+    library-size scaling (counts per million), so tracks become comparable."""
+    means = np.nanmean(cube, axis=2)
+    lib_size = np.nansum(means, axis=0)
+    has = lib_size > 0
+    if not has.any():
+        raise ValueError("tmm: every track is empty (no signal in any region)")
+    if not has.all():
+        import warnings
+        warnings.warn(f"tmm: track(s) {np.flatnonzero(~has).tolist()} have no signal and are left at 0",
+                      RuntimeWarning, stacklevel=2)
+    scale = np.zeros(cube.shape[1])
+    factors = _tmm_norm_factors(means[:, has])
+    scale[has] = 1.0 / (factors * lib_size[has] / 1_000_000)
     return cube * scale[None, :, None]
-
-
-Loci.signal = signal

@@ -1,79 +1,65 @@
-"""Public-surface guards: what should be importable, what must stay gone."""
+"""The public surface: lazy exports, import cost, the backends registry."""
 import subprocess
 import sys
+
+import pytest
 
 import genomeblocks as gb
 
 
-EXPECTED_ALL = [
-    "Architecture", "Atlas", "CDS", "Exon", "Gene", "Genes", "Loci", "Locus",
-    "Transcript", "UTR", "browser", "compare_heatmap", "coverage",
-    "make_genome", "scan_motifs", "tmm",
-]
+def test_every_export_resolves():
+    for name in gb.__all__:
+        assert getattr(gb, name) is not None, name
+    assert sorted(gb.__all__) == gb.__all__
 
 
-def test_public_all():
-    assert gb.__all__ == EXPECTED_ALL
+def test_removed_names_stay_gone():
+    for name in ("set_backend", "make_genome", "Pair", "read_bedpe", "columnar", "to_legacy"):
+        assert not hasattr(gb, name), name
+    with pytest.raises(ImportError):
+        __import__("genomeblocks.columnar")
 
 
-def test_kept_names_importable():
-    for name in EXPECTED_ALL:
-        assert getattr(gb, name) is not None
+def test_import_is_light():
+    code = ("import sys, time; t = time.perf_counter(); import genomeblocks; from genomeblocks import Loci; "
+            "dt = time.perf_counter() - t; heavy = [m for m in ('pandas', 'scipy', 'matplotlib', 'polars', "
+            "'pyarrow', 'narwhals', 'cooler', 'pybigtools') if m in sys.modules]; print(dt, heavy)")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout.split()
+    assert float(out[0]) < 1.0
+    assert out[1:] == ["[]"], out
 
 
-def test_removed_top_level_names_are_gone():
-    for name in ["Tags", "draw"]:
-        assert not hasattr(gb, name)
+def test_backends_table_and_resolve():
+    df = gb.backends()
+    assert set(df["family"]) == {"intervals", "bigwig", "motifs", "fasta", "tables", "graph"}
+    assert df.loc[df["default"], "installed"].all()
+    assert gb.backends.resolve("intervals") == "genomeblocks"
+    assert gb.backends.resolve("intervals", "numpy") == "genomeblocks"        # alias
+    with pytest.raises(ValueError, match="unknown intervals backend"):
+        gb.backends.resolve("intervals", "nope")
+    with pytest.raises(ValueError, match="unknown intervals backend"):
+        gb.backends.installed("intervals", "nope")
+    with pytest.raises(ValueError, match="unknown backend family"):
+        gb.backends.resolve("nope")
 
 
-def test_removed_architecture_methods_gone():
-    from genomeblocks import Architecture
-    for m in ["make_spread", "make_clique", "surrounds", "add_patches",
-              "weighted_activity", "cluster", "focus", "focus_genes",
-              "supernode_metrics", "supernode_abc", "mutual", "aggregate", "draw"]:
-        assert not hasattr(Architecture, m), m
+def test_missing_backend_names_the_install():
+    missing = [b for b in ("cgranges", "bedtools") if not gb.backends.installed("intervals", b)]
+    for b in missing:
+        with pytest.raises(ImportError, match="install"):
+            gb.backends.resolve("intervals", b)
+        with pytest.raises(ImportError):
+            with gb.use_backend(intervals=b):
+                pass
 
 
-def test_removed_genes_methods_gone():
-    from genomeblocks import Genes
-    for m in ["get_tss_transcripts", "nearest_transcripts", "enhancer_to_genes",
-              "cre_supernodes", "nearby"]:
-        assert not hasattr(Genes, m), m
-
-
-def test_tags_module_removed():
-    import importlib.util
-    assert importlib.util.find_spec("genomeblocks.tags") is None
-
-
-def test_loci_lost_tag_method():
-    from genomeblocks import Loci
-    assert not hasattr(Loci, "tag")
-
-
-def test_signal_draw_separated():
-    from genomeblocks import signal as sig
-    from genomeblocks import signal_draw as sd
-    assert hasattr(sd, "plot_heatmap") and hasattr(sd, "compare_heatmap")
-    assert not hasattr(sig, "plot_heatmap")       # processing module is plot-free
-
-
-def test_signal_first_import_order():
-    # importing genomeblocks.signal first must not deadlock on signal_draw
-    r = subprocess.run([sys.executable, "-c", "import genomeblocks.signal"],
-                       capture_output=True, text=True)
-    assert r.returncode == 0, r.stderr
-
-
-def test_browser_export_is_the_function_not_the_module():
-    # Regression: the drawing module was renamed to `browserview` so the public
-    # `browser` name is unambiguously the callable, regardless of import order.
-    import types
-    assert callable(gb.browser)
-    assert not isinstance(gb.browser, types.ModuleType)
-
-
-def test_browser_submodule_name_is_gone():
-    import importlib.util
-    assert importlib.util.find_spec("genomeblocks.browser") is None
-    assert importlib.util.find_spec("genomeblocks.browserview") is not None
+def test_use_backend_scopes_and_restores():
+    from genomeblocks.backends import _scoped, resolve
+    assert resolve("tables") in ("polars", "pandas")
+    with gb.use_backend(tables="pandas"):
+        assert resolve("tables") == "pandas"
+        with gb.use_backend(tables="auto"):
+            assert resolve("tables") == ("polars" if gb.backends.installed("tables", "polars") else "pandas")
+        assert resolve("tables") == "pandas"
+        assert resolve("tables", "polars" if gb.backends.installed("tables", "polars") else "pandas") != "nope"
+    assert "tables" not in _scoped

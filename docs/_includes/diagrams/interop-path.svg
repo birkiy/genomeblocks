@@ -1,0 +1,76 @@
+<svg class="gbd" viewBox="0 0 880 290" role="img" aria-label="In: any frame becomes one narwhals DataFrame, its columns are found by name and cast into the numpy columns of a Loci. Out: to_arrow wraps those columns without copying, and the Arrow C stream, dataframe-interchange and narwhals protocols hand them to polars, DuckDB, seaborn, plotly and altair as they are." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="22">IN</text>
+<rect class="chip white" x="20" y="32" width="196" height="22" rx="11"></rect>
+<text class="ms" x="118" y="47" text-anchor="middle">pandas · polars (lazy too) · pyarrow</text>
+<polyline class="ln faint" points="218,43 240,43"/>
+<polygon class="hd faint" points="244.0,43.0 237.8,46.3 237.8,39.7"/>
+<rect class="chip white" x="20" y="59" width="196" height="22" rx="11"></rect>
+<text class="ms" x="118" y="74" text-anchor="middle">DuckDB · modin · cuDF</text>
+<polyline class="ln faint" points="218,70 240,70"/>
+<polygon class="hd faint" points="244.0,70.0 237.8,73.3 237.8,66.7"/>
+<rect class="chip white" x="20" y="86" width="196" height="22" rx="11"></rect>
+<text class="ms" x="118" y="101" text-anchor="middle">bioframe · PyRanges · pybedtools</text>
+<polyline class="ln faint" points="218,97 240,97"/>
+<polygon class="hd faint" points="244.0,97.0 237.8,100.3 237.8,93.7"/>
+<rect class="chip white" x="20" y="113" width="196" height="22" rx="11"></rect>
+<text class="ms" x="118" y="128" text-anchor="middle">dict of columns · structured array</text>
+<polyline class="ln faint" points="218,124 240,124"/>
+<polygon class="hd faint" points="244.0,124.0 237.8,127.3 237.8,120.7"/>
+<rect class="bx" x="246" y="32" width="172" height="103" rx="8"></rect>
+<text class="tm" x="258" y="52">interop.frame(obj)</text>
+<text class="ms" x="258" y="72">nw.from_native(obj)</text>
+<text class="ms" x="258" y="88">else pa.table(obj): Arrow C stream</text>
+<text class="ms" x="258" y="104">else pyarrow.interchange</text>
+<text class="ms" x="258" y="120">LazyFrame → collect()</text>
+<polyline class="ln navy" points="420,83 480,83"/>
+<polygon class="hd navy" points="484.0,83.0 477.8,86.3 477.8,79.7"/>
+<text class="lbl" x="452" y="70" text-anchor="middle">narwhals</text>
+<text class="lbl" x="452" y="100" text-anchor="middle">DataFrame</text>
+<rect class="bx green" x="486" y="32" width="234" height="103" rx="8"></rect>
+<text class="tm" x="498" y="52">loci_from_frame</text>
+<text class="ms" x="498" y="72">columns by name: chrom · chr · Chromosome …</text>
+<text class="ms" x="498" y="88">start · Start · chromStart · end · End · …</text>
+<text class="ms" x="498" y="104">names → codes · starts, ends → int64</text>
+<text class="ms" x="498" y="120">strand → int8 · other columns kept</text>
+<polyline class="ln green" points="722,83 744,83"/>
+<polygon class="hd green" points="748.0,83.0 741.8,86.3 741.8,79.7"/>
+<rect class="bx green" x="750" y="32" width="110" height="103" rx="8"></rect>
+<text class="t" x="805" y="68" text-anchor="middle">Loci</text>
+<text class="s" x="805" y="88" text-anchor="middle">numpy columns</text>
+<text class="s" x="805" y="104" text-anchor="middle">one Genome</text>
+<text class="s" x="805" y="120" text-anchor="middle">input row order</text>
+<text class="cap" x="20" y="160">OUT</text>
+<rect class="bx green" x="20" y="176" width="100" height="90" rx="8"></rect>
+<text class="t" x="70" y="214" text-anchor="middle">Loci</text>
+<text class="s" x="70" y="232" text-anchor="middle">any container</text>
+<polyline class="ln green" points="122,221 192,221"/>
+<polygon class="hd green" points="196.0,221.0 189.8,224.3 189.8,217.7"/>
+<text class="lbl" x="159" y="208" text-anchor="middle">to_arrow()</text>
+<text class="lbl" x="159" y="240" text-anchor="middle">no copy</text>
+<rect class="bx" x="198" y="176" width="150" height="90" rx="8"></rect>
+<text class="t" x="273" y="208" text-anchor="middle">pyarrow Table</text>
+<text class="s" x="273" y="226" text-anchor="middle">chrom, strand: dictionary</text>
+<text class="s" x="273" y="240" text-anchor="middle">start, end: int64 views</text>
+<polyline class="ln navy" points="350,221 380,221 380,191 402,191"/>
+<polygon class="hd navy" points="406.0,191.0 399.8,194.3 399.8,187.7"/>
+<rect class="chip navy" x="408" y="180" width="178" height="22" rx="11"></rect>
+<text class="ms" x="497" y="195" text-anchor="middle">__arrow_c_stream__</text>
+<polyline class="ln faint" points="588,191 608,191"/>
+<polygon class="hd faint" points="612.0,191.0 605.8,194.3 605.8,187.7"/>
+<text class="m" x="620" y="195">polars · pyarrow · DuckDB · pandas ≥ 2.2</text>
+<polyline class="ln" points="350,221 380,221 380,221 402,221"/>
+<polygon class="hd" points="406.0,221.0 399.8,224.3 399.8,217.7"/>
+<rect class="chip navy" x="408" y="210" width="178" height="22" rx="11"></rect>
+<text class="ms" x="497" y="225" text-anchor="middle">__dataframe__</text>
+<polyline class="ln faint" points="588,221 608,221"/>
+<polygon class="hd faint" points="612.0,221.0 605.8,224.3 605.8,217.7"/>
+<text class="m" x="620" y="225">seaborn · pandas</text>
+<polyline class="ln" points="350,221 380,221 380,251 402,251"/>
+<polygon class="hd" points="406.0,251.0 399.8,254.3 399.8,247.7"/>
+<rect class="chip navy" x="408" y="240" width="178" height="22" rx="11"></rect>
+<text class="ms" x="497" y="255" text-anchor="middle">__narwhals_dataframe__</text>
+<polyline class="ln faint" points="588,251 608,251"/>
+<polygon class="hd faint" points="612.0,251.0 605.8,254.3 605.8,247.7"/>
+<text class="m" x="620" y="255">altair · plotly · marimo</text>
+<text class="s" x="20" y="284">explicit copies: to_pandas · to_polars · to_bioframe · to_pyranges · to_bedtool · to_anndata · to_bed · save</text>
+</svg>

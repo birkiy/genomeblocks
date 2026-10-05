@@ -1,0 +1,74 @@
+<svg class="gbd" viewBox="0 0 880 280" role="img" aria-label="Half-open coordinates make lengths and overlaps plain arithmetic: [s, e) has e − s bases, two intervals overlap when s1 &lt; e2 and s2 &lt; e1, a book-ended pair does not, and a zero-length interval is the point between two bases; a GTF&#x27;s 1-based start becomes start − 1." xmlns="http://www.w3.org/2000/svg">
+<polyline class="grid" points="120,56 120,244"/>
+<polyline class="grid" points="178,56 178,244"/>
+<polyline class="grid" points="236,56 236,244"/>
+<polyline class="grid" points="294,56 294,244"/>
+<polyline class="grid" points="352,56 352,244"/>
+<polyline class="grid" points="410,56 410,244"/>
+<polyline class="grid" points="468,56 468,244"/>
+<polyline class="grid" points="526,56 526,244"/>
+<polyline class="grid" points="584,56 584,244"/>
+<polyline class="grid" points="642,56 642,244"/>
+<polyline class="grid" points="700,56 700,244"/>
+<polyline class="grid" points="758,56 758,244"/>
+<polyline class="grid" points="816,56 816,244"/>
+<polyline class="ln" points="120,246 816,246"/>
+<polyline class="ln" points="120,242 120,250"/>
+<text class="ms" x="120" y="264" text-anchor="middle">0</text>
+<polyline class="ln" points="178,242 178,250"/>
+<text class="ms" x="178" y="264" text-anchor="middle">1</text>
+<polyline class="ln" points="236,242 236,250"/>
+<text class="ms" x="236" y="264" text-anchor="middle">2</text>
+<polyline class="ln" points="294,242 294,250"/>
+<text class="ms" x="294" y="264" text-anchor="middle">3</text>
+<polyline class="ln" points="352,242 352,250"/>
+<text class="ms" x="352" y="264" text-anchor="middle">4</text>
+<polyline class="ln" points="410,242 410,250"/>
+<text class="ms" x="410" y="264" text-anchor="middle">5</text>
+<polyline class="ln" points="468,242 468,250"/>
+<text class="ms" x="468" y="264" text-anchor="middle">6</text>
+<polyline class="ln" points="526,242 526,250"/>
+<text class="ms" x="526" y="264" text-anchor="middle">7</text>
+<polyline class="ln" points="584,242 584,250"/>
+<text class="ms" x="584" y="264" text-anchor="middle">8</text>
+<polyline class="ln" points="642,242 642,250"/>
+<text class="ms" x="642" y="264" text-anchor="middle">9</text>
+<polyline class="ln" points="700,242 700,250"/>
+<text class="ms" x="700" y="264" text-anchor="middle">10</text>
+<polyline class="ln" points="758,242 758,250"/>
+<text class="ms" x="758" y="264" text-anchor="middle">11</text>
+<polyline class="ln" points="816,242 816,250"/>
+<text class="ms" x="816" y="264" text-anchor="middle">12</text>
+<text class="s" x="108" y="250" text-anchor="end">0-based position</text>
+<rect class="bx dark" x="20" y="14" width="262" height="24" rx="8"></rect>
+<text class="m w" x="32" y="31">GTF row:  start 4 · end 7  (1-based, closed)</text>
+<polyline class="ln navy" points="200,40 290.096,60.1279"/>
+<polygon class="hd navy" points="294.0,61.0 287.3,62.9 288.7,56.4"/>
+<text class="lbl" x="304" y="54">start − 1 = 3 · end stays 7</text>
+<text class="m" x="20" y="74">[3, 7)</text>
+<rect class="iv fg" x="295" y="63" width="56" height="14" rx="2"></rect>
+<text class="ms w" x="323" y="74" text-anchor="middle">3</text>
+<rect class="iv fg" x="353" y="63" width="56" height="14" rx="2"></rect>
+<text class="ms w" x="381" y="74" text-anchor="middle">4</text>
+<rect class="iv fg" x="411" y="63" width="56" height="14" rx="2"></rect>
+<text class="ms w" x="439" y="74" text-anchor="middle">5</text>
+<rect class="iv fg" x="469" y="63" width="56" height="14" rx="2"></rect>
+<text class="ms w" x="497" y="74" text-anchor="middle">6</text>
+<text class="s" x="536" y="74">end − start = 7 − 3 = 4 bases</text>
+<text class="m" x="20" y="120">[7, 10)</text>
+<rect class="iv fgl" x="527" y="109" width="56" height="14" rx="2"></rect>
+<rect class="iv fgl" x="585" y="109" width="56" height="14" rx="2"></rect>
+<rect class="iv fgl" x="643" y="109" width="56" height="14" rx="2"></rect>
+<text class="s" x="526" y="140">book-ended: 3 &lt; 10 but not 7 &lt; 7 → no overlap</text>
+<text class="m" x="20" y="166">[5, 9)</text>
+<rect class="iv fh" x="411" y="155" width="56" height="14" rx="2"></rect>
+<text class="ms w" x="439" y="166" text-anchor="middle">5</text>
+<rect class="iv fh" x="469" y="155" width="56" height="14" rx="2"></rect>
+<text class="ms w" x="497" y="166" text-anchor="middle">6</text>
+<rect class="iv fgl" x="527" y="155" width="56" height="14" rx="2"></rect>
+<rect class="iv fgl" x="585" y="155" width="56" height="14" rx="2"></rect>
+<text class="s" x="410" y="186">overlaps [3, 7): 3 &lt; 9 and 5 &lt; 7 · shared bases 5, 6</text>
+<text class="m" x="20" y="212">[5, 5)</text>
+<polyline class="ln navy thick" points="410,199 410,217"/>
+<text class="s" x="418" y="212">0 bases · the point between bases 4 and 5 · inside [3, 7): 3 &lt; 5 &lt; 7</text>
+</svg>

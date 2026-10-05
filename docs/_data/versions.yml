@@ -1,0 +1,11 @@
+# Versions offered by the header switcher (_includes/header_custom.html).
+# The first entry is the current one, served at the site root; every other
+# entry is a frozen build under /<path>/, made by .github/workflows/pages.yml
+# from the commit named in `ref`.
+- version: "2.0"
+  label: "2.0 (stable)"
+  path: ""
+- version: "1.1"
+  label: "1.1"
+  path: "1.1"
+  ref: f17d343f1b3d5a3dec8c11fe8ac4076162b0777e

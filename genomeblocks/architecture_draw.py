@@ -1,371 +1,210 @@
-"""Region drawing for :class:`~genomeblocks.architecture.Architecture` graphs.
+"""Region drawing for :class:`~genomeblocks.Architecture` graphs.
 
-Kept separate from ``architecture.py`` so the core graph object stays lightweight
-and free of matplotlib / drawing dependencies. Draw a genomic region with::
+Plain matplotlib on top of the tables: the CREs of a region become nodes
+(optionally merged when closer than ``merge_distance``), the edges among
+them become lines, and the positions come from the graph backend's layout
+(:func:`genomeblocks.backends.graph.layout_edges`) — graph-tool when
+installed, else scipy's spectral layout, or igraph / networkx on request::
 
-    from genomeblocks.draw import draw
-    draw(arch, loci, region=("chr1", 1_000_000, 2_000_000))
+    A.draw("chr8:127.5-128.5 Mb")
+    A.draw(("chr8", 127_500_000, 128_500_000), layout="genomic", merge_distance=5_000,
+           vertex_size_by="strength", vertex_color="annot", backend="networkx")
 
-``arch`` is an :class:`Architecture`, ``loci`` the same ``Loci`` used to build it.
+Kept separate from ``architecture.py`` so the graph object stays free of
+matplotlib; everything here is imported lazily.
 """
-import graph_tool.all as gt
+from __future__ import annotations
+
+from typing import Optional, Sequence, Tuple
+
+import numpy as np
 
 
-def _merge_nearby(arch, sub_loci, merge_distance, edge_key='w', label_prop='gene',
-                  vertex_size_by=None, color_prop=None):
-    """Merge loci within *merge_distance* bp into single nodes.
-
-    Builds a fresh gt.Graph where each cluster of nearby loci becomes one
-    vertex, and inter-cluster edges carry the summed weight of member edges.
-
-    Args:
-        sub_loci: Loci in the region that are also present in the graph.
-        merge_distance: Max center-to-center bp for two consecutive sorted
-            loci to be merged (uses Locus.distance_to).
-        edge_key: Edge property to aggregate (default 'w').
-        label_prop: Vertex property used for labels (default 'gene').
-        vertex_size_by: Vertex property to sum for merged node sizes, or None.
-        color_prop: Optional vertex PropertyMap on arch whose values should be
-            aggregated per cluster into ``mg.vp.color_val``. String values take
-            the first non-empty member; vector values average per-component;
-            scalars average.
-
-    Returns:
-        (merged_graph, clusters, uid_to_cluster)
-        merged_graph  – gt.Graph with vp.uid, vp.label, vp.size_val, ep.w
-                        and (if color_prop given) vp.color_val
-        clusters      – list[list[Locus]]
-        uid_to_cluster – dict mapping original uid → cluster index
-    """
-    from collections import defaultdict
-    import numpy as np
-
-    graph_loci = sorted(
-        [l for l in sub_loci if l.uid in arch.index],
-        key=lambda l: (l.chrom, l.start),
-    )
-
-    # Greedy clustering on sorted loci
-    clusters = [[graph_loci[0]]]
-    for l in graph_loci[1:]:
-        if clusters[-1][-1].distance_to(l) <= merge_distance:
-            clusters[-1].append(l)
-        else:
-            clusters.append([l])
-
-    uid_to_cluster = {}
-    for ci, cluster in enumerate(clusters):
-        for loc in cluster:
-            uid_to_cluster[loc.uid] = ci
-
-    # Build merged graph
-    mg = gt.Graph(directed=False)
-    mg.vp.uid   = mg.new_vertex_property("string")
-    mg.vp.label = mg.new_vertex_property("string")
-    mg.vp.size_val = mg.new_vertex_property("float")
-    mg.ep.w     = mg.new_edge_property("float")
-
-    color_vtype = color_prop.value_type() if color_prop is not None else None
-    if color_prop is not None:
-        mg.vp.color_val = mg.new_vertex_property(color_vtype)
-
-    cluster_verts = []
-    for ci, cluster in enumerate(clusters):
-        v = mg.add_vertex()
-        cluster_verts.append(v)
-
-        first, last = cluster[0], cluster[-1]
-        mg.vp.uid[v] = f"{first.chrom}:{first.start}-{last.end}"
-
-        # Label
-        if label_prop in arch.vp:
-            labels = []
-            for loc in cluster:
-                if loc.uid in arch.index:
-                    lbl = str(arch.vp[label_prop][arch.index[loc.uid]])
-                    if lbl and lbl not in labels:
-                        labels.append(lbl)
-            mg.vp.label[v] = "/".join(labels) if labels else mg.vp.uid[v]
-        else:
-            mg.vp.label[v] = mg.vp.uid[v]
-
-        # Size value
-        if vertex_size_by and vertex_size_by in arch.vp:
-            mg.vp.size_val[v] = sum(
-                arch.vp[vertex_size_by][arch.index[loc.uid]]
-                for loc in cluster if loc.uid in arch.index
-            )
-        else:
-            mg.vp.size_val[v] = float(len(cluster))
-
-        # Color value
-        if color_prop is not None:
-            vals = [color_prop[arch.index[loc.uid]]
-                    for loc in cluster if loc.uid in arch.index]
-            if vals:
-                if color_vtype == "string":
-                    mg.vp.color_val[v] = next((x for x in vals if x), vals[0])
-                elif "vector" in color_vtype:
-                    arr = np.array([list(x) for x in vals], dtype=float)
-                    mg.vp.color_val[v] = arr.mean(axis=0).tolist()
-                else:
-                    mg.vp.color_val[v] = float(np.mean(vals))
-
-    # Aggregate inter-cluster edges
-    ep_key = edge_key if edge_key and edge_key in arch.ep else 'w'
-    edge_weights = defaultdict(float)
-    for ci, cluster in enumerate(clusters):
-        for loc in cluster:
-            if loc.uid not in arch.index:
-                continue
-            v_orig = arch.index[loc.uid]
-            for nb in v_orig.all_neighbors():
-                n_uid = arch.vp.uid[nb]
-                if n_uid not in uid_to_cluster:
-                    continue
-                cj = uid_to_cluster[n_uid]
-                if ci == cj:
-                    continue
-                pair = (min(ci, cj), max(ci, cj))
-                edge_weights[pair] += arch.ep[ep_key][arch.edge(v_orig, nb)]
-
-    for (ci, cj), w in edge_weights.items():
-        e = mg.add_edge(cluster_verts[ci], cluster_verts[cj])
-        mg.ep.w[e] = w
-
-    return mg, clusters, uid_to_cluster
+def _scale(values, lo_hi: Tuple[float, float]) -> np.ndarray:
+    v = np.asarray(values, float)
+    lo, hi = lo_hi
+    if not len(v):
+        return v
+    if np.nanmax(v) > np.nanmin(v):
+        return lo + (v - np.nanmin(v)) / (np.nanmax(v) - np.nanmin(v)) * (hi - lo)
+    return np.full(len(v), (lo + hi) / 2.0)
 
 
-def draw(arch, loci, region, *,
-         merge_distance=None,
-         vertex_size_by=None,
-         edge_width_by='w',
-         vertex_size_range=(10, 50),
-         edge_width_range=(1, 10),
-         vertex_color=None,
-         edge_color='#CCCCCC',
-         figsize=(12, 8),
-         layout='spring',
-         show_labels=True,
-         label_prop='gene',
-         label_position='outside',
-         vertex_font_size=10,
-         ax=None,
-         **kwargs):
-    """Draw the subgraph for CREs overlapping a genomic region.
+def _arc(x0, x1, n=40):
+    """A half circle from x0 to x1 above the line y = 0."""
+    c, r = (x0 + x1) / 2.0, abs(x1 - x0) / 2.0
+    th = np.linspace(0, np.pi, n)
+    return np.column_stack([c + r * np.cos(th), r * np.sin(th)])
+
+
+def draw(A, region, *, layout: str = "spring", backend: Optional[str] = None, merge_distance: Optional[int] = None,
+         vertex_size_by=None, edge_width_by: str = "w", vertex_size_range: Tuple[float, float] = (40, 400),
+         edge_width_range: Tuple[float, float] = (0.6, 4.0), vertex_color=None, cmap: str = "viridis",
+         edge_color: str = "#b8b8b8", figsize: Tuple[float, float] = (8, 6), show_labels: bool = True,
+         label_prop: str = "gene", font_size: int = 8, linked_only: bool = True, seed: int = 0,
+         title: bool = True, ax=None):
+    """Draw the CREs of ``region`` and the edges among them.
 
     Args:
-        loci: Loci collection (same one used to build the graph)
-        region: Tuple of (chrom, start, end) or Locus object
-        merge_distance: If set, merge loci within this many bp into single
-            nodes before drawing (center-to-center via Locus.distance_to).
-        vertex_size_by: Vertex property name to scale node sizes (e.g., 'Agg_H1')
-        edge_width_by: Edge property name to scale edge widths (default: 'w')
-        vertex_size_range: (min_size, max_size) for vertices (default: (10, 50))
-        edge_width_range: (min_width, max_width) for edges (default: (1, 10))
-        vertex_color: Color for vertices - can be:
-            - String (e.g., '#4A90E2') - single color for all
-            - Vertex property name (e.g., 'crest_color') - color by values
-            - PropertyMap (e.g., arch.vp.crest_color) - color by values
-            - None - defaults to blue
-            Under ``merge_distance``, per-vertex colors are aggregated across
-            each cluster (string → first non-empty; vector → mean per channel;
-            scalar → mean).
-        edge_color: Color for edges (default: gray)
-        figsize: Figure size as (width, height)
-        layout: Layout algorithm ('spring', 'circular', 'kamada_kawai')
-        show_labels: Whether to show node labels
-        label_prop: Vertex property to use for labels (default: 'gene')
-        label_position: Where to render labels — 'outside' (default; preserves
-            vertex sizes by placing text radially) or 'inside' (may inflate
-            vertices to fit text). Ignored when ``show_labels=False``.
-        vertex_font_size: Font size for vertex labels (default: 10)
-        ax: Matplotlib axis to plot on (creates new if None)
-        **kwargs: Additional arguments passed to graph_tool's graph_draw
+        A: the Architecture.
+        region: ``'chr1:1,000-2,000'``, ``'chr8:127.5-128.5 Mb'``, ``(chrom, start, end)`` or a Locus.
+        layout: ``'spring'`` (the graph backend's force-directed or spectral
+            layout), ``'circular'``, or ``'genomic'`` (nodes on a line at their
+            genomic position, edges as arcs — a browser-like view).
+        backend: graph backend for the spring layout (``None`` = default).
+        merge_distance: merge CREs whose centres are within this many bp into
+            one node (edge weights and size values are summed).
+        vertex_size_by: a vertex column name or an array (one value per Loci
+            row) that scales node sizes; default: number of CREs in the node.
+        edge_width_by: edge column that scales line widths (default ``'w'``).
+        vertex_color: a colour, a vertex column name (numbers are mapped
+            through ``cmap``, strings get one colour per value) or an array
+            aligned to the Loci rows.
+        show_labels / label_prop: label nodes with that vertex column (unique
+            non-empty values joined by ``/``), else with their coordinates.
+        linked_only: skip CREs without edges (default).
+        ax: draw into an existing Axes.
 
     Returns:
-        Matplotlib axis object
+        the matplotlib Axes.
     """
     import matplotlib.pyplot as plt
-    import numpy as np
-    from graph_tool.draw import prop_to_size
+    from matplotlib.collections import LineCollection
+    from .backends.graph import layout_edges
+    from .locus import parse_region
 
-    # Parse region
-    if hasattr(region, 'chrom'):  # Locus object
-        chrom, start, end = region.chrom, region.start, region.end
+    chrom, start, end = parse_region(region)
+    L = A.loci
+    rows = L.overlap_rows(chrom, start, end)
+    if linked_only:
+        rows = rows[A.degree[rows] > 0]
+    if not len(rows):
+        raise ValueError(f"no CREs{' with links' if linked_only else ''} in {chrom}:{start:,}-{end:,}")
+    rows = rows[np.argsort(L.starts[rows], kind="stable")]
+    centers = L.centers[rows].astype(float)
+
+    # nodes: one per CRE, or one per cluster of nearby CREs
+    if merge_distance is not None and len(rows) > 1:
+        cluster = np.concatenate([[0], np.cumsum(np.diff(centers) > merge_distance)])
     else:
-        chrom, start, end = region
+        cluster = np.arange(len(rows))
+    m = int(cluster.max()) + 1
+    count = np.bincount(cluster, minlength=m).astype(float)
+    x = np.bincount(cluster, weights=centers, minlength=m) / count
+    node_start = np.full(m, np.iinfo(np.int64).max, np.int64)
+    node_end = np.zeros(m, np.int64)
+    np.minimum.at(node_start, cluster, L.starts[rows])
+    np.maximum.at(node_end, cluster, L.ends[rows])
 
-    # Get overlapping loci
-    sub_loci = loci.overlaps(chrom, start, end)
-    if len(sub_loci) == 0:
-        print(f"[WARNING] No loci found in region {chrom}:{start}-{end}")
-        return ax
-
-    # Get UIDs in region
-    region_uids = {l.uid for l in sub_loci}
-    region_uids_in_graph = {uid for uid in region_uids if uid in arch}
-
-    if len(region_uids_in_graph) == 0:
-        print(f"[WARNING] No graph vertices found in region {chrom}:{start}-{end}")
-        return ax
-
-    # ── Resolve vertex_color once, shared across paths ───────────────
-    # color_prop: a PropertyMap on arch (needs to be remapped under merge)
-    # color_literal: a scalar color value (string / tuple) or None
-    color_prop = None
-    color_literal = None
-    if vertex_color is None:
-        color_literal = '#4A90E2'
-    elif isinstance(vertex_color, str):
-        if vertex_color in arch.vp:
-            color_prop = arch.vp[vertex_color]
-        else:
-            color_literal = vertex_color
-    elif isinstance(vertex_color, gt.PropertyMap):
-        if vertex_color.get_graph().base is not arch.base:
-            raise ValueError(
-                "vertex_color PropertyMap is not bound to this Architecture"
-            )
-        color_prop = vertex_color
+    # edges among the nodes (parallel edges summed, self edges dropped)
+    pos_of = np.full(len(L), -1, np.int64)
+    pos_of[rows] = cluster
+    keep = (pos_of[A.src] >= 0) & (pos_of[A.tgt] >= 0)
+    s, t = pos_of[A.src[keep]], pos_of[A.tgt[keep]]
+    if edge_width_by is not None and edge_width_by in A.ep:
+        w = np.asarray(A.ep[edge_width_by], float)[keep]
     else:
-        color_literal = vertex_color  # tuple/list RGBA, etc.
+        w = np.ones(int(keep.sum()))
+    inter = s != t
+    s, t, w = s[inter], t[inter], np.nan_to_num(w[inter])
+    key = np.minimum(s, t).astype(np.int64) * m + np.maximum(s, t)
+    uk, inv = np.unique(key, return_inverse=True)
+    es, et = uk // m, uk % m
+    ew = np.bincount(inv.ravel(), weights=w, minlength=len(uk)) if len(uk) else np.zeros(0)
 
-    # ── Merge nearby loci if requested ───────────────────────────────
-    if merge_distance is not None:
-        graph_loci = [l for l in sub_loci if l.uid in region_uids_in_graph]
-        if len(graph_loci) == 0:
-            print(f"[WARNING] No graph loci to merge in region {chrom}:{start}-{end}")
-            return ax
-
-        n_before = len(graph_loci)
-        mg, clusters, _ = _merge_nearby(arch, 
-            sub_loci, merge_distance,
-            edge_key=edge_width_by, label_prop=label_prop,
-            vertex_size_by=vertex_size_by,
-            color_prop=color_prop,
-        )
-        subgraph = mg
-
-        # Vertex sizes from aggregated size_val
-        if vertex_size_by and vertex_size_by in arch.vp:
-            vals = mg.vp.size_val.a
-            if vals.max() > vals.min():
-                normed = (vals - vals.min()) / (vals.max() - vals.min())
-                mg.vp.size_val.a = vertex_size_range[0] + normed * (vertex_size_range[1] - vertex_size_range[0])
-            else:
-                mg.vp.size_val.a[:] = np.mean(vertex_size_range)
-            vertex_sizes = mg.vp.size_val
-        else:
-            vertex_sizes = np.mean(vertex_size_range)
-
-        # Edge widths from aggregated ep.w
-        if mg.num_edges() > 0:
-            vals = mg.ep.w.a
-            if vals.max() > vals.min():
-                normed = (vals - vals.min()) / (vals.max() - vals.min())
-                mg.ep.w.a = edge_width_range[0] + normed * (edge_width_range[1] - edge_width_range[0])
-            else:
-                mg.ep.w.a[:] = np.mean(edge_width_range)
-            edge_widths = mg.ep.w
-        else:
-            edge_widths = np.mean(edge_width_range)
-
-        vertex_fill_color = mg.vp.color_val if color_prop is not None else color_literal
-        labels = mg.vp.label if show_labels else None
-
-        title_extra = (f"{subgraph.num_vertices()} nodes "
-                       f"({n_before} loci merged at {merge_distance}bp), "
-                       f"{subgraph.num_edges()} edges")
+    # sizes
+    if vertex_size_by is None:
+        size_val = count
     else:
-        # ── Standard (unmerged) path ─────────────────────────────────
-        vfilt = arch.new_vertex_property("bool")
-        for v in arch.vertices():
-            vfilt[v] = arch.vp.uid[v] in region_uids_in_graph
+        v = np.asarray(A.vp[vertex_size_by] if isinstance(vertex_size_by, str) else vertex_size_by, float)
+        size_val = np.bincount(cluster, weights=np.nan_to_num(v[rows]), minlength=m)
+    sizes = _scale(size_val, vertex_size_range)
+    widths = _scale(ew, edge_width_range)
 
-        subgraph = gt.GraphView(arch, vfilt=vfilt)
-
-        if subgraph.num_vertices() == 0:
-            print(f"[WARNING] No vertices in subgraph for region {chrom}:{start}-{end}")
-            return ax
-
-        # Vertex sizes
-        if vertex_size_by and vertex_size_by in arch.vp:
-            vertex_sizes = prop_to_size(
-                arch.vp[vertex_size_by],
-                mi=vertex_size_range[0],
-                ma=vertex_size_range[1],
-                power=1.0,
-            )
+    # colours
+    colors = "#4A90E2"
+    legend = None
+    if vertex_color is not None:
+        vals = None
+        if isinstance(vertex_color, str) and vertex_color in A.vp:
+            vals = np.asarray(A.vp[vertex_color])[rows]
+        elif not isinstance(vertex_color, str):
+            vals = np.asarray(vertex_color)[rows]
+        if vals is None:
+            colors = vertex_color
+        elif vals.dtype.kind in "biuf":
+            node_val = np.bincount(cluster, weights=np.nan_to_num(vals.astype(float)), minlength=m) / count
+            colors = plt.get_cmap(cmap)(_scale(node_val, (0.0, 1.0)))
         else:
-            vertex_sizes = np.mean(vertex_size_range)
+            labels_c = np.array([""] * m, dtype=object)
+            for k, c in enumerate(cluster.tolist()):
+                if not labels_c[c] and str(vals[k]):
+                    labels_c[c] = str(vals[k])
+            uniq = sorted(set(labels_c.tolist()))
+            palette = plt.get_cmap("tab10")
+            cmap_s = {u: palette(i % 10) for i, u in enumerate(uniq)}
+            colors = [cmap_s[u] for u in labels_c.tolist()]
+            legend = cmap_s
 
-        # Edge widths
-        if edge_width_by and edge_width_by in arch.ep:
-            edge_widths = prop_to_size(
-                arch.ep[edge_width_by],
-                mi=edge_width_range[0],
-                ma=edge_width_range[1],
-                power=1.0,
-            )
+    # labels
+    labels: Optional[Sequence[str]] = None
+    if show_labels:
+        if label_prop in A.vp:
+            raw = np.asarray(A.vp[label_prop], dtype=object)[rows]
+            labels = []
+            for c in range(m):
+                parts = []
+                for v in raw[cluster == c].tolist():
+                    sv = str(v) if v is not None else ""
+                    if sv and sv != "nan" and sv not in parts:
+                        parts.append(sv)
+                labels.append("/".join(parts) if parts else f"{chrom}:{node_start[c]:,}-{node_end[c]:,}")
         else:
-            edge_widths = np.mean(edge_width_range)
+            labels = [f"{chrom}:{node_start[c]:,}-{node_end[c]:,}" for c in range(m)]
 
-        vertex_fill_color = color_prop if color_prop is not None else color_literal
-
-        # Labels
-        if show_labels and label_prop in arch.vp:
-            labels = subgraph.new_vertex_property("string")
-            for v in subgraph.vertices():
-                labels[v] = str(arch.vp[label_prop][v])
-        else:
-            labels = None
-
-        title_extra = (f"{subgraph.num_vertices()} nodes, "
-                       f"{subgraph.num_edges()} edges")
-
-    # ── Common drawing code ──────────────────────────────────────────
-    if layout == 'spring':
-        pos = gt.sfdp_layout(subgraph)
-    elif layout == 'circular':
-        pos = gt.circular_layout(subgraph)
-    elif layout == 'kamada_kawai':
-        pos = gt.kamada_kawai_layout(subgraph)
-    else:
-        pos = gt.sfdp_layout(subgraph)
-
+    pos = layout_edges(m, es, et, kind=layout, backend=backend, seed=seed, x=x)
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize)
-
-    # Label placement: -1 draws inside the vertex and forces it to grow to fit
-    # the text (breaks size scaling); any non-negative value renders text
-    # radially outside, preserving vertex_size.
-    if labels is not None:
-        if label_position == 'outside':
-            kwargs.setdefault('vertex_text_position', 0)
-        elif label_position == 'inside':
-            kwargs.setdefault('vertex_text_position', -1)
-        else:
-            raise ValueError(
-                f"label_position must be 'inside' or 'outside', got {label_position!r}"
-            )
-
-    gt.graph_draw(
-        subgraph,
-        pos=pos,
-        vertex_size=vertex_sizes,
-        vertex_fill_color=vertex_fill_color,
-        edge_pen_width=edge_widths,
-        edge_color=edge_color,
-        vertex_text=labels,
-        vertex_font_size=vertex_font_size,
-        output_size=tuple(int(x * 100) for x in figsize),
-        mplfig=ax,
-        **kwargs,
-    )
-
-    ax.set_title(f"{arch._name}: {chrom}:{start:,}-{end:,}\n{title_extra}",
-                 fontsize=14, pad=10)
-    ax.axis('off')
-
+        _, ax = plt.subplots(figsize=figsize)
+    if layout == "genomic":
+        segs = [_arc(pos[a, 0], pos[b, 0]) for a, b in zip(es.tolist(), et.tolist())]
+        if segs:
+            ax.add_collection(LineCollection(segs, colors=edge_color, linewidths=widths, zorder=1))
+        ax.scatter(pos[:, 0], pos[:, 1], s=sizes, c=colors, zorder=2, edgecolors="white", linewidths=0.5)
+        span = max(end - start, 1)
+        ax.set_xlim(start - 0.02 * span, end + 0.02 * span)
+        top = max((abs(pos[b, 0] - pos[a, 0]) / 2.0 for a, b in zip(es.tolist(), et.tolist())), default=span / 10)
+        ax.set_ylim(-0.15 * top, top * 1.15)
+        ax.set_yticks([])
+        for side in ("top", "right", "left"):
+            ax.spines[side].set_visible(False)
+        unit, div = ("Mb", 1e6) if span >= 1e6 else (("kb", 1e3) if span >= 1e3 else ("bp", 1))
+        ax.set_xlabel(f"{chrom} ({unit})")
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v / div:,.2f}"))
+        if labels is not None:
+            for c in range(m):
+                ax.annotate(labels[c], (pos[c, 0], 0), xytext=(0, -10), textcoords="offset points",
+                            ha="center", va="top", fontsize=font_size, rotation=45, clip_on=True)
+    else:
+        segs = [[pos[a], pos[b]] for a, b in zip(es.tolist(), et.tolist())]
+        if segs:
+            ax.add_collection(LineCollection(segs, colors=edge_color, linewidths=widths, zorder=1))
+        ax.scatter(pos[:, 0], pos[:, 1], s=sizes, c=colors, zorder=2, edgecolors="white", linewidths=0.5)
+        if labels is not None:
+            for c in range(m):
+                ax.annotate(labels[c], pos[c], xytext=(0, 6 + np.sqrt(sizes[c]) / 2), textcoords="offset points",
+                            ha="center", va="bottom", fontsize=font_size)
+        pad = 0.15
+        lo, hi = pos.min(0), pos.max(0)
+        rng_ = np.maximum(hi - lo, 1e-9)
+        ax.set_xlim(lo[0] - pad * rng_[0], hi[0] + pad * rng_[0])
+        ax.set_ylim(lo[1] - pad * rng_[1], hi[1] + pad * rng_[1] + 0.1 * rng_[1])
+        ax.set_aspect("equal", adjustable="box")
+        ax.axis("off")
+    if legend:
+        from matplotlib.lines import Line2D
+        ax.legend([Line2D([0], [0], marker="o", color="w", markerfacecolor=c, markersize=8) for c in legend.values()],
+                  list(legend), fontsize=font_size, loc="upper right", frameon=False)
+    if title:
+        merged = f" ({len(rows)} CREs merged at {merge_distance:,} bp)" if merge_distance is not None else ""
+        ax.set_title(f"{A.name}: {chrom}:{start:,}-{end:,}\n{m} nodes{merged}, {len(uk)} edges", fontsize=11)
     return ax

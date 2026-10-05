@@ -7,18 +7,26 @@
   "python": "3.12.12",
   "platform": "Linux-5.15.0-191-generic-x86_64-with-glibc2.35",
   "versions": {
+   "genomeblocks": "2.0.0",
    "numpy": "2.3.4",
    "scipy": "1.16.3",
    "pandas": "2.3.3",
+   "polars": "1.44.2",
+   "pyarrow": "21.0.0",
+   "narwhals": "2.26.0",
    "pybigtools": "0.2.5",
    "pyBigWig": "0.3.24",
    "cgranges": "installed",
+   "ncls": "installed",
    "pyranges": "0.1.4",
    "bioframe": "0.8.0",
+   "pybedtools": "0.12.1",
    "lightmotif": "0.10.0",
    "Bio": "1.86",
    "MOODS": "installed",
    "graph_tool": "2.98 (commit c96a6bf3, )",
+   "igraph": "1.0.0",
+   "networkx": "3.6.1",
    "intervaltree": "installed",
    "bedtools": "v2.31.1"
   }
@@ -29,58 +37,58 @@
    "part": "steps",
    "impl": "shell",
    "step": "extract ends (awk)",
-   "seconds": 5.529209028929472,
-   "peak_mb": 19.99609375
+   "seconds": 6.140163472155109,
+   "peak_mb": 19.9921875
   },
   {
    "part": "steps",
    "impl": "shell",
    "step": "fragments + sort + genomecov",
-   "seconds": 87.89661667286418,
-   "peak_mb": 1902.6953125
+   "seconds": 122.59529328998178,
+   "peak_mb": 1902.7109375
   },
   {
    "part": "steps",
    "impl": "shell",
    "step": "bedGraph -> bigWig",
-   "seconds": 7.808008018182591,
+   "seconds": 8.943569120019674,
    "peak_mb": null
   },
   {
    "part": "total",
    "impl": "shell",
-   "seconds": 101.23383371997625,
-   "peak_mb": 1902.6953125
+   "seconds": 137.67902588215657,
+   "peak_mb": 1902.7109375
   },
   {
    "part": "steps",
    "impl": "genomeblocks",
    "step": "ends",
-   "seconds": 5.262272424064577
+   "seconds": 4.498589569935575
   },
   {
    "part": "steps",
    "impl": "genomeblocks",
    "step": "write BED",
-   "seconds": 0.6651949479710311
+   "seconds": 0.8973262188956141
   },
   {
    "part": "steps",
    "impl": "genomeblocks",
    "step": "coverage (bedGraph)",
-   "seconds": 3.6392574289347976
+   "seconds": 3.637171820970252
   },
   {
    "part": "steps",
    "impl": "genomeblocks",
    "step": "bigWig",
-   "seconds": 7.6028683360200375
+   "seconds": 7.827247926034033
   },
   {
    "part": "total",
    "impl": "genomeblocks",
-   "seconds": 17.1696261910256,
-   "peak_mb": 989.39453125
+   "seconds": 16.86035699606873,
+   "peak_mb": 988.75390625
   },
   {
    "part": "check",
@@ -88,9 +96,9 @@
    "bedgraph": "same",
    "bedgraph_records": 7689203,
    "n_ends": 5095496,
-   "macs3_seconds": 37.42240025801584,
+   "macs3_seconds": 37.93592657102272,
    "macs3_peaks": 66309,
-   "seconds": 37.42240025801584
+   "seconds": 37.93592657102272
   }
  ]
 }

@@ -6,9 +6,9 @@ nav_order: 6
 ---
 
 {: .note }
-> This is the AR & FOXA1 notebook executed end to end, with its figures and
-> result tables. The previous pages explain the *concepts*; this one shows the
-> actual run. Source:
+> This is the AR & FOXA1 notebook executed end to end with genomeblocks 2.0,
+> with its figures and result tables. The previous pages explain the
+> *concepts*; this one shows the actual run. Source:
 > [`examples/ar_foxa1_lncap/`](https://github.com/birkiy/genomeblocks/tree/main/examples/ar_foxa1_lncap).
 
 # AR & FOXA1 in LNCaP (±DHT)
@@ -35,10 +35,9 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 import genomeblocks as gb
-from genomeblocks import Loci, Genes, Atlas, make_genome, tmm
+from genomeblocks import Loci, Genes, Atlas, tmm, browser
 from genomeblocks.signal_draw import plot_heatmap
 from genomeblocks.motifs import scan_motifs_matrix, bootstrap_enrichment
-from genomeblocks import browser
 
 
 @contextmanager
@@ -85,7 +84,7 @@ for k, v in peaks.items():
 ```
 
     ▶ load peak files ...
-    ✓ load peak files — 0.6s
+    ✓ load peak files — 3.5s
     FOXA1_0h        8,657 peaks
     FOXA1_4h       10,870 peaks
     AR_0h             910 peaks
@@ -99,19 +98,20 @@ for k, v in peaks.items():
 ## 2. Accessible chromatin — union of ATAC peaks
 
 Concatenate the four ATAC peak sets (both conditions, both reps) and `merge()`
-overlapping intervals into one accessible-region set.
+overlapping intervals into one accessible-region set (the result comes back in
+genome order).
 
 
 ```python
 with timer("ATAC union (accessible regions)"):
     accessible = (peaks["ATAC_0h_r1"] + peaks["ATAC_0h_r2"]
-                  + peaks["ATAC_4h_r1"] + peaks["ATAC_4h_r2"]).sort().merge()
+                  + peaks["ATAC_4h_r1"] + peaks["ATAC_4h_r2"]).merge()
 
 print(f"accessible regions (merged): {len(accessible):,}")
 ```
 
     ▶ ATAC union (accessible regions) ...
-    ✓ ATAC union (accessible regions) — 0.7s
+    ✓ ATAC union (accessible regions) — 0.1s
     accessible regions (merged): 72,470
 
 
@@ -146,7 +146,7 @@ plt.xticks(rotation=30, ha="right"); plt.tight_layout()
 
 
     
-![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_8_1.png' | relative_url }})
+![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_7_1.png' | relative_url }})
     
 
 
@@ -170,7 +170,8 @@ print(f"accessible  FOXA1 0h={len(F0):,}  FOXA1 4h={len(F4):,}  AR 4h={len(A4):,
 ## 5. Venn — FOXA1 (0h, 4h) vs AR (4h)
 
 To venn genomic intervals we merge all peaks into a shared region *universe*,
-then label each region by which input set overlaps it. From this:
+then label each region by which input set overlaps it (`overlap_any` gives one
+boolean per universe row; the row numbers are the region ids). From this:
 
 - **AR+F** = AR 4h peaks that overlap FOXA1 (0h or 4h) — FOXA1-dependent AR
 - **AR−F** = AR 4h peaks that overlap no FOXA1 peak — FOXA1-independent AR
@@ -182,13 +183,8 @@ from matplotlib_venn import venn3
 def venn_id_sets(sets):
     """Merge all peaks into a region universe; return one set of region-ids per
     input set (the ids it overlaps) so matplotlib_venn can count the regions."""
-    universe = Loci([l for s in sets for l in s]).sort().merge()
-    id_sets = [set() for _ in sets]
-    for i, reg in enumerate(tqdm(universe, desc="venn membership")):
-        for si, s in enumerate(sets):
-            if any(True for _ in s.cgr.overlap(reg.chrom, reg.start, reg.end)):
-                id_sets[si].add(i)
-    return id_sets
+    universe = sum(sets[1:], sets[0]).merge()
+    return [set(np.flatnonzero(universe.overlap_any(s)).tolist()) for s in sets]
 
 with timer("venn3 membership"):
     ids = venn_id_sets([F0, F4, A4])
@@ -196,36 +192,23 @@ with timer("venn3 membership"):
 fig, ax = plt.subplots(figsize=(5, 5))
 venn3(ids, set_labels=["FOXA1 0h", "FOXA1 4h", "AR 4h"], ax=ax)
 ax.set_title("Accessible peaks: FOXA1 (0h, 4h) vs AR (4h)")
+plt.show()
 ```
 
     ▶ venn3 membership ...
-
-
-    venn membership: 100%|██████████| 11624/11624 [00:00<00:00, 238333.00it/s]
-
-    ✓ venn3 membership — 0.1s
-
-
-    
-
-
-
-
-
-    Text(0.5, 1.0, 'Accessible peaks: FOXA1 (0h, 4h) vs AR (4h)')
-
+    ✓ venn3 membership — 0.0s
 
 
 
     
-![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_12_5.png' | relative_url }})
+![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_11_1.png' | relative_url }})
     
 
 
 
 ```python
 with timer("define AR+F / AR-F"):
-    F_any = (F0 + F4).sort().merge()     # FOXA1-bound at either timepoint
+    F_any = (F0 + F4).merge()            # FOXA1-bound at either timepoint
     ARpF  = A4 & F_any                   # AR 4h that IS FOXA1-bound
     ARmF  = A4 - F_any                   # AR 4h that is NOT FOXA1-bound
 
@@ -268,24 +251,24 @@ vmax = float(np.percentile(S6, 99))
 
 with timer("draw heatmap"):
     fig = plot_heatmap(regions, S6, groups=groups, sets=["AR+F", "AR-F"],
-                       samples=samples, vmax=vmax, ymax=vmax)
+                       samples=samples, vmax=vmax, ymax=vmax, height=2000)
 ```
 
     ▶ extract signal cube ...
     [INFO] Extracting 8 bigwigs for 3027 loci into 200 bins (span=False, agg='mean', backend='pybigtools', exact=True, workers=4).
 
 
-    chunks: 100%|██████████| 4/4 [00:03<00:00,  1.16it/s]
+    chunks: 100%|██████████| 4/4 [00:03<00:00,  1.26it/s]
 
 
-    ✓ extract signal cube — 3.6s
+    ✓ extract signal cube — 3.3s
     ▶ draw heatmap ...
-    ✓ draw heatmap — 0.1s
+    ✓ draw heatmap — 0.2s
 
 
 
     
-![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_15_3.png' | relative_url }})
+![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_14_3.png' | relative_url }})
     
 
 
@@ -309,41 +292,37 @@ plt.tight_layout()
 ```
 
     ▶ load genes (GTF) ...
-
-
-    [INFO] Parsing GTF/GFF file 🧩: 6731674it [01:05, 103025.37it/s]
-
-
-    [INFO] Unmapped feature types: start_codon, Selenocysteine, stop_codon
-    ✓ load genes (GTF) — 65.5s
+    ✓ load genes (GTF) — 8.1s
     ▶ annotate AR+F / AR-F ...
-    ✓ annotate AR+F / AR-F — 16.5s
+    ✓ annotate AR+F / AR-F — 0.7s
 
 
 
     
-![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_17_3.png' | relative_url }})
+![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_16_1.png' | relative_url }})
     
 
 
 ## 8. Motif enrichment — AR+F vs AR−F
 
-Scan JASPAR motifs over AR+F, AR−F, and a subsample of the accessible (ATAC)
-pool as background, then bootstrap the log-fold-change. Sorting by `LFC`
-(= LFC_AR+F − LFC_AR−F) gives motifs preferential to each set.
+Scan JASPAR motifs over AR+F, AR−F, and the accessible (ATAC) regions as the
+background pool, then bootstrap the log-fold-change. Sorting by `LFC`
+(= LFC_AR+F − LFC_AR−F) gives motifs preferential to each set. The scanners
+read the windows from the FASTA through its index; to hold the genome in
+memory instead, pass `gb.read_fasta(GENOME_FA)` in place of the path.
 
 
 ```python
-with timer("load genome FASTA"):
-    genome = make_genome(GENOME_FA)
+with timer("index genome FASTA"):
+    genome = gb.Genome.from_fasta(GENOME_FA)     # builds hg38.fa.fai once; names and sizes
 
-# background pool = subsample of accessible chromatin (keeps scanning cheap)
+# background pool: every accessible region (the bootstrap draws 500 at a time)
 pool = accessible
 
 with timer("scan motifs (AR+F, AR-F, pool)"):
-    mat_pf   = scan_motifs_matrix(ARpF, genome, MOTIF_DB, r=250, workers=8)
-    mat_mf   = scan_motifs_matrix(ARmF, genome, MOTIF_DB, r=250, workers=8)
-    mat_pool = scan_motifs_matrix(pool, genome, MOTIF_DB, r=250, workers=8)
+    mat_pf   = scan_motifs_matrix(ARpF, GENOME_FA, MOTIF_DB, r=250, workers=8)
+    mat_mf   = scan_motifs_matrix(ARmF, GENOME_FA, MOTIF_DB, r=250, workers=8)
+    mat_pool = scan_motifs_matrix(pool, GENOME_FA, MOTIF_DB, r=250, workers=8)
 
 with timer("bootstrap enrichment"):
     enr = bootstrap_enrichment({"AR+F": mat_pf, "AR-F": mat_mf},
@@ -357,26 +336,31 @@ print("Top motifs in AR-F (FOXA1-independent):")
 display(ranked.tail(10)[show].iloc[::-1])
 ```
 
-    ▶ load genome FASTA ...
-    ✓ load genome FASTA — 20.4s
+    ▶ index genome FASTA ...
+    ✓ index genome FASTA — 0.0s
     ▶ scan motifs (AR+F, AR-F, pool) ...
 
 
-    [motifs]: 100%|██████████| 33/33 [00:01<00:00, 29.99it/s]
-    [motifs]: 100%|██████████| 33/33 [00:00<00:00, 118.08it/s]
-    [motifs]: 100%|██████████| 33/33 [00:30<00:00,  1.08it/s]
+    [motifs]: 100%|██████████| 33/33 [00:00<00:00, 47.91it/s]
+    [motifs]: 100%|██████████| 33/33 [00:00<00:00, 141.42it/s]
 
 
-    ✓ scan motifs (AR+F, AR-F, pool) — 55.5s
+    [motifs] 4 of 72470 windows run off a chromosome or are missing from the FASTA; their rows count 0.
+
+
+    [motifs]: 100%|██████████| 33/33 [00:18<00:00,  1.76it/s]
+
+
+    ✓ scan motifs (AR+F, AR-F, pool) — 31.8s
     ▶ bootstrap enrichment ...
 
 
-    100%|██████████| 100/100 [00:00<00:00, 121.79it/s]
-    100%|██████████| 100/100 [00:00<00:00, 140.44it/s]
-    100%|██████████| 100/100 [00:00<00:00, 261.65it/s]
+    100%|██████████| 100/100 [00:00<00:00, 121.80it/s]
+    100%|██████████| 100/100 [00:00<00:00, 137.06it/s]
+    100%|██████████| 100/100 [00:00<00:00, 266.85it/s]
 
 
-    ✓ bootstrap enrichment — 2.4s
+    ✓ bootstrap enrichment — 2.6s
     Top motifs in AR+F (FOXA1-dependent):
 
 
@@ -409,72 +393,72 @@ display(ranked.tail(10)[show].iloc[::-1])
     <tr>
       <th>1439</th>
       <td>ZN671.H14CORE.0.P.C</td>
-      <td>0.200354</td>
-      <td>0.189548</td>
-      <td>-0.010806</td>
+      <td>0.210842</td>
+      <td>0.201273</td>
+      <td>-0.009569</td>
     </tr>
     <tr>
       <th>1098</th>
       <td>TSH2.H14CORE.0.SG.A</td>
-      <td>0.149624</td>
-      <td>0.145360</td>
-      <td>-0.004264</td>
+      <td>0.153191</td>
+      <td>0.149330</td>
+      <td>-0.003861</td>
     </tr>
     <tr>
       <th>240</th>
       <td>FOXA2.H14CORE.0.PSM.A</td>
-      <td>0.123507</td>
-      <td>0.073603</td>
-      <td>-0.049904</td>
+      <td>0.126346</td>
+      <td>0.075877</td>
+      <td>-0.050469</td>
     </tr>
     <tr>
       <th>242</th>
       <td>FOXA3.H14CORE.0.PS.A</td>
-      <td>0.106075</td>
-      <td>0.077160</td>
-      <td>-0.028915</td>
+      <td>0.108437</td>
+      <td>0.078202</td>
+      <td>-0.030235</td>
     </tr>
     <tr>
       <th>265</th>
       <td>FOXL2.H14CORE.0.PSM.A</td>
-      <td>0.094850</td>
-      <td>0.072495</td>
-      <td>-0.022355</td>
+      <td>0.096419</td>
+      <td>0.069623</td>
+      <td>-0.026797</td>
     </tr>
     <tr>
       <th>266</th>
       <td>FOXM1.H14CORE.0.P.B</td>
-      <td>0.091278</td>
-      <td>0.073294</td>
-      <td>-0.017984</td>
+      <td>0.091988</td>
+      <td>0.074143</td>
+      <td>-0.017846</td>
     </tr>
     <tr>
       <th>271</th>
       <td>FOXP1.H14CORE.0.PS.A</td>
-      <td>0.088453</td>
-      <td>0.072825</td>
-      <td>-0.015627</td>
+      <td>0.091605</td>
+      <td>0.075136</td>
+      <td>-0.016469</td>
     </tr>
     <tr>
       <th>262</th>
       <td>FOXK1.H14CORE.0.PS.A</td>
-      <td>0.087973</td>
-      <td>0.059407</td>
-      <td>-0.028566</td>
+      <td>0.089239</td>
+      <td>0.056245</td>
+      <td>-0.032994</td>
     </tr>
     <tr>
       <th>238</th>
       <td>FOXA1.H14CORE.0.P.B</td>
-      <td>0.079758</td>
-      <td>0.051366</td>
-      <td>-0.028392</td>
+      <td>0.082882</td>
+      <td>0.052795</td>
+      <td>-0.030086</td>
     </tr>
     <tr>
-      <th>268</th>
-      <td>FOXO3.H14CORE.0.PS.A</td>
-      <td>0.068372</td>
-      <td>0.043914</td>
-      <td>-0.024458</td>
+      <th>1513</th>
+      <td>ZN800.H14CORE.0.PSG.A</td>
+      <td>0.075093</td>
+      <td>0.038774</td>
+      <td>-0.036320</td>
     </tr>
   </tbody>
 </table>
@@ -513,72 +497,72 @@ display(ranked.tail(10)[show].iloc[::-1])
     <tr>
       <th>7</th>
       <td>ANDR.H14CORE.0.P.B</td>
-      <td>-0.153016</td>
-      <td>0.078426</td>
-      <td>0.231442</td>
+      <td>-0.152667</td>
+      <td>0.078639</td>
+      <td>0.231306</td>
     </tr>
     <tr>
       <th>836</th>
       <td>PRGR.H14CORE.0.P.B</td>
-      <td>-0.090640</td>
-      <td>0.068276</td>
-      <td>0.158916</td>
+      <td>-0.091029</td>
+      <td>0.067898</td>
+      <td>0.158927</td>
     </tr>
     <tr>
       <th>293</th>
       <td>GCR.H14CORE.0.PS.A</td>
-      <td>-0.085943</td>
-      <td>0.034013</td>
-      <td>0.119956</td>
+      <td>-0.085528</td>
+      <td>0.034008</td>
+      <td>0.119535</td>
     </tr>
     <tr>
       <th>491</th>
       <td>KLF16.H14CORE.1.P.B</td>
-      <td>-0.082473</td>
-      <td>-0.244051</td>
-      <td>-0.161577</td>
-    </tr>
-    <tr>
-      <th>553</th>
-      <td>MAZ.H14CORE.1.P.B</td>
-      <td>-0.072905</td>
-      <td>-0.176444</td>
-      <td>-0.103539</td>
+      <td>-0.079514</td>
+      <td>-0.240093</td>
+      <td>-0.160579</td>
     </tr>
     <tr>
       <th>1559</th>
       <td>ZNF48.H14CORE.0.PSG.A</td>
-      <td>-0.071781</td>
-      <td>-0.042426</td>
-      <td>0.029356</td>
+      <td>-0.071219</td>
+      <td>-0.041029</td>
+      <td>0.030190</td>
+    </tr>
+    <tr>
+      <th>553</th>
+      <td>MAZ.H14CORE.1.P.B</td>
+      <td>-0.070974</td>
+      <td>-0.177320</td>
+      <td>-0.106346</td>
     </tr>
     <tr>
       <th>1122</th>
       <td>VEZF1.H14CORE.1.P.B</td>
-      <td>-0.070181</td>
-      <td>-0.129904</td>
-      <td>-0.059723</td>
-    </tr>
-    <tr>
-      <th>506</th>
-      <td>KMT2A.H14CORE.0.P.B</td>
-      <td>-0.057221</td>
-      <td>-0.300223</td>
-      <td>-0.243002</td>
+      <td>-0.063601</td>
+      <td>-0.122012</td>
+      <td>-0.058411</td>
     </tr>
     <tr>
       <th>557</th>
       <td>MCR.H14CORE.0.S.B</td>
-      <td>-0.057109</td>
-      <td>0.027812</td>
-      <td>0.084921</td>
+      <td>-0.057377</td>
+      <td>0.027718</td>
+      <td>0.085095</td>
     </tr>
     <tr>
-      <th>1342</th>
-      <td>ZN467.H14CORE.0.P.C</td>
-      <td>-0.056477</td>
-      <td>-0.088766</td>
-      <td>-0.032288</td>
+      <th>1121</th>
+      <td>VEZF1.H14CORE.0.P.C</td>
+      <td>-0.056297</td>
+      <td>-0.148801</td>
+      <td>-0.092504</td>
+    </tr>
+    <tr>
+      <th>506</th>
+      <td>KMT2A.H14CORE.0.P.B</td>
+      <td>-0.053831</td>
+      <td>-0.302884</td>
+      <td>-0.249053</td>
     </tr>
   </tbody>
 </table>
@@ -592,7 +576,8 @@ each region set as the other's reference to find TF tracks differentially
 enriched between AR+F and AR−F.
 
 > Building the index over the full ChIP-Atlas is heavy (minutes, several GB
-> RAM). Pickle `atlas` to reuse it across sessions.
+> RAM). `atlas.save("chipatlas_hg38_1kb.npz")` / `Atlas.load(...)` reuse it
+> across sessions.
 
 
 ```python
@@ -619,12 +604,12 @@ display(enr_mf.head(15)[cols])
     ▶ build ChIP-Atlas index (1kb) ...
 
 
-    [atlas index]: 100%|██████████| 33368/33368 [00:19<00:00, 1726.86it/s]
+    [atlas index]: 100%|██████████| 33368/33368 [00:18<00:00, 1850.83it/s]
 
 
-    ✓ build ChIP-Atlas index (1kb) — 60.5s
+    ✓ build ChIP-Atlas index (1kb) — 42.5s
     ▶ atlas search AR+F vs AR-F ...
-    ✓ atlas search AR+F vs AR-F — 4.6s
+    ✓ atlas search AR+F vs AR-F — 5.0s
     TF tracks enriched in AR+F (FOXA1-dependent):
 
 
@@ -1002,7 +987,8 @@ display(enr_mf.head(15)[cols])
 ## 10. Browser view — `chr19:50,792,009-50,923,669`
 
 All six conditions as signal tracks (ATAC replicates passed as a **list** of
-bigwigs are averaged into one track), their peak calls, and gene models.
+bigwigs are averaged into one track), their peak calls, and gene models. The
+region string is 0-based, half-open like every table.
 
 
 ```python
@@ -1027,16 +1013,11 @@ with timer("browser render"):
 ```
 
     ▶ browser render ...
-    ✓ browser render — 1.3s
+    ✓ browser render — 1.0s
 
 
 
     
-![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_23_1.png' | relative_url }})
+![figure]({{ '/assets/images/ar_foxa1/ar_foxa1_lncap_22_1.png' | relative_url }})
     
 
-
-
-```python
-
-```

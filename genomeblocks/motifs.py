@@ -1,211 +1,283 @@
-"""Motif scanning utilities."""
-from typing import Dict, List, Optional
+"""Motifs: scanning, enrichment and archetypes.
+
+Scanning reads each locus window (centre ± ``r``) from a FASTA (path, dict or
+open pyfaidx / pysam / Biopython handle — the fasta backend) and scores a
+motif library (JASPAR / TRANSFAC / uniprobe / MEME file, Biopython motifs, or
+plain matrices — see :func:`~genomeblocks.load_motifs`) with the motifs
+backend: MOODS by default (lightmotif when only it is installed), Biopython on request, all scoring
+the same log-odds matrices so they report the same hits.
+
+Results line up with the loci: row ``i`` of a matrix or cube is locus ``i``.
+Windows that run off a chromosome end, sit on a chromosome missing from the
+FASTA, or contain letters other than A C G T N count 0 (as a bigWig cube
+leaves such rows at 0).
+"""
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from .loci import Loci
+import numpy as np
 
-
-def _parse_fasta(path):
-    import gzip
-    name = ""
-    seq = list()
-    if path.endswith(".gz"):
-        f = gzip.open(path, "rt")
-    else:
-        f = open(path, "r")
-    for _, l in enumerate(f):
-        l = l.rstrip("\n")
-        if l[0] == ">":
-            if len(seq) == 0:
-                name = l[1:].split(" ")[0]
-                continue
-            yield (name, "".join(seq))
-            seq = list()
-            name = l[1:].split(" ")[0]
-        else:
-            seq.append(l)
-    yield (name, "".join(seq))
-
-
-def make_genome(path):
-    return {k:v for k,v in _parse_fasta(path)}
-
-
-def scan_motifs(s, genome, motif_path, motif_format='jaspar', r=250, threshold=13.0, norm=True, verbose=True):
-    import lightmotif
-    from tqdm import tqdm
-
-    # ensure genome is a dict
-    if not isinstance(genome, dict): genome = make_genome(genome)
-    n_motif = len([_ for _ in lightmotif.load(motif_path, format=motif_format)])
-    M = {}
-    # extract every sequence once and stripe them as one block (sequences
-    # with invalid characters are skipped); reuse it across motifs
-    block = _Block([q for _, q in _extract_sequences(s, genome, r)])
-    iterator = lightmotif.load(motif_path, format=motif_format)
-    if verbose: iterator = tqdm(iterator, total=n_motif)
-    for m in iterator:
-        pssm = m.counts.normalize(0.1).log_odds()
-        hits = int(block.counts(pssm, len(m.counts), threshold).sum())
-        M[m.name] = hits / len(m.counts) if norm else hits
-    return M
-
-
-def _extract_sequences(loci, genome, r: int):
-    """Extract (uid, seq) pairs at fixed length 2*r. Skips short/invalid."""
-    out = []
-    for l in loci:
-        seq = l.sequence(genome, r=r).upper()
-        if len(seq) != (2 * r):
-            continue
-        out.append((l.uid, seq))
-    return out
-
-
-class _Block:
-    """Windows striped once as one concatenated sequence.
-
-    Scanning a 500-bp window is mostly call overhead, so each motif is scanned
-    once over the whole block and the hits are split back per window. A hit
-    that would straddle two windows is dropped, so per-window counts equal
-    scanning each window on its own. Windows lightmotif cannot stripe
-    (invalid characters) are left out and count 0, as before.
-    """
-
-    def __init__(self, seqs):
-        import numpy as np
-        import lightmotif
-        self.n = len(seqs)
-        keep = list(range(self.n))
-        try:
-            striped = lightmotif.stripe("".join(seqs)) if seqs else None
-        except ValueError:                            # find the bad windows
-            keep = []
-            for i, q in enumerate(seqs):
-                try:
-                    lightmotif.stripe(q)
-                    keep.append(i)
-                except ValueError:
-                    pass
-            striped = lightmotif.stripe("".join(seqs[i] for i in keep)) if keep else None
-        self.striped = striped
-        self.rows = np.asarray(keep, dtype=np.int64)  # window -> input row
-        self.offsets = np.concatenate([[0], np.cumsum([len(seqs[i]) for i in keep])]).astype(np.int64)
-
-    def counts(self, pssm, width: int, threshold: float):
-        """Hits of ``pssm`` per input window (int array, length ``n``)."""
-        import numpy as np
-        import lightmotif
-        out = np.zeros(self.n, dtype=np.int64)
-        if self.striped is None:
-            return out
-        pos = np.fromiter((h.position for h in lightmotif.scan(pssm, self.striped, threshold=threshold)),
-                          dtype=np.int64)
-        k = np.searchsorted(self.offsets, pos, side="right") - 1
-        ok = (k < len(self.rows)) & (pos + width <= self.offsets[np.minimum(k + 1, len(self.rows))])
-        np.add.at(out, self.rows[k[ok]], 1)
-        return out
-
-
-_WORKER_STATE: dict = {}
-
-
-def _worker_init(seqs, motif_path, motif_format, threshold, norm):
-    """Pool initializer: cache the striped window block and motif list per worker."""
-    import lightmotif
-    _WORKER_STATE['block'] = _Block(seqs)
-    _WORKER_STATE['motifs'] = list(lightmotif.load(motif_path, format=motif_format))
-    _WORKER_STATE['threshold'] = threshold
-    _WORKER_STATE['norm'] = norm
-
-
-def _scan_motif_indices(indices):
-    """Worker task: scan a batch of motif indices against the cached sequences."""
-    block = _WORKER_STATE['block']
-    motifs_list = _WORKER_STATE['motifs']
-    threshold = _WORKER_STATE['threshold']
-    norm = _WORKER_STATE['norm']
-    out = []
-    for idx in indices:
-        motif = motifs_list[idx]
-        pssm = motif.counts.normalize(0.1).log_odds()
-        width = len(motif.counts)
-        n = block.counts(pssm, width, threshold)
-        out.append((motif.name, (n / width).tolist() if norm else n.tolist()))
-    return out
-
-
-def scan_motifs_matrix(
-    s,
-    genome,
-    motif_path,
-    motif_format: str = 'jaspar',
-    r: int = 250,
-    threshold: float = 13.0,
-    norm: bool = True,
-    workers: Optional[int] = None,
-    verbose: bool = True,
-):
-    """Precompute a (n_loci x n_motifs) count matrix.
-
-    Each locus's center-window sequence (length 2*r) is extracted once, then
-    every motif is scanned against every sequence. Motif work is distributed
-    across a process pool — motifs are independent.
-
-    Returns
-    -------
-    pandas.DataFrame : rows are locus uids (order follows input ``s``,
-        skipping any that failed the 2*r length check), columns are motif
-        names. Cells hold hit counts (normalized by motif width if ``norm``).
-    """
+if TYPE_CHECKING:
     import pandas as pd
-    import lightmotif
-    from concurrent.futures import ProcessPoolExecutor
-    from tqdm import tqdm
 
-    if not isinstance(genome, dict): genome = make_genome(genome)
+from .backends.motifs import Block, Library, load_motifs, write_meme  # noqa: F401  (re-exported)
 
-    pairs = _extract_sequences(s, genome, r)
-    if not pairs:
-        return pd.DataFrame()
-    uids = [u for u, _ in pairs]
-    seqs = [q for _, q in pairs]
 
-    n_motif = sum(1 for _ in lightmotif.load(motif_path, format=motif_format))
+# ── shared setup ───────────────────────────────────────────────────────────
 
+def _windows(loci, fasta, r: int, backend_fasta=None):
+    """(Loci, upper-case window sequences, valid mask): windows are centre ± r."""
+    from .interop import as_loci
+    L = as_loci(loci)
+    seqs = L.sequences(fasta, r=r, upper=True, backend=backend_fasta)
+    valid = np.fromiter((len(q) == 2 * r for q in seqs), bool, len(seqs))
+    if not valid.all():
+        seqs = [q if ok else "" for q, ok in zip(seqs, valid)]
+    return L, seqs, valid
+
+
+def _thresholds(lib: Library, threshold, pvalue):
+    """Per-motif score cutoffs: ``threshold`` (scalar or one per motif) or, with
+    ``pvalue``, the score each motif reaches with that probability under a
+    uniform background (exact score distribution on a 0.001-bit grid, the
+    same whichever engine scans)."""
+    if pvalue is None:
+        return np.broadcast_to(np.asarray(threshold, np.float64), (len(lib),)).copy()
+    from .backends.motifs import threshold_from_pvalue
+    return np.array([threshold_from_pvalue(lib.logodds(i), pvalue) for i in range(len(lib))], np.float64)
+
+
+def _workers(workers, n_motifs, n_seqs):
     if workers is None:
         workers = max(1, (os.cpu_count() or 2) // 2)
-    # parallelism helps only when the compute dominates the ~1–2s process
-    # startup + import cost; for tiny jobs, stay serial.
-    if workers > 1 and (n_motif < 16 or len(seqs) < 200):
+    if workers > 1 and (n_motifs < 16 or n_seqs < 200):     # process start-up would dominate
         workers = 1
+    return workers
 
-    results: Dict[str, List[float]] = {}
+
+_STATE: dict = {}
+
+
+def _init(seqs, mats, thr, both, backend):
+    _STATE.update(block=Block(seqs, backend), mats=mats, thr=thr, both=both)
+
+
+def _counts_task(idx):
+    st = _STATE
+    blk = st["block"]
+    if blk.backend == "moods":
+        return idx, blk.moods_counts([st["mats"][i] for i in idx], st["thr"][idx], st["both"])
+    return idx, np.column_stack([blk.counts(st["mats"][i], st["thr"][i], st["both"]) for i in idx])
+
+
+def _count_matrix(seqs, lib, thr, both, backend, workers, verbose, desc):
+    """(windows x motifs) hit counts, motifs spread over a process pool."""
+    from tqdm import tqdm
+    mats = [lib.logodds(i) for i in range(len(lib))]
+    n_m = len(mats)
+    out = np.zeros((len(seqs), n_m), np.int64)
+    workers = _workers(workers, n_m, len(seqs))
+    chunk = max(1, n_m // (workers * 4)) if workers > 1 else max(1, min(64, n_m))
+    batches = [np.arange(k, min(k + chunk, n_m)) for k in range(0, n_m, chunk)]
     if workers == 1:
-        _worker_init(seqs, motif_path, motif_format, threshold, norm)
-        idx_iter = range(n_motif)
-        if verbose: idx_iter = tqdm(idx_iter, total=n_motif, desc="[motifs]")
-        for i in idx_iter:
-            for name, counts in _scan_motif_indices([i]):
-                results[name] = counts
-    else:
-        # distribute motifs in contiguous chunks so each worker scans many
-        # motifs against its cached sequence list (no per-task sequence IPC).
-        chunk = max(1, n_motif // (workers * 4))
-        batches = [list(range(i, min(i + chunk, n_motif))) for i in range(0, n_motif, chunk)]
-        with ProcessPoolExecutor(
-            max_workers=workers,
-            initializer=_worker_init,
-            initargs=(seqs, motif_path, motif_format, threshold, norm),
-        ) as ex:
-            it = ex.map(_scan_motif_indices, batches)
-            if verbose:
-                it = tqdm(it, total=len(batches), desc="[motifs]")
-            for batch_out in it:
-                for name, counts in batch_out:
-                    results[name] = counts
+        _init(seqs, mats, thr, both, backend)
+        it = map(_counts_task, batches)
+        if verbose:
+            it = tqdm(it, total=len(batches), desc=desc)
+        for idx, block in it:
+            out[:, idx] = block
+        _STATE.clear()
+        return out
+    from concurrent.futures import ProcessPoolExecutor
+    with ProcessPoolExecutor(max_workers=workers, initializer=_init,
+                             initargs=(seqs, mats, thr, both, backend)) as ex:
+        it = ex.map(_counts_task, batches)
+        if verbose:
+            it = tqdm(it, total=len(batches), desc=desc)
+        for idx, block in it:
+            out[:, idx] = block
+    return out
 
-    return pd.DataFrame(results, index=uids)
+
+def _report(verbose, valid, tag):
+    if verbose and not valid.all():
+        print(f"[{tag}] {int((~valid).sum())} of {len(valid)} windows run off a chromosome or "
+              f"are missing from the FASTA; their rows count 0.")
+
+
+# ── scanning ───────────────────────────────────────────────────────────────
+
+def scan_motifs(loci, fasta, motifs, *, format: str = "jaspar", r: int = 250, threshold=13.0,
+                pvalue: Optional[float] = None, norm: bool = True, both_strands: bool = False,
+                backend: Optional[str] = None, verbose: bool = True) -> Dict[str, float]:
+    """Total hits of every motif over all windows (divided by motif width when ``norm``)."""
+    M = scan_motifs_matrix(loci, fasta, motifs, format=format, r=r, threshold=threshold, pvalue=pvalue,
+                           norm=norm, both_strands=both_strands, backend=backend, workers=1, verbose=verbose)
+    return {k: float(v) for k, v in M.sum(axis=0).items()}
+
+
+def scan_motifs_matrix(loci, fasta, motifs, *, format: str = "jaspar", r: int = 250, threshold=13.0,
+                       pvalue: Optional[float] = None, norm: bool = True, both_strands: bool = False,
+                       workers: Optional[int] = None, backend: Optional[str] = None,
+                       fasta_backend: Optional[str] = None, verbose: bool = True):
+    """Hits of every motif in every window: a DataFrame (one row per locus, index
+    = uid, in the loci's order; one column per motif).
+
+    Args:
+        loci: anything :func:`~genomeblocks.as_loci` takes.
+        fasta: FASTA path, ``{chrom: str}`` dict, or an open pyfaidx / pysam /
+            Biopython handle.
+        motifs: a motif file (``format`` = 'jaspar', 'jaspar16', 'transfac',
+            'uniprobe', 'meme'), a Library, Biopython motifs, or matrices.
+        r: half-window around each locus centre (windows are 2r bp).
+        threshold: log2-odds cutoff (scalar or one per motif); or give
+            ``pvalue`` for a per-motif cutoff with that match probability.
+        norm: divide counts by motif width.
+        both_strands: also count reverse-strand matches.
+        workers: processes over motifs (None = half the cores; small jobs stay serial).
+        backend: 'moods' (default), 'lightmotif' or 'biopython' — the same hits.
+    """
+    import pandas as pd
+    lib = load_motifs(motifs, format=format)
+    L, seqs, valid = _windows(loci, fasta, r, fasta_backend)
+    _report(verbose, valid, "motifs")
+    thr = _thresholds(lib, threshold, pvalue)
+    counts = _count_matrix(seqs, lib, thr, both_strands, backend, workers, verbose, "[motifs]")
+    vals = counts / lib.widths[None, :] if norm else counts
+    return pd.DataFrame(vals, index=pd.Index(L.uid, name="uid"), columns=lib.names)
+
+
+def scan_motifs_matrix_masked(loci, fasta, motifs, anchors: List[str], *, format: str = "jaspar", r: int = 250,
+                              window: int = 10, threshold=13.0, pvalue: Optional[float] = None,
+                              anchor_threshold: Optional[float] = None,
+                              norm: bool = True, both_strands: bool = False, skip_anchors: bool = True,
+                              seed: Optional[int] = None, workers: Optional[int] = None,
+                              backend: Optional[str] = None, verbose: bool = True):
+    """:func:`scan_motifs_matrix` after hiding the matches of ``anchors`` motifs.
+
+    Every match of a motif whose name contains one of ``anchors``
+    (case-insensitive) gets ``centre ± window`` bp replaced by random bases,
+    then the library is scanned on the masked windows — "which motifs set
+    these regions apart *besides* the anchor?" (e.g. mask CTCF). Anchor
+    motifs are left out of the result unless ``skip_anchors=False``.
+    """
+    import pandas as pd
+    lib = load_motifs(motifs, format=format)
+    anchor_idx = lib.indices(anchors, "substring")
+    if not anchor_idx:
+        raise ValueError(f"No motifs matched anchors {anchors!r}")
+    if verbose:
+        names = [lib.names[i] for i in anchor_idx]
+        print(f"[mask] {len(names)} anchor PSSM(s): {', '.join(names[:5])}"
+              f"{f' (+{len(names) - 5} more)' if len(names) > 5 else ''}")
+    L, seqs, valid = _windows(loci, fasta, r)
+    _report(verbose, valid, "mask")
+    thr_all = _thresholds(lib, threshold, pvalue)           # one cutoff per library motif
+    a_thr = thr_all if anchor_threshold is None else np.full(len(lib), float(anchor_threshold))
+    blk = Block(seqs, backend)
+    rng = np.random.default_rng(seed)
+    bases = np.frombuffer(b"ACGT", np.uint8)
+    masked = [bytearray(q.encode("ascii")) for q in seqs]
+    for i in anchor_idx:
+        m = lib.logodds(i)
+        rows, pos, _ = blk.hits(m, a_thr[i], both_strands)
+        c = pos + len(m) // 2
+        for row, cc in zip(rows.tolist(), c.tolist()):
+            seq = masked[row]
+            lo, hi = max(0, cc - window), min(len(seq), cc + window + 1)
+            if hi > lo:
+                seq[lo:hi] = bases[rng.integers(0, 4, size=hi - lo)].tobytes()
+    masked = [b.decode("ascii") for b in masked]
+    keep = [i for i in range(len(lib)) if not (skip_anchors and i in set(anchor_idx))]
+    sub = lib.take(keep)
+    thr = np.asarray(thr_all, np.float64)[keep]
+    counts = _count_matrix(masked, sub, thr, both_strands, backend, workers, verbose, "[scan]")
+    vals = counts / sub.widths[None, :] if norm else counts
+    return pd.DataFrame(vals, index=pd.Index(L.uid, name="uid"), columns=sub.names)
+
+
+# ── positional profiles (where in the window the hits fall) ───────────────
+
+def _profile_task(idx):
+    st = _STATE
+    blk, n_bins, L, norm = st["block"], st["n_bins"], st["L"], st["norm"]
+    out = []
+    for i in idx:
+        m = st["mats"][i]
+        rows, pos, _ = blk.hits(m, st["thr"][i], st["both"])
+        prof = np.zeros((blk.n, n_bins), np.float32)
+        b = ((pos + len(m) // 2) * n_bins) // L
+        ok = (b >= 0) & (b < n_bins)
+        np.add.at(prof, (rows[ok], b[ok]), 1.0)
+        if norm:
+            prof /= len(m)
+        out.append((i, prof))
+    return out
+
+
+def _init_profile(seqs, mats, thr, both, backend, n_bins, L, norm):
+    _init(seqs, mats, thr, both, backend)
+    _STATE.update(n_bins=n_bins, L=L, norm=norm)
+
+
+def scan_motifs_profile(loci, fasta, motifs, select=None, *, format: str = "jaspar", match: str = "substring",
+                        r: int = 500, n_bins: int = 100, threshold=13.0, pvalue: Optional[float] = None,
+                        both_strands: bool = True, smooth: float = 1.0, norm: bool = False,
+                        workers: Optional[int] = None, backend: Optional[str] = None, verbose: bool = True):
+    """Where the motif hits fall in each window: a ``(rows, motifs, bins)`` cube —
+    the layout of a signal cube, so ``signal_draw.plot_heatmap`` (or
+    :func:`~genomeblocks.plot_motif_heatmap`) draws it like one.
+
+    Each window (centre ± ``r``) is split into ``n_bins`` bins and every hit
+    is credited to the bin of its centre; both strands by default (reverse
+    matches in forward coordinates, so they share the frame). ``select``
+    picks motifs by name (case-insensitive substring unless
+    ``match='exact'``) — usually a handful, e.g. ``['CTCF', 'GATA', 'SOX']``.
+    ``smooth`` is a Gaussian sigma in bins along each row (0 keeps raw
+    counts); ``norm`` divides by motif width.
+
+    Returns:
+        (M, names): the float32 cube and the motif names of its middle axis.
+    """
+    lib = load_motifs(motifs, format=format)
+    idx = lib.indices(select, match)
+    if not idx:
+        raise ValueError(f"No motifs matched {select!r} (match={match!r}); check the names exist in the library.")
+    lib = lib.take(idx)
+    Lc, seqs, valid = _windows(loci, fasta, r)
+    _report(verbose, valid, "profile")
+    thr = _thresholds(lib, threshold, pvalue)
+    mats = [lib.logodds(i) for i in range(len(lib))]
+    if verbose:
+        head = ", ".join(lib.names[:6]) + (f" (+{len(lib) - 6} more)" if len(lib) > 6 else "")
+        print(f"[profile] {len(Lc)} loci x {len(lib)} motifs x {n_bins} bins | {2 * r} bp window, "
+              f"{2 * r // n_bins} bp/bin: {head}")
+    workers = _workers(workers, len(lib) * 4, len(seqs))
+    batches = [list(range(k, min(k + 1, len(lib)))) for k in range(len(lib))]
+    M = np.zeros((len(Lc), len(lib), n_bins), np.float32)
+    args = (seqs, mats, thr, both_strands, backend, n_bins, 2 * r, norm)
+    if workers == 1:
+        _init_profile(*args)
+        for b in batches:
+            for i, prof in _profile_task(b):
+                M[:, i, :] = prof
+        _STATE.clear()
+    else:
+        from concurrent.futures import ProcessPoolExecutor
+        with ProcessPoolExecutor(max_workers=min(workers, len(batches)), initializer=_init_profile,
+                                 initargs=args) as ex:
+            for out in ex.map(_profile_task, batches):
+                for i, prof in out:
+                    M[:, i, :] = prof
+    if smooth and smooth > 0:
+        from scipy.ndimage import gaussian_filter1d
+        M = gaussian_filter1d(M, sigma=float(smooth), axis=-1, mode="nearest")
+    if verbose:
+        per = M.sum(axis=(0, 2)) / max(len(Lc), 1)
+        print("[profile] mean hits/locus: " + ", ".join(f"{n}={v:.2f}" for n, v in list(zip(lib.names, per))[:6]))
+    return M, list(lib.names)
 
 
 def bootstrap_enrichment(
@@ -284,193 +356,6 @@ def bootstrap_enrichment(
     return pd.DataFrame(out)
 
 
-def _hit_position(hit):
-    """Best-effort extraction of a 0-based start position from a lightmotif Hit.
-    The Python binding's attribute name has varied across versions — try the
-    common spellings before falling back to iteration."""
-    for attr in ('position', 'pos', 'start'):
-        v = getattr(hit, attr, None)
-        if v is not None:
-            return int(v)
-    try:
-        return int(next(iter(hit)))
-    except (TypeError, ValueError, StopIteration):
-        return None
-
-
-def _resolve_anchors(motifs_list, anchors):
-    """Resolve user-given names to motif indices by case-insensitive substring."""
-    anchors_lc = [a.lower() for a in anchors]
-    return [i for i, m in enumerate(motifs_list)
-            if any(a in m.name.lower() for a in anchors_lc)]
-
-
-def _mask_anchor_hits(seqs, motifs_list, anchor_idx, *, window, threshold, seed):
-    """Replace ±window bp around each anchor-motif hit center with random
-    A/C/G/T. Random fill is used (rather than 'N') because lightmotif.stripe
-    rejects N — the few stray hits a random ~20-bp filler can create are
-    background noise that's equal between A and B groups in the downstream
-    differential test."""
-    import lightmotif
-    import numpy as np
-
-    anchor_pssms = [(motifs_list[i].counts.normalize(0.1).log_odds(),
-                     len(motifs_list[i].counts)) for i in anchor_idx]
-    rng = np.random.default_rng(seed)
-    bases = np.frombuffer(b'ACGT', dtype=np.uint8)
-    out = []
-    for seq in seqs:
-        try:
-            sseq = lightmotif.stripe(seq)
-        except ValueError:
-            out.append(seq)              # unstripable → scanner will skip it too
-            continue
-        arr = bytearray(seq.encode('ascii'))
-        L = len(arr)
-        for pssm, w in anchor_pssms:
-            for hit in lightmotif.scan(pssm, sseq, threshold=threshold):
-                pos = _hit_position(hit)
-                if pos is None:
-                    continue
-                c = pos + w // 2
-                lo, hi = max(0, c - window), min(L, c + window + 1)
-                if hi <= lo:
-                    continue
-                arr[lo:hi] = bases[rng.integers(0, 4, size=hi - lo)].tobytes()
-        out.append(arr.decode('ascii'))
-    return out
-
-
-def scan_motifs_matrix_masked(
-    s,
-    genome,
-    motif_path,
-    anchors: List[str],
-    *,
-    motif_format: str = 'jaspar',
-    r: int = 250,
-    window: int = 10,
-    threshold: float = 13.0,
-    anchor_threshold: Optional[float] = None,
-    norm: bool = True,
-    skip_anchors: bool = True,
-    seed: Optional[int] = None,
-    workers: Optional[int] = None,
-    verbose: bool = True,
-):
-    """Scan motifs after masking out matches of anchor motifs in each sequence.
-
-    For each locus's center window (length 2*r), find every match to any
-    motif whose name matches one of ``anchors`` (case-insensitive substring
-    against the library), replace a ±``window``-bp window around each
-    match center with random A/C/G/T, then run the standard scanner on
-    the masked sequences. Anchor motifs are excluded from the output by
-    default (``skip_anchors=True``).
-
-    Use this to ask "which motifs enrich at these regions *independent of
-    the anchor*?" — e.g., mask CTCF and ask which co-factors differentiate
-    your two CRE sets.
-
-    Parameters
-    ----------
-    s, genome, motif_path, motif_format, r, threshold, norm, workers, verbose:
-        Same semantics as :func:`scan_motifs_matrix`.
-    anchors : list[str]
-        Motif name fragments to mask (case-insensitive substring). E.g.
-        ``['CTCF']`` matches every CTCF.* PSSM in the library.
-    window : int
-        Half-width of the mask on each side of the motif-match center.
-        Default 10 bp (mask spans 21 bp).
-    anchor_threshold : float, optional
-        Threshold used when finding anchor hits to mask. Defaults to
-        ``threshold`` (same as scanning).
-    skip_anchors : bool
-        If True (default), the anchor motifs themselves are excluded from
-        the returned matrix (they'd be ~zero after masking anyway).
-    seed : int, optional
-        RNG seed for the random fill — set for reproducibility.
-
-    Returns
-    -------
-    pandas.DataFrame
-        (n_loci × n_motifs), same shape as :func:`scan_motifs_matrix`
-        (minus anchor columns when ``skip_anchors``).
-    """
-    import pandas as pd
-    import lightmotif
-    from concurrent.futures import ProcessPoolExecutor
-    from tqdm import tqdm
-
-    if anchor_threshold is None:
-        anchor_threshold = threshold
-    if not isinstance(genome, dict):
-        genome = make_genome(genome)
-
-    pairs = _extract_sequences(s, genome, r)
-    if not pairs:
-        return pd.DataFrame()
-    uids = [u for u, _ in pairs]
-    seqs = [q for _, q in pairs]
-
-    motifs_list = list(lightmotif.load(motif_path, format=motif_format))
-    anchor_idx = _resolve_anchors(motifs_list, anchors)
-    if not anchor_idx:
-        raise ValueError(f"No motifs matched anchors {anchors!r} in {motif_path}")
-    if verbose:
-        names = [motifs_list[i].name for i in anchor_idx]
-        head = ', '.join(names[:5])
-        more = f" (+{len(names) - 5} more)" if len(names) > 5 else ''
-        print(f"[mask] {len(anchor_idx)} anchor PSSM(s): {head}{more}")
-
-    if verbose:
-        seqs_iter = tqdm(seqs, total=len(seqs), desc='[mask]')
-        # materialize the generator so _mask_anchor_hits sees a list
-        masked_input = list(seqs_iter)
-    else:
-        masked_input = seqs
-    masked = _mask_anchor_hits(
-        masked_input, motifs_list, anchor_idx,
-        window=window, threshold=anchor_threshold, seed=seed,
-    )
-
-    # Choose motifs to scan in the output
-    if skip_anchors:
-        anchor_set = set(anchor_idx)
-        scan_idx = [i for i in range(len(motifs_list)) if i not in anchor_set]
-    else:
-        scan_idx = list(range(len(motifs_list)))
-    n_motif_out = len(scan_idx)
-
-    if workers is None:
-        workers = max(1, (os.cpu_count() or 2) // 2)
-    if workers > 1 and (n_motif_out < 16 or len(masked) < 200):
-        workers = 1
-
-    results: Dict[str, List[float]] = {}
-    if workers == 1:
-        _worker_init(masked, motif_path, motif_format, threshold, norm)
-        idx_iter = scan_idx
-        if verbose:
-            idx_iter = tqdm(idx_iter, total=n_motif_out, desc='[scan]')
-        for i in idx_iter:
-            for name, counts in _scan_motif_indices([i]):
-                results[name] = counts
-    else:
-        chunk = max(1, n_motif_out // (workers * 4))
-        batches = [scan_idx[i:i + chunk] for i in range(0, n_motif_out, chunk)]
-        with ProcessPoolExecutor(
-            max_workers=workers,
-            initializer=_worker_init,
-            initargs=(masked, motif_path, motif_format, threshold, norm),
-        ) as ex:
-            it = ex.map(_scan_motif_indices, batches)
-            if verbose:
-                it = tqdm(it, total=len(batches), desc='[scan]')
-            for batch_out in it:
-                for name, counts in batch_out:
-                    results[name] = counts
-
-    return pd.DataFrame(results, index=uids)
 
 
 def compare_motifs(
@@ -496,9 +381,11 @@ def compare_motifs(
         motifs. Missing columns are filled with zero so the two matrices
         don't need identical motif sets.
     pseudo : float
-        Pseudocount added to both means before the log2 ratio. Set this to
-        roughly the median non-zero per-CRE mean to avoid the +1 collapse
-        we discussed for ``bootstrap_enrichment``.
+        Pseudocount added to both means before the log2 ratio, so a motif
+        absent from one set still gets a finite fold change. A pseudocount
+        far above the means (e.g. 1 on per-sequence counts around 0.01)
+        dominates both terms and pulls every LFC toward 0; set it to roughly
+        the median non-zero column mean, as for :func:`bootstrap_enrichment`.
     alternative : {'two-sided', 'greater', 'less'}
         Passed to scipy.stats.mannwhitneyu. Default two-sided.
 
@@ -655,6 +542,8 @@ def compare_motifs_to_ref(
     return df
 
 
+
+
 # ============================================================================
 # Motif clustering and archetype generation
 # ----------------------------------------------------------------------------
@@ -666,21 +555,6 @@ def compare_motifs_to_ref(
 # Logos are rendered with `logomaker` (lazy import inside the plot helpers).
 # ============================================================================
 
-def _pfm_from_motif(motif, pseudo=0.01):
-    """Convert a lightmotif Motif to a (4, W) PFM with rows in ACGT order.
-
-    Adds `pseudo` to each count before column-normalizing to probabilities.
-    Assumes lightmotif's CountMatrix supports base-keyed access
-    (``cm[base]`` → iterable of per-position counts).
-    """
-    import numpy as np
-    # lightmotif's CountMatrix exposes the buffer protocol — np.asarray
-    # yields shape (W, 5) with column order [A, C, T, G, N]. Drop N, then
-    # permute [0,1,3,2] to get ACGT, add pseudocount (avoids 0/0 → NaN on
-    # any all-zero column), normalize, and transpose to (4, W).
-    arr = np.asarray(motif.counts, dtype=float)
-    counts = arr[:, [0, 1, 3, 2]] + pseudo
-    return (counts / counts.sum(axis=1, keepdims=True)).T
 
 
 def _pwm_rc(pfm):
@@ -703,7 +577,6 @@ def _pwm_align(p_anchor, p_other, *, min_overlap=5):
     p_other's first column in p_anchor's coordinate frame (may be negative)
     and similarity is the Sandelin-Wasserman score normalized to [0, 1].
     """
-    import numpy as np
     W1, W2 = p_anchor.shape[1], p_other.shape[1]
     candidates = ((False, p_other), (True, _pwm_rc(p_other)))
     best = (0, False, -1.0)
@@ -787,30 +660,17 @@ def _pwm_distance_matrix(pwms, *, min_overlap=5, workers=None, verbose=True):
     return D
 
 
-def pwm_distance_matrix(
-    motif_path,
-    *,
-    motif_format: str = 'jaspar',
-    pseudo: float = 0.01,
-    min_overlap: int = 5,
-    workers: Optional[int] = None,
-    verbose: bool = True,
-):
-    """Load motifs and compute pairwise PWM distance matrix.
+def pwm_distance_matrix(motifs, *, format: str = "jaspar", pseudo: float = 0.01, min_overlap: int = 5,
+                        workers: Optional[int] = None, verbose: bool = True):
+    """Pairwise PWM distances of a motif library (1 - Sandelin-Wasserman similarity).
 
-    Returns
-    -------
-    D : (n, n) numpy array of distances in [0, 1] (1 − Sandelin-Wasserman).
-    names : list of motif names in row/column order.
-    pwms : list of (4, W) PFMs in the same order.
-    """
-    import lightmotif
-    motifs_list = list(lightmotif.load(motif_path, format=motif_format))
-    names = [m.name for m in motifs_list]
-    pwms = [_pfm_from_motif(m, pseudo=pseudo) for m in motifs_list]
-    D = _pwm_distance_matrix(pwms, min_overlap=min_overlap,
-                             workers=workers, verbose=verbose)
-    return D, names, pwms
+    ``motifs`` is anything :func:`~genomeblocks.load_motifs` takes. Returns
+    ``(D, names, pwms)``: the (n x n) distances in [0, 1], the motif names, and
+    the (4 x W) probability matrices in the same order."""
+    lib = load_motifs(motifs, format=format)
+    pwms = [lib.pfm(i, pseudo) for i in range(len(lib))]
+    D = _pwm_distance_matrix(pwms, min_overlap=min_overlap, workers=workers, verbose=verbose)
+    return D, list(lib.names), pwms
 
 
 def cluster_motifs(D, *, cutoff: float = 0.3, linkage_method: str = 'average'):
@@ -883,83 +743,38 @@ def archetype(pwms, *, min_overlap: int = 5, weight_by_ic: bool = True):
     return out
 
 
-def archetype_from_names(
-    motif_path,
-    names: List[str],
-    *,
-    motif_format: str = 'jaspar',
-    match: str = 'substring',
-    pseudo: float = 0.01,
-    min_overlap: int = 5,
-    weight_by_ic: bool = True,
-    verbose: bool = True,
-):
-    """Build a single consensus archetype from a named subset of motifs.
+def archetype_from_names(motifs, names: List[str], *, format: str = "jaspar", match: str = "substring",
+                         pseudo: float = 0.01, min_overlap: int = 5, weight_by_ic: bool = True,
+                         verbose: bool = True):
+    """One consensus archetype from a named subset of motifs (e.g. the
+    top-enriched factors of a differential analysis), without clustering the
+    whole library.
 
-    Use when you already have a coherent group of motifs in mind — e.g. the
-    top-enriched factors from a differential analysis — and just want one
-    representative PWM, without clustering the whole library.
+    ``names`` are matched case-insensitively as substrings of the motif names
+    and descriptions (``match='substring'``) or verbatim (``'exact'``).
 
-    Parameters
-    ----------
-    motif_path, motif_format : str
-        Motif file readable by lightmotif.
-    names : list[str]
-        Motif names (or fragments) to include. With ``match='substring'``
-        (default), 'CTCF' matches every 'CTCF.H14CORE.*' PSSM in the
-        library. With ``match='exact'``, names must equal the library's
-        motif names verbatim — appropriate when you pass the full
-        ``enr['Factor']`` values.
-    match : {'substring', 'exact'}
-        How to resolve ``names``. Substring matching is case-insensitive.
-    pseudo, min_overlap, weight_by_ic
-        See :func:`archetype`.
-
-    Returns
-    -------
-    dict with:
-        ``archetype``: consensus PFM, shape (4, W)
-        ``members``  : list of full motif names that were included
-        ``pwms``     : list of per-motif PFMs in member order (handy for
-                       a ``plot_cluster_members`` QC plot)
+    Returns:
+        dict with ``archetype`` (4 x W consensus), ``members`` (matched motif
+        names) and ``pwms`` (their probability matrices, for a QC plot).
     """
-    import lightmotif
-
-    motifs_list = list(lightmotif.load(motif_path, format=motif_format))
-
-    if match == 'exact':
-        wanted = set(names)
-        idx = [i for i, m in enumerate(motifs_list) if m.name in wanted]
-    elif match == 'substring':
-        names_lc = [n.lower() for n in names]
-        idx = [i for i, m in enumerate(motifs_list)
-               if any(n in m.name.lower() for n in names_lc)]
-    else:
-        raise ValueError(f"match must be 'exact' or 'substring', got {match!r}")
-
+    lib = load_motifs(motifs, format=format)
+    idx = lib.indices(names, match)
     if not idx:
-        raise ValueError(
-            f"No motifs matched {names!r} in {motif_path} "
-            f"(match={match!r}). Check the names exist in the library; "
-            f"try match='substring' for symbol-level lookups.")
-
-    matched_names = [motifs_list[i].name for i in idx]
-    pwms = [_pfm_from_motif(motifs_list[i], pseudo=pseudo) for i in idx]
-
+        raise ValueError(f"No motifs matched {names!r} (match={match!r}). Check the names exist in the "
+                         f"library; try match='substring' for symbol-level lookups.")
+    members = [lib.names[i] for i in idx]
+    pwms = [lib.pfm(i, pseudo) for i in idx]
     if verbose:
-        head = ', '.join(matched_names[:5])
-        more = f' (+{len(matched_names) - 5} more)' if len(matched_names) > 5 else ''
-        print(f"[archetype_from_names] {len(matched_names)} motifs → 1 archetype: "
-              f"{head}{more}")
-
-    arch_pfm = archetype(pwms, min_overlap=min_overlap, weight_by_ic=weight_by_ic)
-    return {'archetype': arch_pfm, 'members': matched_names, 'pwms': pwms}
+        print(f"[archetype_from_names] {len(members)} motifs → 1 archetype: {', '.join(members[:5])}"
+              f"{f' (+{len(members) - 5} more)' if len(members) > 5 else ''}")
+    return {"archetype": archetype(pwms, min_overlap=min_overlap, weight_by_ic=weight_by_ic),
+            "members": members, "pwms": pwms}
 
 
 def build_archetypes(
-    motif_path,
+    motifs,
     *,
-    motif_format: str = 'jaspar',
+    format: str = 'jaspar',
     cutoff: float = 0.3,
     min_overlap: int = 5,
     linkage_method: str = 'average',
@@ -973,8 +788,8 @@ def build_archetypes(
 
     Parameters
     ----------
-    motif_path, motif_format : str
-        Motif file and format readable by lightmotif (e.g. 'jaspar', 'meme').
+    motifs, format
+        A motif file and its format, or any motif source load_motifs takes.
     cutoff : float
         Distance cutoff for hierarchical clustering (``fcluster`` criterion
         ``'distance'``). Equivalent to "merge motifs with SW similarity ≥
@@ -992,7 +807,7 @@ def build_archetypes(
     """
     import numpy as np
     D, names, pwms = pwm_distance_matrix(
-        motif_path, motif_format=motif_format, pseudo=pseudo,
+        motifs, format=format, pseudo=pseudo,
         min_overlap=min_overlap, workers=workers, verbose=verbose)
     labels, Z = cluster_motifs(D, cutoff=cutoff, linkage_method=linkage_method)
 
@@ -1018,28 +833,3 @@ def build_archetypes(
         'D': D, 'Z': Z, 'labels': labels, 'names': names, 'pwms': pwms,
         'archetypes': archetypes, 'members': members,
     }
-
-
-def write_meme(archetypes, path, *, alphabet: str = 'ACGT',
-               bg=(0.25, 0.25, 0.25, 0.25)):
-    """Write an archetype dict to MEME-format so the archetypes can be fed
-    back into ``scan_motifs_matrix(motif_path, motif_format='meme', ...)``.
-    """
-    bg_str = ' '.join(f'{a} {p:.4f}' for a, p in zip(alphabet, bg))
-    with open(path, 'w') as f:
-        f.write("MEME version 4\n\n")
-        f.write(f"ALPHABET= {alphabet}\n\n")
-        f.write("strands: + -\n\n")
-        f.write(f"Background letter frequencies\n{bg_str}\n\n")
-        for name, pfm in archetypes.items():
-            W = pfm.shape[1]
-            f.write(f"MOTIF {name}\n")
-            f.write(f"letter-probability matrix: alength= 4 w= {W}\n")
-            for j in range(W):
-                f.write(" ".join(f"{pfm[i, j]:.6f}" for i in range(4)) + "\n")
-            f.write("\n")
-
-
-Loci.scan_motifs = scan_motifs
-Loci.scan_motifs_matrix = scan_motifs_matrix
-Loci.scan_motifs_matrix_masked = scan_motifs_matrix_masked

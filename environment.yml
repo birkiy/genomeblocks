@@ -1,22 +1,53 @@
+# The full development environment: every backend genomeblocks can use,
+# conda-only engines included (graph-tool, cgranges, bedtools), all from
+# conda-forge / bioconda. pip only installs genomeblocks itself (editable):
+# its `interop` / `test` extras would make pip compile MOODS-python, which
+# conda's `moods` already provides (under the name mira-moods).
+#
+#   conda env create -f environment.yml && conda activate genomeblocks
+#   pip install lightmotif        # optional: the alternative motif engine (PyPI only)
 name: genomeblocks
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
-  - python=3.10
+  - python>=3.10
   - pip
+  # core
   - numpy
-  - pandas
+  - pandas>=2
+  - pyarrow
+  - narwhals
   - scipy
   - matplotlib
-  - pybigwig
   - cooler
-  - graph-tool
-  - pyranges
-  - pysam
+  - pybigtools
   - tqdm
-  - cgranges
+  - moods               # the motif engine
+  # engines and converters
+  - polars
+  - graph-tool          # graph backend (default when installed; scipy otherwise)
+  - python-igraph
+  - networkx
+  - cgranges            # interval backends
+  - ncls
+  - bioframe
+  - pyranges
+  - pybedtools
+  - bedtools
+  - pysam               # FASTA / BAM
+  - pyfaidx
+  - pybigwig
+  - biopython
+  - anndata
+  - xarray
+  - pyliftover
+  - logomaker
+  # tests
+  - pytest
+  - duckdb
+  - seaborn
+  - plotly
+  - altair
   - pip:
-      - lightmotif
-      
+      - -e .

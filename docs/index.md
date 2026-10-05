@@ -2,12 +2,12 @@
 title: Home
 layout: default
 nav_order: 1
-description: "Fluent building blocks for regulatory genomics in Python."
+description: "Building blocks for regulatory genomics in Python, as columnar tables that work with pandas, polars, Arrow and the rest of the ecosystem."
 permalink: /
 ---
 
 <div class="gb-eyebrow-row">
-  <span class="gb-eyebrow">v1.1 · MIT</span>
+  <span class="gb-eyebrow">v2.0 · MIT</span>
   <button type="button" class="gb-install-chip" onclick="gbCopyInstall(this)" title="Copy to clipboard">
     <span class="chip-text">pip install genomeblocks</span>
     <span class="copy-icon" aria-hidden="true">⧉</span>
@@ -17,17 +17,17 @@ permalink: /
 # genomeblocks
 {: .fs-9 }
 
-Fluent building blocks for regulatory genomics — from peaks to chromatin networks in a handful of expressive chained calls.
+Building blocks for regulatory genomics — peaks, genes, loops, contact networks, signal and motifs as columnar tables that line up by row and hand themselves to pandas, polars, Arrow and friends.
 {: .fs-6 .fw-300 }
 
 <div class="gb-works-with" aria-label="Supported data types">
   <span class="label">Works with</span>
-  <span class="chip">ChIP-seq</span>
-  <span class="chip">ATAC-seq</span>
+  <span class="chip">ChIP-seq · ATAC-seq</span>
   <span class="chip">Hi-C · HiChIP</span>
-  <span class="chip">GTF / GENCODE</span>
-  <span class="chip">BigWig</span>
-  <span class="chip">JASPAR motifs</span>
+  <span class="chip">GTF / GFF3 / genePred</span>
+  <span class="chip">bigWig · BAM · FASTA</span>
+  <span class="chip">JASPAR · MEME motifs</span>
+  <span class="chip">pandas · polars · Arrow</span>
 </div>
 
 [Quickstart →]({{ '/quickstart/' | relative_url }}){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
@@ -37,94 +37,104 @@ Fluent building blocks for regulatory genomics — from peaks to chromatin netwo
 ## Why genomeblocks?
 {: .sec-navy }
 
-Regulatory-genomics analyses usually end up as a cocktail of bedtools, PyRanges, cooler, pyBigWig, GTF parsing boilerplate, graph libraries, and one-off heatmap code. `genomeblocks` unifies those pieces behind a small set of composable objects, grouped into three color-coded families:
+A regulatory-genomics analysis is usually a cocktail of bedtools, a GTF parser, cooler, a bigWig reader, a motif scanner, a graph library and one-off heatmap code, glued together with DataFrames whose rows no longer line up. `genomeblocks` keeps every object as a **table of numpy columns**: the row number is the join key, so the signal cube, the motif matrix, the annotation labels and the contact graph computed from one set of peaks all share its row order. Everything comes in through one boundary (`gb.as_loci`) and goes out through explicit converters (`to_pandas`, `to_polars`, `to_arrow`, …); the heavy work runs through backends you can swap per call.
 
-<ul class="gb-modules">
-  <li class="green">
-    <span class="mod-name"><code>Loci</code><span class="mod-tag">Intervals</span></span>
-    <small>A list-of-intervals container with set algebra (<code>&amp;</code>, <code>|</code>, <code>-</code>, <code>^</code>), <code>slop</code>, <code>sort</code>, <code>merge</code>, <code>nearest</code>, indexed overlap queries, and signal extraction.</small>
-  </li>
-  <li class="green">
-    <span class="mod-name"><code>Locus</code><span class="mod-tag">Intervals</span></span>
-    <small>A single interval with a canonical UID (<code>chrom:start-end(strand)</code>) used everywhere as a stable key.</small>
-  </li>
-  <li class="green">
-    <span class="mod-name"><code>signal</code><span class="mod-tag">Intervals</span></span>
-    <small>bigWig extraction into one signal cube (pybigtools, process-parallel, pure-Python fallback), TMM normalization, and comparative heatmaps.</small>
-  </li>
-  <li class="navy">
-    <span class="mod-name"><code>Genes</code><span class="mod-tag">Annotation</span></span>
-    <small>GENCODE / GTF / UCSC parser yielding <code>Gene</code> → <code>Transcript</code> → <code>Exon</code>/<code>CDS</code>/<code>UTR</code> hierarchies, with enhancer-to-gene assignment in one call.</small>
-  </li>
-  <li class="navy">
-    <span class="mod-name"><code>motifs</code><span class="mod-tag">Annotation</span></span>
-    <small>JASPAR motif scanning over a FASTA genome; TF family lookups and enrichment helpers.</small>
-  </li>
-  <li class="navy">
-    <span class="mod-name"><code>Atlas</code><span class="mod-tag">Annotation</span></span>
-    <small>GIGGLE-style enrichment of a region set against thousands of BED tracks (ChIP-Atlas scale) via one sparse index.</small>
-  </li>
-  <li class="purple">
-    <span class="mod-name"><code>Architecture</code><span class="mod-tag">Networks</span></span>
-    <small>A chromatin-contact graph (graph-tool) built from BEDPE loops or mcool matrices; distance-decay O/E normalization, gene annotation, hub discovery.</small>
-  </li>
-  <li class="purple">
-    <span class="mod-name"><code>bedpe</code><span class="mod-tag">Networks</span></span>
-    <small>BEDPE parsing + pair-to-bed intersection for loops and pairwise-interval data.</small>
-  </li>
-  <li class="purple">
-    <span class="mod-name"><code>browser</code><span class="mod-tag">Networks</span></span>
-    <small>An IGV-like, SVG-clean multi-track region viewer built on matplotlib.</small>
-  </li>
-  <li class="green">
-    <span class="mod-name"><code>columnar</code><span class="mod-tag">New in 1.1</span></span>
-    <small>The same blocks as numpy tables that line up by row: columnar <code>Loci</code>, <code>Genes</code> and an <code>Architecture</code> whose per-chromosome and trans views are free. See <a href="{{ '/design/columnar/' | relative_url }}">Design → Columnar</a>.</small>
-  </li>
-</ul>
+### Tables
+{: .no_toc }
 
-Everything is **chainable**: the output of one stage is always a first-class object accepted by the next.
+| Table | Rows | What it holds | Guide |
+|---|---|---|---|
+| `Loci` | one interval | `codes` / `starts` / `ends` / `strands` columns plus any extra columns (`name`, `score`, …); set algebra, `slop`, `merge`, `nearest`, `signal`, `scan_motifs`, `enrich` | [Loci]({{ '/guide/loci/' | relative_url }}) |
+| `Locus` | — | one interval; `L[i]` is a `LocusView` that reads the table in place; the uid `chrom:start-end(strand)` | [Locus API]({{ '/api/locus/' | relative_url }}) |
+| `Genome` | — | chromosome names ↔ integer codes, plus sizes; every table carries one | [Concepts]({{ '/concepts/' | relative_url }}) |
+| `Genes` | one gene | three linked `Loci` — `genes`, `transcripts`, `features` — 0-based, from GTF / GFF3 / genePred; `annotations`, `nearest_genes`, `get_tss`, `select_isoforms` | [Genes]({{ '/guide/genes/' | relative_url }}) |
+| `Pairs` | one loop | BEDPE as two row-aligned anchor `Loci` (`a`, `b`) plus columns; `overlapping`, `filter`, `distance` | [BEDPE]({{ '/guide/bedpe/' | relative_url }}) |
+| `Architecture` | one edge | vertices = a `Loci`, edge table `src` / `tgt` + `ep` columns (`w`, `d`, `n`), vertex columns `vp`; `add_mcool`, `normalize`, `annotate`, `strength`, `prime_hubs`, `components`, `draw` | [Architecture]({{ '/guide/architecture/' | relative_url }}) |
+| `Atlas` | one track | a sparse bins × tracks index over thousands of BED files; `search`, `bootstrap` | [Atlas]({{ '/guide/atlas/' | relative_url }}) |
+| `Library` | one motif | count matrices from JASPAR / TRANSFAC / MEME / uniprobe / Biopython / arrays (`gb.load_motifs`) | [Motifs]({{ '/guide/motifs/' | relative_url }}) |
+
+Every table has `shape`, `columns`, `head()`, `tail()`, `describe()`, a notebook `_repr_html_`, and the Arrow C stream, dataframe-interchange and narwhals protocols — `pl.DataFrame(cre)`, `duckdb.sql("select * from cre")`, `sns.histplot(data=cre, x="score")`, `alt.Chart(cre)` take a `Loci` as it is.
+
+### Functions
+{: .no_toc }
+
+| Module | Entry points | Guide |
+|---|---|---|
+| `signal` | `loci.signal(bigwigs)` → a `(rows, tracks, bins)` cube; `gb.tmm`; `plot_heatmap`, `plot_profiles`, `gb.compare_heatmap` | [Signal]({{ '/guide/signal/' | relative_url }}) |
+| `motifs` | `scan_motifs`, `scan_motifs_matrix`, `scan_motifs_matrix_masked`, `scan_motifs_profile`, `bootstrap_enrichment`, `compare_motifs`, `pwm_distance_matrix`, `cluster_motifs`, archetypes; `gb.plot_motif_heatmap` | [Motifs]({{ '/guide/motifs/' | relative_url }}) |
+| `browser` · `igv_html` · `View` | a matplotlib region view; a one-file IGV page; a one-file interactive view of an `Architecture` | [Browser]({{ '/guide/browser/' | relative_url }}) |
+| `bedpe` | `count_pairs`, `count_pairs_2d`, `read_pairs_chunks` over HiC-Pro / 4DN / Juicer pairs files | [BEDPE]({{ '/guide/bedpe/' | relative_url }}) |
+| `se` · `hichip` · `coverage` | ROSE-style super-enhancers; HiChIP short-range tracks; BAM pileups | [Signal]({{ '/guide/signal/' | relative_url }}) |
+
+### The boundary
+{: .no_toc }
+
+`gb.as_loci(x)` turns anything interval-like into a `Loci`, and every public function calls it on its inputs — so you never convert first.
+
+| In | Out |
+|---|---|
+| a `Loci`, a `Locus`, a region string `'chr1:1,000-2,000'`, a list of regions or `(chrom, start, end)` tuples | `to_records()`, `to_numpy()`, `uid` |
+| a path: BED / narrowPeak / broadPeak, CSV / TSV with a header, parquet (`.gz` too) | `to_bed(path)`, `save(path)` (parquet) |
+| pandas, polars (eager or lazy), pyarrow, bioframe, PyRanges, pybedtools frames; dicts of columns; structured arrays | `to_pandas()`, `to_polars()`, `to_arrow()`, `to_bioframe()`, `to_pyranges()`, `to_bedtool()`, `to_cgranges()` |
+| an AnnData (its `var` regions) | `to_anndata(X)` |
+| a FASTA path, dict or open handle wherever sequence is read | `sequences(fasta)`, `to_seqrecords(fasta)`, `to_fasta(path, fasta)` |
+
+Column names are lenient on the way in (`chrom` / `chr` / `Chromosome` / `seqnames`, `start` / `Start` / `chromStart`, …) and fixed inside. See [Interoperability]({{ '/interoperability/' | relative_url }}).
+
+### Backends
+{: .no_toc }
+
+| Family | Default | Others on request |
+|---|---|---|
+| `intervals` — overlap, nearest, merge, point lookups | genomeblocks (numpy) | cgranges, ncls, bioframe, pyranges, bedtools |
+| `bigwig` — reading signal | pybigtools | pybigwig, python |
+| `motifs` — scoring matrices along sequences | MOODS, else lightmotif (an extra: `genomeblocks[motifs]` or `genomeblocks[lightmotif]`; conda ships MOODS) | lightmotif, biopython |
+| `fasta` — fetching sequence | genomeblocks (indexed `.fai` reader) | pysam, pyfaidx, memory, biopython |
+| `tables` — parsing BED / GTF / pairs text | polars, else pandas | pandas |
+| `graph` — algorithms on an `Architecture` | graph-tool, else scipy | igraph, networkx |
+
+Every default but the motif engine comes with `pip install genomeblocks`. `gb.backends()` lists them; `backend=` on a call or `with gb.use_backend(intervals="bioframe"):` picks one; a requested backend that is not installed raises an `ImportError` with the install command — nothing falls back silently. See [Backends]({{ '/backends/' | relative_url }}).
 
 ---
 
 ## 60-second example
 {: .sec-green }
 
-Three stages, each one a pure object you can hand to the next:
+Three stages; each result is a table the next stage takes as it is:
 
 ```python
-from genomeblocks import Architecture, Genes, Loci
+import genomeblocks as gb
 
-# ① CREs: ATAC peaks, extended ±100 bp, sorted, merged
-cre = (Loci.make("atac_peaks.narrowPeak")
-           .slop(100)
-           .sort()
-           .merge())
+# 1. CREs: ATAC peaks, widened ±100 bp, merged — a table of intervals
+cre = gb.Loci.make("atac_peaks.narrowPeak").slop(100).merge()
 
-# Super-enhancers that overlap CREs
-se = cre.intersect(Loci.make("H3K27ac_SE.bed"))
+# 2. Contact graph: loops anchored on the CREs, Hi-C weights, O/E, genes, hubs
+genes = gb.Genes.make("gencode.v38.annotation.gtf")
+A = (gb.Architecture.make(cre, "loops.bedpe", r=2500)
+       .add_mcool("hic.mcool", resolution=5000)
+       .normalize()
+       .annotate(genes)
+       .strength())
+hubs = A.prime_hubs()                 # {'prime_genes': {...}, 'hub_uids': [...], ...}
 
-# ② Contact graph: CRE-resolved HiChIP loops, Hi-C weights, O/E normalization
-arch = (Architecture.make(cre, "RNAP_loops.bedpe", r=2500)
-                    .add_mcool(cre, "RNAP.mcool", resolution=5000)
-                    .normalize(cre))
-
-# ③ Gene annotation: which annotation class does each super-enhancer fall into?
-genes = Genes.make("gencode.v38.annotation.gtf", promoter_r=1000)
-counts = genes.annotations(se & cre).groupby("annotation").size()
+# 3. Signal, labels and the hand-off — the rows of `cre` are the join key
+S = cre.signal(["ATAC.bw", "H3K27ac.bw"], n_bins=200, flank=3000)   # (rows, tracks, bins)
+labels = genes.annotations(cre)                                      # one row per CRE
+df = cre.to_pandas()                                                 # or to_polars(), to_arrow(), ...
 ```
 
 <div class="gb-stage-rail">
   <div class="gb-stage green">
     <span class="gb-stage-num">1</span>
-    <span><strong>Build intervals.</strong> Peaks → CREs via <code>Loci</code>.</span>
+    <span><strong>Build intervals.</strong> Peaks → CREs as a <code>Loci</code> table.</span>
   </div>
   <div class="gb-stage purple">
     <span class="gb-stage-num">2</span>
-    <span><strong>Wire the network.</strong> Loops + contacts via <code>Architecture</code>.</span>
+    <span><strong>Wire the network.</strong> Loops + contacts as an <code>Architecture</code> over those rows.</span>
   </div>
   <div class="gb-stage navy">
     <span class="gb-stage-num">3</span>
-    <span><strong>Annotate.</strong> Gene classes for each CRE via <code>Genes</code>.</span>
+    <span><strong>Annotate and hand off.</strong> Signal cube, gene labels and a DataFrame, all in the same row order.</span>
   </div>
 </div>
 
@@ -135,23 +145,25 @@ counts = genes.annotations(se & cre).groupby("annotation").size()
 
 | Section | When to read it |
 |---|---|
-| [Installation]({{ '/installation/' | relative_url }}) | Setup with conda or pip. |
-| [Quickstart]({{ '/quickstart/' | relative_url }}) | A 10-minute tour end-to-end. |
-| [Concepts]({{ '/concepts/' | relative_url }}) | The mental model — UIDs, lazy indexes, chainable APIs. |
+| [Installation]({{ '/installation/' | relative_url }}) | `pip install genomeblocks`, the extras (including the motif engine), and the three conda-only engines. |
+| [Quickstart]({{ '/quickstart/' | relative_url }}) | A 10-minute tour end to end, with the outputs. |
+| [Concepts]({{ '/concepts/' | relative_url }}) | The mental model — tables, the row as join key, Genome codes, 0-based coordinates, the boundary, backends. |
+| [Interoperability]({{ '/interoperability/' | relative_url }}) | Every input `as_loci` takes and every `to_*` exit, with round trips. |
+| [Backends]({{ '/backends/' | relative_url }}) | The six backend families, how to pick one, and what each engine supports. |
 | [Example: AR & FOXA1]({{ '/walkthrough/' | relative_url }}) | A complete real-data walkthrough, concept by concept. |
 | [User Guide → Loci]({{ '/guide/loci/' | relative_url }}) | Interval algebra in depth. |
-| [User Guide → Genes]({{ '/guide/genes/' | relative_url }}) | GTF parsing & enhancer-to-gene. |
+| [User Guide → Genes]({{ '/guide/genes/' | relative_url }}) | GTF / GFF3 / genePred tables, annotation and isoform selection. |
 | [User Guide → Architecture]({{ '/guide/architecture/' | relative_url }}) | Chromatin-contact networks. |
-| [User Guide → Signal]({{ '/guide/signal/' | relative_url }}) | BigWig extraction & heatmaps. |
-| [User Guide → Browser]({{ '/guide/browser/' | relative_url }}) | Multi-track region plots. |
-| [User Guide → BEDPE]({{ '/guide/bedpe/' | relative_url }}) | Loops & paired intervals. |
-| [User Guide → Motifs]({{ '/guide/motifs/' | relative_url }}) | TF motif scanning. |
-| [API Reference]({{ '/api/' | relative_url }}) | Full method signatures. |
-| [Design]({{ '/design/' | relative_url }}) | How each module works inside, with diagrams. |
-| [Benchmarks]({{ '/benchmarks/' | relative_url }}) | Measured speed against bedtools, deepTools, pyranges, FIMO and cooler. |
+| [User Guide → Signal]({{ '/guide/signal/' | relative_url }}) | bigWig extraction, TMM and heatmaps. |
+| [User Guide → Browser]({{ '/guide/browser/' | relative_url }}) | Region plots, IGV pages and the interactive view. |
+| [User Guide → BEDPE]({{ '/guide/bedpe/' | relative_url }}) | `Pairs` and contact counting from pairs files. |
+| [User Guide → Motifs]({{ '/guide/motifs/' | relative_url }}) | Motif libraries, scanning and enrichment. |
 | [User Guide → Atlas]({{ '/guide/atlas/' | relative_url }}) | GIGGLE-style enrichment against BED collections. |
-| [Release Notes]({{ '/release-notes/' | relative_url }}) | What changed in each release. |
-| [Credits]({{ '/credits/' | relative_url }}) | Upstream tools & citations. |
+| [API Reference]({{ '/api/' | relative_url }}) | Full signatures. |
+| [Design]({{ '/design/' | relative_url }}) | How each module works inside, with diagrams. |
+| [Benchmarks]({{ '/benchmarks/' | relative_url }}) | Every backend of every family timed through the genomeblocks API. |
+| [Release Notes]({{ '/release-notes/' | relative_url }}) | What changed in 2.0 and the 1.x → 2.0 migration table. |
+| [Credits]({{ '/credits/' | relative_url }}) | Upstream libraries and how to cite them. |
 
 ---
 
@@ -165,7 +177,7 @@ Altintas, U. B. (2024). genomeblocks: Fluent building blocks for regulatory geno
 https://github.com/birkiy/genomeblocks
 ```
 
-`genomeblocks` stands on top of several excellent upstream libraries — please also cite the ones whose module was load-bearing in your analysis. The [Credits]({{ '/credits/' | relative_url }}) page lists them all with BibTeX.
+`genomeblocks` stands on top of several excellent upstream libraries — please also cite the ones whose backend did the work in your analysis. The [Credits]({{ '/credits/' | relative_url }}) page lists them all with BibTeX.
 
 ---
 

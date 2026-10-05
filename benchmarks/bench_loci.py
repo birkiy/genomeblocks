@@ -9,10 +9,10 @@ What is measured (A and B are n-peak sets, n = 1k .. 1M):
   latency     one overlap query against an indexed set (interactive use)
   caching     1st call (index build + query) vs. later calls (query only)
 
-Engines: genomeblocks with cgranges (C index, the conda path), genomeblocks
-with its pure-Python fallback (the pip path; a bounded bisect scan since
-1.1.0), pyranges, bioframe, bedtools (CLI, includes file I/O + process
-start), intervaltree, and a naive per-chromosome double loop.
+Engines: genomeblocks (its numpy kernel, the pip default; cgranges when
+installed), pyranges, bioframe, bedtools (CLI, includes file I/O + process
+start), intervaltree, and a naive per-chromosome double loop. Every backend
+of the intervals family against each other is bench_backends.py.
 """
 from __future__ import annotations
 
@@ -23,31 +23,19 @@ import pandas as pd
 
 from common import DATA, Recorder, timeit
 
-import genomeblocks.loci as gl
+import genomeblocks as gb
 from genomeblocks import Loci
 
 SIZES = [1_000, 10_000, 100_000, 1_000_000]
+HAS_CGRANGES = gb.backends.installed("intervals", "cgranges")
 
 
 # ── engines ──────────────────────────────────────────────────────────────────
 
-def use_index(kind: str):
-    """Point genomeblocks at an interval-index implementation."""
-    import cgranges
-    if kind == "cgranges":
-        gl._get_cgranges = lambda: cgranges
-        gl._PyIntervalIndex = _ORIG_PY
-    elif kind == "python":
-        gl._get_cgranges = lambda: None
-        gl._PyIntervalIndex = _ORIG_PY
-
-
-_ORIG_PY = gl._PyIntervalIndex
-
-
 def fresh(L: Loci) -> Loci:
     """Same loci, no cached index."""
-    out = Loci(L)
+    out = L.copy()
+    out._dirty()
     return out
 
 
@@ -72,9 +60,7 @@ def intervaltree_intersect(A, B):
 
 
 def to_df(L):
-    return pd.DataFrame({"chrom": [l.chrom for l in L],
-                         "start": [l.start for l in L],
-                         "end": [l.end for l in L]})
+    return L.to_bioframe()[["chrom", "start", "end"]]
 
 
 # ── benches ──────────────────────────────────────────────────────────────────
@@ -96,24 +82,17 @@ def bench_intersect(rec: Recorder):
             rec.add(op="intersect", engine=engine, n=n, seconds=t["median"],
                     runs=t["runs"], n_out=n_out, agrees=(n_out == truth))
 
-        # genomeblocks + cgranges: cold (index built inside the call) and warm
-        use_index("cgranges")
-        Bc = fresh(B)
+        # genomeblocks: the numpy kernel (pip default), then cgranges when installed
         res = {}
-        t = timeit(lambda: res.__setitem__("o", A & Bc), repeat=rep,
-                   setup=lambda: setattr(Bc, "_cgr", None))
-        add("genomeblocks (cgranges)", t, len(res["o"]))
-        Bc.cgr
-        t = timeit(lambda: res.__setitem__("o", A & Bc), repeat=rep)
-        add("genomeblocks (cgranges, warm index)", t, len(res["o"]))
-
-        # pure-Python fallback (pip installs without cgranges)
-        use_index("python")
-        Bp = fresh(B)
-        t = timeit(lambda: res.__setitem__("o", A & Bp), repeat=rep,
-                   setup=lambda: setattr(Bp, "_cgr", None))
-        add("genomeblocks (pure-Python fallback)", t, len(res["o"]))
-        use_index("cgranges")
+        t = timeit(lambda: res.__setitem__("o", A & B), repeat=rep)
+        add("genomeblocks", t, len(res["o"]))
+        if HAS_CGRANGES:
+            Bc = fresh(B)
+            t = timeit(lambda: res.__setitem__("o", A.intersect(Bc, backend="cgranges")), repeat=rep,
+                       setup=Bc._dirty)
+            add("genomeblocks (cgranges)", t, len(res["o"]))
+            t = timeit(lambda: res.__setitem__("o", A.intersect(Bc, backend="cgranges")), repeat=rep)
+            add("genomeblocks (cgranges, warm index)", t, len(res["o"]))
 
         # pyranges / bioframe on their native frames
         ga = pr.read_bed(str(pa)); gb_ = pr.read_bed(str(pb))
@@ -199,14 +178,15 @@ def bench_latency(rec: Recorder):
     n = 100_000
     B = Loci.make(str(DATA / f"peaks_B_{n}.bed"))
     Q = Loci.make(str(DATA / "peaks_A_1000.bed"))[:200]
-    for kind, label in (("cgranges", "genomeblocks (cgranges)"),
-                        ("python", "genomeblocks (pure-Python fallback)")):
-        use_index(kind)
-        Bk = fresh(B); Bk.cgr
-        t = timeit(lambda: [Bk.overlaps(q) for q in Q], repeat=5)
+    for kind, label in (("genomeblocks", "genomeblocks (numpy point index)"),
+                        ("cgranges", "genomeblocks (cgranges)"), ("ncls", "genomeblocks (ncls)")):
+        if not gb.backends.installed("intervals", kind):
+            continue
+        Bk = fresh(B)
+        Bk.overlap_rows("chr1", 0, 1, backend=kind)                 # build the index once
+        t = timeit(lambda: [Bk.overlap_rows(q, backend=kind) for q in Q], repeat=5)
         rec.add(op="latency", engine=label, n=n, seconds=t["median"] / len(Q),
                 runs=[r / len(Q) for r in t["runs"]])
-    use_index("cgranges")
     trees = {}
     for b in B:
         trees.setdefault(b.chrom, IntervalTree()).addi(b.start, b.end)
@@ -225,16 +205,14 @@ def bench_latency(rec: Recorder):
 
 
 def bench_caching(rec: Recorder):
-    """Index is built once and memoised on the Loci: repeated queries are free."""
+    """The point index is built once and memoised on the Loci: later lookups are free."""
     print("\n== index caching ==")
-    use_index("cgranges")
     for n in SIZES:
-        A = Loci.make(str(DATA / f"peaks_A_{n}.bed"))
         B = Loci.make(str(DATA / f"peaks_B_{n}.bed"))
         Bc = fresh(B)
-        t_build = timeit(lambda: Bc._build_cgr(), repeat=3)
-        Bc.cgr
-        t_query = timeit(lambda: A & Bc, repeat=3)
+        t_build = timeit(lambda: Bc.overlap_rows("chr1", 0, 1), repeat=3, setup=Bc._dirty)
+        Bc.overlap_rows("chr1", 0, 1)
+        t_query = timeit(lambda: Bc.overlap_rows("chr1", 0, 1), repeat=3)
         rec.add(op="caching", engine="index build", n=n, seconds=t_build["median"],
                 runs=t_build["runs"])
         rec.add(op="caching", engine="query (warm)", n=n, seconds=t_query["median"],

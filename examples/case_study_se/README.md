@@ -1,6 +1,6 @@
 # Case study: HiChIP + ATAC → super-enhancers, prime hubs, shareable view
 
-Runs the whole recipe in the columnar prototype (`genomeblocks.columnar`):
+Runs the whole recipe with genomeblocks 2.0:
 
 ```
 chrom sizes ─▶ Genome

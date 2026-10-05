@@ -1,0 +1,54 @@
+<svg class="gbd" viewBox="0 0 880 286" role="img" aria-label="A call resolves its engine in three ordered steps — backend= on the call, the enclosing use_backend block, then the first installed AUTO candidate — and a named engine that is not installed raises ImportError with its install command instead of falling back; the family module runs the chosen engine and normalises its answer to one result." xmlns="http://www.w3.org/2000/svg">
+<rect class="bx" x="20" y="96" width="150" height="56" rx="8"></rect>
+<text class="tm" x="95" y="121" text-anchor="middle">L.merge(backend=…)</text>
+<text class="s" x="95" y="137" text-anchor="middle">any whole-set call</text>
+<polyline class="ln" points="172,124 194,124"/>
+<polygon class="hd" points="198.0,124.0 191.8,127.3 191.8,120.7"/>
+<rect class="bx navy" x="200" y="30" width="250" height="190" rx="8"></rect>
+<text class="tm" x="216" y="54">resolve(&#x27;intervals&#x27;, backend)</text>
+<rect class="chip white" x="216" y="70" width="218" height="40" rx="20"></rect>
+<text class="m" x="325" y="94" text-anchor="middle"></text>
+<text class="t" x="228" y="87">1</text>
+<text class="s" x="244" y="87">backend= on the call</text>
+<text class="ms" x="244" y="101">→ that name</text>
+<rect class="chip white" x="216" y="116" width="218" height="40" rx="20"></rect>
+<text class="m" x="325" y="140" text-anchor="middle"></text>
+<text class="t" x="228" y="133">2</text>
+<text class="s" x="244" y="133">inside a use_backend block</text>
+<text class="ms" x="244" y="147">→ the block&#x27;s name</text>
+<rect class="chip white" x="216" y="162" width="218" height="40" rx="20"></rect>
+<text class="m" x="325" y="186" text-anchor="middle"></text>
+<text class="t" x="228" y="179">3</text>
+<text class="s" x="244" y="179">neither: AUTO[&#x27;intervals&#x27;]</text>
+<text class="ms" x="244" y="193">→ first installed candidate</text>
+<text class="ms" x="216" y="212">aliases: numpy → genomeblocks, nx → networkx</text>
+<polyline class="ln navy" points="452,124 480,124"/>
+<polygon class="hd navy" points="484.0,124.0 477.8,127.3 477.8,120.7"/>
+<text class="lbl" x="468" y="110" text-anchor="middle">name</text>
+<rect class="bx" x="486" y="96" width="124" height="56" rx="8"></rect>
+<text class="tm" x="548" y="118" text-anchor="middle">installed?</text>
+<text class="ms" x="548" y="136" text-anchor="middle">importlib.find_spec</text>
+<polyline class="ln faint" points="548,94 548,60 632,60"/>
+<polygon class="hd faint" points="636.0,60.0 629.8,63.3 629.8,56.7"/>
+<text class="lbl" x="556" y="82">no</text>
+<rect class="bx warn" x="638" y="24" width="222" height="80" rx="8"></rect>
+<text class="tm" x="650" y="44">ImportError</text>
+<text class="ms" x="650" y="60">&#x27;cgranges&#x27; is not installed:</text>
+<text class="ms" x="650" y="74">conda install -c bioconda cgranges</text>
+<text class="s" x="650" y="94">no silent switch to another engine</text>
+<polyline class="ln green" points="612,124 632,124"/>
+<polygon class="hd green" points="636.0,124.0 629.8,127.3 629.8,120.7"/>
+<text class="lbl" x="624" y="112" text-anchor="middle">yes</text>
+<rect class="bx green" x="638" y="112" width="222" height="50" rx="8"></rect>
+<text class="tm" x="650" y="132">backends.intervals.merge</text>
+<text class="ms" x="650" y="150">_MERGE_IMPL[name](L) runs the engine</text>
+<polyline class="ln green" points="749,164 749,174"/>
+<polygon class="hd green" points="749.0,178.0 745.7,171.8 752.3,171.8"/>
+<rect class="bx green" x="638" y="180" width="222" height="50" rx="8"></rect>
+<text class="t" x="650" y="200">normalise</text>
+<text class="ms" x="650" y="218">half-open · sorted rows · int64 columns</text>
+<polyline class="ln green" points="638,205 620,205 620,238 95,238 95,158"/>
+<polygon class="hd green" points="95.0,154.0 98.3,160.2 91.7,160.2"/>
+<text class="lbl" x="358" y="254" text-anchor="middle">a Loci in genomeblocks&#x27; row order and dtypes: the same answer from any engine</text>
+<text class="s" x="20" y="276">with gb.use_backend(...) checks every name on entry, so a missing engine fails before any work starts</text>
+</svg>

@@ -21,12 +21,12 @@ import sys
 import tempfile
 import time
 
-from common import DATA, Recorder
+from common import DATA, Recorder, tool
 
 PY = sys.executable
 AVP = str(DATA / "hichip.allValidPairs")
 CS = str(DATA / "hg38.chrom.sizes")
-MACS3 = os.path.join(os.path.dirname(PY), "macs3")
+MACS3 = tool("macs3")
 
 # extract_shortrange.sh, as described: cis pairs with |pos2 - pos1| <= 1 kb -> both 5' ends as BED6
 EXTRACT = r"""awk 'BEGIN{OFS="\t"} $2==$5 { d=$6-$3; if (d<0) d=-d;
@@ -58,7 +58,7 @@ def run_gb(tmp):
     code = PEAK + f"""
 import json, time
 T = {{}}; t0 = t = time.perf_counter()
-from genomeblocks.columnar import hichip
+from genomeblocks import hichip
 sizes = {{l.split()[0]: int(l.split()[1]) for l in open({CS!r}) if l.strip()}}
 ends = hichip.shortrange_ends({AVP!r}, 1000); T["ends"] = time.perf_counter() - t; t = time.perf_counter()
 hichip.write_bed(ends, {tmp!r} + "/gb_ends.bed"); T["write BED"] = time.perf_counter() - t; t = time.perf_counter()

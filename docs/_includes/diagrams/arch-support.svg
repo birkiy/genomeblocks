@@ -1,0 +1,37 @@
+<svg class="gbd" viewBox="0 0 880 300" role="img" aria-label="support() returns, per gene, the linked CREs whose interval (mode=&#x27;overlap&#x27;) or midpoint (mode=&#x27;center&#x27;) lies inside TSS ± r; a CRE without an edge is left out unless linked=False." xmlns="http://www.w3.org/2000/svg">
+<polyline class="ln faint" points="20,80 860,80"/>
+<rect class="bx hl" x="150" y="36" width="400" height="146" rx="4"></rect>
+<text class="s" x="162" y="54">TSS ± r   (r = 5000)</text>
+<rect class="iv fnl" x="350" y="73" width="380" height="14" rx="2"></rect>
+<polygon class="hd navy" points="732.0,80.0 724.1,84.2 724.1,75.8"/>
+<rect class="iv fh" x="347" y="69" width="6" height="22" rx="1"></rect>
+<text class="s" x="362" y="66">GENE_A &#x27;+&#x27; · TSS</text>
+<text class="cap" x="20" y="114">CRE ROWS</text>
+<polyline class="ln faint" points="20,150 860,150"/>
+<rect class="iv fg" x="300" y="142" width="40" height="16" rx="2"></rect>
+<text class="tm" x="320" y="136" text-anchor="middle">a</text>
+<rect class="iv fgl" x="530" y="142" width="50" height="16" rx="2"></rect>
+<text class="tm" x="555" y="136" text-anchor="middle">b</text>
+<rect class="iv fgl" x="400" y="142" width="30" height="16" rx="2"></rect>
+<text class="tm" x="415" y="136" text-anchor="middle">c</text>
+<rect class="iv fm" x="60" y="142" width="40" height="16" rx="2"></rect>
+<text class="tm" x="80" y="136" text-anchor="middle">d</text>
+<rect class="iv fg" x="700" y="142" width="40" height="16" rx="2"></rect>
+<text class="tm" x="720" y="136" text-anchor="middle">e</text>
+<circle class="dot purple" cx="555" cy="150" r="3"/>
+<text class="ms" x="540" y="172">overlap ✓   center ✗</text>
+<text class="ms" x="320" y="172" text-anchor="middle">kept</text>
+<text class="ms" x="415" y="172" text-anchor="middle">linked=False to include</text>
+<text class="ms" x="80" y="172" text-anchor="middle">outside</text>
+<text class="ms" x="720" y="172" text-anchor="middle">partner</text>
+<path class="ln purple" d="M320,159 Q520.0,229 720,159"/>
+<path class="ln purple" d="M555,159 Q637.5,229 720,159"/>
+<text class="ms" x="520" y="206" text-anchor="middle">edges (A.degree &gt; 0): a – e, b – e</text>
+<text class="ms" x="300" y="206" text-anchor="end">c has no edge</text>
+<polyline class="ln navy" points="350,184 350,224"/>
+<polygon class="hd navy" points="350.0,228.0 346.7,221.8 353.3,221.8"/>
+<rect class="bx navy" x="150" y="230" width="420" height="40" rx="8"></rect>
+<text class="tm" x="160" y="248">A.support(genes, r=5000) → {&#x27;GENE_A&#x27;: [a, b]}</text>
+<text class="ms" x="160" y="264">mode=&#x27;center&#x27; → {&#x27;GENE_A&#x27;: [a]}   ·   rows=True → row numbers instead of uids</text>
+<text class="s" x="20" y="292">the window is [tss − r, tss + r + 1) on the Genome of the Loci; one overlap_pairs call answers every gene at once</text>
+</svg>
