@@ -1,22 +1,26 @@
+# The full development environment: every backend genomeblocks can use,
+# including the conda-only engines (graph-tool, cgranges, bedtools).
+# `pip install genomeblocks` alone gives the default backends.
 name: genomeblocks
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
-  - python=3.10
+  - python>=3.10
   - pip
   - numpy
-  - pandas
+  - pandas>=2
+  - pyarrow
   - scipy
   - matplotlib
-  - pybigwig
   - cooler
-  - graph-tool
-  - pyranges
-  - pysam
+  - pybigtools
   - tqdm
-  - cgranges
+  - graph-tool          # graph backend (default when installed; scipy otherwise)
+  - cgranges            # interval backend
+  - bedtools            # interval backend (through pybedtools)
+  - pysam
   - pip:
+      - -e .[fast,viz,interop,test]
       - lightmotif
-      
+      - narwhals

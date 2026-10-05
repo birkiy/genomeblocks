@@ -1,5 +1,5 @@
 {% set name = "genomeblocks" %}
-{% set version = "1.0.0" %}
+{% set version = "2.0.0" %}
 
 package:
   name: {{ name|lower }}
@@ -26,33 +26,45 @@ requirements:
   run:
     - python >=3.10
     - numpy
-    - pandas
+    - pandas >=2
+    - pyarrow
+    - narwhals
     - scipy
     - matplotlib-base
     - tqdm
-    - graph-tool          # conda-forge
     - cooler              # bioconda
-    - pyranges            # bioconda
     - pybigtools          # bioconda
-    - cgranges            # bioconda
     - lightmotif          # NOT yet on conda — recipe at ~/apps/lightmotif-conda (see README)
+  run_constrained:
+    # optional engines, picked up as extra backends when present
+    - graph-tool
+    - cgranges
+    - bedtools
+    - polars
+    - pyranges
+    - bioframe
+    - pysam
 
 test:
   imports:
-    - genomeblocks        # lazy __init__, so this does not require graph-tool
+    - genomeblocks        # lazy __init__: needs none of the optional engines
   commands:
     - pip check
+    - python -c "import genomeblocks as gb; print(gb.backends())"
   requires:
     - pip
 
 about:
   home: https://github.com/birkiy/genomeblocks
-  summary: Fluent building blocks for regulatory genomics.
+  summary: Fluent building blocks for regulatory genomics, as columnar tables.
   description: |
-    genomeblocks is a Python toolkit for regulatory genomics: Loci interval set
-    algebra, GTF/gene annotation, bigWig signal extraction and heatmaps, JASPAR
-    motif scanning, GIGGLE-style ChIP-Atlas enrichment, graph-tool chromatin
-    architecture from HiChIP/Hi-C, and an IGV-like browser.
+    genomeblocks is a Python toolkit for regulatory genomics: interval tables
+    (Loci) with set algebra, gene annotation tables (Genes), chromatin
+    architecture graphs (Architecture) from HiChIP / Hi-C, bigWig signal
+    cubes and heatmaps, motif scanning, GIGGLE-style enrichment (Atlas) and
+    browsers. Every table converts to and from pandas, polars, Arrow,
+    bioframe, pyranges, pybedtools, AnnData and friends, and the heavy work
+    runs through swappable backends.
   license: MIT
   license_family: MIT
   license_file: LICENSE
