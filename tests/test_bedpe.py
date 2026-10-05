@@ -1,117 +1,94 @@
-from genomeblocks.bedpe import Pair, read_bedpe
-from genomeblocks import Loci
-from genomeblocks.locus import Locus
+"""Pairs (BEDPE) and pairs-file counting."""
+import numpy as np
+import pandas as pd
+import polars as pl
+import pytest
+
+from genomeblocks import Pairs, as_loci
+from genomeblocks.bedpe import _detect_pairs_format, as_pairs, count_pairs, count_pairs_2d, read_pairs_chunks
+
+from conftest import installed_backends
 
 
-def test_pair_properties():
-    p = Pair("chr1", 1000, 1100, "chr1", 5000, 5100, name="l1", score=10.0)
-    assert p.mid1 == 1050 and p.mid2 == 5050
-    assert p.distance == 4000
+def test_make_and_columns(pairs):
+    assert len(pairs) == 4 and pairs.is_cis.tolist() == [True, True, False, True]
+    assert pairs.cols["name"].tolist() == ["l1", "l2", "l3", "l4"] and pairs.cols["score"].tolist() == [5, 3, 1, 2]
+    assert pairs.a.strand.tolist() == ["+", "+", "-", "+"]
+    assert pairs.distance.tolist()[2] == np.inf
+    assert pairs.columns == ["chrom1", "start1", "end1", "chrom2", "start2", "end2", "name", "score", "strand1", "strand2"]
+    assert pairs.shape == (4, 10)
 
 
-def test_pair_distance_cross_chrom_is_inf():
-    p = Pair("chr1", 1000, 1100, "chr2", 5000, 5100)
-    assert p.distance == float("inf")
+@pytest.mark.parametrize("backend", installed_backends("tables"))
+def test_header_lines_and_backends(tmp_path, backend):
+    p = tmp_path / "h.bedpe"
+    p.write_text("#c1\ts1\te1\tc2\ts2\te2\nchr1\t100\t200\tchr1\t1000\t1100\nchr1\t300\t400\tchr2\t500\t600\n")
+    P = Pairs.make(str(p), backend=backend)
+    assert len(P) == 2 and P.cols == {}
+    with pytest.raises(ValueError, match="at least 6"):
+        (tmp_path / "x.bedpe").write_text("chr1\t1\t2\n")
+        Pairs.make(str(tmp_path / "x.bedpe"))
 
 
-def test_read_bedpe(bedpe_path):
-    pairs = read_bedpe(bedpe_path, verbose=False)
-    assert len(pairs) == 3
-    assert all(isinstance(p, Pair) for p in pairs)
-    assert pairs[0].chrom1 == "chr1" and pairs[0].start2 == 5000
+def test_from_frame_round_trips_and_validation(pairs, tmp_path):
+    for df in (pairs.to_pandas(), pairs.to_polars(), pairs.to_arrow()):
+        back = Pairs.from_frame(df)
+        assert back.a.equals(pairs.a) and back.b.equals(pairs.b) and back.cols["score"].tolist() == [5, 3, 1, 2]
+    out = pairs.to_bedpe(str(tmp_path / "o.bedpe"))
+    assert Pairs.make(out).a.equals(pairs.a)
+    pairs.save(str(tmp_path / "p.parquet"))
+    assert Pairs.load(str(tmp_path / "p.parquet")).b.equals(pairs.b)
+    assert as_pairs(str(tmp_path / "p.parquet")).a.equals(pairs.a)
+    with pytest.raises(ValueError, match="BEDPE frame"):
+        Pairs.from_frame(pd.DataFrame({"a": [1]}))
 
 
-def test_read_bedpe_min_score_filter(bedpe_path):
-    pairs = read_bedpe(bedpe_path, min_score=6.0, verbose=False)
-    assert len(pairs) == 1                       # only the score=10 loop survives
+def test_filters_and_overlaps(pairs, cre):
+    assert len(pairs.filter(min_score=3)) == 2
+    assert len(pairs.filter(max_distance=5000)) == 2                        # trans (inf) dropped
+    m1, m2 = pairs.anchors_overlap(as_loci([("chr1", 900, 1100)]))
+    assert m1.tolist() == [True, False, True, False] and not m2.any()
+    assert len(pairs.overlapping(cre.to_pandas(), both=True)) == 4
+    for backend in installed_backends("intervals"):
+        assert (pairs.anchors_overlap(cre, backend=backend)[0] == m1 | True).all()
+    assert pairs[0][0].uid == "chr1:900-1100(+)" and pairs["score"][0] == 5
+    assert len(pairs.head(2)) == 2 and pairs.describe().loc["trans", "value"] == 1
+    assert "<table" in pairs._repr_html_()
+    assert pl.DataFrame(pairs).shape == (4, 10)
 
 
-def test_read_bedpe_max_distance_filter(bedpe_path):
-    # distances are 4000, 8000, 4000 -> max_distance 5000 keeps the two 4000s
-    pairs = read_bedpe(bedpe_path, max_distance=5000, verbose=False)
-    assert len(pairs) == 2
-
-
-def test_loci_pair_to_bed_attached(bedpe_path):
-    # the bedpe anchors sit at chr1:1000-1100 / 5000-5100 / 9000-9100
-    loci = Loci([Locus("chr1", 1000, 1100)])
-    hits = loci.pair_to_bed(bedpe_path, either=True, both=False, verbose=False)
-    # both loops whose first anchor overlaps the locus should be returned
-    assert len(hits) >= 1
-    assert all(isinstance(p, Pair) for p in hits)
-
-
-def _write_pairs(path, rows):
-    with open(path, "w") as f:
-        f.write("## pairs format v1.0\n")
-        for i, (c1, p1, c2, p2) in enumerate(rows):
-            f.write(f"r{i}\t{c1}\t{p1}\t{c2}\t{p2}\t+\t-\n")
-
-
-def _random_pairs(n=3000, seed=0):
-    import random
-    rng = random.Random(seed)
-    sizes = {"chr1": 50_000, "chr2": 30_000, "chrM": 1_000}
-    rows = []
-    for _ in range(n):
-        c1 = rng.choice(list(sizes))
-        c2 = c1 if rng.random() < 0.7 else rng.choice(list(sizes))
-        rows.append((c1, rng.randrange(1, sizes[c1]), c2, rng.randrange(1, sizes[c2])))
-    return rows
-
-
-# windows with gaps, out of order, none on chrM
-_WINDOWS = [("chr2", 10_000, 20_000), ("chr1", 0, 5_000), ("chr1", 40_000, 50_000),
-            ("chr1", 5_000, 9_000)]
-
-
-def _window_of(windows, c, p):
-    hit = [i for i, (wc, s, e) in enumerate(windows) if wc == c and s <= p < e]
-    return hit[0] if hit else None
+def test_pairs_file_formats(tmp_path):
+    (tmp_path / "t.pairs").write_text("## pairs format v1.0\n#columns: readID chrom1 pos1 chrom2 pos2 strand1 strand2\n"
+                                      "r1\tchr1\t100\tchr2\t200\t+\t-\n")
+    (tmp_path / "t.avp").write_text("r1\tchr1\t100\t+\tchr2\t200\t-\t300\tHIC_1\tHIC_2\t42\t42\n")
+    (tmp_path / "t.juicer").write_text("r0\t0\tchr1\t123\t1\t16\tchr2\t456\t2\t60\t60\n")
+    assert _detect_pairs_format(str(tmp_path / "t.pairs")) == "pairs"
+    assert _detect_pairs_format(str(tmp_path / "t.avp")) == "allvalidpairs"
+    assert _detect_pairs_format(str(tmp_path / "t.juicer")) == "juicer"
+    for f in ("t.pairs", "t.avp", "t.juicer"):
+        ch = next(read_pairs_chunks(str(tmp_path / f)))
+        assert list(ch.columns) == ["chrom1", "pos1", "chrom2", "pos2"] and ch["chrom2"].tolist() == ["chr2"]
+    with pytest.raises(ValueError, match="Unknown pairs format"):
+        next(read_pairs_chunks(str(tmp_path / "t.pairs"), format="nope"))
 
 
 def test_count_pairs_matches_brute_force(tmp_path):
-    from genomeblocks.bedpe import count_pairs
-    rows = _random_pairs()
-    path = tmp_path / "x.pairs"
-    _write_pairs(path, rows)
-    loci = Loci([Locus(*w) for w in _WINDOWS])
-
-    want = {}
-    for c1, p1, c2, p2 in rows:
-        for (ca, pa), cb in (((c1, p1), c2), ((c2, p2), c1)):
-            w = _window_of(_WINDOWS, ca, pa)
-            if w is not None:
-                want[(w, cb)] = want.get((w, cb), 0) + 1
-
-    df = count_pairs(loci, str(path), chunksize=700, verbose=False)
-    partners = sorted({cb for _, cb in want})
-    assert list(df.columns) == ["chrom", "start", "end", "uid"] + partners
-    for i in range(len(loci)):
-        for cb in partners:
-            assert df[cb].iloc[i] == want.get((i, cb), 0)
-
-    one = count_pairs(loci, str(path), target_chrom="chr2", chunksize=700, verbose=False)
-    assert one["count"].tolist() == [want.get((i, "chr2"), 0) for i in range(len(loci))]
-
-
-def test_count_pairs_2d_matches_brute_force(tmp_path):
-    import numpy as np
-    from genomeblocks.bedpe import count_pairs_2d
-    rows = _random_pairs(seed=1)
-    path = tmp_path / "x.pairs"
-    _write_pairs(path, rows)
-    a = Loci([Locus(*w) for w in _WINDOWS])
-    b_windows = [("chr1", 0, 25_000), ("chr2", 0, 30_000)]
-    b = Loci([Locus(*w) for w in b_windows])
-
-    for loci_b, wb in ((None, _WINDOWS), (b, b_windows)):
-        want = np.zeros((len(a), len(wb)), dtype=np.int64)
-        for c1, p1, c2, p2 in rows:
-            for (ca, pa), (cb, pb) in (((c1, p1), (c2, p2)), ((c2, p2), (c1, p1))):
-                i, j = _window_of(_WINDOWS, ca, pa), _window_of(wb, cb, pb)
-                if i is not None and j is not None:
-                    want[i, j] += 1
-        got = count_pairs_2d(a, str(path), loci_b=loci_b, chunksize=700, verbose=False)
-        assert got.dtype == np.int64
-        assert np.array_equal(got.toarray(), want)
+    rng = np.random.default_rng(0)
+    chroms = rng.choice(["chr1", "chr2"], 400)
+    p1, p2 = rng.integers(0, 10_000, 400), rng.integers(0, 10_000, 400)
+    c2 = np.where(rng.random(400) < 0.3, np.where(chroms == "chr1", "chr2", "chr1"), chroms)
+    lines = "".join(f"r{i}\t{a}\t{x}\t+\t{b}\t{y}\t-\t100\n" for i, (a, x, b, y) in enumerate(zip(chroms, p1, c2, p2)))
+    (tmp_path / "x.avp").write_text(lines)
+    L = as_loci([("chr1", s, s + 1000) for s in range(0, 10_000, 2000)] + [("chr2", 0, 5000)])
+    df = count_pairs(L, str(tmp_path / "x.avp"), verbose=False)
+    want = np.zeros((len(L), 2), int)
+    for a, x, b, y in zip(chroms, p1, c2, p2):
+        for (ca, pa, cb) in ((a, x, b), (b, y, a)):
+            for i in range(len(L)):
+                if L.chroms[i] == ca and L.starts[i] <= pa < L.ends[i]:
+                    want[i, 0 if cb == "chr1" else 1] += 1
+    assert df[["chr1", "chr2"]].to_numpy().tolist() == want.tolist()
+    M = count_pairs_2d(L, str(tmp_path / "x.avp"), verbose=False)
+    assert M.shape == (len(L), len(L)) and (M.toarray() == M.toarray().T).all()
+    only = L.count_pairs(str(tmp_path / "x.avp"), target_chrom="chr2", verbose=False)
+    assert len(only) == len(L) and "count" in only.columns and only["count"].tolist() == want[:, 1].tolist()

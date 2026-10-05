@@ -494,6 +494,8 @@ class Architecture(TableMixin):
                 if a == z:
                     continue
                 p0, p1 = int(bin1_off[ubin1[a]]), int(bin1_off[ubin1[z - 1] + 1])
+                if p1 <= p0:                             # no pixels start in these bins
+                    continue
                 pk = px1[p0:p1].astype(np.int64) * nb + px2[p0:p1]
                 hit = np.searchsorted(pk, ukey[a:z])
                 hit = np.minimum(hit, len(pk) - 1)

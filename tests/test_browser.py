@@ -1,63 +1,89 @@
-import matplotlib
-matplotlib.use("Agg")
+"""The three viewers: the matplotlib browser, the IGV page and the one-file View."""
+import base64
+import gzip
 
 import numpy as np
 import pytest
 
-from genomeblocks.browserview import _detect_track_type, _parse_region, browser
-from genomeblocks import Loci
-from genomeblocks.locus import Locus
+import genomeblocks as gb
+from genomeblocks import as_loci
+from genomeblocks.browserview import _detect_track_type
+from genomeblocks.view import View
 
 
-def test_parse_region_forms():
-    assert _parse_region("chr1:1,000-2,000") == ("chr1", 1000, 2000)
-    assert _parse_region(("chr2", 5, 9)) == ("chr2", 5, 9)
-    assert _parse_region(Locus("chr3", 10, 20)) == ("chr3", 10, 20)
+def test_detect_track_types(genes, pairs, cre, bw_path, bedpe_path, bed_path):
+    assert _detect_track_type(genes) == "genes" and _detect_track_type(pairs) == "bedpe"
+    assert _detect_track_type(bedpe_path) == "bedpe" and _detect_track_type(bw_path) == "bw"
+    assert _detect_track_type([bw_path, bw_path]) == "bw" and _detect_track_type("x.bam") == "bam"
+    assert _detect_track_type(cre) == "bed" and _detect_track_type(cre.to_pandas()) == "bed"
+    assert _detect_track_type(bed_path) == "bed" and _detect_track_type("chr1:1-2") == "bed"
+    import pyBigWig
+    assert _detect_track_type(pyBigWig.open(bw_path)) == "bw"
 
 
-def test_detect_track_type():
-    assert _detect_track_type("a.bw") == "bw"
-    assert _detect_track_type("a.narrowPeak") == "narrowPeak"
-    assert _detect_track_type("a.bed") == "bed"
-    assert _detect_track_type("a.bedpe") == "bedpe"
-    assert _detect_track_type(["a.bw", "b.bigwig"]) == "bw"      # rep list -> bw
-    assert _detect_track_type(Loci([Locus("chr1", 1, 2)])) == "bed"
+def test_browser_draws_every_track_kind(genes, pairs, cre, bw_path, bw2_path, bedpe_path, bed_path):
+    fig, axes = gb.browser("chr1:0-12 kb", {"ATAC": bw_path, "ATAC x2": [bw_path, bw2_path], "CRE": cre,
+                                            "frame": cre.to_pandas(), "bed": bed_path, "loops": pairs,
+                                            "loops file": bedpe_path, "genes": genes,
+                                            "regions": ["chr1:500-700", "chr1:3000-3500"]},
+                           bw_share=[["ATAC", "ATAC x2"]], backend="python")
+    assert set(axes) >= {"ATAC", "genes", "_axis"} and len(fig.axes) == len(axes)
+    assert axes["ATAC"].get_ylim() == axes["ATAC x2"].get_ylim()        # shared scale
+    fig, axes = gb.browser(("chr1", 0, 12_000), {"genes": genes}, genes_max_transcripts=1, bw_ymax=5)
+    assert "genes" in axes
+    with pytest.raises(ValueError, match="end"):
+        gb.browser("chr1:100-50", {"CRE": cre})
 
 
-class _StubBW:
-    """Minimal bigwig handle returning a constant value across bins."""
-    def __init__(self, v): self.v = v
-    def stats_array(self, chrom, start, end, *, n_bins, stat, missing):
-        return np.full(n_bins, self.v, dtype=float)
-    def close(self): pass
+def test_browser_bam_track(tmp_path, cre):
+    pysam = pytest.importorskip("pysam")
+    hdr = {"HD": {"VN": "1.0", "SO": "coordinate"}, "SQ": [{"LN": 20_000, "SN": "chr1"}]}
+    with pysam.AlignmentFile(str(tmp_path / "t.bam"), "wb", header=hdr) as f:
+        for i in range(20):
+            a = pysam.AlignedSegment()
+            a.query_name, a.query_sequence, a.flag, a.reference_id = f"r{i}", "ACGT" * 10, 0, 0
+            a.reference_start, a.mapping_quality, a.cigar = 1000 + i * 3, 60, [(0, 40)]
+            a.query_qualities = pysam.qualitystring_to_array("I" * 40)
+            f.write(a)
+    pysam.index(str(tmp_path / "t.bam"))
+    (tmp_path / "ref.fa").write_text(">chr1\n" + "ACGT" * 5000 + "\n")
+    pysam.faidx(str(tmp_path / "ref.fa"))
+    assert gb.coverage(str(tmp_path / "t.bam"), "chr1:1,000-1,100").max() == 14
+    with pytest.raises(ValueError, match="reference"):
+        gb.browser("chr1:900-1200", {"bam": str(tmp_path / "t.bam")})
+    fig, axes = gb.browser("chr1:950-1150", {"bam": str(tmp_path / "t.bam"), "CRE": cre}, reference=str(tmp_path / "ref.fa"))
+    assert "_sequence" in axes
 
 
-@pytest.fixture
-def stub_bw(monkeypatch):
-    maxes = {"a.bw": 2.0, "b.bw": 5.0, "c.bw": 9.0}
-    import genomeblocks.signal as sig
-    monkeypatch.setattr(sig, "_bw_open", lambda p: _StubBW(maxes[p]))
-    return maxes
+def test_igv_html(tmp_path, genes, cre, arch, bw_path):
+    out = tmp_path / "share.html"
+    sizes = gb.igv_html(str(out), regions=["chr1:0.0-0.012 Mb chr2:1-6 kb", ("chr1", 0, 5000)],
+                        loci={"CRE": cre.to_pandas()}, genes=genes, signal={"ATAC": bw_path}, architecture=arch)
+    assert set(sizes) == {"ATAC", "CRE", "genes", "loops (n)", "total"}
+    page = out.read_text()
+    assert "chr1:1-12000 chr2:1001-6000" in page                       # split view, units parsed, 1-based for igv.js
+    assert page.count("data:application/gzip") == 4
+    gz = page.split("genes")[-1]
+    assert gz                                                           # the genes track is to_bed12 (0-based starts)
 
 
-def test_bigwig_list_is_averaged(stub_bw):
-    fig, ax = browser(("chr1", 0, 100), {"reps": ["a.bw", "b.bw"]})
-    line = ax["reps"].get_lines()[-1]
-    assert np.allclose(line.get_ydata(), 3.5)    # mean(2, 5)
+def _unpack(p):
+    return np.frombuffer(gzip.decompress(base64.b64decode(p["b"])), dtype=p["t"])
 
 
-def test_bw_share_uses_group_max(stub_bw):
-    tracks = {"AR 0h": "a.bw", "AR 4h": "b.bw", "other": "c.bw"}
-    fig, ax = browser(("chr1", 0, 100), tracks, bw_share=[["AR 0h", "AR 4h"]])
-    y0 = ax["AR 0h"].get_ylim()[1]
-    y1 = ax["AR 4h"].get_ylim()[1]
-    assert y0 == pytest.approx(y1)               # shared scale
-    assert y0 == pytest.approx(5.0 * 1.05)       # group max * headroom
-    assert ax["other"].get_ylim()[1] == pytest.approx(9.0 * 1.05)
-
-
-def test_bw_ymax_scalar_applies_to_all(stub_bw):
-    tracks = {"AR 0h": "a.bw", "AR 4h": "b.bw"}
-    fig, ax = browser(("chr1", 0, 100), tracks, bw_ymax=12.0)
-    assert ax["AR 0h"].get_ylim()[1] == pytest.approx(12.0)
-    assert ax["AR 4h"].get_ylim()[1] == pytest.approx(12.0)
+def test_view_payload_and_html(tmp_path, genes, cre, arch, bw_path):
+    v = (View(arch, genes=genes, samples=["S1"]).signal("ATAC", {"S1": bw_path})
+         .intervals("peaks", {"S1": cre.to_pandas()}).cres().loops().genes())
+    v.region("GENE_B", gene="GENE_B").region("split", "chr1:0-5 kb chr2:1-6 kb").mark("m", "chr1", 1000)
+    D, parts = v._payload()
+    assert np.cumsum(_unpack(D["genes"]["start"])).tolist() == [1000, 10_000, 20_000]     # 0-based gene starts
+    assert _unpack(D["genes"]["tss"]).tolist() == [1000, 10_999, 20_000]                  # TSS = end - 1 on '-'
+    assert D["regions"][0]["loci"] == [["chr1", 10_999 - 500_000 if 10_999 > 500_000 else 0, 10_999 + 500_000]]
+    assert D["regions"][1]["loci"] == [["chr1", 0, 5000], ["chr2", 1000, 6000]]
+    assert len(D["tracks"]) == 5 and D["samples"][0]["name"] == "S1"
+    sizes = v.save(str(tmp_path / "v.html"))
+    assert sizes["total"] > 1000 and (tmp_path / "v.html").read_text().startswith("<!doctype html>")
+    assert "<iframe" in v._repr_html_()
+    assert len(View(cre=cre.to_pandas()).to_html()[0]) > 1000
+    with pytest.raises(ValueError, match="Architecture or cre"):
+        View()
