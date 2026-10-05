@@ -1,16 +1,19 @@
 """Motif backends: one motif library, three scanning engines.
 
 A :class:`Library` holds motifs as count matrices (W x 4, A C G T) whatever
-they were read from — a JASPAR / jaspar16 / TRANSFAC / uniprobe / MEME file,
-Biopython ``Bio.motifs`` objects, lightmotif motifs, or plain arrays. Each
-motif is scored with one log-odds matrix,
+they were read from — a JASPAR / jaspar16 / TRANSFAC / uniprobe / MEME file
+(parsed here, in pure Python), Biopython ``Bio.motifs`` objects, lightmotif
+motifs, or plain arrays. Each motif is scored with one log-odds matrix,
 
     log2( (count + 0.1) / (column total + 0.4) / 0.25 )
 
-(lightmotif's own ``normalize(0.1).log_odds()``), and every engine scans that
-same matrix, so lightmotif (SIMD, the default), MOODS (C++) and Biopython
-(numpy) report the same hits. A hit is a window position whose score is at
-least the threshold; windows containing N never hit.
+computed bit for bit the way lightmotif computes it (float32, its summation
+order, the platform ``log2f``), and every engine scans that same matrix, so
+MOODS (C++, the default), lightmotif (SIMD) and Biopython (numpy) report
+the same hits. A hit is a window position whose score is at least the
+threshold; windows containing N never hit. :func:`threshold_from_pvalue`
+turns a p-value into a per-motif score cutoff, the same whichever engine
+scans.
 
 Sequences are scanned as one block of windows: each motif is scanned once
 over the concatenation and the hits are split back per window (a hit that
@@ -30,6 +33,96 @@ from .._table import TableMixin
 PSEUDOCOUNT = 0.1
 _ACGT_FROM_LM = [0, 1, 3, 2]                    # lightmotif columns are A C T G N
 _BAD = re.compile(r"[^ACGTN]")
+_LOG2F = None
+
+
+def _log2f(x: np.ndarray) -> np.ndarray:
+    """float32 log2 through the platform C library — what lightmotif's Rust
+    ``f32::log2`` calls — so the matrices match it bit for bit; a correctly
+    rounded float64 log2 when no C library can be loaded."""
+    global _LOG2F
+    if _LOG2F is None:
+        try:
+            import ctypes
+            import ctypes.util
+            libm = ctypes.CDLL(ctypes.util.find_library("m") or "libm.so.6")
+            f = libm.log2f
+            f.restype, f.argtypes = ctypes.c_float, [ctypes.c_float]
+            _LOG2F = np.frompyfunc(lambda v: f(v), 1, 1)
+        except (OSError, AttributeError, TypeError):
+            _LOG2F = False
+    x = np.asarray(x, np.float32)
+    if _LOG2F is False:
+        return np.log2(x.astype(np.float64)).astype(np.float32)
+    return np.asarray(_LOG2F(x), dtype=np.float32)
+
+
+def logodds_matrix(counts, pseudocount: float = PSEUDOCOUNT) -> np.ndarray:
+    """(W x 4) log2-odds of a (W x 4) A C G T count matrix against a uniform
+    background — lightmotif's ``normalize(p).log_odds()``, reproduced exactly
+    (float32 arithmetic summed in its A C T G order), returned as float64."""
+    c = np.asarray(counts, np.float32)
+    p = np.float32(pseudocount)
+    a, cc, g, t = c[:, 0] + p, c[:, 1] + p, c[:, 2] + p, c[:, 3] + p
+    total = ((a + cc) + t) + g
+    freq = np.stack([a / total, cc / total, g / total, t / total], 1).astype(np.float32)
+    return _log2f(freq / np.float32(0.25)).astype(np.float64)
+
+
+def _dp_tail(q: np.ndarray, floor: int = 0):
+    """Distribution of the shifted integer score S = sum_j (q[j, b_j] - min_j) under
+    a uniform background, kept only from ``floor`` up (lower partial sums that can
+    no longer reach ``floor`` are dropped). Returns (P(S = floor + i))_i."""
+    mins = q.min(1)
+    d = q - mins[:, None]
+    rng = d.max(1)
+    rem = np.concatenate([np.cumsum(rng[::-1])[::-1][1:], [0]])       # most the later columns can add
+    lo, dist = 0, np.ones(1)
+    for j in range(len(d)):
+        hi = lo + len(dist) - 1 + int(rng[j])
+        new_lo = max(lo, floor - int(rem[j]))
+        new = np.zeros(hi - new_lo + 1)
+        for b in range(4):
+            a = lo + int(d[j, b]) - new_lo                             # where dist[0] lands
+            s0 = max(0, -a)
+            if s0 < len(dist):
+                new[a + s0:a + len(dist)] += 0.25 * dist[s0:]
+        lo, dist = new_lo, new
+    return lo, dist
+
+
+def threshold_from_pvalue(lo_matrix, pvalue: float, *, resolution: float = 1e-3) -> float:
+    """The smallest score ``s`` with P(score >= s) <= ``pvalue`` for one (W x 4)
+    log-odds matrix, under a uniform background — exact on a ``resolution`` grid
+    (agrees with MOODS' ``threshold_from_p`` to a few thousandths of a bit).
+
+    A coarse pass bounds the answer from below, so the exact pass only builds
+    the upper tail of the score distribution. A motif too short to reach
+    ``pvalue`` gets its best possible score (only perfect matches count)."""
+    m = np.asarray(lo_matrix, np.float64)
+    q = np.rint(m / resolution).astype(np.int64)
+    base = int(q.min(1).sum())
+    coarse = max(resolution * 20, 0.02)
+    qc = np.rint(m / coarse).astype(np.int64)
+    lo_c, dist_c = _dp_tail(qc)
+    tail_c = np.cumsum(dist_c[::-1])[::-1]
+    kc = np.flatnonzero(tail_c <= pvalue)
+    if len(kc):
+        t_c = (lo_c + kc[0] + int(qc.min(1).sum())) * coarse
+        floor = int(np.floor((t_c - len(m) * coarse - coarse) / resolution)) - base - 1
+        floor = max(floor, 0)
+    else:
+        floor = 0
+    lo, dist = _dp_tail(q, floor)
+    tail = np.cumsum(dist[::-1])[::-1]
+    k = np.flatnonzero(tail <= pvalue)
+    if floor and (not len(k) or k[0] == 0):                            # bound not below the answer: no pruning
+        lo, dist = _dp_tail(q, 0)
+        tail = np.cumsum(dist[::-1])[::-1]
+        k = np.flatnonzero(tail <= pvalue)
+    if not len(k):
+        return float(m.max(1).sum())
+    return float((lo + k[0] + base) * resolution)
 
 
 # ── the library ────────────────────────────────────────────────────────────
@@ -128,9 +221,7 @@ class Library(TableMixin):
         if self._lo is None:
             self._lo = [None] * len(self)
         if self._lo[i] is None:
-            c = self.counts[i]
-            p = self.pseudocount
-            self._lo[i] = np.log2((c + p) / (c.sum(1, keepdims=True) + 4 * p) / 0.25)
+            self._lo[i] = logodds_matrix(self.counts[i], self.pseudocount)
         return self._lo[i]
 
     def pfm(self, i: int, pseudo: float = 0.01) -> np.ndarray:
@@ -247,7 +338,7 @@ def load_motifs(src, format: str = "jaspar") -> Library:
     """A :class:`Library` from a motif file or motif objects.
 
     ``src`` may be a path (``format`` = 'jaspar' (raw counts), 'jaspar16'
-    (bracketed), 'transfac', 'uniprobe' — read by lightmotif — or 'meme'), a
+    (bracketed), 'transfac', 'uniprobe' or 'meme'; ``.gz`` too), a
     ``Library``, one or many Biopython ``Bio.motifs.Motif``, lightmotif
     motifs, or a ``{name: matrix}`` dict of counts / probabilities (4 x W or
     W x 4, rows or columns in A C G T order). Probability matrices (columns
@@ -264,30 +355,13 @@ def load_motifs(src, format: str = "jaspar") -> Library:
             raise ValueError(f"unknown motif format {format!r}; use one of {', '.join(FORMATS)}")
         if format == "meme":
             return Library(*_read_meme(path))
-        import lightmotif
-        names, counts, descs, lo = [], [], [], []
-        try:
-            motifs = list(lightmotif.load(path, format=format))
-        except Exception as e:                           # noqa: BLE001 — lightmotif parse errors
-            raise ValueError(f"{path}: cannot parse as {format} ({e}); JASPAR counts must be integers — "
-                             f"pass format= for another layout, or a {{name: matrix}} dict") from None
-        for k, m in enumerate(motifs):
-            names.append(_lm_name(m, k))
-            descs.append(getattr(m, "description", "") or "")
-            if getattr(m, "counts", None) is not None:
-                c = np.asarray(m.counts, np.float64)[:, _ACGT_FROM_LM]
-                pssm = m.counts.normalize(PSEUDOCOUNT).log_odds()
-                counts.append(c)
-                lo.append(np.array([[pssm[i][j] for j in _ACGT_FROM_LM] for i in range(len(pssm))], np.float64))
-            else:                                        # uniprobe: probabilities only (odds vs 0.25)
-                pwm = m.pwm
-                odds = np.array([[pwm[i][j] for j in _ACGT_FROM_LM] for i in range(len(pwm))], np.float64)
-                p = odds * 0.25
-                counts.append(p / np.maximum(p.sum(1, keepdims=True), 1e-12) * 100.0)
-                lo.append(None)
-        if any(x is None for x in lo):
-            lo = None
-        return Library(names, counts, descs, _logodds=lo)
+        reader = {"jaspar": _read_jaspar, "jaspar16": _read_jaspar, "transfac": _read_transfac,
+                  "uniprobe": _read_uniprobe}[format]
+        names, counts, descs = reader(path)
+        if not names:
+            raise ValueError(f"{path}: no {format} motifs found; pass format= for another layout "
+                             f"('jaspar', 'jaspar16', 'transfac', 'uniprobe', 'meme')")
+        return Library(names, counts, descs)
     if isinstance(src, np.ndarray):
         src = [src]
     if isinstance(src, (list, tuple)) and src and all(isinstance(a, (np.ndarray, list, tuple)) for a in src):
@@ -320,6 +394,137 @@ def load_motifs(src, format: str = "jaspar") -> Library:
 
 
 FORMATS = ("jaspar", "jaspar16", "transfac", "uniprobe", "meme")
+
+
+def _open_text(path):
+    import gzip
+    return gzip.open(path, "rt") if str(path).endswith(".gz") else open(path)
+
+
+def _num(tok: str, path, what) -> float:
+    try:
+        return float(tok)
+    except ValueError:
+        raise ValueError(f"{path}: {what}: {tok!r} is not a number") from None
+
+
+def _read_jaspar(path):
+    """JASPAR, raw (four rows of counts) or bracketed (``A [ ... ]``), one or many
+    motifs: ``>ID description`` then the A C G T rows. Names and descriptions
+    follow lightmotif: the ID, then the rest of the header line."""
+    names, counts, descs = [], [], []
+    name, desc, rows = None, "", []
+
+    def flush():
+        if name is None:
+            return
+        if len(rows) != 4:
+            raise ValueError(f"{path}: motif {name!r} has {len(rows)} rows, expected A C G T")
+        by = {}
+        for k, (lab, vals) in enumerate(rows):
+            by[lab or "ACGT"[k]] = vals
+        if set(by) != set("ACGT") or len({len(v) for v in by.values()}) != 1:
+            raise ValueError(f"{path}: motif {name!r} needs four equal-length rows A C G T")
+        names.append(name)
+        descs.append(desc)
+        counts.append(np.array([by[b] for b in "ACGT"], np.float64).T)
+
+    with _open_text(path) as f:
+        for raw in f:
+            line = raw.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                flush()
+                head = line[1:].strip().split(None, 1)
+                name = head[0] if head else f"motif{len(names) + 1}"
+                desc = head[1].strip() if len(head) > 1 else ""
+                rows = []
+                continue
+            if name is None:
+                continue
+            lab = None
+            if line[0].upper() in "ACGT" and not line[0].isdigit() and (len(line) == 1 or not line[1].isalnum()):
+                lab, line = line[0].upper(), line[1:]
+            line = line.replace("[", " ").replace("]", " ")
+            rows.append((lab, [_num(t, path, f"motif {name!r}") for t in line.split()]))
+    flush()
+    return names, counts, descs
+
+
+def _read_transfac(path):
+    """TRANSFAC matrices (``P0`` / ``PO`` header, numbered rows, ``//`` between
+    motifs). Name: NA, else ID, else AC (as lightmotif); description: DE.
+    Rows of frequencies are scaled to 100 sites."""
+    names, counts, descs = [], [], []
+    cur = {}
+
+    def flush():
+        if cur.get("rows"):
+            order = cur.get("order") or list("ACGT")
+            rows = np.array(cur["rows"], np.float64)
+            m = np.zeros((len(rows), 4))
+            for k, b in enumerate(order[:rows.shape[1]]):
+                if b in "ACGT":
+                    m[:, "ACGT".index(b)] = rows[:, k]
+            if np.any(m % 1):                                     # frequencies, not counts
+                m = m / np.maximum(m.sum(1, keepdims=True), 1e-12) * 100.0
+            names.append(cur.get("NA") or cur.get("ID") or cur.get("AC") or f"motif{len(names) + 1}")
+            descs.append(cur.get("DE", ""))
+            counts.append(m)
+        cur.clear()
+
+    with _open_text(path) as f:
+        for raw in f:
+            line = raw.rstrip("\n")
+            if not line.strip():
+                continue
+            if line.startswith("//"):
+                flush()
+                continue
+            key, rest = line[:2], line[2:].strip()
+            if key in ("AC", "ID", "NA", "DE") and key not in cur:
+                cur[key] = rest
+            elif key in ("P0", "PO"):
+                cur["order"] = [x.upper() for x in rest.split()]
+                cur["rows"] = []
+            elif "rows" in cur and line.split()[0].isdigit():
+                vals = line.split()[1:]
+                n = len(cur.get("order") or "ACGT")
+                cur["rows"].append([_num(v, path, "matrix row") for v in vals[:n]])
+    flush()
+    return names, counts, descs
+
+
+def _read_uniprobe(path):
+    """UniPROBE: an optional name line, then ``A:`` ``C:`` ``G:`` ``T:`` rows of
+    probabilities (one or many motifs, blank lines between). Scaled to 100 sites."""
+    names, counts, descs = [], [], []
+    name, rows = None, {}
+
+    def flush():
+        if len(rows) == 4:
+            m = np.array([rows[b] for b in "ACGT"], np.float64).T
+            m = m / np.maximum(m.sum(1, keepdims=True), 1e-12) * 100.0
+            names.append(name or f"motif{len(names) + 1}")
+            descs.append("")
+            counts.append(m)
+        elif rows:
+            raise ValueError(f"{path}: motif {name!r} needs rows A: C: G: T:")
+
+    with _open_text(path) as f:
+        for raw in f:
+            line = raw.strip()
+            if not line:
+                continue
+            lab = line[:2].upper()
+            if len(lab) == 2 and lab[1] == ":" and lab[0] in "ACGT":
+                rows[lab[0]] = [_num(v, path, "uniprobe row") for v in line[2:].split()]
+            else:
+                flush()
+                name, rows = line, {}
+    flush()
+    return names, counts, descs
 
 
 def _lm_name(m, k: int) -> str:

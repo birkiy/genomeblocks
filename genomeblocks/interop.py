@@ -109,13 +109,18 @@ def frame(obj):
     try:
         df = nw.from_native(obj)
     except TypeError:
-        if hasattr(obj, "__arrow_c_stream__"):
-            import pyarrow as pa
-            df = nw.from_native(pa.table(obj))
-        elif hasattr(obj, "__dataframe__"):
-            import pyarrow.interchange
-            df = nw.from_native(pyarrow.interchange.from_dataframe(obj))
-        else:
+        # protocol speakers that are not tables (a pandas 3 Series streams one
+        # column) are not frames either
+        try:
+            if hasattr(obj, "__arrow_c_stream__"):
+                import pyarrow as pa
+                df = nw.from_native(pa.table(obj))
+            elif hasattr(obj, "__dataframe__"):
+                import pyarrow.interchange
+                df = nw.from_native(pyarrow.interchange.from_dataframe(obj))
+            else:
+                return None
+        except (TypeError, ValueError, NotImplementedError, ImportError, AttributeError):
             return None
     if isinstance(df, nw.LazyFrame):
         df = df.collect()

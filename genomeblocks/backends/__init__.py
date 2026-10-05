@@ -8,13 +8,17 @@ tables runs through a *backend*, one per family of operations:
     intervals   overlap, nearest, merge, point lookups     genomeblocks (numpy)       cgranges, ncls, bioframe, pyranges,
                                                                                       bedtools
     bigwig      reading bigWig signal                      pybigtools                 pybigwig, python
-    motifs      scoring motif matrices along sequences     lightmotif                 moods, biopython
+    motifs      scoring motif matrices along sequences     moods, else lightmotif     lightmotif, biopython
     fasta       fetching sequence                          genomeblocks (indexed)     pysam, pyfaidx, memory, biopython
     tables      parsing text tables (BED, GTF, pairs)      polars, else pandas        pandas
     graph       graph algorithms on an Architecture        graph-tool, else scipy     igraph, networkx, scipy
 
-Every default installs with ``pip install genomeblocks``; an engine is only
-picked automatically where all candidates give the same answer (polars and
+Every default installs with ``pip install genomeblocks`` except a motif
+engine: MOODS ships with the conda package (bioconda), and on pip it is the
+``genomeblocks[motifs]`` extra (MOODS-python, compiled at install) or
+``genomeblocks[lightmotif]`` (prebuilt wheels). An engine is only picked
+automatically where all candidates give the same answer (MOODS and
+lightmotif score the same matrices and report the same hits; polars and
 pandas parse to the same columns; graph-tool and scipy give the same
 components). Anything else is a request: ``backend=`` on the call, or a
 ``with`` block for a stretch of code::
@@ -54,8 +58,9 @@ _FAMILIES: Dict[str, Dict[str, tuple]] = {
         "python": (None, ""),
     },
     "motifs": {
-        "lightmotif": ("lightmotif", "pip install lightmotif"),
-        "moods": ("MOODS", "pip install MOODS-python"),
+        "moods": ("MOODS", "conda install -c bioconda moods  (or pip install 'genomeblocks[motifs]', "
+                           "which compiles MOODS-python)"),
+        "lightmotif": ("lightmotif", "pip install 'genomeblocks[lightmotif]'  (prebuilt wheels)"),
         "biopython": ("Bio", "pip install biopython"),
     },
     "fasta": {
@@ -81,7 +86,7 @@ _FAMILIES: Dict[str, Dict[str, tuple]] = {
 AUTO = {
     "intervals": ["genomeblocks"],
     "bigwig": ["pybigtools", "python"],
-    "motifs": ["lightmotif"],
+    "motifs": ["moods", "lightmotif"],
     "fasta": ["genomeblocks"],
     "tables": ["polars", "pandas"],
     "graph": ["graph-tool", "scipy"],

@@ -1,61 +1,73 @@
-# Conda packaging
+# Conda packaging (Bioconda)
 
-Staging recipe for [Bioconda](https://bioconda.github.io). genomeblocks is a
-bioinformatics package (its deps — `cooler`, `pyranges`, `pybigtools`,
-`cgranges`, `graph-tool` — live on Bioconda / conda-forge), so **Bioconda** is
-the right channel.
+`genomeblocks/meta.yaml` is a ready Bioconda recipe (`noarch: python`), and
+`genomeblocks/run_test.py` is its smoke test. Bioconda is the right channel:
+the bioinformatics dependencies (`cooler`, `pybigtools`, `moods`, and the
+optional `pysam`, `cgranges`, `bedtools`, ...) live there, everything else on
+conda-forge.
 
-```
-conda-recipe/
-  genomeblocks/meta.yaml   # the package recipe (PyPI source)
-```
+## Dependencies (checked 2026-10-05)
 
-## Dependency status
+| run dependency | channel |
+| --- | --- |
+| numpy, pandas >=2, pyarrow, narwhals, scipy, matplotlib-base, tqdm | conda-forge |
+| cooler, pybigtools | bioconda |
+| **moods** — the motif engine | bioconda |
 
-Bioconda can only depend on packages already on conda channels. Checked:
+**No lightmotif.** lightmotif is on PyPI only, so the conda package scans
+motifs with MOODS (C++), which reports the same hits: genomeblocks feeds every
+engine the same log-odds matrices, parses motif files itself (JASPAR,
+jaspar16, TRANSFAC, uniprobe, MEME) and computes p-value cutoffs itself, so
+nothing needs lightmotif. In a conda environment `pip install lightmotif`
+adds it back as an alternative engine (`backend="lightmotif"`).
 
-| dependency | channel | status |
-| --- | --- | --- |
-| graph-tool | conda-forge | ✅ available |
-| cooler, pyranges, pybigtools, cgranges | bioconda | ✅ available |
-| numpy, pandas, scipy, matplotlib-base, tqdm | conda-forge | ✅ available |
-| **lightmotif** | — | ❌ PyPI-only → recipe lives at `~/apps/lightmotif-conda`, submit first |
+Optional engines users can add from conda: `graph-tool` (conda-forge),
+`polars`, `pysam`, `pyfaidx`, `pybigwig`, `cgranges`, `ncls`, `bedtools` +
+`pybedtools`, `bioframe`, `pyranges`, `anndata`, `xarray`, `biopython`,
+`networkx`, `python-igraph`, `logomaker`.
 
-~~conorm~~ was **dropped** in v1: it is unlicensed (un-packageable) and was only
-used by `tmm()`, so the TMM algorithm is now vendored in `genomeblocks/signal.py`
-(`_tmm_norm_factors`, numerically identical to conorm). No dependency remains.
+MOODS is GPL-3.0-or-later (or the Biopython licence); genomeblocks stays MIT
+and only depends on it at run time.
 
-### lightmotif
-
-`lightmotif` (used by motif scanning, lazy-imported) is a compiled Rust/PyO3
-package built with `maturin`. Its conda recipe is kept **outside this repo** at
-`~/apps/lightmotif-conda/` — submit it to Bioconda (or conda-forge) first so the
-dependency resolves. Alternatively make it optional (drop from `run:` here and
-document it as a pip extra) since `scan_motifs*` only need it on demand.
-
-## Publishing checklist
-
-The recipe sources the **PyPI sdist** (Bioconda's CI fetches it), so:
-
-1. **Publish to PyPI** (genomeblocks is not there yet):
-   ```bash
-   python -m build --sdist --wheel
-   twine upload dist/*
-   ```
-2. **Fill the sha256** in `genomeblocks/meta.yaml`:
-   ```bash
-   openssl dgst -sha256 dist/genomeblocks-1.0.0.tar.gz
-   # or, from the live PyPI release:
-   #   curl -sL <pypi-sdist-url> | openssl dgst -sha256
-   ```
-3. **Submit to Bioconda**: fork
-   [bioconda-recipes](https://github.com/bioconda/bioconda-recipes), copy
-   `genomeblocks/` here into `recipes/genomeblocks/`, and open a PR. Submit
-   `lightmotif` (from `~/apps/lightmotif-conda`) first/with it.
-
-## Local sanity check
+## Verified locally
 
 ```bash
-conda install -n base -c conda-forge conda-build
-conda build conda-recipe/genomeblocks -c conda-forge -c bioconda
+conda-recipe/build-local.sh /path/to/output     # needs conda-build on PATH
 ```
+
+builds the recipe from this checkout (the release recipe with its source
+pointed here) using only `conda-forge` and `bioconda`, the way Bioconda's CI
+will. The package test imports genomeblocks, checks that MOODS is the motif
+engine with no lightmotif present, runs interval set algebra and scans a
+planted motif with a score and with a p-value cutoff. The full test suite
+also passes against the installed package in a conda environment with every
+optional engine (Python 3.12, pandas 3.0, numpy 2.5).
+
+## From a release to Bioconda
+
+1. **Release on PyPI** (PyPI has 1.0.0 and 1.0.1 only; 1.1.0 was never
+   uploaded):
+   ```bash
+   python -m build              # sdist + wheel in dist/
+   twine upload dist/*
+   ```
+2. **Fill the sha256** of the sdist in `genomeblocks/meta.yaml`:
+   ```bash
+   curl -sL https://pypi.org/packages/source/g/genomeblocks/genomeblocks-2.0.0.tar.gz | sha256sum
+   ```
+3. **Submit**: fork [bioconda-recipes](https://github.com/bioconda/bioconda-recipes),
+   copy `genomeblocks/` (meta.yaml and run_test.py) to `recipes/genomeblocks/`,
+   open a pull request. Bioconda's CI lints, builds and tests it; a Bioconda
+   member reviews and merges. After that, BiocondaBot opens the version-bump
+   pull requests itself whenever a new release lands on PyPI.
+4. **Install**:
+   ```bash
+   conda install -c conda-forge -c bioconda genomeblocks     # or mamba / micromamba
+   ```
+
+## pip, for comparison
+
+`pip install genomeblocks` has no motif engine (MOODS has no wheels on PyPI,
+it compiles): `pip install "genomeblocks[motifs]"` builds MOODS-python, and
+`pip install "genomeblocks[lightmotif]"` takes lightmotif's prebuilt wheels.
+Both report the same hits.
