@@ -7,8 +7,6 @@ windows, forward strand, log2-odds >= 13 with pseudocount 0.1.
 """
 from __future__ import annotations
 
-import os
-import sys
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np

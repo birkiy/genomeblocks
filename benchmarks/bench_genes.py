@@ -12,8 +12,6 @@ GTF: 20k genes, ~70k transcripts, 877k lines (about 1/4 of GENCODE).
 """
 from __future__ import annotations
 
-import gc
-import time
 
 from common import DATA, Recorder, timeit
 

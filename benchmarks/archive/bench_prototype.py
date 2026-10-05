@@ -28,7 +28,7 @@ from pathlib import Path
 
 import numpy as np
 
-from common import DATA, RESULTS, Recorder, timeit
+from common import DATA, Recorder, timeit
 
 ROOT = Path(__file__).resolve().parent.parent
 # the classic modules ship in this repo since 1.1; point GB_MAIN_CHECKOUT at another

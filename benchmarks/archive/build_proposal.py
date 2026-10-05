@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import re
 
-from build_report import REP, chart, details, esc, fnum, ftime, fx, load, table, why
+from build_report import REP, chart, details, ftime, fx, load, table, why
 
 
 def diagrams():

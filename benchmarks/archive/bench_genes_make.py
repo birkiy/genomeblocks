@@ -14,7 +14,6 @@ from __future__ import annotations
 import re
 import sys
 
-import numpy as np
 
 from common import DATA, Recorder, timeit
 from prototypes.npintervals import Intervals, merge, slop

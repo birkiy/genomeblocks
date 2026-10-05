@@ -144,7 +144,7 @@ def part_functions(rec):
     add(rec, "signal (5k loci, 1 bigWig)", "columns, today's code", t, same=bool(np.array_equal(res["o"], res["c"])))
 
     # motifs
-    from bench_motifs import JASPAR, windows, subset_file
+    from bench_motifs import windows, subset_file
     from genomeblocks.motifs import make_genome, scan_motifs_matrix
     genome = make_genome(str(DATA / "genome.fa"))
     OW = windows(genome, 1000)

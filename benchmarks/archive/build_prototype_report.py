@@ -55,8 +55,8 @@ def blocks_svg(meta):
     # matrix: one hue, darker = more edges (log)
     top, size, mx = 150, 300, 240
     cell = size / n
-    out.append(f'<text x="20" y="122" class="head">The same edges as a matrix</text>')
-    out.append(f'<text x="20" y="140" class="small">chromosome × chromosome edge counts, log colour scale</text>')
+    out.append('<text x="20" y="122" class="head">The same edges as a matrix</text>')
+    out.append('<text x="20" y="140" class="small">chromosome × chromosome edge counts, log colour scale</text>')
     vmax = math.log10(max(max(r) for r in M) + 1)
     for i in range(n):
         for j in range(n):

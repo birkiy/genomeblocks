@@ -452,7 +452,7 @@ def sec_motifs(md, tl):
                   '<th>time</th><th>speed-up</th></tr></thead><tbody>'
                   + "".join(f"<tr><td>{r['workers']}</td><td>{ftime(r['seconds'])}</td>"
                             f"<td>{fx(w[0]['seconds'] / r['seconds'])}</td></tr>" for r in w)
-                  + f"</tbody></table></details>\n")
+                  + "</tbody></table></details>\n")
 
 
 def sec_pairs(md, tl):

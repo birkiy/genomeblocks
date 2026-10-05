@@ -344,7 +344,7 @@ def build():
         wk = sorted([r for r in mr if r["part"] == "workers"], key=lambda r: r["workers"])
         st = {r["step"]: r["seconds"] for r in mr if r["part"] == "stripe"}
         tiles.append(("Motif scanning", fx((mfi or mbio)["seconds"] / mgb["seconds"]),
-                      (f"faster than MEME FIMO, " if mfi else "") +
+                      ("faster than MEME FIMO, " if mfi else "") +
                       f"{fx(mbio['seconds'] / mgb['seconds'])} faster than Biopython; "
                       f"{mgb['gbp_motif_per_s']:.1f} Gbp·motif/s on one core", "#motifs", "green", "motifs"))
         charts["motifs_engines"] = {"kind": "hbar", "fmt": "time", "log": True, "sort": "asc", "labelW": 300,

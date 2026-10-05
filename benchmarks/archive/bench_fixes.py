@@ -66,7 +66,7 @@ def scan_concat(seqs, path, thr=13.0, pseudo=0.1):
 
 def part_motifs(rec):
     import numpy as np
-    from bench_motifs import JASPAR, R, THR, subset_file, windows
+    from bench_motifs import R, THR, subset_file, windows
     from genomeblocks.motifs import make_genome, scan_motifs_matrix
     genome = make_genome(str(DATA / "genome.fa"))
     for M in (100, 1019):
@@ -167,7 +167,6 @@ def count_pairs_2d_fast(loci, path, chunksize=2_000_000):
 
 
 def part_pairs(rec):
-    import numpy as np
     from common import read_chromsizes
     from genomeblocks.bedpe import count_pairs, count_pairs_2d
     path = str(DATA / "hic.pairs")
