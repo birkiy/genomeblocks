@@ -4,7 +4,7 @@ Scanning reads each locus window (centre ± ``r``) from a FASTA (path, dict or
 open pyfaidx / pysam / Biopython handle — the fasta backend) and scores a
 motif library (JASPAR / TRANSFAC / uniprobe / MEME file, Biopython motifs, or
 plain matrices — see :func:`~genomeblocks.load_motifs`) with the motifs
-backend: lightmotif by default, MOODS or Biopython on request, all scoring
+backend: MOODS by default (lightmotif when only it is installed), Biopython on request, all scoring
 the same log-odds matrices so they report the same hits.
 
 Results line up with the loci: row ``i`` of a matrix or cube is locus ``i``.
@@ -41,17 +41,12 @@ def _windows(loci, fasta, r: int, backend_fasta=None):
 def _thresholds(lib: Library, threshold, pvalue):
     """Per-motif score cutoffs: ``threshold`` (scalar or one per motif) or, with
     ``pvalue``, the score each motif reaches with that probability under a
-    uniform background (lightmotif's exact score distribution)."""
+    uniform background (exact score distribution on a 0.001-bit grid, the
+    same whichever engine scans)."""
     if pvalue is None:
         return np.broadcast_to(np.asarray(threshold, np.float64), (len(lib),)).copy()
-    import lightmotif
-    out = np.empty(len(lib))
-    for i in range(len(lib)):
-        m = lib.logodds(i)
-        sm = lightmotif.ScoringMatrix({b: m[:, k].tolist() for k, b in enumerate("ACGT")}
-                                      | {"N": [float("-inf")] * len(m)})
-        out[i] = sm.score(pvalue)
-    return out
+    from .backends.motifs import threshold_from_pvalue
+    return np.array([threshold_from_pvalue(lib.logodds(i), pvalue) for i in range(len(lib))], np.float64)
 
 
 def _workers(workers, n_motifs, n_seqs):
@@ -142,7 +137,7 @@ def scan_motifs_matrix(loci, fasta, motifs, *, format: str = "jaspar", r: int = 
         norm: divide counts by motif width.
         both_strands: also count reverse-strand matches.
         workers: processes over motifs (None = half the cores; small jobs stay serial).
-        backend: 'lightmotif' (default), 'moods' or 'biopython'.
+        backend: 'moods' (default), 'lightmotif' or 'biopython' — the same hits.
     """
     import pandas as pd
     lib = load_motifs(motifs, format=format)

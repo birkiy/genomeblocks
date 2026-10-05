@@ -39,8 +39,10 @@ def test_load_formats(jaspar_path, tmp_path):
         load_motifs(jaspar_path, format="homer")
     with pytest.raises(FileNotFoundError):
         load_motifs("nope.jaspar")
-    (tmp_path / "bad.jaspar").write_text(">M1\n0.5 0.5 0 0\n")
-    with pytest.raises(ValueError, match="integers"):
+    (tmp_path / "freq.jaspar").write_text(">M1 F\n0.5 0.5\n0.5 0\n0 0.5\n0 0\n")   # non-integer counts load
+    assert load_motifs(str(tmp_path / "freq.jaspar")).counts[0].tolist() == [[0.5, 0.5, 0, 0], [0.5, 0, 0.5, 0]]
+    (tmp_path / "bad.jaspar").write_text(">M1\n1 2 3\n4 5 6\n")
+    with pytest.raises(ValueError, match="rows"):
         load_motifs(str(tmp_path / "bad.jaspar"))
 
 
@@ -139,3 +141,90 @@ def test_uneven_fasta_lines(tmp_path):
     with pytest.raises(ValueError, match="uneven"):
         open_fasta(str(p))
     assert open_fasta(str(p), backend="memory").sizes() == {"c1": 19}
+
+
+# ── no lightmotif needed: parsers, log-odds and p-value cutoffs of our own ───
+
+_FORMATS = {
+    "jaspar": ">MA0001.1 AGL3\n0 3 79 40\n94 75 4 3\n1 0 3 4\n2 19 11 50\n"
+              ">MA0002.2\tRUNX1 extra words\n10 20\n30 40\n50 60\n70 80\n",
+    "jaspar16": ">MA0001.1 AGL3\nA  [ 0  3 79 40 ]\nC  [94 75  4  3 ]\nG  [ 1  0  3  4 ]\nT  [ 2 19 11 50 ]\n",
+    "transfac": "AC  M00001\nXX\nID  V$MYOD_01\nXX\nNA  MyoD\nXX\nDE  myoblast determination\nXX\n"
+                "P0      A      C      G      T\n01      1      2      2      0      S\n"
+                "02      2      1      2      0      R\n03      3      0      1      1      A\nXX\n//\n"
+                "AC  M00002\nXX\nID  V$E47_01\nXX\nP0 A C G T\n01 4 4 3 1 N\n02 2 5 4 1 N\nXX\n//\n",
+    "uniprobe": "Foxa2 primary\nA:\t0.25\t0.1\t0.7\nC:\t0.25\t0.2\t0.1\nG:\t0.25\t0.3\t0.1\nT:\t0.25\t0.4\t0.1\n",
+}
+
+
+@pytest.mark.parametrize("fmt", sorted(_FORMATS))
+def test_parsers_match_lightmotif(tmp_path, fmt):
+    """Our pure-Python readers give lightmotif's names, descriptions, counts and
+    (bit for bit) log-odds, so dropping lightmotif changes no result."""
+    lightmotif = pytest.importorskip("lightmotif")
+    path = tmp_path / f"m.{fmt}"
+    path.write_text(_FORMATS[fmt])
+    ours = load_motifs(str(path), format=fmt)
+    ref = list(lightmotif.load(str(path), format=fmt))
+    assert len(ours) == len(ref)
+    for i, m in enumerate(ref):
+        name = next(str(getattr(m, a)) for a in ("name", "id", "accession") if getattr(m, a, None))
+        assert ours.names[i] == name and ours.descriptions[i] == (getattr(m, "description", None) or "")
+        if getattr(m, "counts", None) is not None:
+            acgt = [0, 1, 3, 2]
+            assert np.array_equal(ours.counts[i], np.asarray(m.counts)[:, acgt])
+            p = m.counts.normalize(0.1).log_odds()
+            lm = np.array([[p[r][j] for j in acgt] for r in range(len(p))], np.float64)
+            assert np.array_equal(ours.logodds(i), lm)                 # bit for bit
+
+
+def test_pvalue_threshold_is_exact():
+    """Against brute force over every 6-mer: P(score >= t) <= p, and one grid
+    step lower it is > p."""
+    from itertools import product
+    from genomeblocks.backends.motifs import logodds_matrix, threshold_from_pvalue
+    rng = np.random.default_rng(1)
+    for _ in range(5):
+        lo = logodds_matrix(rng.integers(0, 50, (6, 4)))
+        scores = np.array([sum(lo[j, b] for j, b in enumerate(seq)) for seq in product(range(4), repeat=6)])
+        for p in (1e-1, 1e-2, 1e-3):
+            t = threshold_from_pvalue(lo, p)
+            assert np.mean(scores >= t - 6 * 5e-4) > p or t >= scores.max() - 1e-9
+            assert np.mean(scores >= t + 6 * 5e-4) <= p
+
+
+def test_pvalue_threshold_matches_moods():
+    MOODS_tools = pytest.importorskip("MOODS.tools")
+    from genomeblocks.backends.motifs import logodds_matrix, threshold_from_pvalue
+    rng = np.random.default_rng(2)
+    for w in (8, 12, 20):
+        lo = logodds_matrix(rng.integers(0, 40, (w, 4)))
+        for p in (1e-3, 1e-4, 1e-5):
+            ours = threshold_from_pvalue(lo, p)
+            if p < 4.0 ** -w:                       # unreachable: we keep only perfect matches
+                assert ours == pytest.approx(lo.max(1).sum())
+                continue
+            theirs = MOODS_tools.threshold_from_p(lo.T.tolist(), [0.25] * 4, p)
+            assert abs(ours - theirs) < 0.01
+
+
+def test_moods_is_the_default_engine():
+    pytest.importorskip("MOODS.scan")
+    assert gb.backends.resolve("motifs") == "moods"
+
+
+def test_motifs_work_without_lightmotif(monkeypatch, fasta_path, jaspar_path):
+    """The conda package has no lightmotif: loading, p-value cutoffs and scanning
+    must not import it."""
+    pytest.importorskip("MOODS.scan")
+    import sys
+    from genomeblocks import backends
+    monkeypatch.setitem(sys.modules, "lightmotif", None)             # `import lightmotif` now fails
+    monkeypatch.setattr(backends, "_installed_cache", {})
+    assert not backends.installed("motifs", "lightmotif")
+    assert backends.resolve("motifs") == "moods"
+    L = as_loci([("chr1", 950, 1050), ("chr1", 4950, 5050)])
+    M = gm.scan_motifs_matrix(L, fasta_path, jaspar_path, r=50, pvalue=0.01, norm=False, verbose=False)
+    assert M.iloc[0, 0] >= 3 and M.iloc[1, 1] >= 3
+    with pytest.raises(ImportError, match="lightmotif"):
+        backends.resolve("motifs", "lightmotif")

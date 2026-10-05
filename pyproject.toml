@@ -23,8 +23,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Bio-Informatics"
 ]
-# The default install is pure pip: every default backend is here. Heavy
-# modules are imported lazily, so `import genomeblocks` stays light.
+# The default install is pure pip: every default backend is here, except a
+# motif engine (see the `motifs` / `lightmotif` extras; the conda package
+# ships MOODS). Heavy modules are imported lazily, so `import genomeblocks`
+# stays light.
 dependencies = [
     "numpy",
     "pandas>=2.0",
@@ -35,7 +37,6 @@ dependencies = [
     "pybigtools>=0.2",
     "cooler",
     "tqdm",
-    "lightmotif"
 ]
 # NOTE: `cgranges` (fast C interval index) and `graph-tool` are conda-only and
 # optional: `conda install -c bioconda cgranges` / `conda install -c conda-forge
@@ -49,6 +50,8 @@ Repository = "https://github.com/birkiy/genomeblocks"
 Issues = "https://github.com/birkiy/genomeblocks/issues"
 
 [project.optional-dependencies]
+motifs = ["MOODS-python"]               # the motif engine (C++; pip compiles it, bioconda has `moods`)
+lightmotif = ["lightmotif"]             # alternative motif engine with prebuilt wheels; same hits as MOODS
 fast = ["polars"]                       # polars table parsing (GTF / GFF3 / BED / pairs); pandas otherwise
 bam = ["pysam"]                         # BAM pileups in the browser, FASTA via pysam
 viz = ["logomaker"]                     # motif logos (genomeblocks.motifs_draw)
@@ -70,8 +73,8 @@ interop = [                             # every other engine and converter targe
 ]
 test = ["pytest", "pysam", "polars", "bioframe", "pyranges", "pybedtools", "anndata", "xarray", "biopython",
         "networkx", "igraph", "MOODS-python", "pyBigWig", "ncls", "pyfaidx", "duckdb", "seaborn", "plotly",
-        "altair", "logomaker"]
-all = ["genomeblocks[fast,bam,viz,interop]"]
+        "altair", "logomaker", "lightmotif"]
+all = ["genomeblocks[motifs,fast,bam,viz,interop]"]
 
 [tool.setuptools.packages.find]
 include = ["genomeblocks*"]
