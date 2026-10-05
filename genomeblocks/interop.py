@@ -435,7 +435,11 @@ def loci_to_bedtool(L):
 
 
 def loci_to_cgranges(L):
-    import cgranges
+    """A cgranges index over the loci (``label`` = row number)."""
+    try:
+        import cgranges
+    except ImportError:
+        raise ImportError("Loci.to_cgranges needs cgranges: conda install -c bioconda cgranges") from None
     ix = cgranges.cgranges()
     names = L.genome.names
     for i, (c, s, e) in enumerate(zip(L.codes.tolist(), L.starts.tolist(), L.ends.tolist())):

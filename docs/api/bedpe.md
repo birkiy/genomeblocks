@@ -2,7 +2,7 @@
 title: bedpe
 parent: API Reference
 layout: default
-nav_order: 8
+nav_order: 7
 ---
 
 # `genomeblocks.bedpe`
@@ -132,13 +132,13 @@ P.mids1, P.mids2
 # -> (array([1000, 2000, 1000,  550]), array([ 5000, 11000,   550,  5050]))
 P.describe()
 # ->                       value
-#    pairs                   4.0
-#    cis                     3.0
-#    trans                   1.0
-#    chromosomes             2.0
-#    cis distance min     4000.0
+#    pairs                     4
+#    cis                       3
+#    trans                     1
+#    chromosomes               2
+#    cis distance min       4000
 #    cis distance median  4500.0
-#    cis distance max     9000.0
+#    cis distance max       9000
 #    score min               1.0
 #    score median            2.5
 #    score max               5.0

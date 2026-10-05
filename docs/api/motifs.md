@@ -2,7 +2,7 @@
 title: motifs
 parent: API Reference
 layout: default
-nav_order: 9
+nav_order: 8
 ---
 
 # `genomeblocks.motifs`
@@ -54,7 +54,7 @@ these keywords.
 | `norm` | Divide counts by motif width. |
 | `both_strands` | Also count reverse-strand matches. |
 | `workers` | Processes over motifs; `None` = half the cores. Small jobs (fewer than 16 motifs or 200 windows) stay serial. |
-| `backend` | The [motifs backend]({{ '/backends/' | relative_url }}): `'lightmotif'`, `'moods'` or `'biopython'`. |
+| `backend` | The [motifs backend]({{ '/backends/' | relative_url }}): `'moods'` (default), `'lightmotif'` or `'biopython'`. |
 | `verbose` | Progress bars and a summary line. |
 
 Windows that run off a chromosome end, sit on a chromosome missing from the

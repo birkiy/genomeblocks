@@ -52,7 +52,9 @@ def test_filters_and_overlaps(pairs, cre):
     for backend in installed_backends("intervals"):
         assert (pairs.anchors_overlap(cre, backend=backend)[0] == m1 | True).all()
     assert pairs[0][0].uid == "chr1:900-1100(+)" and pairs["score"][0] == 5
-    assert len(pairs.head(2)) == 2 and pairs.describe().loc["trans", "value"] == 1
+    d = pairs.describe()["value"]
+    assert len(pairs.head(2)) == 2 and d["trans"] == 1 and d["pairs"] == 4
+    assert isinstance(d["pairs"], int) and isinstance(d["cis distance median"], float)    # no float upcast
     assert "<table" in pairs._repr_html_()
     assert pl.DataFrame(pairs).shape == (4, 10)
 

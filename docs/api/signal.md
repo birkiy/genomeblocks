@@ -2,7 +2,7 @@
 title: signal
 parent: API Reference
 layout: default
-nav_order: 6
+nav_order: 5
 ---
 
 # `genomeblocks.signal`

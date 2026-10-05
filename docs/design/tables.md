@@ -174,7 +174,9 @@ cis blocks by chromosome rank then the trans block, sorted by `(src, tgt)`
 within a block. `blocks` is the offsets table:
 
 ```python
-A = gb.Architecture.make(cre, "loops.bedpe", r=100, verbose=False).normalize(verbose=False)
+A = gb.Architecture.make(cre, "loops.bedpe", r=100, verbose=False)
+A.ep["w"][:] = [5, 3, 2, 1]                  # add_mcool fills w from a .cool; set by hand here
+A.normalize(verbose=False)
 A               # -> Architecture(name='Skeleton', loci=6, links=4 [3 cis · 1 trans], edge_props=[w, d, n], vertex_props=[])
 A.src, A.tgt    # -> (array([0, 1, 5, 0], dtype=int32), array([2, 4, 6, 5], dtype=int32))
 A.blocks        # -> {'chr1': (0, 2), 'chr2': (2, 3), 'trans': (3, 4)}
@@ -224,6 +226,7 @@ edges, still over the same `Loci`. `copy()` copies everything.
 `Atlas.save` write single files. Everything is plain parquet:
 
 ```python
+import os
 A.components(); A.save("arch/")
 sorted(os.listdir("arch/"))   # -> ['edges.parquet', 'meta.json', 'vertices.parquet']
 import pyarrow.parquet as pq

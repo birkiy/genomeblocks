@@ -81,6 +81,17 @@ def test_arrow_export_with_nulls_in_object_columns():
     assert L.to_arrow().column("name").null_count == 1
 
 
+def test_to_cgranges_names_the_install(cre):
+    try:
+        import cgranges  # noqa: F401
+    except ImportError:
+        with pytest.raises(ImportError, match="conda install -c bioconda cgranges"):
+            cre.to_cgranges()
+        return
+    ix = cre.to_cgranges()
+    assert sorted(lab for _, _, lab in ix.overlap("chr1", 0, 20_000)) == [i for i, c in enumerate(cre.chroms) if c == "chr1"]
+
+
 def test_cube_converters(cre):
     S = np.random.default_rng(0).random((len(cre), 2, 5))
     from genomeblocks import interop

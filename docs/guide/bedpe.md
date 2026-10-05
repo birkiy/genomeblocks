@@ -141,13 +141,13 @@ P.is_cis, P.distance
 # -> (array([ True,  True, False,  True]), array([4000., 9000.,   inf, 4500.]))
 P.describe()
 # ->                      value
-# -> pairs                   4.0
-# -> cis                     3.0
-# -> trans                   1.0
-# -> chromosomes             2.0
-# -> cis distance min     4000.0
+# -> pairs                     4
+# -> cis                       3
+# -> trans                     1
+# -> chromosomes               2
+# -> cis distance min       4000
 # -> cis distance median  4500.0
-# -> cis distance max     9000.0
+# -> cis distance max       9000
 # -> score min               1.0
 # -> score median            2.5
 # -> score max               5.0
