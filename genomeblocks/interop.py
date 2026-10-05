@@ -92,7 +92,7 @@ def frame(obj):
         import pandas as pd
         obj = obj.df if hasattr(obj, "df") else pd.DataFrame(obj)
     elif m == "pybedtools":
-        obj = obj.to_dataframe(disable_auto_names=False)
+        obj = _bedtool_frame(obj)
     elif isinstance(obj, dict):
         import pandas as pd
         scalars = [k for k, v in obj.items() if isinstance(v, str) or not hasattr(v, "__len__")]
@@ -127,6 +127,15 @@ def frame(obj):
     if not isinstance(df, nw.DataFrame):
         return None
     return df
+
+
+def _bedtool_frame(bt):
+    """pandas frame of a pybedtools BedTool; leading ``#`` / track / browser
+    lines of the file it wraps are skipped."""
+    from .backends.tables import sniff
+    fn = bt.fn
+    skip = sniff(fn)[0] if isinstance(fn, str) and os.path.isfile(fn) else 0
+    return bt.to_dataframe(disable_auto_names=False, skiprows=skip)
 
 
 def _col(df, name) -> np.ndarray:
@@ -202,7 +211,13 @@ def loci_from_pyranges(gr, **kw):
 
 
 def loci_from_bedtool(bt, **kw):
-    """Loci from a pybedtools BedTool (any BED-like file it wraps)."""
+    """Loci from a pybedtools BedTool. A BED-like file it wraps is read exactly
+    as :func:`as_loci` reads that path (header lines skipped, file order kept);
+    other BedTools go through :func:`frame`."""
+    fn = getattr(bt, "fn", None)
+    named = any(kw.get(k) is not None for k in ("chrom", "start", "end", "strand"))
+    if isinstance(fn, str) and os.path.isfile(fn) and not named and bt.file_type in ("bed", "empty"):
+        return as_loci(fn, genome=kw.get("genome"), keep=kw.get("keep", True))
     return loci_from_frame(bt, **kw)
 
 
@@ -304,6 +319,8 @@ def as_loci(x, *, genome: Optional[Genome] = None, keep=True):
         return Loci.make(p, genome=genome, keep=keep, sort=False)   # file order, like every input
     if _mod(x) == "anndata":
         return loci_from_anndata(x, genome=genome, keep=keep)
+    if _mod(x) == "pybedtools":
+        return loci_from_bedtool(x, genome=genome, keep=keep)
     if _mod(x) in ("pandas", "polars", "pyarrow") and frame(x) is None:
         raise TypeError(f"cannot read intervals from a {type(x).__name__}: pass a DataFrame / Table "
                         f"with chrom, start and end columns")

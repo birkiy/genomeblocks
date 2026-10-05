@@ -78,8 +78,9 @@ def call_se(peaks, bigwigs, *, stitch: int = 12_500, workers: int = 1, verbose: 
     if not len(st):
         se = st.take([])
         return (se, st) if return_all else se
-    cube = st.signal(bigwigs, span=True, n_bins=1, workers=workers, progress=False, verbose=False,
-                     backend=backend, **signal_kw)
+    signal_kw.setdefault("progress", False)
+    signal_kw.setdefault("verbose", False)
+    cube = st.signal(bigwigs, span=True, n_bins=1, workers=workers, backend=backend, **signal_kw)
     sig = np.nan_to_num(cube[:, :, 0]).mean(1)
     score = sig * st.lengths
     cut, order = knee(score)

@@ -52,6 +52,16 @@ def test_call_se(bw_path):
     assert cut <= 6 and len(order) == 6
 
 
+def test_call_se_forwards_signal_keywords(bw_path):
+    peaks = as_loci([("chr1", 1000, 1500), ("chr1", 1600, 2000), ("chr1", 2500, 3000), ("chr1", 10_000, 11_000),
+                     ("chr1", 15_000, 15_500), ("chr2", 100, 200)])
+    plain = se.call_se(peaks, bw_path, stitch=1000)
+    shown = se.call_se(peaks, bw_path, stitch=1000, progress=True)
+    assert shown.to_records() == plain.to_records()
+    assert shown.cols["score"].tolist() == plain.cols["score"].tolist()
+    assert se.call_se(peaks, bw_path, stitch=1000, verbose=True).to_records() == plain.to_records()
+
+
 def test_nearest_gene_within_recodes_genomes():
     regions = as_loci([("chr3", 5, 10), ("chr2", 0, 20)])
     tss = as_loci([("chr2", 5, 6)])

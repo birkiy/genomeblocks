@@ -313,29 +313,27 @@ class Atlas(TableMixin):
             n_r = int(len(r_bins))
             b = n_q - a
             d = n_r - c
-            other_label, other_val = "n_ref_bins", n_r
         else:
+            n_r = None
             c = self.track_n_bins - a
             b = n_q - a
             d = self.n_bins - n_q - c
-            other_label, other_val = "n_track_bins", None  # filled below
 
         a, b, c, d = (np.maximum(x, 0).astype(np.int64) for x in (a, b, c, d))
         log_or, p, score = _fisher_vec(a, b, c, d, alternative=alternative)
 
         n_tracks = len(self.track_names)
-        out = {
-            "name": self.track_names,
-            "n_query_bins": np.full(n_tracks, n_q, dtype=np.int64),
-            other_label: (np.full(n_tracks, other_val, dtype=np.int64)
-                          if other_val is not None else self.track_n_bins),
+        out = {"name": self.track_names, "n_query_bins": np.full(n_tracks, n_q, dtype=np.int64)}
+        if n_r is not None:
+            out["n_ref_bins"] = np.full(n_tracks, n_r, dtype=np.int64)
+        out.update({
             "track_n_bins": self.track_n_bins,
             "track_n_peaks": self.track_n_peaks,
             "overlaps": a,
             "log2_odds": log_or,
             "p": p,
             "giggle_score": score,
-        }
+        })
         df = pd.DataFrame(out)
         df = self._with_meta(df)
         return df.sort_values("giggle_score", ascending=False).reset_index(drop=True)
@@ -638,7 +636,7 @@ class Atlas(TableMixin):
             cols = [str(x) for x in d["meta_columns"].tolist()]
             data = {c: [str(x) for x in d[f"meta__{c}"].tolist()] for c in cols}
             df = pd.DataFrame(data, index=track_names)
-            atlas.meta = df.replace("", pd.NA)
+            atlas.meta = df.replace("", np.nan)
         return atlas
 
     # ---- the track table -------------------------------------------------

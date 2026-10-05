@@ -381,9 +381,11 @@ def compare_motifs(
         motifs. Missing columns are filled with zero so the two matrices
         don't need identical motif sets.
     pseudo : float
-        Pseudocount added to both means before the log2 ratio. Set this to
-        roughly the median non-zero per-CRE mean to avoid the +1 collapse
-        we discussed for ``bootstrap_enrichment``.
+        Pseudocount added to both means before the log2 ratio, so a motif
+        absent from one set still gets a finite fold change. A pseudocount
+        far above the means (e.g. 1 on per-sequence counts around 0.01)
+        dominates both terms and pulls every LFC toward 0; set it to roughly
+        the median non-zero column mean, as for :func:`bootstrap_enrichment`.
     alternative : {'two-sided', 'greater', 'less'}
         Passed to scipy.stats.mannwhitneyu. Default two-sided.
 

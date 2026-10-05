@@ -330,9 +330,10 @@ class BigWigReader:
         """ndarray variant of :meth:`stats` — missing bins filled with *missing*.
 
         Matches the pybigtools adapter's fast-path signature so the
-        worker in ``signal.py`` can call it uniformly. ``exact`` is
-        accepted for API compatibility; the pure-Python reader always
-        uses full-resolution data when it has it.
+        worker in ``signal.py`` can call it uniformly. ``exact=True``
+        reads the full-resolution data; ``exact=False`` summarises from
+        the finest zoom level whose reduction is at most the bin width,
+        when the file has one, and falls back to full resolution otherwise.
         """
         raw = self.stats(chrom, start, end, n_bins=n_bins,
                          stat=stat, exact=exact)

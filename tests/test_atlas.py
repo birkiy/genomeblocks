@@ -50,7 +50,7 @@ def test_search_accepts_any_interval_input(atlas, cre, tmp_path):
     assert df["giggle_score"].is_monotonic_decreasing
     df = atlas.search(cre, ref=str(tmp_path / "t1.bed"))
     assert "n_ref_bins" in df.columns
-    assert cre.enrich(atlas).shape == df.shape
+    assert cre.enrich(atlas, ref=str(tmp_path / "t1.bed")).equals(df)
     with pytest.raises(ValueError, match="no bins"):
         atlas.search(as_loci([("chrZ", 1, 2)]))
 
@@ -82,6 +82,29 @@ def test_meta_and_persistence(atlas, tmp_path):
     back = Atlas.load(str(tmp_path / "at.npz"))
     assert back.track_names == atlas.track_names and back.meta.loc["t0", "factor"] == "AR"
     assert (back.M != atlas.M).nnz == 0
+
+
+def test_search_columns_are_the_documented_ones(atlas, cre, tmp_path):
+    df = atlas.search(cre)
+    assert df.columns.tolist() == ["name", "n_query_bins", "track_n_bins", "track_n_peaks", "overlaps",
+                                   "log2_odds", "p", "giggle_score"]
+    assert df.set_index("name")["track_n_bins"].to_dict() == dict(zip(atlas.track_names, atlas.track_n_bins.tolist()))
+    assert cre.enrich(atlas).columns.tolist() == df.columns.tolist()
+    ref = atlas.search(cre, ref=str(tmp_path / "t1.bed"))
+    assert ref.columns.tolist() == ["name", "n_query_bins", "n_ref_bins", "track_n_bins", "track_n_peaks", "overlaps",
+                                    "log2_odds", "p", "giggle_score"]
+    assert ref.set_index("name")["track_n_bins"].to_dict() == df.set_index("name")["track_n_bins"].to_dict()
+
+
+def test_load_restores_missing_metadata_exactly(atlas, cre, tmp_path):
+    atlas.attach_meta(pd.DataFrame({"id": ["t0", "t1"], "factor": ["AR", "FOXA1"]}), id_col="id")
+    assert pd.isna(atlas.meta.loc["t2", "factor"])
+    atlas.save(str(tmp_path / "at.npz"))
+    back = Atlas.load(str(tmp_path / "at.npz"))
+    assert back.meta.equals(atlas.meta)
+    assert back.search(cre).equals(atlas.search(cre))
+    assert back.to_pandas().equals(atlas.to_pandas())
+    assert back.bootstrap(cre, n=2, seed=0, verbose=False).equals(atlas.bootstrap(cre, n=2, seed=0, verbose=False))
 
 
 def test_atlas_as_a_table(atlas):

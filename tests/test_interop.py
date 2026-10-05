@@ -105,3 +105,19 @@ def test_liftover_needs_pyliftover_or_works(cre, tmp_path):
     chain.write_text("chain 1000 chr1 20000 + 0 20000 chrA 30000 + 10000 30000 1\n20000\n\n")
     out = cre.liftover(str(chain), verbose=False)
     assert out.chroms.tolist()[:1] == ["chrA"] and out.starts[0] == cre.starts[0] + 10000
+
+
+def test_bedtool_skips_header_lines(bed_path, tmp_path):
+    pybedtools = pytest.importorskip("pybedtools")
+    L = Loci.from_bedtool(pybedtools.BedTool(bed_path))
+    ref = as_loci(bed_path)
+    assert L.equals(ref, cols=True)
+    assert L.columns == Loci.make(bed_path, keep=True, sort=False).columns
+    assert L.to_pandas()["name"].tolist() == [f"p{i}" for i in range(1, 8)]
+    assert as_loci(pybedtools.BedTool(bed_path)).equals(ref, cols=True)
+    assert Loci.from_frame(pybedtools.BedTool(bed_path)).equals(ref)
+    mem = Loci.from_bedtool(pybedtools.BedTool("chr1\t1\t5\n", from_string=True))
+    assert [(r.chrom, r.start, r.end) for r in mem] == [("chr1", 1, 5)]
+    hdr = tmp_path / "named.tsv"
+    hdr.write_text("#chrom\tstart\tend\tpeak_id\nchr1\t1\t5\tq\n")
+    assert Loci.from_bedtool(pybedtools.BedTool(str(hdr))).to_pandas()["peak_id"].tolist() == ["q"]
