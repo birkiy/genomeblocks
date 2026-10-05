@@ -58,7 +58,7 @@ def run_gb(tmp):
     code = PEAK + f"""
 import json, time
 T = {{}}; t0 = t = time.perf_counter()
-from genomeblocks.columnar import hichip
+from genomeblocks import hichip
 sizes = {{l.split()[0]: int(l.split()[1]) for l in open({CS!r}) if l.strip()}}
 ends = hichip.shortrange_ends({AVP!r}, 1000); T["ends"] = time.perf_counter() - t; t = time.perf_counter()
 hichip.write_bed(ends, {tmp!r} + "/gb_ends.bed"); T["write BED"] = time.perf_counter() - t; t = time.perf_counter()

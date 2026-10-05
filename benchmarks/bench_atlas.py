@@ -43,11 +43,10 @@ def sub_atlas(a: Atlas, T: int) -> Atlas:
 
 
 def exact_counts(Q: Loci, tracks: list) -> np.ndarray:
-    """#query intervals overlapping each track (cgranges, prebuilt indexes)."""
+    """#query intervals overlapping each track (one vectorised overlap per track)."""
     out = np.zeros(len(tracks), np.int64)
     for j, t in enumerate(tracks):
-        cg = t.cgr
-        out[j] = sum(1 for q in Q if any(True for _ in cg.overlap(q.chrom, q.start, q.end)))
+        out[j] = int(Q.overlap_any(t).sum())
     return out
 
 
@@ -76,8 +75,6 @@ def part_query(rec):
     A = Atlas.load(str(DATA / "atlas_1kb.npz"))
     Q = Loci.make(QUERY)
     loci_tracks = [Loci.make(p) for p in TRACKS]
-    for t in loci_tracks:
-        t.cgr                                   # prebuild every index once
     gq = pr.read_bed(QUERY)
     for T in T_SWEEP:
         a = sub_atlas(A, T)
@@ -91,7 +88,7 @@ def part_query(rec):
         rep = 3 if T <= 100 else 1
         tq = timeit(lambda: exact_counts(Q, loci_tracks[:T]), repeat=rep,
                     warmup=1 if T <= 100 else 0)
-        rec.add(part="query", engine="per-track cgranges loop (prebuilt)",
+        rec.add(part="query", engine="per-track overlap_any loop",
                 n_tracks=T, seconds=tq["median"], runs=tq["runs"])
         # pyranges.count_overlaps fails under pandas 3 (pyranges 0.1.4), so
         # count per track with the vectorised overlap() join instead

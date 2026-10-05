@@ -240,20 +240,19 @@ def sec_loci(md, tl):
     d = load("loci")
     if not d:
         return
-    dc = load("loci_columnar")
-    rows = d["rows"] + (dc["rows"] if dc else [])
+    rows = d["rows"]
     lat = {r["engine"]: r["seconds"] for r in rows if r["op"] == "latency"}
-    gbl = lat.get("genomeblocks (cgranges)")
+    gb_lat = {k: v for k, v in lat.items() if is_gb(k)}
+    gbl = min(gb_lat.values()) if gb_lat else None
     md.append('## Loci\n{: .sec-green #loci }\n')
-    if gbl:
+    if gbl and "pyranges" in lat and "bioframe" in lat:
         tl.append(("One overlap lookup", ftime(gbl),
                    f"on 100k indexed peaks: {fx(lat['pyranges'] / gbl)} faster than pyranges, "
                    f"{fx(lat['bioframe'] / gbl)} than bioframe", "green"))
-        md.append(f"A single overlap query against an indexed set is where the object model pays off: "
-                  f"**{ftime(gbl)}** per lookup with cgranges and "
-                  f"{ftime(lat['genomeblocks (pure-Python fallback)'])} with the pure-Python index, against "
-                  f"{ftime(lat['pyranges'])} for pyranges, which has to slice a dataframe per call. "
-                  f"That is the cost of every interactive question (\"what overlaps this peak?\").\n")
+        md.append(f"A single overlap query against an indexed set is the cost of every interactive question "
+                  f"(\"what overlaps this peak?\"): **{ftime(gbl)}** per lookup through the cached point index "
+                  f"({', '.join(f'{ftime(v)} with {escape(k)}' for k, v in sorted(gb_lat.items(), key=lambda kv: kv[1]))}), "
+                  f"against {ftime(lat['pyranges'])} for pyranges, which has to slice a dataframe per call.\n")
         md.append(figure(dotplot([(k, v, is_gb(k), "per query, 100k-peak index") for k, v in lat.items()],
                                  kind="green", label="Single overlap query latency"),
                          "<strong>One overlap lookup</strong> against 100,000 indexed peaks (median per query; log scale)."))
@@ -270,12 +269,12 @@ def sec_loci(md, tl):
     # verdict on bulk ops
     t_i = {r["engine"]: r["seconds"] for r in rows if r["op"] == "intersect" and r["n"] == big}
     t_m = {r["engine"]: r["seconds"] for r in rows if r["op"] == "merge" and r["n"] == big}
-    if "genomeblocks.columnar" in t_i:
-        md.append(f"On whole-set operations at {fnum(big)} intervals the object-per-interval `Loci` is not the "
-                  f"fastest: `A & B` takes {ftime(t_i['genomeblocks (cgranges)'])} and `merge` "
-                  f"{ftime(t_m['genomeblocks'])}, against {ftime(t_i['pyranges'])} and {ftime(t_m['pyranges'])} "
-                  f"for pyranges. The [columnar `Loci`]({{{{ '/design/columnar/' | relative_url }}}}) does the same work on numpy columns: "
-                  f"{ftime(t_i['genomeblocks.columnar'])} and {ftime(t_m['genomeblocks.columnar'])}.\n")
+    if "genomeblocks" in t_i and "pyranges" in t_i and "genomeblocks" in t_m and "pyranges" in t_m:
+        md.append(f"On whole-set operations at {fnum(big)} intervals the numpy kernel does `A & B` in "
+                  f"{ftime(t_i['genomeblocks'])} and `merge` in {ftime(t_m['genomeblocks'])}, against "
+                  f"{ftime(t_i['pyranges'])} and {ftime(t_m['pyranges'])} for pyranges; the "
+                  f"[Backends]({{{{ '/benchmarks/#backends' | relative_url }}}}) section times the other interval engines "
+                  f"behind the same call.\n")
     sizes = sorted({r["n"] for r in rows if r["op"] == "intersect"})
     engines = []
     for r in rows:
@@ -510,6 +509,46 @@ def sec_architecture(md, tl):
                          "reduction for comparison."))
 
 
+def sec_backends(md, tl):
+    d = load("backends")
+    if not d:
+        return
+    md.append('## Backends\n{: .sec-navy #backends }\n')
+    md.append("The same call through every installed engine (`backend=`); every row below returns the same "
+              "answer as the default, so the choice is only about speed and what is installed.\n")
+    rows = [r for r in d["rows"] if r.get("op") != "skipped"]
+    skipped_ = [r["engine"] for r in d["rows"] if r.get("op") == "skipped"]
+    fam_kind = {"intervals": "green", "bigwig": "green", "motifs": "navy", "fasta": "navy", "tables": "green",
+                "graph": "purple"}
+    for fam in ("intervals", "bigwig", "motifs", "fasta", "tables", "graph"):
+        sel = [r for r in rows if r["part"] == fam]
+        if not sel:
+            continue
+        ops = []
+        for r in sel:
+            if r["op"] not in ops:
+                ops.append(r["op"])
+        for op in ops:
+            if "warm" in op:
+                continue
+            at = [r for r in sel if r["op"] == op]
+            n = max(r["n"] for r in at)
+            at = [r for r in at if r["n"] == n]
+            if len(at) < 2:
+                continue
+            md.append(figure(dotplot([(r["engine"], r["seconds"], r["engine"] == "genomeblocks" or r["engine"] in
+                                       ("pybigtools", "lightmotif", "polars", "scipy", "graph-tool"),
+                                       "agrees" if r.get("agrees", True) else "DIFFERS") for r in at],
+                                     kind=fam_kind[fam], label=f"{fam}: {op}"),
+                             f"<strong>{escape(fam)} · {escape(op)}</strong>" + (f" at n = {n:,}" if n > 1 else "")
+                             + "; the default engine in colour."))
+        best = min((r for r in sel if "warm" not in r["op"]), key=lambda r: r["seconds"], default=None)
+        if best:
+            tl.append((f"{fam}: fastest engine", best["engine"], best["op"], fam_kind[fam]))
+    if skipped_:
+        md.append(f"Not installed on the benchmark machine: {', '.join(sorted(set(skipped_)))}.\n")
+
+
 def sec_columnar(md, tl):
     p = load("prototype")
     if not p:
@@ -621,12 +660,13 @@ def sec_import(md, tl):
 
 def build():
     md, tl = [], []
-    secs = [sec_loci, sec_signal, sec_atlas, sec_motifs, sec_pairs, sec_genes, sec_architecture, sec_columnar,
-            sec_shortrange, sec_import]
+    secs = [sec_backends, sec_loci, sec_signal, sec_atlas, sec_motifs, sec_pairs, sec_genes, sec_architecture,
+            sec_columnar, sec_shortrange, sec_import]
     for s in secs:
         s(md, tl)
-    env = next((load(n)["env"] for n in ("loci", "signal", "motifs") if load(n)), {})
+    env = next((load(n)["env"] for n in ("backends", "loci", "signal", "motifs") if load(n)), {})
     v = env.get("versions", {})
+    gbv = v.get("genomeblocks", "")
     vtxt = ", ".join(f"{k} {val}" for k, val in v.items())
     head = f"""---
 title: Benchmarks
@@ -639,8 +679,9 @@ permalink: /benchmarks/
 {{: .no_toc }}
 
 How fast each building block is against the tools people would otherwise use,
-measured on genomeblocks 1.1. Every comparison first checks that the engines
-return the same answer; timings are medians of 3–5 runs after a warm-up.
+and what each swappable backend costs, measured on genomeblocks {gbv or '2.0'}.
+Every comparison first checks that the engines return the same answer;
+timings are medians of 3–5 runs after a warm-up.
 {{: .fs-5 .fw-300 }}
 
 <p class="gb-env">{escape(env.get('cpu', ''))} · {env.get('cores', '?')} cores · {env.get('mem_gb', 0):.0f} GB RAM ·

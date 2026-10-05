@@ -1,153 +1,211 @@
 #!/usr/bin/env python3
-"""Interval backends: what switching engines costs, and what pays off.
+"""Every backend of every family, timed through the genomeblocks API.
 
-For A & B (A's loci overlapping B) and merge, at n = 1k .. 1M:
+The same call, the same data, a different engine behind it — so the numbers
+say what ``backend=`` buys or costs, and the agreement column says every
+engine gives the same answer (the suite's parity rule). Engines that are not
+installed are skipped and listed in the results.
 
-  cgranges (today)            genomeblocks' object path
-  numpy, from objects         convert Loci -> arrays on every call, then numpy
-  numpy, columnar             arrays already stored (no conversion)
-  pyranges, from Loci         Loci.to_pyranges() on every call, then pyranges
-  pyranges, native            frames already built
+Parts (one per family):
+  intervals   A & B (overlap_pairs), merge, nearest at n = 1k .. 1M peaks
+  bigwig      Loci.signal: 10k peaks x 1 track, 200 bins, ±3 kb
+  motifs      scan_motifs_matrix: 1k windows x 100 JASPAR motifs
+  fasta       Loci.sequences: 10k windows of 500 bp
+  tables      Loci.make on 1M peaks; Genes.make on the GTF
+  graph       Architecture.components / pagerank on the loops graph
 
-Also: conversion costs on their own, the cost of an 'auto' backend decision,
-and single-lookup latency for each engine.
+Data from ``make_data.py`` (``$GB_BENCH_DATA``). ``GB_BENCH_SIZES=1000,10000``
+limits the interval sizes (handy for a smoke run on small data).
 """
 from __future__ import annotations
 
-import sys
-import time
+import os
 
 import numpy as np
 
 from common import DATA, Recorder, timeit
-from prototypes import backends as B
-from prototypes.npintervals import Intervals, merge, overlaps_any
 
-from genomeblocks import Loci
+import genomeblocks as gb
+from genomeblocks import Architecture, Genes, Loci, Pairs
+from genomeblocks.motifs import scan_motifs_matrix
 
-SIZES = [1_000, 10_000, 100_000, 1_000_000]
+SIZES = [int(x) for x in os.environ.get("GB_BENCH_SIZES", "1000,10000,100000,1000000").split(",")]
+FLANK, NBINS = 3_000, 200
 
 
-def part_ops(rec):
-    import pyranges as pr
+def installed(family):
+    return [b for b in gb.backends.families()[family] if gb.backends.installed(family, b)]
+
+
+def skipped(rec, family):
+    for b in gb.backends.families()[family]:
+        if not gb.backends.installed(family, b):
+            rec.add(part=family, op="skipped", engine=b, n=0, seconds=None,
+                    note=gb.backends._FAMILIES[family][b][1])
+
+
+def pairs_key(qi, ri):
+    return np.lexsort((ri, qi)).shape[0], int(qi.sum()), int(ri.sum())
+
+
+# ── intervals ────────────────────────────────────────────────────────────────
+
+def part_intervals(rec):
+    from genomeblocks.backends.intervals import _MERGE, _NEAREST
     for n in SIZES:
         A = Loci.make(str(DATA / f"peaks_A_{n}.bed"))
-        Bl = Loci.make(str(DATA / f"peaks_B_{n}.bed"))
-        AB = Loci.make(str(DATA / f"peaks_AB_{n}.bed"))
+        B = Loci.make(str(DATA / f"peaks_B_{n}.bed"))
         rep = 5 if n <= 100_000 else 3
+        ref = {}
+        for b in installed("intervals"):
+            res = {}
+            t = timeit(lambda: res.__setitem__("p", A.overlap_pairs(B, backend=b)), repeat=rep,
+                       setup=lambda: (A._dirty(), B._dirty()))
+            k = pairs_key(*res["p"])
+            ref.setdefault("pairs", k)
+            rec.add(part="intervals", op="A & B", engine=b, n=n, seconds=t["median"], runs=t["runs"],
+                    n_out=k[0], agrees=k == ref["pairs"])
+            t = timeit(lambda: res.__setitem__("q", A.overlap_pairs(B, backend=b)), repeat=rep)   # warm index
+            rec.add(part="intervals", op="A & B (warm index)", engine=b, n=n, seconds=t["median"], runs=t["runs"])
+            if b in _MERGE:
+                t = timeit(lambda: res.__setitem__("m", A.merge(backend=b)), repeat=rep)
+                k = (len(res["m"]), int(res["m"].starts.sum()))
+                ref.setdefault("merge", k)
+                rec.add(part="intervals", op="merge", engine=b, n=n, seconds=t["median"], runs=t["runs"],
+                        n_out=k[0], agrees=k == ref["merge"])
+            if b in _NEAREST and n <= 100_000:
+                t = timeit(lambda: res.__setitem__("d", A.nearest(B, backend=b)[1]), repeat=rep)
+                k = int(np.abs(res["d"]).sum())
+                ref.setdefault("nearest", k)
+                rec.add(part="intervals", op="nearest (distances)", engine=b, n=n, seconds=t["median"],
+                        runs=t["runs"], agrees=k == ref["nearest"])
+    skipped(rec, "intervals")
+
+
+# ── bigwig ───────────────────────────────────────────────────────────────────
+
+def part_bigwig(rec):
+    n = min(10_000, SIZES[-1])
+    L = Loci.make(str(DATA / f"peaks_A_{max(s for s in SIZES if s <= 10_000) if any(s <= 10_000 for s in SIZES) else SIZES[0]}.bed"))
+    L = L.take(slice(0, n))
+    bw = str(DATA / "signal_0.bw")
+    ref = None
+    for b in installed("bigwig"):
         res = {}
-        Bl.cgr
-        t = timeit(lambda: res.__setitem__("ref", A & Bl), repeat=rep)
-        ref = {l.uid for l in res["ref"]}
-        rec.add(part="ops", op="A & B", engine="cgranges (today)", n=n, seconds=t["median"], runs=t["runs"])
-
-        def np_obj():
-            m = overlaps_any(Intervals.from_loci(A), Intervals.from_loci(Bl))
-            return Loci([A[i] for i in np.flatnonzero(m).tolist()])
-        t = timeit(lambda: res.__setitem__("o", np_obj()), repeat=rep)
-        rec.add(part="ops", op="A & B", engine="numpy, converting from objects", n=n, seconds=t["median"],
-                runs=t["runs"], same={l.uid for l in res["o"]} == ref)
-        ia, ib = Intervals.from_loci(A), Intervals.from_loci(Bl)
-        t = timeit(lambda: res.__setitem__("m", overlaps_any(ia, ib)), repeat=rep)
-        rec.add(part="ops", op="A & B", engine="numpy, columnar (no conversion)", n=n, seconds=t["median"],
-                runs=t["runs"], same={A[i].uid for i in np.flatnonzero(res["m"]).tolist()} == ref)
-        if n <= 100_000:
-            t = timeit(lambda: A.to_pyranges().overlap(Bl.to_pyranges()), repeat=3)
-            rec.add(part="ops", op="A & B", engine="pyranges, converting from Loci", n=n,
-                    seconds=t["median"], runs=t["runs"])
-        ga, gb = pr.read_bed(str(DATA / f"peaks_A_{n}.bed")), pr.read_bed(str(DATA / f"peaks_B_{n}.bed"))
-        t = timeit(lambda: ga.overlap(gb), repeat=rep)
-        rec.add(part="ops", op="A & B", engine="pyranges, native frames", n=n, seconds=t["median"], runs=t["runs"])
-
-        # merge of the unsorted 2n union
-        t = timeit(lambda: res.__setitem__("mr", AB.merge()), repeat=3)
-        mref = sorted((l.chrom, l.start, l.end) for l in res["mr"])
-        rec.add(part="ops", op="merge", engine="cgranges (today)", n=2 * n, seconds=t["median"], runs=t["runs"])
-        t = timeit(lambda: res.__setitem__("mo", merge(Intervals.from_loci(AB))), repeat=3)
-        mo = res["mo"]
-        rec.add(part="ops", op="merge", engine="numpy, converting from objects", n=2 * n, seconds=t["median"],
-                runs=t["runs"], same=sorted(zip([mo.names[c] for c in mo.codes], mo.starts.tolist(), mo.ends.tolist())) == mref)
-        iab = Intervals.from_loci(AB)
-        t = timeit(lambda: merge(iab), repeat=rep)
-        rec.add(part="ops", op="merge", engine="numpy, columnar (no conversion)", n=2 * n, seconds=t["median"], runs=t["runs"])
-        gab = pr.read_bed(str(DATA / f"peaks_AB_{n}.bed"))
-        t = timeit(lambda: gab.merge(), repeat=rep)
-        rec.add(part="ops", op="merge", engine="pyranges, native frames", n=2 * n, seconds=t["median"], runs=t["runs"])
+        t = timeit(lambda: res.__setitem__("S", L.signal([bw], n_bins=NBINS, flank=FLANK, backend=b, verbose=False,
+                                                           progress=False, dtype=np.float64)), repeat=3)
+        S = res["S"]
+        if ref is None:
+            ref = S
+        rec.add(part="bigwig", op=f"signal {len(L):,} x 1 track x {NBINS} bins", engine=b, n=len(L),
+                seconds=t["median"], runs=t["runs"], agrees=bool(np.allclose(S, ref, atol=1e-3)),
+                max_abs_diff=float(np.abs(S - ref).max()))
+    skipped(rec, "bigwig")
 
 
-def part_convert(rec):
-    import pandas as pd
-    for n in (100_000, 1_000_000):
-        A = Loci.make(str(DATA / f"peaks_A_{n}.bed"))
-        ia = Intervals.from_loci(A)
-        from genomeblocks.locus import Locus
-        steps = [
-            ("Loci -> numpy arrays", lambda: Intervals.from_loci(A)),
-            ("numpy arrays -> Loci objects", lambda: ia.to_loci(Locus, Loci)),
-            ("Loci.to_frame() (pandas)", lambda: A.to_frame()),
-            ("Loci.to_pyranges()", lambda: A.to_pyranges()),
-            ("numpy arrays -> pandas frame", lambda: pd.DataFrame({"chrom": pd.Categorical.from_codes(ia.codes, ia.names),
-                                                                    "start": ia.starts, "end": ia.ends})),
-        ]
-        for name, fn in steps:
-            if n == 1_000_000 and "to_pyranges" in name:
-                continue
-            t = timeit(fn, repeat=3)
-            rec.add(part="convert", step=name, n=n, seconds=t["median"], runs=t["runs"])
+# ── motifs ───────────────────────────────────────────────────────────────────
+
+def part_motifs(rec, n_windows=1_000, n_motifs=100):
+    fa = str(DATA / "genome.fa")
+    jaspar = str(DATA / "jaspar.txt")
+    lib = gb.load_motifs(jaspar, format="jaspar16").take(list(range(n_motifs)))
+    sizes = gb.Genome.from_fasta(fa).sizes
+    rng = np.random.default_rng(0)
+    chroms = sorted(sizes)
+    c = rng.choice(chroms, n_windows)
+    pos = np.array([rng.integers(20_000, sizes[x] - 20_000) for x in c])
+    L = Loci.from_frame({"chrom": c, "start": pos, "end": pos + 1}).sort()
+    ref = None
+    for b in installed("motifs"):
+        res = {}
+        t = timeit(lambda: res.__setitem__("M", scan_motifs_matrix(L, fa, lib, r=250, threshold=13.0, norm=False,
+                                                                     workers=1, backend=b, verbose=False)), repeat=3)
+        M = res["M"].to_numpy()
+        if ref is None:
+            ref = M
+        rec.add(part="motifs", op=f"scan {n_windows:,} windows x {n_motifs} motifs", engine=b, n=n_windows,
+                seconds=t["median"], runs=t["runs"], agrees=bool((M == ref).all()), hits=int(M.sum()))
+    skipped(rec, "motifs")
 
 
-def part_dispatch(rec):
-    """How expensive is the decision itself?"""
-    class Dummy:
-        pass
-    for name in ("cgranges", "numpy", "pyranges"):
-        B.register("intervals", name, Dummy())
-    B.set_policy("intervals", lambda op="", n=0: "numpy" if op != "lookup" and n >= 20_000 else "cgranges")
-    N = 200_000
-    t0 = time.perf_counter()
-    for i in range(N):
-        B.get("intervals", op="overlaps_any", n=i)
-    per_auto = (time.perf_counter() - t0) / N
-    with B.use(intervals="numpy"):
-        t0 = time.perf_counter()
-        for i in range(N):
-            B.get("intervals", op="overlaps_any", n=i)
-        per_fixed = (time.perf_counter() - t0) / N
-    rec.add(part="dispatch", step="auto policy (size + op check)", seconds=per_auto)
-    rec.add(part="dispatch", step="user-pinned backend", seconds=per_fixed)
+# ── fasta ────────────────────────────────────────────────────────────────────
+
+def part_fasta(rec, n_windows=10_000):
+    fa = str(DATA / "genome.fa")
+    sizes = gb.Genome.from_fasta(fa).sizes
+    rng = np.random.default_rng(1)
+    chroms = sorted(sizes)
+    c = rng.choice(chroms, n_windows)
+    pos = np.array([rng.integers(1_000, sizes[x] - 1_000) for x in c])
+    L = Loci.from_frame({"chrom": c, "start": pos, "end": pos + 500}).sort()
+    ref = None
+    for b in installed("fasta"):
+        if b == "memory":
+            src = gb.read_fasta(fa)                       # the whole genome as a dict
+            t = timeit(lambda: L.sequences(src), repeat=3)
+            seqs = L.sequences(src)
+        else:
+            t = timeit(lambda: L.sequences(fa, backend=b), repeat=3)
+            seqs = L.sequences(fa, backend=b)
+        if ref is None:
+            ref = seqs
+        rec.add(part="fasta", op=f"sequences {n_windows:,} x 500 bp", engine=b, n=n_windows, seconds=t["median"],
+                runs=t["runs"], agrees=seqs == ref)
+    skipped(rec, "fasta")
 
 
-def part_lookup(rec):
-    """Single-interval latency: can a numpy engine serve point lookups too?"""
-    n = 100_000
-    Bl = Loci.make(str(DATA / f"peaks_B_{n}.bed"))
-    Q = Loci.make(str(DATA / "peaks_A_1000.bed"))[:200]
-    Bl.cgr
-    t = timeit(lambda: [any(True for _ in Bl.cgr.overlap(q.chrom, q.start, q.end)) for q in Q], repeat=5)
-    rec.add(part="lookup", engine="cgranges", seconds=t["median"] / len(Q), runs=[r / len(Q) for r in t["runs"]])
-    ib = Intervals.from_loci(Bl)
-    from prototypes.npintervals import STRIDE
-    code = {c: i for i, c in enumerate(ib.names)}
-    bs = ib.codes * STRIDE + ib.starts
-    o = np.argsort(bs, kind="stable")
-    bs, rmax = bs[o], np.maximum.accumulate((ib.codes * STRIDE + ib.ends)[o])
+# ── tables ───────────────────────────────────────────────────────────────────
 
-    def one(q):
-        c = code[q.chrom] * STRIDE
-        k = int(np.searchsorted(bs, c + q.end))
-        return k > 0 and rmax[k - 1] > c + q.start
-    t = timeit(lambda: [one(q) for q in Q], repeat=5)
-    rec.add(part="lookup", engine="numpy (one searchsorted per query)", seconds=t["median"] / len(Q),
-            runs=[r / len(Q) for r in t["runs"]])
-    QI = Intervals.from_loci(Q)
-    t = timeit(lambda: overlaps_any(QI, ib), repeat=5)
-    rec.add(part="lookup", engine="numpy, all 200 queries in one call", seconds=t["median"] / len(Q),
-            runs=[r / len(Q) for r in t["runs"]])
+def part_tables(rec):
+    n = SIZES[-1]
+    bed = str(DATA / f"peaks_A_{n}.bed")
+    gtf = str(DATA / "genes.gtf")
+    ref = {}
+    for b in installed("tables"):
+        res = {}
+        t = timeit(lambda: res.__setitem__("L", Loci.make(bed, keep=True, backend=b)), repeat=3)
+        ref.setdefault("bed", res["L"])
+        rec.add(part="tables", op=f"Loci.make {n:,} peaks (keep=True)", engine=b, n=n, seconds=t["median"],
+                runs=t["runs"], agrees=res["L"].equals(ref["bed"], cols=True))
+        t = timeit(lambda: res.__setitem__("G", Genes.make(gtf, backend=b)), repeat=3)
+        ref.setdefault("gtf", res["G"])
+        same = all(getattr(res["G"], k).equals(getattr(ref["gtf"], k), cols=True)
+                   for k in ("genes", "transcripts", "features"))
+        rec.add(part="tables", op="Genes.make (GTF)", engine=b, n=len(res["G"].transcripts), seconds=t["median"],
+                runs=t["runs"], agrees=same)
+    skipped(rec, "tables")
 
+
+# ── graph ────────────────────────────────────────────────────────────────────
+
+def part_graph(rec):
+    n = max(s for s in SIZES if s <= 100_000) if any(s <= 100_000 for s in SIZES) else SIZES[0]
+    cre = Loci.make(str(DATA / f"peaks_A_{n}.bed"))
+    A = Architecture.make(cre, str(DATA / "loops.bedpe"), r=2500, verbose=False)
+    A.ep["w"] = np.random.default_rng(0).uniform(1, 10, A.n_links)
+    ref = {}
+    for b in installed("graph"):
+        res = {}
+        t = timeit(lambda: res.__setitem__("c", A.components(backend=b)), repeat=3)
+        ref.setdefault("components", res["c"])
+        rec.add(part="graph", op=f"components ({A.n_links:,} edges)", engine=b, n=A.n_links, seconds=t["median"],
+                runs=t["runs"], agrees=bool((res["c"] == ref["components"]).all()))
+        t = timeit(lambda: res.__setitem__("p", A.pagerank("w", backend=b)), repeat=3)
+        ref.setdefault("pagerank", res["p"])
+        rec.add(part="graph", op=f"pagerank ({A.n_links:,} edges)", engine=b, n=A.n_links, seconds=t["median"],
+                runs=t["runs"], agrees=bool(np.allclose(res["p"], ref["pagerank"], atol=1e-6)))
+        t = timeit(lambda: A.graph(backend=b), repeat=3)
+        rec.add(part="graph", op="build the engine's graph", engine=b, n=A.n_links, seconds=t["median"], runs=t["runs"])
+    skipped(rec, "graph")
+
+
+PARTS = {"intervals": part_intervals, "bigwig": part_bigwig, "motifs": part_motifs, "fasta": part_fasta,
+         "tables": part_tables, "graph": part_graph}
 
 if __name__ == "__main__":
-    parts = sys.argv[1:] or ["ops", "convert", "dispatch", "lookup"]
+    import sys
     rec = Recorder("backends")
-    for p in parts:
-        globals()[f"part_{p}"](rec)
-    rec.save()
+    for name in (sys.argv[1:] or PARTS):
+        print(f"--- {name} ---", flush=True)
+        PARTS[name](rec)
+    rec.save(sizes=SIZES, backends={f: installed(f) for f in PARTS})

@@ -85,9 +85,9 @@ def env_info() -> dict:
     except (ValueError, OSError):
         mem_gb = None
     vers = {}
-    for mod in ("numpy", "scipy", "pandas", "pybigtools", "pyBigWig", "cgranges",
-                "pyranges", "bioframe", "lightmotif", "Bio", "MOODS",
-                "graph_tool", "intervaltree"):
+    for mod in ("genomeblocks", "numpy", "scipy", "pandas", "polars", "pyarrow", "narwhals", "pybigtools",
+                "pyBigWig", "cgranges", "ncls", "pyranges", "bioframe", "pybedtools", "lightmotif", "Bio",
+                "MOODS", "graph_tool", "igraph", "networkx", "intervaltree"):
         try:
             m = __import__(mod)
             vers[mod] = getattr(m, "__version__", "installed")

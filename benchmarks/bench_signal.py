@@ -37,16 +37,17 @@ def pick_loci(n: int, seed: int = 0) -> Loci:
     inside the chromosome, so every engine extracts identical windows."""
     from common import read_chromsizes
     cs = read_chromsizes()
-    allp = [l for l in Loci.make(str(DATA / "peaks_A_100000.bed"))
-            if FLANK <= (l.start + l.end) // 2 <= cs[l.chrom] - FLANK]
+    allp = Loci.make(str(DATA / "peaks_A_100000.bed"))
+    size = np.array([cs[c] for c in allp.chroms], np.int64)
+    c = allp.centers
+    allp = allp.take(np.flatnonzero((c >= FLANK) & (c <= size - FLANK)))
     idx = np.sort(np.random.default_rng(seed).choice(len(allp), n, replace=False))
-    return Loci([allp[int(i)] for i in idx])
+    return allp.take(idx)
 
 
 def windows(L):
-    for l in L:
-        c = (l.start + l.end) // 2
-        yield l.chrom, c - FLANK, c + FLANK
+    c = L.centers
+    yield from zip(L.chroms.tolist(), (c - FLANK).tolist(), (c + FLANK).tolist())
 
 
 # ── baseline engines (same cube layout as signal()) ──────────────────────────
@@ -123,7 +124,7 @@ def part_engines(rec):
     eng = [
         ("genomeblocks · pybigtools (exact)", lambda X: gb(X, [bw]), L),
         ("genomeblocks · pybigtools (zoom, exact=False)", lambda X: gb(X, [bw], exact=False), L),
-        ("genomeblocks · pure-Python reader", lambda X: gb(X, [bw], backend="bigwig"), L),
+        ("genomeblocks · pure-Python reader", lambda X: gb(X, [bw], backend="python"), L),
         ("pybigtools values() + numpy binning", lambda X: pybigtools_values(X, bw), L),
         ("pyBigWig values() + numpy binning", lambda X: pybigwig_values(X, bw), L),
         ("pyBigWig stats(nBins) exact", lambda X: pybigwig_stats(X, bw, True), Ls),
@@ -157,17 +158,16 @@ def part_scaling(rec):
 def threaded(L, bws, workers):
     """signal()'s chunking, but on a ThreadPoolExecutor (one shared cube)."""
     from concurrent.futures import ThreadPoolExecutor
+    from genomeblocks.backends.bigwig import open_bigwig
     n, T = len(L), len(bws)
-    chroms = [l.chrom for l in L]
-    st = np.fromiter((l.start for l in L), np.int64, n)
-    en = np.fromiter((l.end for l in L), np.int64, n)
+    chroms = L.chroms
+    st, en = L.starts, L.ends
     cube = np.zeros((n, T, NBINS), np.float32)
     t_ranges = gs._even_ranges(T, min(workers, T))
 
     def run(t_lo, t_hi):
-        hs = [gs._open_pybigtools(p) for p in bws[t_lo:t_hi]]
-        gs._extract_chunk(cube, hs, hs[0].chroms(), chroms, st, en, t_lo, 0, n,
-                          NBINS, FLANK, "mean", False, True)
+        hs = [open_bigwig(p, backend="pybigtools") for p in bws[t_lo:t_hi]]
+        gs._extract(cube, hs, chroms, st, en, t_lo, 0, n, NBINS, FLANK, "mean", False, True)
         for h in hs:
             h.close()
 

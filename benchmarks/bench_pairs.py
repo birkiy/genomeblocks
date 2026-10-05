@@ -31,7 +31,6 @@ def naive_count(loci, path, limit):
     """Per-pair Python loop: look each anchor up in the window index."""
     from collections import defaultdict
     counts = defaultdict(lambda: np.zeros(len(loci), np.int64))
-    cg = loci.cgr
     with open(path) as f:
         n = 0
         for line in f:
@@ -40,7 +39,7 @@ def naive_count(loci, path, limit):
             _, c1, p1, c2, p2, *_ = line.split("\t")
             p1, p2 = int(p1), int(p2)
             for c, p, other in ((c1, p1, c2), (c2, p2, c1)):
-                for *_, i in cg.overlap(c, p, p + 1):
+                for i in loci.overlap_rows(c, p, p + 1).tolist():       # the cached point index
                     counts[other][i] += 1
             n += 1
             if n == limit:

@@ -24,9 +24,9 @@ import numpy as np
 
 from common import DATA, Recorder, timeit
 
-from genomeblocks import Loci
+from genomeblocks import Loci, read_fasta
 from genomeblocks.locus import Locus
-from genomeblocks.motifs import make_genome, scan_motifs_matrix
+from genomeblocks.motifs import scan_motifs_matrix
 
 R, THR, PSEUDO = 250, 13.0, 0.1
 JASPAR = str(DATA / "jaspar.txt")
@@ -39,7 +39,7 @@ def windows(genome, n, seed=0):
         c = "chr21" if i % 2 else "chr22"
         pos = int(rng.integers(20_000, len(genome[c]) - 20_000))
         out.append(Locus(c, pos - 100, pos + 100))
-    return Loci(out)
+    return Loci.from_records(out)
 
 
 def motif_counts(limit=None):
@@ -62,7 +62,7 @@ def logodds(counts):
 # ── engines: each returns {motif: total forward hits over all sequences} ─────
 
 def eng_genomeblocks(L, genome, limit, path):
-    df = scan_motifs_matrix(L, genome, path, motif_format="jaspar16", r=R,
+    df = scan_motifs_matrix(L, genome, path, format="jaspar16", r=R,
                             threshold=THR, norm=False, workers=1, verbose=False)
     return df.sum(axis=0).to_dict()
 
@@ -180,7 +180,7 @@ def part_engines(rec, genome):
     print("\n== engines (N=1000 x 100 motifs) ==")
     N, M = 1000, 100
     L = windows(genome, N)
-    seqs = [l.sequence(genome, r=R).upper() for l in L]
+    seqs = L.sequences(genome, r=R, upper=True)
     mats = motif_counts(M)
     path = subset_file(M)
     td = tempfile.mkdtemp()
@@ -210,7 +210,7 @@ def part_library(rec, genome):
     mats = motif_counts()
     for N in (1000, 5000):
         L = windows(genome, N, seed=1)
-        seqs = [l.sequence(genome, r=R).upper() for l in L]
+        seqs = L.sequences(genome, r=R, upper=True)
         bp = N * 2 * R * len(mats)
         t = timeit(lambda: eng_genomeblocks(L, genome, None, JASPAR), repeat=3)
         rec.add(part="library", engine="genomeblocks scan_motifs_matrix (lightmotif)",
@@ -246,7 +246,7 @@ def part_stripe(rec, genome):
     import lightmotif
     print("\n== stripe vs scan cost ==")
     L = windows(genome, 2000, seed=3)
-    seqs = [l.sequence(genome, r=R).upper() for l in L]
+    seqs = L.sequences(genome, r=R, upper=True)
     m = next(iter(lightmotif.load(JASPAR, format="jaspar16")))
     pssm = m.counts.normalize(PSEUDO).log_odds()
     striped = [lightmotif.stripe(s) for s in seqs]
@@ -259,7 +259,7 @@ def part_stripe(rec, genome):
 
 if __name__ == "__main__":
     parts = sys.argv[1:] or ["engines", "library", "workers", "stripe"]
-    genome = make_genome(str(DATA / "genome.fa"))
+    genome = read_fasta(str(DATA / "genome.fa"))     # {chrom: sequence}, the memory source
     rec = Recorder("motifs")
     for p in parts:
         globals()[f"part_{p}"](rec, genome)
