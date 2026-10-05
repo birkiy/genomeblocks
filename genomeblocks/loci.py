@@ -136,19 +136,20 @@ class Loci(TableMixin):
         those. Rows are sorted into genome order unless ``sort=False``.
         ``backend`` picks the table parser (polars or pandas).
         """
-        from .backends.tables import read_columns, sniff
+        from .backends.tables import first_fields, read_columns
         low = str(filename).lower().removesuffix(".gz")
         if low.endswith((".gtf", ".gff", ".gff3")):
             raise ValueError("this is a gene annotation: use Genes.make()")
         if low.endswith(".bedpe"):
             raise ValueError("this is a BEDPE file: use Pairs.make()")
-        _, ncol = sniff(filename)
+        fields = first_fields(filename)
+        ncol = len(fields)
         if ncol == 0:                                  # empty or header-only file
             return cls(genome=genome, filename=str(filename))
         if ncol < 3:
             raise ValueError(f"{filename}: expected a tab-separated BED with at least 3 columns "
                              f"(chrom, start, end); the first data line has {ncol}")
-        names = _bed_names(low, ncol)
+        names = _bed_names(low, ncol, fields)
         wanted = []
         if keep is True:
             wanted = [i for i in range(3, ncol) if i != 5]
@@ -754,8 +755,14 @@ def _col_equal(a, b) -> bool:
     return bool(np.array_equal(a, b))
 
 
-def _bed_names(low: str, ncol: int):
-    base = _NARROWPEAK if low.endswith(("narrowpeak", "broadpeak")) else _BED12
+def _bed_names(low: str, ncol: int, fields=()):
+    """Column names: narrowPeak / broadPeak for those extensions, and for a 9- or
+    10-column file whose columns 7-9 are not BED12's integer thickStart, thickEnd
+    and itemRgb (ChIP-Atlas and ENCODE ship peaks as .bed); BED12 otherwise."""
+    peak = low.endswith(("narrowpeak", "broadpeak"))
+    if not peak and ncol in (9, 10) and len(fields) >= 9 and "," not in fields[8]:
+        peak = not all(x.isdigit() for x in fields[6:9])
+    base = _NARROWPEAK if peak else _BED12
     names = list(base[:ncol])
     names += [f"col{i + 1}" for i in range(len(names), ncol)]
     return names

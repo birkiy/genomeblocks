@@ -20,9 +20,9 @@ def _open_text(path):
     return gzip.open(path, "rt") if str(path).endswith(".gz") else open(path)
 
 
-def sniff(path, max_lines: int = 50):
-    """(header lines to skip, number of columns of the first data line)."""
-    skip, ncol = 0, 0
+def _first_data_line(path, max_lines: int = 50):
+    """(header lines before it, tab-separated fields of the first data line; [] when none)."""
+    skip = 0
     with _open_text(path) as f:
         for line in f:
             if not line.strip() or line.startswith(("#", "track", "browser")):
@@ -30,9 +30,19 @@ def sniff(path, max_lines: int = 50):
                 if skip > max_lines:
                     break
                 continue
-            ncol = len(line.rstrip("\n").split("\t"))
-            break
-    return skip, ncol
+            return skip, line.rstrip("\n").split("\t")
+    return skip, []
+
+
+def sniff(path, max_lines: int = 50):
+    """(header lines to skip, number of columns of the first data line)."""
+    skip, fields = _first_data_line(path, max_lines)
+    return skip, len(fields)
+
+
+def first_fields(path, max_lines: int = 50) -> list:
+    """The tab-separated fields of the first data line ([] when there is none)."""
+    return _first_data_line(path, max_lines)[1]
 
 
 def _parse_error(path, exc, column=None) -> ValueError:

@@ -36,6 +36,25 @@ def test_make_keep_list_and_hash_in_field(tmp_path):
     assert list(L.cols) == ["name"]
 
 
+def test_make_reads_peak_columns_of_a_bed_named_file(tmp_path):
+    # ChIP-Atlas and ENCODE ship narrowPeak / broadPeak as .bed: columns 7-9 are values, not thickStart...
+    p = tmp_path / "SRX1.05.bed"
+    p.write_text("chr1\t815487\t815799\tpk1\t309\t.\t13.27975\t35.25095\t30.97249\t203\n"
+                 "chr1\t2410823\t2411229\tpk2\t515\t.\t12.98384\t56.27055\t51.56372\t218\n")
+    L = Loci.make(str(p), keep=True)
+    assert list(L.cols) == ["name", "score", "signalValue", "pValue", "qValue", "peak"]
+    assert L.cols["signalValue"].tolist() == [13.27975, 12.98384] and L.cols["peak"].tolist() == [203, 218]
+    assert as_loci(str(p)).cols["qValue"].tolist() == [30.97249, 51.56372]
+    b = tmp_path / "broad.bed"
+    b.write_text("chr1\t10\t90\tb1\t0\t+\t2.5\t-1\t-1\n")
+    assert list(Loci.make(str(b), keep=True).cols) == ["name", "score", "signalValue", "pValue", "qValue"]
+    b9 = tmp_path / "items.bed"                                   # a real BED9 keeps the BED12 names
+    b9.write_text("chr1\t10\t90\tx\t0\t+\t20\t80\t255,0,0\nchr1\t100\t190\ty\t0\t-\t120\t180\t0\n")
+    L9 = Loci.make(str(b9), keep=True)
+    assert list(L9.cols) == ["name", "score", "thickStart", "thickEnd", "itemRgb"]
+    assert L9.cols["thickStart"].tolist() == [20, 120]
+
+
 def test_make_empty_and_bad_files(tmp_path):
     (tmp_path / "e.bed").write_text("")
     (tmp_path / "c.bed").write_text("# only a comment\n")

@@ -280,7 +280,7 @@ def _read_table_file(path: str, *, genome=None, keep=True):
             if len(hf) == len(fields) and not hf[1].isdigit():
                 names = hf
         if names is None:
-            names = _bed_names(low, len(fields))
+            names = _bed_names(low, len(fields), [f.strip() for f in fields])
         df = pd.read_csv(path, sep=sep, header=None, skiprows=skip, names=names)
     return loci_from_frame(df, keep=keep, genome=genome)
 
