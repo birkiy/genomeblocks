@@ -14,11 +14,9 @@ publication-style figure set — built around one biological question.
 {: .fs-5 .fw-300 }
 
 {: .note }
-> The figures, tables and numbers on these pages come from the notebook's 1.x
-> run on the real data. The code is the **2.0 API**: every snippet has been
-> rewritten for the columnar tables and checked against the 2.0 package, but
-> the notebook has not yet been re-run on 2.0. Coordinates are 0-based,
-> half-open throughout.
+> The figures, tables and numbers on these pages come from the notebook run
+> with genomeblocks 2.0 on the real data, and every snippet on these pages runs
+> on that data. Coordinates are 0-based, half-open throughout.
 
 The runnable notebook lives at
 [`examples/ar_foxa1_lncap/`](https://github.com/birkiy/genomeblocks/tree/main/examples/ar_foxa1_lncap).

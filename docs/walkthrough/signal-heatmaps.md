@@ -96,7 +96,8 @@ fig = plot_heatmap(regions, S6,
                    groups={"AR+F": ARpF, "AR-F": ARmF},
                    sets=["AR+F", "AR-F"],
                    samples=samples,
-                   vmax=vmax, ymax=vmax)
+                   vmax=vmax, ymax=vmax,
+                   height=2000)                 # the flank used above: ticks read -2kb / +2kb
 ```
 
 How the arguments shape the figure:
