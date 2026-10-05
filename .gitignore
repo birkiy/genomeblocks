@@ -231,3 +231,6 @@ examples/*/data/
 
 # benchmark datasets (regenerate with benchmarks/make_data.py)
 benchmarks/data/
+
+# project-local temp dir (TMPDIR for pybedtools and the tests)
+.tmp/
