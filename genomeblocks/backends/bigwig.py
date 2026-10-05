@@ -210,6 +210,8 @@ def open_bigwig(src, *, backend=None):
     if isinstance(src, (PyBigToolsHandle, PyBigWigHandle, PythonHandle)):
         return src
     own = handle_backend(src)
+    if own is None and hasattr(src, "stats_array"):     # anything speaking our handle interface
+        return src
     if own is not None:                                  # someone else's open handle
         if backend is not None and resolve("bigwig", backend) != own:
             raise ValueError(f"the track is an open {own} handle, so backend={backend!r} cannot apply: "

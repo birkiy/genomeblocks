@@ -4,7 +4,7 @@ Work in progress. This file says what 2.0 is, what is done, what is left, and
 how to pick it up. **Delete it before the 2.0 release.** Rollback point: tag
 `v1.1.0`.
 
-Last updated: 2026-10-05.
+Last updated: 2026-10-05 (second checkpoint: usage limit reached).
 
 ## What 2.0 is (the owner's brief)
 
@@ -125,17 +125,15 @@ Last updated: 2026-10-05.
 | `architecture.py` | Pairs input, interval/graph backends, `from_edges/from_frame/from_scipy`, `to_networkx/igraph/scipy/anndata`, `pagerank`, `vertices_frame`; `to_legacy` removed |
 | `signal.py`, `signal_draw.py` | bigwig backends, handles, groups as Loci/mask/rows |
 | `motifs.py` | backend scanning, p-value thresholds, masked scan, positional profiles (the owner's WIP), stats and archetypes kept |
+| `motifs_draw.py` | `plot_motif_heatmap(loci, M, names, ...)` added (the owner's WIP, 2.0 API) |
+| `atlas.py` | `as_loci` inputs, vectorised bin ranges + bootstrap set-up, half-core workers, `to_pandas/to_arrow/columns/head/describe/_repr_html_` (TableMixin) |
+| `bam.py` | region parsing from `locus.parse_region` |
 
 ### Left to do (in this order)
 
-1. `motifs_draw.py`: add `plot_motif_heatmap(loci, M, names, r=..., groups=...)`
-   (port of the owner's WIP in the 1.1 checkout; uses `signal_draw.plot_heatmap`
-   with `ylabel="motif hits/bin"` and per-motif auto `vmax`/`ymax`).
-2. `atlas.py`: inputs through `as_loci`; vectorise `_intervals_to_bin_ranges`
-   and the bootstrap set-up on columns; `workers` default = half the cores;
-   `to_pandas()` (track table + meta) and TableMixin.
-3. `bam.py`: import `parse_region` from `locus.py`.
-4. `browserview.py`: tracks may be Loci / anything `as_loci` takes, `Pairs` /
+1. ~~motifs_draw~~, ~~atlas~~, ~~bam~~ — done.
+4. **NEXT** `browserview.py` (not started; `backends.bigwig.open_bigwig` now
+   returns any object with `stats_array` as is, so test stubs work): tracks may be Loci / anything `as_loci` takes, `Pairs` /
    BEDPE, `Genes` (draw from the three tables: transcripts per gene, exons and
    CDS from `features`), bigWig paths or open handles via `backends.bigwig`.
 5. `architecture_draw.py`: `draw(A, region, layout='spring'|'circular'|'genomic',
