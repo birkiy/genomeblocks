@@ -96,7 +96,7 @@ cre = Loci.make("peaks.bed").slop(100).sort().merge()
 
 ## Fast overlap queries
 
-Under the hood, `Loci` builds a [cgranges](https://github.com/lh3/cgranges) tree (Heng Li) the first time you run an overlap — see [Credits](../credits#cgranges) for the citation:
+Under the hood, `Loci` builds a [cgranges](https://github.com/lh3/cgranges) tree (Heng Li) the first time you run an overlap — see [Credits]({{ '/credits/#cgranges' | relative_url }}) for the citation:
 
 ```python
 # Query by chrom / start / end
@@ -159,7 +159,7 @@ loci.plot_heatmap(cube, groups={"up": up_loci, "down": down_loci})
 loci.plot_profiles(cube, groups={"up": up_loci, "down": down_loci})
 ```
 
-See the [Signal](signal) guide and the [AR & FOXA1 walkthrough](../walkthrough/) for the full story.
+See the [Signal]({{ '/guide/signal/' | relative_url }}) guide and the [AR & FOXA1 walkthrough]({{ '/walkthrough/' | relative_url }}) for the full story.
 
 ---
 

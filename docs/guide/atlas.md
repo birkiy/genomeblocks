@@ -144,5 +144,5 @@ dropped. Every `search` / `bootstrap` result then carries the metadata columns.
 
 ## See also
 
-- [API → Atlas](../api/atlas) for full signatures.
-- [Enrichment walkthrough](../walkthrough/enrichment) for a worked ChIP-Atlas example.
+- [API → Atlas]({{ '/api/atlas/' | relative_url }}) for full signatures.
+- [Enrichment walkthrough]({{ '/walkthrough/enrichment/' | relative_url }}) for a worked ChIP-Atlas example.

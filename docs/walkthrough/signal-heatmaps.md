@@ -120,4 +120,4 @@ Rows are AR peaks, split into the FOXA1-dependent (AR+F) and FOXA1-independent
 - **AR 0 h vs 4 h** — confirms the DHT-induced AR gain that defines the cistrome.
 - **FOXA1 0 h vs 4 h** — by construction, strong in AR+F and weak in AR−F.
 
-Next: **[Genomic annotation →](annotation)**
+Next: **[Genomic annotation →]({{ '/walkthrough/annotation/' | relative_url }})**

@@ -10,13 +10,12 @@ What is measured (A and B are n-peak sets, n = 1k .. 1M):
   caching     1st call (index build + query) vs. later calls (query only)
 
 Engines: genomeblocks with cgranges (C index, the conda path), genomeblocks
-with its pure-Python fallback (the pip path), a bounded-scan variant of that
-fallback (a proposed fix), pyranges, bioframe, bedtools (CLI, includes file
-I/O + process start), intervaltree, and a naive per-chromosome double loop.
+with its pure-Python fallback (the pip path; a bounded bisect scan since
+1.1.0), pyranges, bioframe, bedtools (CLI, includes file I/O + process
+start), intervaltree, and a naive per-chromosome double loop.
 """
 from __future__ import annotations
 
-import bisect
 import subprocess
 
 import numpy as np
@@ -32,33 +31,6 @@ SIZES = [1_000, 10_000, 100_000, 1_000_000]
 
 # ── engines ──────────────────────────────────────────────────────────────────
 
-class BoundedPyIndex(gl._PyIntervalIndex):
-    """The fallback index with the scan bounded on the left.
-
-    Tracks the longest interval per chromosome so a query only walks intervals
-    whose start lies in [qs - max_len, qe) — O(log n + k) instead of O(n).
-    """
-    __slots__ = ("_maxlen",)
-
-    def index(self):
-        super().index()
-        self._maxlen = {c: max((e - s for s, e, _ in ivs), default=0)
-                        for c, (ivs, _) in self._sorted.items()}
-
-    def overlap(self, chrom, start, end):
-        data = self._sorted.get(chrom)
-        if data is None:
-            return
-        ivs, starts = data
-        qs, qe = int(start), int(end)
-        lo = bisect.bisect_left(starts, qs - self._maxlen[chrom])
-        hi = bisect.bisect_left(starts, qe)
-        for k in range(lo, hi):
-            s, e, label = ivs[k]
-            if e > qs:
-                yield (s, e, label)
-
-
 def use_index(kind: str):
     """Point genomeblocks at an interval-index implementation."""
     import cgranges
@@ -68,9 +40,6 @@ def use_index(kind: str):
     elif kind == "python":
         gl._get_cgranges = lambda: None
         gl._PyIntervalIndex = _ORIG_PY
-    elif kind == "python-bounded":
-        gl._get_cgranges = lambda: None
-        gl._PyIntervalIndex = BoundedPyIndex
 
 
 _ORIG_PY = gl._PyIntervalIndex
@@ -138,19 +107,12 @@ def bench_intersect(rec: Recorder):
         t = timeit(lambda: res.__setitem__("o", A & Bc), repeat=rep)
         add("genomeblocks (cgranges, warm index)", t, len(res["o"]))
 
-        # pure-Python fallback — quadratic, so only at small n
-        if n <= 100_000:
-            use_index("python")
-            Bp = fresh(B)
-            t = timeit(lambda: res.__setitem__("o", A & Bp),
-                       repeat=1 if n == 100_000 else rep, warmup=0 if n == 100_000 else 1,
-                       setup=lambda: setattr(Bp, "_cgr", None))
-            add("genomeblocks (pure-Python fallback)", t, len(res["o"]))
-        use_index("python-bounded")
-        Bb = fresh(B)
-        t = timeit(lambda: res.__setitem__("o", A & Bb), repeat=rep,
-                   setup=lambda: setattr(Bb, "_cgr", None))
-        add("genomeblocks (fallback, bounded scan)", t, len(res["o"]))
+        # pure-Python fallback (pip installs without cgranges)
+        use_index("python")
+        Bp = fresh(B)
+        t = timeit(lambda: res.__setitem__("o", A & Bp), repeat=rep,
+                   setup=lambda: setattr(Bp, "_cgr", None))
+        add("genomeblocks (pure-Python fallback)", t, len(res["o"]))
         use_index("cgranges")
 
         # pyranges / bioframe on their native frames
@@ -238,8 +200,7 @@ def bench_latency(rec: Recorder):
     B = Loci.make(str(DATA / f"peaks_B_{n}.bed"))
     Q = Loci.make(str(DATA / "peaks_A_1000.bed"))[:200]
     for kind, label in (("cgranges", "genomeblocks (cgranges)"),
-                        ("python", "genomeblocks (pure-Python fallback)"),
-                        ("python-bounded", "genomeblocks (fallback, bounded scan)")):
+                        ("python", "genomeblocks (pure-Python fallback)")):
         use_index(kind)
         Bk = fresh(B); Bk.cgr
         t = timeit(lambda: [Bk.overlaps(q) for q in Q], repeat=5)

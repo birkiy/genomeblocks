@@ -1,0 +1,35 @@
+<svg class="gbd" viewBox="0 0 880 200" role="img" aria-label="HiChIP short-range read ends behave like ChIP reads: they give a coverage track and MACS3 peaks, and stitched peaks scored by signal × width are cut at the same slope-1 knee as hubs." xmlns="http://www.w3.org/2000/svg">
+<rect class="bx" x="20" y="76" width="120" height="48" rx="8"></rect>
+<text class="tm" x="80" y="97" text-anchor="middle">allValidPairs</text>
+<text class="s" x="80" y="113" text-anchor="middle">HiC-Pro pairs</text>
+<rect class="bx" x="170" y="76" width="140" height="48" rx="8"></rect>
+<text class="tm" x="240" y="97" text-anchor="middle">shortrange_ends</text>
+<text class="s" x="240" y="113" text-anchor="middle">cis, |Δpos| ≤ 1 kb</text>
+<rect class="bx" x="360" y="20" width="150" height="48" rx="8"></rect>
+<text class="tm" x="435" y="41" text-anchor="middle">write_bed → macs3</text>
+<text class="s" x="435" y="57" text-anchor="middle">narrowPeak</text>
+<rect class="bx" x="360" y="132" width="150" height="48" rx="8"></rect>
+<text class="tm" x="435" y="153" text-anchor="middle">fragments → bigWig</text>
+<text class="s" x="435" y="169" text-anchor="middle">147 bp, coverage</text>
+<rect class="bx purple" x="560" y="76" width="130" height="48" rx="8"></rect>
+<text class="tm" x="625" y="97" text-anchor="middle">call_se</text>
+<text class="s" x="625" y="113" text-anchor="middle">stitch 12.5 kb</text>
+<rect class="bx purple" x="740" y="76" width="120" height="48" rx="8"></rect>
+<text class="tm" x="800" y="97" text-anchor="middle">SEs</text>
+<text class="s" x="800" y="113" text-anchor="middle">slope-1 knee</text>
+<polyline class="ln" points="142,100 164,100"/>
+<polygon class="hd" points="168.0,100.0 161.8,103.3 161.8,96.7"/>
+<polyline class="ln" points="312,92 336,92 336,44 354,44"/>
+<polygon class="hd" points="358.0,44.0 351.8,47.3 351.8,40.7"/>
+<polyline class="ln" points="312,108 336,108 336,156 354,156"/>
+<polygon class="hd" points="358.0,156.0 351.8,159.3 351.8,152.7"/>
+<polyline class="ln" points="512,44 536,44 536,92 554,92"/>
+<polygon class="hd" points="558.0,92.0 551.8,95.3 551.8,88.7"/>
+<polyline class="ln" points="512,156 536,156 536,108 554,108"/>
+<polygon class="hd" points="558.0,108.0 551.8,111.3 551.8,104.7"/>
+<polyline class="ln" points="692,100 734,100"/>
+<polygon class="hd" points="738.0,100.0 731.8,103.3 731.8,96.7"/>
+<text class="s" x="240" y="150" text-anchor="middle">5′ ends, stranded</text>
+<text class="lbl" x="436" y="82" text-anchor="middle">peaks</text>
+<text class="lbl" x="436" y="196" text-anchor="middle">signal</text>
+</svg>

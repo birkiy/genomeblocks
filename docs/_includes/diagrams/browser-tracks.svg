@@ -1,0 +1,144 @@
+<svg class="gbd" viewBox="0 0 880 336" role="img" aria-label="browser() gives every track its own axis on a shared x range and picks the drawer from the track&#x27;s type; bigWigs are read as binned summaries for the region only." xmlns="http://www.w3.org/2000/svg">
+<text class="t" x="20" y="40">ruler</text>
+<text class="s" x="632" y="40">region → chrom, start, end</text>
+<polyline class="ln" points="150,44 600,44"/>
+<polyline class="ln" points="150,38 150,44"/>
+<text class="ms" x="150" y="34">127.70 Mb</text>
+<polyline class="ln" points="240,38 240,44"/>
+<text class="ms" x="240" y="34" text-anchor="middle">127.73 Mb</text>
+<polyline class="ln" points="330,38 330,44"/>
+<text class="ms" x="330" y="34" text-anchor="middle">127.76 Mb</text>
+<polyline class="ln" points="420,38 420,44"/>
+<text class="ms" x="420" y="34" text-anchor="middle">127.79 Mb</text>
+<polyline class="ln" points="510,38 510,44"/>
+<text class="ms" x="510" y="34" text-anchor="middle">127.82 Mb</text>
+<polyline class="ln" points="600,38 600,44"/>
+<text class="ms" x="600" y="34" text-anchor="end">127.85 Mb</text>
+<text class="t" x="20" y="84">ATAC</text>
+<text class="ms" x="20" y="99">.bw</text>
+<text class="s" x="632" y="84">binned means, one native call</text>
+<path class="iv fg" d="M150.0,96.0 L157.5,96.0 L165.0,96.0 L172.5,96.0 L180.0,96.0 L187.5,96.0 L195.0,96.0 L202.5,96.0 L210.0,96.0 L217.5,96.0 L225.0,96.0 L232.5,96.0 L240.0,96.0 L247.5,96.0 L255.0,96.0 L262.5,95.9 L270.0,95.6 L277.5,95.0 L285.0,93.7 L292.5,91.4 L300.0,87.9 L307.5,83.5 L315.0,78.9 L322.5,75.3 L330.0,74.0 L337.5,75.3 L345.0,78.9 L352.5,83.5 L360.0,87.9 L367.5,91.4 L375.0,93.7 L382.5,95.0 L390.0,95.6 L397.5,95.9 L405.0,96.0 L412.5,96.0 L420.0,96.0 L427.5,96.0 L435.0,96.0 L442.5,96.0 L450.0,96.0 L457.5,96.0 L465.0,95.8 L472.5,95.4 L480.0,94.3 L487.5,92.3 L495.0,89.6 L502.5,87.1 L510.0,86.0 L517.5,87.1 L525.0,89.6 L532.5,92.3 L540.0,94.3 L547.5,95.4 L555.0,95.8 L562.5,96.0 L570.0,96.0 L577.5,96.0 L585.0,96.0 L592.5,96.0 L600.0,96.0 L600,100 L150,100 Z"/>
+<text class="t" x="20" y="128">H3K27ac ×2</text>
+<text class="ms" x="20" y="143">[.bw, .bw]</text>
+<text class="s" x="632" y="128">replicates averaged per bin</text>
+<path class="iv fn" d="M150.0,140.0 L157.5,140.0 L165.0,140.0 L172.5,140.0 L180.0,140.0 L187.5,140.0 L195.0,140.0 L202.5,140.0 L210.0,140.0 L217.5,140.0 L225.0,140.0 L232.5,140.0 L240.0,140.0 L247.5,140.0 L255.0,140.0 L262.5,140.0 L270.0,140.0 L277.5,140.0 L285.0,140.0 L292.5,140.0 L300.0,140.0 L307.5,140.0 L315.0,140.0 L322.5,140.0 L330.0,140.0 L337.5,140.0 L345.0,140.0 L352.5,139.9 L360.0,139.6 L367.5,139.0 L375.0,137.7 L382.5,135.4 L390.0,131.9 L397.5,127.5 L405.0,122.9 L412.5,119.3 L420.0,118.0 L427.5,119.3 L435.0,122.9 L442.5,127.5 L450.0,131.9 L457.5,135.3 L465.0,137.5 L472.5,138.3 L480.0,137.9 L487.5,136.2 L495.0,133.5 L502.5,131.0 L510.0,130.0 L517.5,131.1 L525.0,133.6 L532.5,136.3 L540.0,138.3 L547.5,139.4 L555.0,139.8 L562.5,140.0 L570.0,140.0 L577.5,140.0 L585.0,140.0 L592.5,140.0 L600.0,140.0 L600,144 L150,144 Z"/>
+<text class="t" x="20" y="172">reads</text>
+<text class="ms" x="20" y="187">.bam</text>
+<text class="s" x="632" y="172">per-base pileup, mismatches coloured</text>
+<rect class="iv fm" x="150" y="182" width="4.4" height="6.00005" rx="0"></rect>
+<rect class="iv fm" x="155" y="182" width="4.4" height="6.00008" rx="0"></rect>
+<rect class="iv fm" x="160" y="182" width="4.4" height="6.00013" rx="0"></rect>
+<rect class="iv fm" x="165" y="182" width="4.4" height="6.0002" rx="0"></rect>
+<rect class="iv fm" x="170" y="182" width="4.4" height="6.00033" rx="0"></rect>
+<rect class="iv fm" x="175" y="181.999" width="4.4" height="6.00052" rx="0"></rect>
+<rect class="iv fm" x="180" y="181.999" width="4.4" height="6.00082" rx="0"></rect>
+<rect class="iv fm" x="185" y="181.999" width="4.4" height="6.00128" rx="0"></rect>
+<rect class="iv fm" x="190" y="181.998" width="4.4" height="6.00197" rx="0"></rect>
+<rect class="iv fm" x="195" y="181.997" width="4.4" height="6.00302" rx="0"></rect>
+<rect class="iv fm" x="200" y="181.995" width="4.4" height="6.00456" rx="0"></rect>
+<rect class="iv fm" x="205" y="181.993" width="4.4" height="6.00682" rx="0"></rect>
+<rect class="iv fm" x="210" y="181.99" width="4.4" height="6.0101" rx="0"></rect>
+<rect class="iv fm" x="215" y="181.985" width="4.4" height="6.01482" rx="0"></rect>
+<rect class="iv fm" x="220" y="181.978" width="4.4" height="6.0215" rx="0"></rect>
+<rect class="iv fm" x="225" y="181.969" width="4.4" height="6.03089" rx="0"></rect>
+<rect class="iv fm" x="230" y="181.956" width="4.4" height="6.04392" rx="0"></rect>
+<rect class="iv fm" x="235" y="181.938" width="4.4" height="6.06182" rx="0"></rect>
+<rect class="iv fm" x="240" y="181.914" width="4.4" height="6.08613" rx="0"></rect>
+<rect class="iv fm" x="245" y="181.881" width="4.4" height="6.11878" rx="0"></rect>
+<rect class="iv fm" x="250" y="181.838" width="4.4" height="6.16215" rx="0"></rect>
+<rect class="iv fm" x="255" y="181.781" width="4.4" height="6.2191" rx="0"></rect>
+<rect class="iv fm" x="260" y="181.707" width="4.4" height="6.29305" rx="0"></rect>
+<rect class="iv fm" x="265" y="181.612" width="4.4" height="6.38798" rx="0"></rect>
+<rect class="iv fm" x="270" y="181.492" width="4.4" height="6.50845" rx="0"></rect>
+<rect class="iv fm" x="275" y="181.34" width="4.4" height="6.65956" rx="0"></rect>
+<rect class="iv fm" x="280" y="181.153" width="4.4" height="6.84689" rx="0"></rect>
+<rect class="iv fm" x="285" y="180.924" width="4.4" height="7.07639" rx="0"></rect>
+<rect class="iv fm" x="290" y="180.646" width="4.4" height="7.35419" rx="0"></rect>
+<rect class="iv fm" x="295" y="180.314" width="4.4" height="7.68639" rx="0"></rect>
+<rect class="iv fm" x="300" y="179.921" width="4.4" height="8.07876" rx="0"></rect>
+<rect class="iv fm" x="305" y="179.464" width="4.4" height="8.53642" rx="0"></rect>
+<rect class="iv fm" x="310" y="178.937" width="4.4" height="9.06341" rx="0"></rect>
+<rect class="iv fm" x="315" y="178.338" width="4.4" height="9.66233" rx="0"></rect>
+<rect class="iv fm" x="320" y="177.666" width="4.4" height="10.3339" rx="0"></rect>
+<rect class="iv fm" x="325" y="176.923" width="4.4" height="11.0765" rx="0"></rect>
+<rect class="iv fm" x="330" y="176.114" width="4.4" height="11.8861" rx="0"></rect>
+<rect class="iv fm" x="335" y="175.245" width="4.4" height="12.7554" rx="0"></rect>
+<rect class="iv fm" x="340" y="174.326" width="4.4" height="13.6744" rx="0"></rect>
+<rect class="iv fm" x="345" y="173.37" width="4.4" height="14.63" rx="0"></rect>
+<rect class="iv fm" x="350" y="172.394" width="4.4" height="15.606" rx="0"></rect>
+<rect class="iv fm" x="355" y="171.416" width="4.4" height="16.5838" rx="0"></rect>
+<rect class="iv fm" x="360" y="170.457" width="4.4" height="17.5428" rx="0"></rect>
+<rect class="iv fm" x="365" y="169.539" width="4.4" height="18.4608" rx="0"></rect>
+<rect class="iv fw" x="370" y="168.685" width="4.4" height="19.3153" rx="0"></rect>
+<rect class="iv fm" x="375" y="167.916" width="4.4" height="20.084" rx="0"></rect>
+<rect class="iv fm" x="380" y="167.254" width="4.4" height="20.7458" rx="0"></rect>
+<rect class="iv fm" x="385" y="166.718" width="4.4" height="21.2819" rx="0"></rect>
+<rect class="iv fm" x="390" y="166.323" width="4.4" height="21.6768" rx="0"></rect>
+<rect class="iv fm" x="395" y="166.081" width="4.4" height="21.9186" rx="0"></rect>
+<rect class="iv fm" x="400" y="166" width="4.4" height="22" rx="0"></rect>
+<rect class="iv fm" x="405" y="166.081" width="4.4" height="21.9186" rx="0"></rect>
+<rect class="iv fm" x="410" y="166.323" width="4.4" height="21.6768" rx="0"></rect>
+<rect class="iv fm" x="415" y="166.718" width="4.4" height="21.2819" rx="0"></rect>
+<rect class="iv fm" x="420" y="167.254" width="4.4" height="20.7458" rx="0"></rect>
+<rect class="iv fm" x="425" y="167.916" width="4.4" height="20.084" rx="0"></rect>
+<rect class="iv fm" x="430" y="168.685" width="4.4" height="19.3153" rx="0"></rect>
+<rect class="iv fm" x="435" y="169.539" width="4.4" height="18.4608" rx="0"></rect>
+<rect class="iv fm" x="440" y="170.457" width="4.4" height="17.5428" rx="0"></rect>
+<rect class="iv fm" x="445" y="171.416" width="4.4" height="16.5838" rx="0"></rect>
+<rect class="iv fm" x="450" y="172.394" width="4.4" height="15.606" rx="0"></rect>
+<rect class="iv fw" x="455" y="173.37" width="4.4" height="14.63" rx="0"></rect>
+<rect class="iv fm" x="460" y="174.326" width="4.4" height="13.6744" rx="0"></rect>
+<rect class="iv fm" x="465" y="175.245" width="4.4" height="12.7554" rx="0"></rect>
+<rect class="iv fm" x="470" y="176.114" width="4.4" height="11.8861" rx="0"></rect>
+<rect class="iv fm" x="475" y="176.923" width="4.4" height="11.0765" rx="0"></rect>
+<rect class="iv fm" x="480" y="177.666" width="4.4" height="10.3339" rx="0"></rect>
+<rect class="iv fm" x="485" y="178.338" width="4.4" height="9.66233" rx="0"></rect>
+<rect class="iv fm" x="490" y="178.937" width="4.4" height="9.06341" rx="0"></rect>
+<rect class="iv fm" x="495" y="179.464" width="4.4" height="8.53642" rx="0"></rect>
+<rect class="iv fm" x="500" y="179.921" width="4.4" height="8.07876" rx="0"></rect>
+<rect class="iv fm" x="505" y="180.314" width="4.4" height="7.68639" rx="0"></rect>
+<rect class="iv fm" x="510" y="180.646" width="4.4" height="7.35419" rx="0"></rect>
+<rect class="iv fm" x="515" y="180.924" width="4.4" height="7.07639" rx="0"></rect>
+<rect class="iv fm" x="520" y="181.153" width="4.4" height="6.84689" rx="0"></rect>
+<rect class="iv fm" x="525" y="181.34" width="4.4" height="6.65956" rx="0"></rect>
+<rect class="iv fm" x="530" y="181.492" width="4.4" height="6.50845" rx="0"></rect>
+<rect class="iv fm" x="535" y="181.612" width="4.4" height="6.38798" rx="0"></rect>
+<rect class="iv fm" x="540" y="181.707" width="4.4" height="6.29305" rx="0"></rect>
+<rect class="iv fm" x="545" y="181.781" width="4.4" height="6.2191" rx="0"></rect>
+<rect class="iv fm" x="550" y="181.838" width="4.4" height="6.16215" rx="0"></rect>
+<rect class="iv fm" x="555" y="181.881" width="4.4" height="6.11878" rx="0"></rect>
+<rect class="iv fm" x="560" y="181.914" width="4.4" height="6.08613" rx="0"></rect>
+<rect class="iv fm" x="565" y="181.938" width="4.4" height="6.06182" rx="0"></rect>
+<rect class="iv fm" x="570" y="181.956" width="4.4" height="6.04392" rx="0"></rect>
+<rect class="iv fm" x="575" y="181.969" width="4.4" height="6.03089" rx="0"></rect>
+<rect class="iv fm" x="580" y="181.978" width="4.4" height="6.0215" rx="0"></rect>
+<rect class="iv fm" x="585" y="181.985" width="4.4" height="6.01482" rx="0"></rect>
+<rect class="iv fm" x="590" y="181.99" width="4.4" height="6.0101" rx="0"></rect>
+<rect class="iv fm" x="595" y="181.993" width="4.4" height="6.00682" rx="0"></rect>
+<text class="t" x="20" y="216">peaks</text>
+<text class="ms" x="20" y="231">.bed · Loci</text>
+<text class="s" x="632" y="216">rectangles</text>
+<rect class="iv fg" x="210" y="214" width="50" height="12" rx="2"></rect>
+<rect class="iv fg" x="330" y="214" width="30" height="12" rx="2"></rect>
+<rect class="iv fg" x="410" y="214" width="70" height="12" rx="2"></rect>
+<rect class="iv fg" x="570" y="214" width="20" height="12" rx="2"></rect>
+<text class="t" x="20" y="260">loops</text>
+<text class="ms" x="20" y="275">.bedpe · [Pair]</text>
+<text class="s" x="632" y="260">half-sine arcs between anchors</text>
+<path class="ln purple" d="M235,276 Q337.5,231.1 440,276"/>
+<path class="ln purple" d="M345,276 Q462.5,225.7 580,276"/>
+<path class="ln purple" d="M450,276 Q470.0,260.8 490,276"/>
+<text class="t" x="20" y="304">genes</text>
+<text class="ms" x="20" y="319">Genes</text>
+<text class="s" x="632" y="304">stacked models, exon/CDS heights</text>
+<polyline class="ln navy thin" points="190,302 480,302"/>
+<rect class="iv fn" x="190" y="299" width="20" height="6" rx="1"></rect>
+<rect class="iv fn" x="210" y="296" width="20" height="12" rx="1"></rect>
+<rect class="iv fn" x="300" y="296" width="25" height="12" rx="1"></rect>
+<rect class="iv fn" x="450" y="299" width="30" height="6" rx="1"></rect>
+<polyline class="ln navy thin" points="350,318 570,318"/>
+<rect class="iv fn" x="350" y="312" width="30" height="12" rx="1"></rect>
+<rect class="iv fn" x="530" y="312" width="40" height="12" rx="1"></rect>
+<polyline class="ln faint" points="150,20 150,328"/>
+<polyline class="ln faint" points="600,20 600,328"/>
+</svg>

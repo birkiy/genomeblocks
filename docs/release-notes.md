@@ -56,12 +56,13 @@ A.chrom("chr8"); A.cis; A.trans                    # zero-copy views
 - polars and pyarrow are optional: without them parsing falls back to pandas
   with identical results (parquet save / load needs pyarrow).
 
-See `examples/columnar_prototype` and `examples/case_study_se` in the repository.
+See [Design → Columnar]({{ '/design/columnar/' | relative_url }}) for how it works, and `examples/columnar_prototype` and
+`examples/case_study_se` in the repository for worked notebooks.
 
 ### Faster, and one crash fixed (classic API)
 
 The new `benchmarks/` suite times every block against the tools people would
-otherwise use (report: `benchmarks/report/index.html`). Every fix below was
+otherwise use (results: [Benchmarks]({{ '/benchmarks/' | relative_url }})). Every fix below was
 checked to give output identical to 1.0.1.
 
 - **`Architecture.normalize` no longer crashes on inter-chromosomal edges.**
@@ -93,7 +94,7 @@ in your data instead of its longest annotated isoform, which keeps long silent
 isoforms (TGFBR3 and friends) from dragging a gene's body and TSS across the locus.
 Transcripts gain `tss_score` / `tss_support` / `tss`, genes gain `canonical` /
 `canonical_transcript` / `set_span()`, and no transcript is dropped. See the
-[Genes guide](guide/genes#picking-the-isoform-your-cells-actually-use).
+[Genes guide]({{ '/guide/genes/#picking-the-isoform-your-cells-actually-use' | relative_url }}).
 
 ## v1.0.1 — pip-install fix
 

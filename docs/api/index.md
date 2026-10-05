@@ -12,12 +12,12 @@ Signatures and short descriptions for every public name, grouped by module. Use 
 
 | Module | Public names |
 |---|---|
-| [`genomeblocks.locus`](locus) | `Locus`, `Exon`, `CDS`, `UTR` |
-| [`genomeblocks.loci`](loci) | `Loci` |
-| [`genomeblocks.genes`](genes) | `Gene`, `Transcript`, `Genes` |
-| [`genomeblocks.architecture`](architecture) | `Architecture` |
-| [`genomeblocks.signal`](signal) | `signal`, `tmm` (plotting: `plot_heatmap`, `plot_profiles`, `compare_heatmap` in `signal_draw`) |
-| [`genomeblocks.browserview`](browser) | `browser` (re-exported as `genomeblocks.browser`) |
-| [`genomeblocks.bedpe`](bedpe) | `Pair`, `read_bedpe`, `pair_to_bed`, `pairs_to_frame`, `pairs_to_bedpe`, `count_pairs`, `count_pairs_2d` |
-| [`genomeblocks.motifs`](motifs) | `make_genome`, `scan_motifs` (matrix / masked / differential / archetypes in the module) |
-| [`genomeblocks.atlas`](atlas) | `Atlas` |
+| [`genomeblocks.locus`]({{ '/api/locus/' | relative_url }}) | `Locus`, `Exon`, `CDS`, `UTR` |
+| [`genomeblocks.loci`]({{ '/api/loci/' | relative_url }}) | `Loci` |
+| [`genomeblocks.genes`]({{ '/api/genes/' | relative_url }}) | `Gene`, `Transcript`, `Genes` |
+| [`genomeblocks.architecture`]({{ '/api/architecture/' | relative_url }}) | `Architecture` |
+| [`genomeblocks.signal`]({{ '/api/signal/' | relative_url }}) | `signal`, `tmm` (plotting: `plot_heatmap`, `plot_profiles`, `compare_heatmap` in `signal_draw`) |
+| [`genomeblocks.browserview`]({{ '/api/browser/' | relative_url }}) | `browser` (re-exported as `genomeblocks.browser`) |
+| [`genomeblocks.bedpe`]({{ '/api/bedpe/' | relative_url }}) | `Pair`, `read_bedpe`, `pair_to_bed`, `pairs_to_frame`, `pairs_to_bedpe`, `count_pairs`, `count_pairs_2d` |
+| [`genomeblocks.motifs`]({{ '/api/motifs/' | relative_url }}) | `make_genome`, `scan_motifs` (matrix / masked / differential / archetypes in the module) |
+| [`genomeblocks.atlas`]({{ '/api/atlas/' | relative_url }}) | `Atlas` |

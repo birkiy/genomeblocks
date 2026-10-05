@@ -1,0 +1,44 @@
+<svg class="gbd" viewBox="0 0 880 290" role="img" aria-label="annotate gives promoter CREs their nearest gene and every other CRE the gene of its highest-O/E promoter neighbour; prime_hubs cuts the ranked node strengths at the slope-1 knee and returns the hubs&#x27; genes." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="22">ANNOTATE · GENE ASSIGNMENT</text>
+<polyline class="ln purple thick" points="220,60 110,90"/>
+<rect class="chip white" x="152" y="66" width="26" height="16" rx="8"></rect>
+<text class="ms" x="165" y="78" text-anchor="middle">3.1</text>
+<polyline class="ln faint" points="220,60 330,92"/>
+<rect class="chip white" x="262" y="67" width="26" height="16" rx="8"></rect>
+<text class="ms" x="275" y="79" text-anchor="middle">1.2</text>
+<polyline class="ln faint" points="210,196 110,90"/>
+<rect class="chip white" x="147" y="134" width="26" height="16" rx="8"></rect>
+<text class="ms" x="160" y="146" text-anchor="middle">0.9</text>
+<polyline class="ln purple thick" points="210,196 330,92"/>
+<rect class="chip white" x="257" y="135" width="26" height="16" rx="8"></rect>
+<text class="ms" x="270" y="147" text-anchor="middle">2.4</text>
+<polyline class="ln purple thick" points="60,210 110,90"/>
+<rect class="chip white" x="72" y="141" width="26" height="16" rx="8"></rect>
+<text class="ms" x="85" y="153" text-anchor="middle">1.7</text>
+<polyline class="ln purple thick" points="380,214 330,92"/>
+<rect class="chip white" x="342" y="144" width="26" height="16" rx="8"></rect>
+<text class="ms" x="355" y="156" text-anchor="middle">1.1</text>
+<rect class="bx navy" x="76" y="76" width="68" height="28" rx="6"></rect>
+<text class="t" x="110" y="94" text-anchor="middle">MYC</text>
+<rect class="bx navy" x="296" y="78" width="68" height="28" rx="6"></rect>
+<text class="t" x="330" y="96" text-anchor="middle">PVT1</text>
+<circle class="dot green" cx="220" cy="60" r="10"/>
+<text class="ms" x="220" y="86" text-anchor="middle">e1 → MYC</text>
+<circle class="dot green" cx="210" cy="196" r="10"/>
+<text class="ms" x="210" y="222" text-anchor="middle">e2 → PVT1</text>
+<circle class="dot green" cx="60" cy="210" r="10"/>
+<text class="ms" x="60" y="236" text-anchor="middle">e3 → MYC</text>
+<circle class="dot green" cx="380" cy="214" r="10"/>
+<text class="ms" x="380" y="240" text-anchor="middle">e4 → PVT1</text>
+<text class="s" x="230" y="268" text-anchor="middle">each enhancer takes the gene of its highest-O/E promoter neighbour</text>
+<text class="cap" x="500" y="22">PRIME_HUBS · SLOPE-1 KNEE</text>
+<polyline class="ln faint" points="500,40 500,230 860,230"/>
+<rect class="bx hl" x="502" y="40" width="70.8814" height="188" rx="4"></rect>
+<polyline class="ln navy thick" points="506,54 511.898,71.734 517.797,87.618 523.695,101.845 529.593,114.588 535.492,126.002 541.39,136.225 547.288,145.381 553.186,153.582 559.085,160.928 564.983,167.508 570.881,173.401 576.78,178.679 582.678,183.407 588.576,187.642 594.475,191.434 600.373,194.832 606.271,197.874 612.169,200.6 618.068,203.041 623.966,205.227 629.864,207.186 635.763,208.94 641.661,210.511 647.559,211.918 653.458,213.178 659.356,214.307 665.254,215.318 671.153,216.224 677.051,217.035 682.949,217.762 688.847,218.412 694.746,218.995 700.644,219.517 706.542,219.985 712.441,220.404 718.339,220.779 724.237,221.115 730.136,221.416 736.034,221.686 741.932,221.927 747.831,222.143 753.729,222.337 759.627,222.51 765.525,222.666 771.424,222.805 777.322,222.93 783.22,223.041 789.119,223.141 795.017,223.231 800.915,223.311 806.814,223.383 812.712,223.447 818.61,223.505 824.508,223.557 830.407,223.603 836.305,223.644 842.203,223.681 848.102,223.715 854,223.744"/>
+<circle class="dot navy" cx="570.881" cy="173.401" r="5"/>
+<text class="s" x="580.881" y="169.401">knee: tangent slope = 1</text>
+<text class="s" x="580.881" y="183.401">on the [0, 1]-scaled curve</text>
+<text class="t" x="510" y="56">hubs</text>
+<text class="s" x="860" y="246" text-anchor="end">CREs ranked by node strength (Σ incident O/E)</text>
+<text class="m" x="500" y="274">hub CREs → their vp.gene → prime genes</text>
+</svg>

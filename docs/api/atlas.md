@@ -9,7 +9,7 @@ nav_order: 9
 {: .no_toc }
 
 GIGGLE-style enrichment over a sparse `bin × track` index. See the
-[Atlas guide](../guide/atlas) for narrative usage.
+[Atlas guide]({{ '/guide/atlas/' | relative_url }}) for narrative usage.
 {: .fs-5 .fw-300 }
 
 ## Table of contents

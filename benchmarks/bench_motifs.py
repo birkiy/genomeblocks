@@ -234,7 +234,7 @@ def part_workers(rec, genome):
     print("\n== workers ==")
     N = 5000
     L = windows(genome, N, seed=2)
-    for w in (1, 2, 3, 4):
+    for w in (1, 2, 4, 8):
         t = timeit(lambda: scan_motifs_matrix(L, genome, JASPAR, motif_format="jaspar16",
                                               r=R, threshold=THR, workers=w, verbose=False),
                    repeat=3)

@@ -1,0 +1,39 @@
+<svg class="gbd" viewBox="0 0 880 232" role="img" aria-label="Set algebra keeps whole rows: A &amp; B keeps every A interval that touches B, A − B keeps the rest, and merge fuses overlapping or book-ended intervals." xmlns="http://www.w3.org/2000/svg">
+<text class="tm" x="20" y="34">A</text>
+<polyline class="ln faint" points="150,30 860,30"/>
+<rect class="iv fn" x="178.4" y="24" width="63.9" height="12" rx="2"></rect>
+<rect class="iv fn" x="284.9" y="24" width="78.1" height="12" rx="2"></rect>
+<rect class="iv fn" x="405.6" y="24" width="49.7" height="12" rx="2"></rect>
+<rect class="iv fn" x="519.2" y="24" width="85.2" height="12" rx="2"></rect>
+<rect class="iv fn" x="647" y="24" width="42.6" height="12" rx="2"></rect>
+<rect class="iv fn" x="760.6" y="24" width="63.9" height="12" rx="2"></rect>
+<text class="tm" x="20" y="70">B</text>
+<polyline class="ln faint" points="150,66 860,66"/>
+<rect class="iv fp" x="228.1" y="60" width="35.5" height="12" rx="2"></rect>
+<rect class="iv fp" x="341.7" y="60" width="42.6" height="12" rx="2"></rect>
+<rect class="iv fp" x="547.6" y="60" width="21.3" height="12" rx="2"></rect>
+<rect class="iv fp" x="576" y="60" width="56.8" height="12" rx="2"></rect>
+<rect class="iv fp" x="774.8" y="60" width="14.2" height="12" rx="2"></rect>
+<polyline class="grid" points="20,94 860,94"/>
+<text class="tm" x="20" y="116">A &amp; B</text>
+<polyline class="ln faint" points="150,112 860,112"/>
+<rect class="iv fn" x="178.4" y="106" width="63.9" height="12" rx="2"></rect>
+<rect class="iv fn" x="284.9" y="106" width="78.1" height="12" rx="2"></rect>
+<rect class="iv fn" x="519.2" y="106" width="85.2" height="12" rx="2"></rect>
+<rect class="iv fn" x="760.6" y="106" width="63.9" height="12" rx="2"></rect>
+<text class="s" x="860" y="132" text-anchor="end">rows of A that touch B, kept whole</text>
+<text class="tm" x="20" y="160">A − B</text>
+<polyline class="ln faint" points="150,156 860,156"/>
+<rect class="iv fn" x="405.6" y="150" width="49.7" height="12" rx="2"></rect>
+<rect class="iv fn" x="647" y="150" width="42.6" height="12" rx="2"></rect>
+<text class="s" x="860" y="176" text-anchor="end">rows of A that touch nothing in B</text>
+<text class="tm" x="20" y="204">(A + B).merge()</text>
+<polyline class="ln faint" points="150,200 860,200"/>
+<rect class="iv fg" x="178.4" y="194" width="85.2" height="12" rx="2"></rect>
+<rect class="iv fg" x="284.9" y="194" width="99.4" height="12" rx="2"></rect>
+<rect class="iv fg" x="405.6" y="194" width="49.7" height="12" rx="2"></rect>
+<rect class="iv fg" x="519.2" y="194" width="113.6" height="12" rx="2"></rect>
+<rect class="iv fg" x="647" y="194" width="42.6" height="12" rx="2"></rect>
+<rect class="iv fg" x="760.6" y="194" width="63.9" height="12" rx="2"></rect>
+<text class="s" x="860" y="220" text-anchor="end">overlapping or book-ended rows fuse</text>
+</svg>

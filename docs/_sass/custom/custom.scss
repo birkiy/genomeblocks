@@ -654,3 +654,151 @@ select:focus-visible {
   .main-content-wrap { background: white; }
   .main-content pre, .main-content .highlight { box-shadow: none; }
 }
+
+/* ── Design diagrams (docs/_includes/diagrams/*.svg) ───────── */
+/* Figures are hand-laid SVG; shapes carry classes, colours come from the
+   tokens above, so diagrams follow the theme. Built by docs/_tools/. */
+.gb-fig {
+  margin: 22px 0 28px;
+  background: var(--n-0);
+  border: 1px solid var(--n-100);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 18px 18px 14px;
+}
+.gb-fig .gb-fig-body { overflow-x: auto; }
+.gb-fig svg { display: block; width: 100%; height: auto; min-width: 640px; }
+.gb-fig figcaption {
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--n-100);
+  font-size: 13px; line-height: 1.55; color: var(--n-500);
+}
+.gb-fig figcaption strong { color: var(--n-900); font-weight: 700; }
+.gb-fig figcaption code { font-size: 12px; }
+
+.gbd text { font-family: var(--font-sans); fill: var(--n-900); }
+.gbd .t   { font-size: 13px; font-weight: 800; }
+.gbd .tm  { font-family: var(--font-code); font-size: 13px; }
+.gbd .s   { font-size: 11px; font-weight: 600; fill: var(--n-500); }
+.gbd .m   { font-family: var(--font-code); font-size: 11.5px; }
+.gbd .ms  { font-family: var(--font-code); font-size: 10.5px; fill: var(--n-500); }
+.gbd .cap { font-size: 10px; font-weight: 800; letter-spacing: .09em; fill: var(--n-400); }
+.gbd .lbl { font-size: 11px; font-weight: 600; fill: var(--n-500); }
+.gbd .w   { fill: var(--n-0); }
+.gbd .ink-green  { fill: var(--mod-green-ink); }
+.gbd .ink-navy   { fill: var(--mod-navy-ink); }
+.gbd .ink-purple { fill: var(--mod-purple-ink); }
+.gbd .ink-muted  { fill: var(--n-400); }
+.gbd .b { font-weight: 800; }
+
+.gbd .bx        { fill: var(--n-0); stroke: var(--n-200); stroke-width: 1; }
+.gbd .bx.green  { fill: var(--mod-green-bg);  stroke: var(--mod-green); }
+.gbd .bx.navy   { fill: var(--mod-navy-bg);   stroke: var(--mod-navy); }
+.gbd .bx.purple { fill: var(--mod-purple-bg); stroke: var(--mod-purple); }
+.gbd .bx.page   { fill: var(--n-50);  stroke: var(--n-100); }
+.gbd .bx.ghost  { fill: none; stroke: var(--n-300); stroke-dasharray: 5 4; }
+.gbd .bx.dark   { fill: var(--n-900); stroke: none; }
+.gbd .bx.hl     { fill: var(--brand-subtle); stroke: var(--brand); stroke-width: 1.5; }
+.gbd .bx.warn   { fill: #fdf7e2; stroke: #b58a00; }
+
+.gbd .chip        { fill: var(--n-50); stroke: var(--n-100); }
+.gbd .chip.green  { fill: var(--mod-green-bg);  stroke: none; }
+.gbd .chip.navy   { fill: var(--mod-navy-bg);   stroke: none; }
+.gbd .chip.purple { fill: var(--mod-purple-bg); stroke: none; }
+.gbd .chip.white  { fill: var(--n-0); stroke: var(--n-100); }
+
+.gbd .ln        { fill: none; stroke: var(--n-500); stroke-width: 1.4;
+                  stroke-linecap: round; stroke-linejoin: round; }
+.gbd .ln.green  { stroke: var(--mod-green); }
+.gbd .ln.navy   { stroke: var(--mod-navy); }
+.gbd .ln.purple { stroke: var(--mod-purple); }
+.gbd .ln.faint  { stroke: var(--n-300); stroke-width: 1; }
+.gbd .ln.thin   { stroke-width: 1; }
+.gbd .ln.thick  { stroke-width: 2.4; }
+.gbd .ln.dash   { stroke-dasharray: 4 3; }
+.gbd .hd        { fill: var(--n-500); }
+.gbd .hd.green  { fill: var(--mod-green); }
+.gbd .hd.navy   { fill: var(--mod-navy); }
+.gbd .hd.purple { fill: var(--mod-purple); }
+.gbd .hd.faint  { fill: var(--n-300); }
+
+/* intervals, cells and dots */
+.gbd .iv.fg { fill: var(--mod-green); }
+.gbd .iv.fn { fill: var(--mod-navy); }
+.gbd .iv.fp { fill: var(--mod-purple); }
+.gbd .iv.fm { fill: var(--n-300); }
+.gbd .iv.fl { fill: var(--n-100); }
+.gbd .iv.fh { fill: var(--brand); }
+.gbd .iv.fgl { fill: var(--mod-green-bg); stroke: var(--mod-green); stroke-width: 1; }
+.gbd .iv.fnl { fill: var(--mod-navy-bg); stroke: var(--mod-navy); stroke-width: 1; }
+.gbd .iv.fpl { fill: var(--mod-purple-bg); stroke: var(--mod-purple); stroke-width: 1; }
+.gbd .iv.fw { fill: #e0a400; }
+.gbd .dot        { fill: var(--n-500); stroke: var(--n-0); stroke-width: 2; }
+.gbd .dot.green  { fill: var(--mod-green); }
+.gbd .dot.navy   { fill: var(--mod-navy); }
+.gbd .dot.purple { fill: var(--mod-purple); }
+.gbd .dot.muted  { fill: var(--n-300); }
+.gbd .grid { stroke: var(--n-100); stroke-width: 1; fill: none; }
+.gbd .w2  { fill: var(--n-300); }
+
+/* ── Benchmark charts (docs/benchmarks, built by benchmarks/build_site.py) ── */
+/* Emphasis form: genomeblocks marks in the module's ink colour, every other
+   engine in grey. Text always wears text tokens, never the mark colour. */
+.gbc text  { font-family: var(--font-sans); }
+.gbc .tick { font-size: 11px; fill: var(--n-400); font-variant-numeric: tabular-nums; }
+.gbc .grid { stroke: var(--n-100); stroke-width: 1; }
+.gbc .axis { stroke: var(--n-200); stroke-width: 1; }
+.gbc .axl  { font-size: 11px; font-weight: 600; fill: var(--n-500); }
+.gbc .rowline { stroke: var(--n-100); stroke-width: 1; }
+.gbc .lab  { font-size: 12.5px; font-weight: 600; fill: var(--n-500); }
+.gbc .gb .lab, .gbc .gbl { fill: var(--n-900); font-weight: 800; }
+.gbc .val  { font-size: 11.5px; fill: var(--n-500); font-variant-numeric: tabular-nums; }
+.gbc .gb .val { fill: var(--n-900); font-weight: 700; }
+.gbc .hit  { fill: transparent; }
+.gbc .row:hover .hit { fill: var(--brand-subtle); opacity: .55; }
+.gbc .dot  { fill: var(--n-300); stroke: var(--n-0); stroke-width: 2; }
+.gbc .gb.green  .dot { fill: var(--mod-green-ink); }
+.gbc .gb.navy   .dot { fill: var(--mod-navy); }
+.gbc .gb.purple .dot { fill: var(--mod-purple-ink); }
+.gbc .dot.a { fill: var(--n-300) !important; }
+.gbc .span { stroke: var(--n-200); stroke-width: 2; }
+.gbc .line polyline { fill: none; stroke: var(--n-300); stroke-width: 2;
+                      stroke-linejoin: round; stroke-linecap: round; }
+.gbc .line circle { fill: var(--n-300); stroke: var(--n-0); stroke-width: 2; }
+.gbc .line.gb.green  polyline { stroke: var(--mod-green-ink); }
+.gbc .line.gb.navy   polyline { stroke: var(--mod-navy); }
+.gbc .line.gb.purple polyline { stroke: var(--mod-purple-ink); }
+.gbc .line.gb.green  circle { fill: var(--mod-green-ink); }
+.gbc .line.gb.navy   circle { fill: var(--mod-navy); }
+.gbc .line.gb.purple circle { fill: var(--mod-purple-ink); }
+.gbc .leader { stroke: var(--n-200); stroke-width: 1; }
+.gb-chart svg { min-width: 700px; }
+
+details.gb-table { margin-top: 10px; }
+details.gb-table > summary {
+  cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--brand);
+  list-style-position: inside;
+}
+details.gb-table table { margin-top: 8px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.main-content details.gb-table { margin: 4px 0 22px; }
+
+.gb-env { font-size: 12.5px; color: var(--n-400); line-height: 1.5; }
+
+/* stat tiles (headline numbers) */
+.gb-tiles {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px; margin: 18px 0 28px;
+}
+.gb-tile {
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--n-0); border: 1px solid var(--n-100);
+  border-left: 3px solid var(--n-200); border-radius: var(--radius-md);
+  padding: 14px 16px; box-shadow: var(--shadow-sm);
+}
+.gb-tile.green  { border-left-color: var(--mod-green); }
+.gb-tile.navy   { border-left-color: var(--mod-navy); }
+.gb-tile.purple { border-left-color: var(--mod-purple); }
+.gb-tile .tile-label { font-size: 12px; font-weight: 700; color: var(--n-500); }
+.gb-tile .tile-value { font-size: 28px; font-weight: 800; letter-spacing: -0.02em;
+                       line-height: 1.1; color: var(--n-900); }
+.gb-tile .tile-ctx   { font-size: 12.5px; line-height: 1.45; color: var(--n-500); }

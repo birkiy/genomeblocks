@@ -1,0 +1,47 @@
+<svg class="gbd" viewBox="0 0 880 292" role="img" aria-label="An overlap query walks only the intervals whose start lies in [qs − max_len, qe): anything starting earlier is too short to reach the query." xmlns="http://www.w3.org/2000/svg">
+<rect class="bx hl" x="426.6" y="18" width="54.6" height="150" rx="4"></rect>
+<text class="t" x="453.9" y="34" text-anchor="middle">query</text>
+<text class="ms" x="453.9" y="48" text-anchor="middle">[qs, qe)</text>
+<rect class="iv fl" x="91.2" y="66" width="70.2" height="12" rx="2"><title>[40, 130)</title></rect>
+<rect class="iv fl" x="130.2" y="114" width="226.2" height="12" rx="2"><title>[90, 380)</title></rect>
+<rect class="iv fl" x="177" y="66" width="46.8" height="12" rx="2"><title>[150, 210)</title></rect>
+<rect class="iv fm" x="239.4" y="66" width="54.6" height="12" rx="2"><title>[230, 300)</title></rect>
+<rect class="iv fm" x="294" y="90" width="93.6" height="12" rx="2"><title>[300, 420)</title></rect>
+<rect class="iv fm" x="340.8" y="66" width="85.8" height="12" rx="2"><title>[360, 470)</title></rect>
+<rect class="iv fg" x="395.4" y="90" width="70.2" height="12" rx="2"><title>[430, 520)</title></rect>
+<rect class="iv fg" x="450" y="66" width="46.8" height="12" rx="2"><title>[500, 560)</title></rect>
+<rect class="iv fl" x="520.2" y="90" width="78" height="12" rx="2"><title>[590, 690)</title></rect>
+<rect class="iv fl" x="567" y="66" width="85.8" height="12" rx="2"><title>[650, 760)</title></rect>
+<rect class="iv fl" x="621.6" y="90" width="62.4" height="12" rx="2"><title>[720, 800)</title></rect>
+<rect class="iv fl" x="699.6" y="66" width="62.4" height="12" rx="2"><title>[820, 900)</title></rect>
+<polyline class="ln faint" points="130.2,140 130.2,146 356.4,146 356.4,140"/>
+<text class="s" x="243.3" y="160" text-anchor="middle">longest interval = max_len</text>
+<polyline class="ln faint" points="60,200 840,200"/>
+<text class="s" x="60" y="190">sorted starts</text>
+<circle class="dot muted" cx="91.2" cy="200" r="4.5"/>
+<circle class="dot muted" cx="130.2" cy="200" r="4.5"/>
+<circle class="dot muted" cx="177" cy="200" r="4.5"/>
+<circle class="dot navy" cx="239.4" cy="200" r="4.5"/>
+<circle class="dot navy" cx="294" cy="200" r="4.5"/>
+<circle class="dot navy" cx="340.8" cy="200" r="4.5"/>
+<circle class="dot navy" cx="395.4" cy="200" r="4.5"/>
+<circle class="dot navy" cx="450" cy="200" r="4.5"/>
+<circle class="dot muted" cx="520.2" cy="200" r="4.5"/>
+<circle class="dot muted" cx="567" cy="200" r="4.5"/>
+<circle class="dot muted" cx="621.6" cy="200" r="4.5"/>
+<circle class="dot muted" cx="699.6" cy="200" r="4.5"/>
+<polyline class="ln navy" points="200.4,244 200.4,214"/>
+<polygon class="hd navy" points="200.4,210.0 203.7,216.2 197.1,216.2"/>
+<text class="m" x="194.4" y="244" text-anchor="end">lo = bisect(starts, qs − max_len)</text>
+<polyline class="ln navy" points="481.2,244 481.2,214"/>
+<polygon class="hd navy" points="481.2,210.0 484.5,216.2 477.9,216.2"/>
+<text class="m" x="487.2" y="244">hi = bisect(starts, qe)</text>
+<polyline class="ln navy" points="200.4,262 200.4,270 481.2,270 481.2,262"/>
+<text class="lbl" x="340.8" y="286" text-anchor="middle">only these starts are tested: keep the ones with end &gt; qs</text>
+<rect class="iv fg" x="536" y="25" width="18" height="10" rx="2"></rect>
+<text class="s" x="560" y="34">overlaps the query</text>
+<rect class="iv fm" x="666" y="25" width="18" height="10" rx="2"></rect>
+<text class="s" x="690" y="34">tested, no overlap</text>
+<rect class="iv fl" x="796" y="25" width="18" height="10" rx="2"></rect>
+<text class="s" x="818" y="34">skipped</text>
+</svg>

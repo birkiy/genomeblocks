@@ -1,0 +1,95 @@
+<svg class="gbd" viewBox="0 0 880 300" role="img" aria-label="make turns each loop into edges between the CREs under its two anchors; add_mcool gives every edge its Hi-C pixel count, split between edges sharing the pixel; normalize divides by the distance-decay expectation (cis) or the mean trans weight (trans)." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="22">1 · MAKE</text>
+<polyline class="ln faint" points="20,112 280,112"/>
+<rect class="iv fg" x="40" y="106" width="26" height="12" rx="2"></rect>
+<rect class="iv fg" x="84" y="106" width="20" height="12" rx="2"></rect>
+<rect class="iv fg" x="222" y="106" width="28" height="12" rx="2"></rect>
+<rect class="bx ghost" x="30" y="90" width="88" height="44" rx="6"></rect>
+<rect class="bx ghost" x="206" y="90" width="60" height="44" rx="6"></rect>
+<text class="s" x="74" y="150" text-anchor="middle">anchor 1 ± r</text>
+<text class="s" x="236" y="150" text-anchor="middle">anchor 2 ± r</text>
+<path class="ln purple" d="M74,88 Q155,22 236,88"/>
+<text class="lbl" x="155" y="48" text-anchor="middle">loop</text>
+<text class="m" x="53" y="102" text-anchor="middle">a</text>
+<text class="m" x="94" y="102" text-anchor="middle">b</text>
+<text class="m" x="236" y="102" text-anchor="middle">c</text>
+<polyline class="ln purple thick" points="70,206 230,222"/>
+<polyline class="ln purple thick" points="110,246 230,222"/>
+<circle class="dot green" cx="70" cy="206" r="9"/>
+<text class="m" x="54" y="210" text-anchor="end">a</text>
+<circle class="dot green" cx="110" cy="246" r="9"/>
+<text class="m" x="94" y="250" text-anchor="end">b</text>
+<circle class="dot green" cx="230" cy="222" r="9"/>
+<text class="m" x="246" y="226">c</text>
+<text class="s" x="150" y="280" text-anchor="middle">edges a–c, b–c (never within one anchor)</text>
+<text class="cap" x="330" y="22">2 · ADD_MCOOL</text>
+<rect class="iv fpl" x="330" y="44" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="356" y="44" width="23" height="23" rx="2"></rect>
+<rect class="chip" x="382" y="44" width="23" height="23" rx="2"></rect>
+<rect class="chip" x="408" y="44" width="23" height="23" rx="2"></rect>
+<rect class="chip" x="434" y="44" width="23" height="23" rx="2"></rect>
+<rect class="chip" x="460" y="44" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="356" y="70" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="382" y="70" width="23" height="23" rx="2"></rect>
+<rect class="chip" x="408" y="70" width="23" height="23" rx="2"></rect>
+<rect class="iv fp" x="434" y="70" width="23" height="23" rx="2"></rect>
+<rect class="chip" x="460" y="70" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="382" y="96" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="408" y="96" width="23" height="23" rx="2"></rect>
+<rect class="chip" x="434" y="96" width="23" height="23" rx="2"></rect>
+<rect class="chip" x="460" y="96" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="408" y="122" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="434" y="122" width="23" height="23" rx="2"></rect>
+<rect class="chip" x="460" y="122" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="434" y="148" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="460" y="148" width="23" height="23" rx="2"></rect>
+<rect class="iv fpl" x="460" y="174" width="23" height="23" rx="2"></rect>
+<text class="s w" x="445" y="87" text-anchor="middle">12</text>
+<text class="ms" x="367" y="214" text-anchor="middle">bin i</text>
+<text class="ms" x="445" y="214" text-anchor="middle">bin j</text>
+<text class="ms" x="330" y="240">a, b → bin i · c → bin j</text>
+<text class="s" x="330" y="258">edges a–c, b–c share pixel (i, j)</text>
+<text class="m" x="330" y="276">ep.w = 12 / 2 = 6 each</text>
+<text class="cap" x="610" y="22">3 · NORMALIZE</text>
+<polyline class="ln faint" points="610,52 610,210 860,210"/>
+<text class="s" x="614" y="56">w (log)</text>
+<text class="s" x="860" y="226" text-anchor="end">distance d (log)</text>
+<circle class="dot muted" cx="620" cy="72" r="2.6"/>
+<circle class="dot muted" cx="626.667" cy="88.1046" r="2.6"/>
+<circle class="dot muted" cx="633.333" cy="59.1604" r="2.6"/>
+<circle class="dot muted" cx="640" cy="91.5625" r="2.6"/>
+<circle class="dot muted" cx="646.667" cy="90.6645" r="2.6"/>
+<circle class="dot muted" cx="653.333" cy="78.6258" r="2.6"/>
+<circle class="dot muted" cx="660" cy="109.597" r="2.6"/>
+<circle class="dot muted" cx="666.667" cy="89.7214" r="2.6"/>
+<circle class="dot muted" cx="673.333" cy="94.5898" r="2.6"/>
+<circle class="dot muted" cx="680" cy="122.489" r="2.6"/>
+<circle class="dot muted" cx="686.667" cy="97.1935" r="2.6"/>
+<circle class="dot muted" cx="693.333" cy="114.784" r="2.6"/>
+<circle class="dot muted" cx="700" cy="128.274" r="2.6"/>
+<circle class="dot muted" cx="706.667" cy="104.335" r="2.6"/>
+<circle class="dot muted" cx="713.333" cy="135.959" r="2.6"/>
+<circle class="dot muted" cx="720" cy="127.304" r="2.6"/>
+<circle class="dot muted" cx="726.667" cy="117.094" r="2.6"/>
+<circle class="dot muted" cx="733.333" cy="153.767" r="2.6"/>
+<circle class="dot muted" cx="740" cy="129.517" r="2.6"/>
+<circle class="dot muted" cx="746.667" cy="135.943" r="2.6"/>
+<circle class="dot muted" cx="753.333" cy="156.631" r="2.6"/>
+<circle class="dot muted" cx="760" cy="132.929" r="2.6"/>
+<circle class="dot muted" cx="766.667" cy="158.645" r="2.6"/>
+<circle class="dot muted" cx="773.333" cy="162.901" r="2.6"/>
+<circle class="dot muted" cx="780" cy="141.247" r="2.6"/>
+<circle class="dot muted" cx="786.667" cy="173.656" r="2.6"/>
+<circle class="dot muted" cx="793.333" cy="164.714" r="2.6"/>
+<circle class="dot muted" cx="800" cy="156.656" r="2.6"/>
+<circle class="dot muted" cx="806.667" cy="188.778" r="2.6"/>
+<circle class="dot muted" cx="813.333" cy="165.178" r="2.6"/>
+<circle class="dot muted" cx="820" cy="179.576" r="2.6"/>
+<circle class="dot muted" cx="826.667" cy="198.392" r="2.6"/>
+<circle class="dot muted" cx="833.333" cy="168.645" r="2.6"/>
+<circle class="dot muted" cx="840" cy="199.196" r="2.6"/>
+<polyline class="ln navy thick" points="616,68 846,196"/>
+<text class="m" x="738" y="118">fit: E(d) = C / d^α</text>
+<text class="m" x="610" y="250">cis: ep.n = w / E(d)</text>
+<text class="m" x="610" y="268">trans: d = ∞, E = mean trans w</text>
+</svg>

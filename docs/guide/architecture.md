@@ -25,7 +25,7 @@ hub genes.
 
 `Architecture` is a thin subclass of
 [`graph_tool.Graph`](https://graph-tool.skewed.de/) (Peixoto 2014 — see
-[Credits](../credits#graph-tool)). Each vertex is a CRE keyed by its `Locus`
+[Credits]({{ '/credits/#graph-tool' | relative_url }})). Each vertex is a CRE keyed by its `Locus`
 UID; edges are contacts, with built-in edge properties:
 
 | Edge property | Meaning |
