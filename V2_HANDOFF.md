@@ -142,7 +142,7 @@ Last updated: 2026-10-05 (checkpoint 5, see the log at the end).
 ### Done
 
 Everything on the 1.x surface is ported to the tables and covered by the
-test suite (`tests/`, 190 tests, every one asserting values):
+test suite (`tests/`, 189 tests, every one asserting values):
 
 | area | what is there |
 |---|---|
@@ -255,7 +255,7 @@ are generated, never hand-edited. Benchmarks: `benchmarks/README.md`.
 | 2 — owner's machine | `3a2c9c9` motif heatmap, columnar Atlas, bam region parsing | WIP: usage limit reached; items 1–3 of the old list done |
 | 3 — cloud session | `e0cd91c` audit defects fixed · `4961e7b` remaining modules ported, table protocols on every container · `2ea848a` packaging 2.0.0 · `32db476` the 2.0 test suite + CI · `00c9f17`, `ac6e407` se knee on short curves · `87672a2` `bench_backends.py`, 1.x studies archived · `b9c3070` merge of checkpoint 2 | every module on the tables; suite green locally; CI red on 3.12 (pandas 3 Series) |
 | 4 — cloud session | `65358b0` value-level tests, lint · `2c72c80` docs first pass · `cadef94` benchmarks lint · `3d69265` merge of `bioconda-moods` (`71c9f39`: MOODS the motif engine) · `4bcf98a` README extras, Arrow-stream regression test · `832be19` this file | 179 tests green locally; CI run 2 green |
-| 5 — cloud session | `acf0843`, `f1e99ca` eleven defects found by the docs examples, each with a failing-first test · `b602de4`, `379b735` CI builds MOODS-python on the runner (a wheel cached from another runner's CPU crashed with SIGILL on the 3.12 jobs) · `d718de1`, `db5c615` docs second pass: API table pages, interop and backends API pages, guide and design review, 14 new and 4 corrected diagrams, MOODS statements · `779eb6c` to_cgranges install hint, Pairs.describe integers, docs follow-ups · `6876bcf` .tmp ignored · docs structure fixes (credits.md BibTeX in raw tags, nav orders, stale motif lines) | 190 tests green locally; CI runs 6 and 7 green on both Python versions and both extras sets; docs verification interrupted (items 7–9 above) |
+| 5 — cloud session | `acf0843`, `f1e99ca` eleven defects found by the docs examples, each with a failing-first test · `b602de4`, `379b735` CI builds MOODS-python on the runner (a wheel cached from another runner's CPU crashed with SIGILL on the 3.12 jobs) · `d718de1`, `db5c615` docs second pass: API table pages, interop and backends API pages, guide and design review, 14 new and 4 corrected diagrams, MOODS statements · `779eb6c` to_cgranges install hint, Pairs.describe integers, docs follow-ups · `6876bcf` .tmp ignored · docs structure fixes (credits.md BibTeX in raw tags, nav orders, stale motif lines) | 189 tests green locally; CI runs 6 and 7 green on both Python versions and both extras sets; docs verification interrupted (items 7–9 above) |
 
 Branches: `v2-columnar` (this work), `main` (1.1.0). Every other branch is
 fully merged and listed for deletion in "Left to do".
