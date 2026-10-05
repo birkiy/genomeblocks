@@ -29,6 +29,9 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
+          # MOODS-python compiles with -march=native: a wheel built on one runner's CPU
+          # crashes (SIGILL) on another, so never reuse one from the restored pip cache.
+          python -m pip cache remove MOODS-python || true
           python -m pip install -e ".[${{ matrix.extras }}]"
       - name: Backends available
         run: python -c "import genomeblocks as gb; print(gb.backends().to_string())"
