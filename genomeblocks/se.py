@@ -1,6 +1,6 @@
 """Super-enhancers, ROSE-style, on columnar tables.
 
-    peaks ─▶ stitch (merge within ``stitch`` bp) ─▶ score = mean signal x width
+    peaks ─▶ stitch (peaks within ``stitch`` bp become one region) ─▶ score = mean signal x width
           ─▶ slope-1 knee on the ranked scores ─▶ SEs
 
 ``knee`` is the same slope-1 rule as ``Architecture.elbow`` (prime hubs), so
@@ -8,7 +8,7 @@ SEs and hubs are cut the same way.
 """
 from __future__ import annotations
 
-from typing import Sequence, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -36,19 +36,50 @@ def knee(values) -> Tuple[int, np.ndarray]:
     return m - i, order
 
 
-def call_se(peaks: Loci, bigwigs: Sequence[str], *, stitch: int = 12_500, workers: int = 1,
-            verbose: bool = False) -> Loci:
+def stitch_peaks(peaks, stitch: int = 12_500, *, backend: Optional[str] = None) -> Loci:
+    """ROSE stitching: peaks whose gap is at most ``stitch`` bp form one region
+    running from the first peak's start to the last peak's end (genome order).
+
+    ``peaks`` is anything :func:`~genomeblocks.as_loci` takes; ``backend``
+    picks the interval engine."""
+    from .backends.intervals import overlap_pairs
+    from .interop import as_loci
+    peaks = as_loci(peaks)
+    if not len(peaks):
+        return Loci(genome=peaks.genome, is_sorted=True)
+    clusters = peaks.slop(stitch // 2).merge(backend=backend)
+    ci, pi = overlap_pairs(clusters, peaks, backend=backend)      # peak -> its cluster
+    starts = np.full(len(clusters), np.iinfo(np.int64).max, np.int64)
+    ends = np.full(len(clusters), -1, np.int64)
+    np.minimum.at(starts, ci, peaks.starts[pi])
+    np.maximum.at(ends, ci, peaks.ends[pi])
+    n = np.bincount(ci, minlength=len(clusters))
+    return Loci(clusters.codes, starts, ends, genome=peaks.genome, cols={"n_peaks": n}, is_sorted=True)
+
+
+def call_se(peaks, bigwigs, *, stitch: int = 12_500, workers: int = 1, verbose: bool = False,
+            return_all: bool = False, backend: Optional[str] = None, **signal_kw):
     """ROSE with genomeblocks: stitch peaks, score mean signal (averaged over
     ``bigwigs``) x width, keep the stitched regions above the slope-1 knee.
 
-    Returns the SEs in genome order with columns ``score`` and ``rank``
-    (1 = strongest). ``all_regions`` on the result holds every stitched region
-    with its score (handy for the hockey-stick plot).
+    ``peaks``: anything :func:`~genomeblocks.as_loci` takes. ``bigwigs``: one
+    or several bigWig paths / open handles / a ``{name: path}`` dict (what
+    :meth:`Loci.signal` takes; extra keywords such as ``backend=`` for the
+    bigWig engine go to it).
+
+    Returns the SEs in genome order with columns ``n_peaks``, ``score`` and
+    ``rank`` (1 = strongest). ``return_all=True`` also returns every stitched
+    region with its score (for the hockey-stick plot): ``(se, all_regions)``.
     """
-    bigwigs = [bigwigs] if isinstance(bigwigs, str) else list(bigwigs)
-    st = peaks.slop(stitch // 2).merge().slop(-stitch // 2)
-    sig = np.nan_to_num(st.signal(bigwigs, span=True, n_bins=1, workers=workers, progress=False,
-                                  verbose=False)[:, :, 0]).mean(1)
+    from .interop import as_loci
+    peaks = as_loci(peaks)
+    st = stitch_peaks(peaks, stitch)
+    if not len(st):
+        se = st.take([])
+        return (se, st) if return_all else se
+    cube = st.signal(bigwigs, span=True, n_bins=1, workers=workers, progress=False, verbose=False,
+                     backend=backend, **signal_kw)
+    sig = np.nan_to_num(cube[:, :, 0]).mean(1)
     score = sig * st.lengths
     cut, order = knee(score)
     keep = order[:cut]
@@ -56,17 +87,19 @@ def call_se(peaks: Loci, bigwigs: Sequence[str], *, stitch: int = 12_500, worker
     rank[order] = np.arange(1, len(order) + 1)
     st.cols["score"], st.cols["rank"] = score, rank
     se = st.take(np.sort(keep))
-    se.all_regions = st
     if verbose:
         print(f"[INFO] {len(peaks):,} peaks → {len(st):,} stitched regions → {len(se):,} SEs "
               f"(median {int(np.median(se.lengths)) if len(se) else 0:,} bp)")
-    return se
+    return (se, st) if return_all else se
 
 
-def nearest_gene_within(regions: Loci, tss: Loci, maxd: int) -> np.ndarray:
+def nearest_gene_within(regions, tss, maxd: int) -> np.ndarray:
     """For each region: the row in ``tss`` (1-bp TSS Loci) whose TSS is closest to
     the region centre, or -1 when that TSS lies more than ``maxd`` from the region
     (0 when it is inside it)."""
+    from .interop import as_loci
+    regions = as_loci(regions)
+    tss = regions._check(as_loci(tss))
     out = np.full(len(regions), -1, np.int64)
     order = np.lexsort((tss.starts, tss.codes))
     tc, tp = tss.codes[order], tss.starts[order]

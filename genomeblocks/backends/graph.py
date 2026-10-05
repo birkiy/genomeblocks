@@ -194,17 +194,32 @@ def layout(A, rows, *, kind: str = "spring", backend=None, seed: int = 0) -> np.
     m = len(rows)
     if m == 0:
         return np.zeros((0, 2))
-    if kind == "circular":
-        t = np.linspace(0, 2 * np.pi, m, endpoint=False)
-        return np.column_stack([np.cos(t), np.sin(t)])
-    if kind == "genomic":
-        return np.column_stack([A.loci.centers[rows].astype(float), np.zeros(m)])
-    if kind != "spring":
-        raise ValueError(f"kind must be 'spring', 'circular' or 'genomic', got {kind!r}")
     pos_of = np.full(len(A.loci), -1, np.int64)
     pos_of[rows] = np.arange(m)
     keep = (pos_of[A.src] >= 0) & (pos_of[A.tgt] >= 0)
-    s, t = pos_of[A.src[keep]], pos_of[A.tgt[keep]]
+    return layout_edges(m, pos_of[A.src[keep]], pos_of[A.tgt[keep]], kind=kind, backend=backend, seed=seed,
+                        x=A.loci.centers[rows].astype(float))
+
+
+def layout_edges(m: int, s, t, *, kind: str = "spring", backend=None, seed: int = 0, x=None) -> np.ndarray:
+    """2-D positions for ``m`` vertices joined by the edges ``(s[k], t[k])``.
+
+    'spring' uses the graph backend's force-directed (or spectral, for
+    scipy) layout, 'circular' puts the vertices on a circle, 'genomic' puts
+    them at ``x`` (e.g. genomic centres) on a line.
+    """
+    s, t = np.asarray(s, np.int64), np.asarray(t, np.int64)
+    if m == 0:
+        return np.zeros((0, 2))
+    if kind == "circular":
+        th = np.linspace(0, 2 * np.pi, m, endpoint=False)
+        return np.column_stack([np.cos(th), np.sin(th)])
+    if kind == "genomic":
+        if x is None:
+            raise ValueError("the 'genomic' layout needs x= positions")
+        return np.column_stack([np.asarray(x, float), np.zeros(m)])
+    if kind != "spring":
+        raise ValueError(f"kind must be 'spring', 'circular' or 'genomic', got {kind!r}")
     b = resolve("graph", backend)
     if b == "graph-tool":
         import graph_tool.all as gt

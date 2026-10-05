@@ -25,6 +25,7 @@ from typing import List, Optional, Sequence
 import numpy as np
 
 from . import resolve
+from .._table import TableMixin
 
 PSEUDOCOUNT = 0.1
 _ACGT_FROM_LM = [0, 1, 3, 2]                    # lightmotif columns are A C T G N
@@ -33,8 +34,12 @@ _BAD = re.compile(r"[^ACGTN]")
 
 # ── the library ────────────────────────────────────────────────────────────
 
-class Library:
-    """Motifs as (W x 4) count matrices plus their names."""
+class Library(TableMixin):
+    """Motifs as (W x 4) count matrices plus their names.
+
+    As a table (name, description, width, consensus): ``len``, ``shape``,
+    ``columns``, ``head()``, ``describe()``, ``to_pandas()`` and the Arrow /
+    dataframe protocols; ``lib['CTCF']`` / ``lib[0]`` is a count matrix."""
 
     def __init__(self, names: Sequence[str], counts: Sequence[np.ndarray],
                  descriptions: Optional[Sequence[str]] = None, *, pseudocount: float = PSEUDOCOUNT,
@@ -55,6 +60,68 @@ class Library:
     @property
     def widths(self) -> np.ndarray:
         return np.array([len(c) for c in self.counts], np.int64)
+
+    # ── like a DataFrame ─────────────────────────────────────────────────
+    @property
+    def columns(self) -> list:
+        return ["name", "description", "width", "consensus"]
+
+    def consensus(self, i: int) -> str:
+        """The most frequent base at each position of motif ``i``."""
+        return "".join("ACGT"[k] for k in np.asarray(self.counts[i]).argmax(1))
+
+    def to_pandas(self):
+        import pandas as pd
+        return pd.DataFrame({"name": self.names, "description": self.descriptions, "width": self.widths,
+                             "consensus": [self.consensus(i) for i in range(len(self))]})
+
+    def to_arrow(self):
+        import pyarrow as pa
+        return pa.Table.from_pandas(self.to_pandas(), preserve_index=False)
+
+    def head(self, n: int = 5):
+        return self.to_pandas().head(n)
+
+    def tail(self, n: int = 5):
+        return self.to_pandas().tail(n)
+
+    def describe(self):
+        import pandas as pd
+        w = self.widths
+        rows = [("motifs", len(self)), ("width min", int(w.min()) if len(w) else 0),
+                ("width median", float(np.median(w)) if len(w) else 0.0),
+                ("width max", int(w.max()) if len(w) else 0), ("pseudocount", self.pseudocount),
+                ("log-odds", "log2((count + p) / (total + 4p) / 0.25)")]
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("")
+
+    summary = describe
+
+    def __iter__(self):
+        return iter(self.names)
+
+    def __getitem__(self, key):
+        """``lib[i]`` or ``lib['name']``: the (W x 4) count matrix of that motif."""
+        if isinstance(key, (int, np.integer)):
+            return self.counts[int(key)]
+        if isinstance(key, str):
+            if key in self.names:
+                return self.counts[self.names.index(key)]
+            hits = self.indices(key, "substring")
+            if len(hits) == 1:
+                return self.counts[hits[0]]
+            raise KeyError(f"no motif named {key!r}" + (f" ({len(hits)} match the substring: use select())"
+                                                        if hits else ""))
+        raise TypeError("index a Library with a motif name or a position")
+
+    def _repr_html_(self):
+        from .._display import table_html
+        df = self.to_pandas()
+        n = len(df)
+        import pandas as pd
+        show, gap = (pd.concat([df.head(6), df.tail(3)]), 5) if n > 10 else (df, None)
+        return table_html(f"Library · {n:,} motifs", list(df.columns),
+                          [list(r) for r in show.itertuples(index=False)], gap_after=gap,
+                          note=f"pseudocount {self.pseudocount} · lib[name] gives the count matrix")
 
     def logodds(self, i: int) -> np.ndarray:
         """(W x 4) log2-odds matrix of motif ``i`` (A C G T columns)."""

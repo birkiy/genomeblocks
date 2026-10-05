@@ -5,7 +5,7 @@ Every track is embedded in the page as a gzipped data URI, and igv.js
 (the JavaScript IGV) draws it. The page opens on a list of regions to look
 at, each a one-click button; users can still type any locus or gene name.
 
-    >>> from genomeblocks.columnar.igv import igv_html
+    >>> from genomeblocks import igv_html
     >>> igv_html("share.html", regions=["chr8:127.7-128.0 Mb", ...],
     ...          loci={"CREs": cre}, genes=genes, signal={"ATAC": "atac.bw"},
     ...          architecture=A, title="MYC enhancer hubs")
@@ -24,6 +24,8 @@ from typing import Dict, Optional, Sequence
 
 import numpy as np
 
+from .locus import parse_region, parse_regions
+
 IGV_VERSION = "3.8.9"
 IGV_CDN = f"https://cdn.jsdelivr.net/npm/igv@{IGV_VERSION}/dist/igv.min.js"
 _PALETTE = ["#1f6f8b", "#d1495b", "#2a9d8f", "#e9a03b", "#6a4c93", "#577590"]
@@ -33,29 +35,12 @@ def _uri(text: str) -> str:
     return "data:application/gzip;base64," + base64.b64encode(gzip.compress(text.encode(), 9)).decode()
 
 
-def _region(r):
-    """'chr1:1,000-2,000', 'chr1:1.2-1.5 Mb', (chrom, start, end) or a Locus -> (chrom, start, end)."""
-    if hasattr(r, "chrom"):
-        return r.chrom, int(r.start), int(r.end)
-    if isinstance(r, (tuple, list)):
-        return str(r[0]), int(r[1]), int(r[2])
-    chrom, rest = r.split(":")
-    rest = rest.replace(",", "").strip()
-    scale = 1
-    if rest.lower().endswith("mb"):
-        scale, rest = 1_000_000, rest[:-2]
-    elif rest.lower().endswith("kb"):
-        scale, rest = 1_000, rest[:-2]
-    a, b = rest.split("-")
-    return chrom.strip(), int(float(a) * scale), int(float(b) * scale)
+_region = parse_region          # 'chr1:1,000-2,000', 'chr1:1.2-1.5 Mb', a tuple or a Locus
 
 
 def _windows(regions, flank):
-    out = []
-    for r in regions:
-        c, a, b = _region(r)
-        out.append((c, max(0, a - flank), b + flank))
-    return out
+    """Every locus of every region (a region string may hold two), ± flank."""
+    return [(c, max(0, a - flank), b + flank) for r in regions for c, a, b in parse_regions(r)]
 
 
 def _bed_loci(L, names=None) -> str:
@@ -67,48 +52,30 @@ def _bed_loci(L, names=None) -> str:
 
 
 def _bed12_genes(genes) -> str:
-    """One BED12 line per gene: its longest transcript, exons as blocks."""
-    T, F, G = genes.transcripts, genes.features, genes.genes
-    tlen = T.ends - T.starts
-    order = np.lexsort((-tlen, T.cols["gene"]))
-    g_sorted = T.cols["gene"][order]
-    first = order[np.r_[True, g_sorted[1:] != g_sorted[:-1]]]          # longest transcript per gene
-    ex = F.cols["kind"] == 0
-    f_tx, f_s, f_e = F.cols["transcript"][ex], F.starts[ex] - 1, F.ends[ex]   # GTF is 1-based
-    o = np.lexsort((f_s, f_tx))
-    f_tx, f_s, f_e = f_tx[o], f_s[o], f_e[o]
-    lo = np.searchsorted(f_tx, first)
-    hi = np.searchsorted(f_tx, first, side="right")
-    names = G.cols["gene_name"]
-    strand = np.array([".", "+", "-"], dtype=object)[T.strands]
-    lines = []
-    for t, a, b in zip(first.tolist(), lo.tolist(), hi.tolist()):
-        s, e = int(T.starts[t]) - 1, int(T.ends[t])
-        if b > a:
-            bs, be = f_s[a:b], f_e[a:b]
-        else:
-            bs, be = np.array([s]), np.array([e])
-        sizes = ",".join(str(int(x)) for x in be - bs)
-        starts = ",".join(str(int(x)) for x in bs - s)
-        lines.append(f"{T.chroms[t]}\t{s}\t{e}\t{names[T.cols['gene'][t]]}\t0\t{strand[t]}\t{s}\t{e}\t0\t"
-                     f"{len(bs)}\t{sizes}\t{starts}")
-    return "\n".join(lines)
+    """One BED12 line per gene (its canonical isoform when selected, else the
+    longest; exons as blocks, thick = CDS) — ``Genes.to_bed12``."""
+    return genes.to_bed12()
 
 
-def _bedgraph(bw_path, windows, bin_size) -> str:
-    import pybigtools
+def _bedgraph(bw, windows, bin_size, backend=None) -> str:
+    """Mean signal in ``bin_size`` bins over the windows, as bedGraph text.
+    ``bw`` is a path or an open pyBigWig / pybigtools handle."""
+    from .backends.bigwig import open_bigwig
     out = []
-    with pybigtools.open(bw_path) as bw:
-        sizes = bw.chroms()
+    h = open_bigwig(bw, backend=backend)
+    try:
+        sizes = h.chroms()
         for c, a, b in windows:
             if c not in sizes:
                 continue
             b = min(b, sizes[c])
             n = max(1, (b - a) // bin_size)
-            v = bw.values(c, a, a + n * bin_size, bins=n, summary="mean", missing=0.0)
+            v = h.stats_array(c, a, a + n * bin_size, n_bins=n, stat="mean", missing=0.0)
             edges = a + np.arange(n + 1) * bin_size
             out += [f"{c}\t{s}\t{e}\t{x:.3g}" for s, e, x in zip(edges[:-1].tolist(), edges[1:].tolist(), v.tolist())
                     if x > 0]
+    finally:
+        h.close()
     return "\n".join(out)
 
 
@@ -135,17 +102,19 @@ def igv_html(path: str, *, regions: Sequence, loci: Optional[Dict] = None, genes
              chrom_sizes: Optional[Dict[str, int]] = None, genome_id: Optional[str] = None,
              flank: int = 250_000, bin_size: int = 50, title: str = "Genome browser",
              notes: Optional[Dict[str, str]] = None, igv_js: str = "cdn",
-             standalone: bool = True, subtitle: Optional[str] = None) -> dict:
+             standalone: bool = True, subtitle: Optional[str] = None, backend: Optional[str] = None) -> dict:
     """Write a single HTML file that opens an IGV browser on ``regions``.
 
     Args:
         regions: loci to offer as one-click buttons (strings, tuples or Locus).
             Two regions joined by a space ('chr1:… chr7:…') open side by side,
             which is how a trans loop is shown.
-        loci: {track name: columnar Loci} — embedded genome-wide.
-        genes: columnar Genes — one gene model per gene, genome-wide.
-        signal: {track name: bigWig path} — embedded around ``regions`` only.
-        architecture: columnar Architecture — loops touching ``regions`` as arcs.
+        loci: {track name: intervals} (a Loci or anything :func:`~genomeblocks.as_loci`
+            takes) — embedded genome-wide.
+        genes: a Genes — one gene model per gene, genome-wide.
+        signal: {track name: bigWig path or open handle} — embedded around
+            ``regions`` only (``backend`` picks the bigWig engine).
+        architecture: an Architecture — loops touching ``regions`` as arcs.
         score: edge column shown as arc height (default O/E ``n``).
         chrom_sizes: {chrom: length}; default from the Loci's genome / bigWig.
         genome_id: e.g. 'hg38' to use igv.js's hosted genome (sequence,
@@ -159,10 +128,10 @@ def igv_html(path: str, *, regions: Sequence, loci: Optional[Dict] = None, genes
     Returns:
         sizes of the embedded tracks in bytes.
     """
-    loci = loci or {}
+    from .interop import as_loci
+    loci = {k: as_loci(v) for k, v in (loci or {}).items()}
     signal = signal or {}
-    flat = [x for r in regions for x in str(r).split()] if regions else []
-    windows = _windows(flat, flank)
+    windows = _windows(regions, flank) if regions else []
     tracks, sizes = [], {}
 
     def add(name, text, cfg):
@@ -172,7 +141,7 @@ def igv_html(path: str, *, regions: Sequence, loci: Optional[Dict] = None, genes
 
     k = 0
     for name, sig in signal.items():
-        add(name, _bedgraph(sig, windows, bin_size),
+        add(name, _bedgraph(sig, windows, bin_size, backend),
             {"type": "wig", "format": "bedgraph", "color": _PALETTE[k % len(_PALETTE)], "height": 60,
              "autoscale": True})
         k += 1
@@ -201,9 +170,8 @@ def igv_html(path: str, *, regions: Sequence, loci: Optional[Dict] = None, genes
         # here, so the page hands them over as an in-memory File instead.
         genome = {"id": "custom", "name": title, "format": "chromsizes"}
 
-    first = str(regions[0]) if regions else None
-    cfg = {"locus": " ".join(f"{c}:{a + 1}-{b}" for c, a, b in
-                             (_region(x) for x in first.split())) if first else None,
+    first = regions[0] if regions else None
+    cfg = {"locus": " ".join(f"{c}:{a + 1}-{b}" for c, a, b in parse_regions(first)) if first is not None else None,
            "tracks": tracks, "showSampleNames": False, "showChromosomeWidget": True}
     if isinstance(genome, str):
         cfg["genome"] = genome
@@ -211,7 +179,7 @@ def igv_html(path: str, *, regions: Sequence, loci: Optional[Dict] = None, genes
         cfg["reference"] = genome
 
     def loc(r):
-        return " ".join(f"{c}:{a + 1}-{b}" for c, a, b in (_region(x) for x in str(r).split()))
+        return " ".join(f"{c}:{a + 1}-{b}" for c, a, b in parse_regions(r))
     notes = notes or {}
     buttons = "".join(
         f'<button type="button" class="go" data-locus="{html.escape(loc(r))}">'

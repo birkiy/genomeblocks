@@ -124,6 +124,6 @@ def coverage(bam: Union[str, "object"], region, *, min_baseq: int = 15
     end)`` tuple, or ``'chr1:1,000-2,000'`` string. Convenience wrapper around
     :func:`pileup_counts` for scripting outside the browser.
     """
-    from .browserview import _parse_region
-    chrom, start, end = _parse_region(region)
+    from .locus import parse_region
+    chrom, start, end = parse_region(region)
     return pileup_counts(bam, chrom, start, end, min_baseq=min_baseq).sum(axis=0)

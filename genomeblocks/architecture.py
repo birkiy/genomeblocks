@@ -33,6 +33,7 @@ from typing import Optional
 
 import numpy as np
 
+from ._table import TableMixin
 from .loci import Loci
 
 
@@ -84,8 +85,12 @@ def _cross(k1, i1, k2, j2, n):
     return src, j2[first + within]
 
 
-class Architecture:
-    """CRE interaction graph stored as a vertex table (the Loci) + an edge table."""
+class Architecture(TableMixin):
+    """CRE interaction graph stored as a vertex table (the Loci) + an edge table.
+
+    As a table it is its edge table: ``shape``, ``columns``, ``head()``,
+    ``describe()``, ``to_pandas()`` / ``to_polars()`` / ``to_arrow()`` and the
+    Arrow / dataframe protocols; ``len(A)`` counts the loci (vertices)."""
 
     def __init__(self, loci: Loci, src=(), tgt=(), *, ep=None, vp=None, name: str = "Architecture",
                  _canonical: bool = False):
@@ -726,9 +731,46 @@ class Architecture:
         """The edge table as a DataFrame (same as :meth:`edges_frame`)."""
         return self.edges_frame()
 
+    def to_arrow(self):
+        """The edge table as a pyarrow Table."""
+        import pyarrow as pa
+        return pa.Table.from_pandas(self.edges_frame(), preserve_index=False)
+
     def to_polars(self):
         import polars as pl
-        return pl.from_pandas(self.edges_frame())
+        return pl.from_arrow(self.to_arrow())
+
+    @property
+    def columns(self) -> list:
+        return ["src", "tgt", "uid1", "uid2", "chrom1", "chrom2", "cis"] + list(self.ep)
+
+    @property
+    def shape(self):
+        return (self.n_links, len(self.columns))
+
+    def head(self, n: int = 5):
+        return self.edges_frame().head(n)
+
+    def tail(self, n: int = 5):
+        return self.edges_frame().tail(n)
+
+    def __iter__(self):
+        """The edges as (src row, tgt row) pairs."""
+        for s, t in zip(self.src.tolist(), self.tgt.tolist()):
+            yield s, t
+
+    def describe(self):
+        """One-table summary: loci, linked loci, edges (cis / trans / blocks), columns."""
+        import pandas as pd
+        b = self.blocks
+        rows = [("name", self.name), ("loci (vertices)", self.n_loci),
+                ("loci with links", int((self.degree > 0).sum())), ("edges", self.n_links),
+                ("cis edges", self.n_links - self.n_trans), ("trans edges", self.n_trans),
+                ("cis blocks (chromosomes)", len([k for k in b if k != "trans"])),
+                ("edge columns", ", ".join(self.ep) or "—"), ("vertex columns", ", ".join(self.vp) or "—")]
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("")
+
+    summary = describe
 
     def vertices_frame(self, linked: bool = True):
         """One row per vertex (with links, unless ``linked=False``): coordinates,

@@ -96,6 +96,25 @@ class Locus:
         return Locus(s.chrom, s.start, s.end, s.strand)
 
 
+_REGIONS_RE = re.compile(r"[^\s:]+:\s*[\d.,_]+\s*(?:[kKmM][bB])?\s*[-–]\s*[\d.,_]+\s*(?:[kKmM][bB])?")
+
+
+def parse_regions(text) -> list:
+    """Every region in ``text`` as (chrom, start, end): ``'chr8:127.7-128.0 Mb chr1:1-2 Mb'``
+    holds two (a split view). Tuples, Locus-like objects and lists of any of
+    these are accepted too."""
+    if isinstance(text, (list, tuple)) and not (len(text) == 3 and isinstance(text[0], str)
+                                                and not isinstance(text[1], str)
+                                                and str(text[1]).lstrip("-").isdigit()):
+        return [r for x in text for r in parse_regions(x)]
+    if not isinstance(text, str):
+        return [parse_region(text)]
+    found = _REGIONS_RE.findall(text)
+    if not found:
+        return [parse_region(text)]
+    return [parse_region(x) for x in found]
+
+
 def parse_region(region) -> Tuple[str, int, int]:
     """(chrom, start, end) from a region string, a tuple, or a Locus-like object.
 

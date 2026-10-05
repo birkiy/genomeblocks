@@ -15,13 +15,17 @@ from typing import Iterator, Optional, Tuple
 import numpy as np
 
 from .genome import Genome
+from ._table import TableMixin
 from .loci import SCODE, STRANDS, Loci
 
 _BEDPE = ["chrom1", "start1", "end1", "chrom2", "start2", "end2", "name", "score", "strand1", "strand2"]
 
 
-class Pairs:
-    """BEDPE rows: anchor ``a`` and anchor ``b`` (two aligned Loci) + columns."""
+class Pairs(TableMixin):
+    """BEDPE rows: anchor ``a`` and anchor ``b`` (two aligned Loci) + columns.
+
+    Behaves like a table: ``len``, ``shape``, ``columns``, ``head()``,
+    ``describe()``, ``P['score']``, and the Arrow / dataframe protocols."""
 
     def __init__(self, a: Loci, b: Loci, cols=None, *, filename: Optional[str] = None):
         if len(a) != len(b):
@@ -190,6 +194,53 @@ class Pairs:
         n = len(self)
         cis = int(self.is_cis.sum()) if n else 0
         return f"Pairs(n={n:,}, cis={cis:,}, trans={n - cis:,}{', cols=[' + ', '.join(self.cols) + ']' if self.cols else ''})"
+
+    # ── like a DataFrame ─────────────────────────────────────────────────
+    @property
+    def columns(self) -> list:
+        mid = [k for k in ("name", "score") if k in self.cols]
+        rest = [k for k in self.cols if k not in ("name", "score")]
+        return ["chrom1", "start1", "end1", "chrom2", "start2", "end2"] + mid + ["strand1", "strand2"] + rest
+
+    def head(self, n: int = 5) -> "Pairs":
+        return self.take(slice(0, n))
+
+    def tail(self, n: int = 5) -> "Pairs":
+        return self.take(slice(max(len(self) - n, 0), len(self)))
+
+    def to_numpy(self) -> np.ndarray:
+        """A structured array of the BEDPE columns."""
+        return self.to_pandas().to_records(index=False)
+
+    def describe(self):
+        """One-table summary: pairs, cis / trans, chromosomes, cis distance quantiles, score."""
+        import pandas as pd
+        n = len(self)
+        cis = self.is_cis if n else np.zeros(0, bool)
+        d = self.distance[cis] if n else np.zeros(0)
+        q = np.percentile(d, [0, 25, 50, 75, 100]) if len(d) else [0] * 5
+        rows = [("pairs", n), ("cis", int(cis.sum())), ("trans", int((~cis).sum())),
+                ("chromosomes", int(len(np.unique(np.concatenate([self.a.codes, self.b.codes])))) if n else 0),
+                ("cis distance min", int(q[0])), ("cis distance median", float(q[2])),
+                ("cis distance max", int(q[4]))]
+        if "score" in self.cols and n:
+            sc = np.asarray(self.cols["score"], float)
+            rows += [("score min", float(np.nanmin(sc))), ("score median", float(np.nanmedian(sc))),
+                     ("score max", float(np.nanmax(sc)))]
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("")
+
+    summary = describe
+
+    def _repr_html_(self):
+        from ._display import table_html
+        n = len(self)
+        cis = int(self.is_cis.sum()) if n else 0
+        import pandas as pd
+        df = self.to_pandas()
+        show, gap = (pd.concat([df.head(5), df.tail(3)]), 4) if n > 10 else (df, None)
+        rows = [[("%.3g" % v if isinstance(v, float) else v) for v in r] for r in show.itertuples(index=False)]
+        return table_html(f"Pairs · {n:,} pairs ({cis:,} cis · {n - cis:,} trans)", list(df.columns), rows,
+                          gap_after=gap)
 
 
 def read_bedpe(filename: str, **kw) -> Pairs:

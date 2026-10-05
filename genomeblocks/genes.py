@@ -22,6 +22,7 @@ from typing import Optional
 
 import numpy as np
 
+from ._table import TableMixin
 from .genome import Genome
 from .loci import SCODE, STRANDS, Loci
 from .locus import Locus
@@ -440,8 +441,13 @@ class GeneView(Locus):
         return f"Gene({self.gene_name}, {self.chrom}:{self.start:,}-{self.end:,}({self.strand}), {self.gene_type})"
 
 
-class Genes:
-    """Genes, transcripts and features as linked tables."""
+class Genes(TableMixin):
+    """Genes, transcripts and features as linked tables.
+
+    The object itself behaves like its genes table: ``len``, ``shape``,
+    ``columns``, ``head()``, ``describe()`` and the Arrow / dataframe
+    protocols read the genes; ``to_pandas('transcripts')`` and friends give
+    the others."""
 
     def __init__(self, genes: Loci, transcripts: Loci, features: Loci, *, promoter_r: int = 1000,
                  filename: Optional[str] = None):
@@ -877,6 +883,32 @@ class Genes:
         with open(os.path.join(path, "meta.json")) as f:
             meta = json.load(f)
         return cls(*t, promoter_r=meta["promoter_r"], filename=meta.get("filename"))
+
+    # ── like a DataFrame (the genes table) ────────────────────────────────
+    @property
+    def columns(self) -> list:
+        return self.genes.columns
+
+    def head(self, n: int = 5):
+        return self.to_pandas("genes").head(n)
+
+    def tail(self, n: int = 5):
+        return self.to_pandas("genes").tail(n)
+
+    def describe(self):
+        """One-table summary of the three tables."""
+        import pandas as pd
+        c = self.counts()
+        G = self.genes
+        rows = [("genes", c["genes"]), ("transcripts", c["transcripts"]), ("exons", c["exons"]),
+                ("CDS", c["CDS"]), ("UTR", c["UTR"]),
+                ("chromosomes", int(len(np.unique(G.codes))) if len(G) else 0),
+                ("gene types", int(len(np.unique(G.cols["gene_type"].astype(str)))) if len(G) else 0),
+                ("canonical isoforms", "selected" if "canonical" in G.cols else "not selected"),
+                ("promoter_r", self.promoter_r), ("coordinates", "0-based, half-open")]
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("")
+
+    summary = describe
 
     # ── display ───────────────────────────────────────────────────────────
     def counts(self) -> dict:

@@ -13,14 +13,20 @@ Peak calling stays with MACS3 (``macs3()`` is a thin wrapper around the CLI).
 """
 from __future__ import annotations
 
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, Optional
 
 import numpy as np
 
-from .genome import Genome
+from .genome import Genome, read_sizes
 from .loci import Loci
+
+
+def _loci(x) -> Loci:
+    from .interop import as_loci
+    return as_loci(x)
 
 # HiC-Pro allValidPairs: readID chr1 pos1 strand1 chr2 pos2 strand2 size [frag1 frag2 mapq1 mapq2 ...]
 _AVP = {"chr1": 1, "pos1": 2, "strand1": 3, "chr2": 4, "pos2": 5, "strand2": 6}
@@ -93,8 +99,9 @@ def _write_tsv(cols: Dict[str, np.ndarray], f) -> None:
     pd.DataFrame(cols).to_csv(f, sep="\t", header=False, index=False)
 
 
-def write_bed(ends: Loci, path: str) -> str:
+def write_bed(ends, path: str) -> str:
     """BED6 of the ends (the MACS3 input)."""
+    ends = _loci(ends)
     try:
         import polars as pl
     except ImportError:
@@ -109,21 +116,25 @@ def write_bed(ends: Loci, path: str) -> str:
     return path
 
 
-def fragments(ends: Loci, extsize: int = 147, chrom_sizes: Optional[Dict[str, int]] = None) -> Loci:
-    """Each 5' end extended ``extsize`` bp in its read direction (clipped to the chromosome)."""
+def fragments(ends, extsize: int = 147, chrom_sizes=None) -> Loci:
+    """Each 5' end extended ``extsize`` bp in its read direction (clipped to the
+    chromosome when ``chrom_sizes`` — a dict, a .chrom.sizes path, a Genome — is given)."""
+    ends = _loci(ends)
     plus = ends.strands != 2
     s = np.where(plus, ends.starts, ends.ends - extsize)
     e = np.where(plus, ends.starts + extsize, ends.ends)
     s = np.maximum(s, 0)
-    if chrom_sizes:
-        lim = np.array([chrom_sizes.get(n, np.iinfo(np.int64).max) for n in ends.genome.names], np.int64)
+    if chrom_sizes is not None:
+        sizes = read_sizes(chrom_sizes)
+        lim = np.array([sizes.get(n, np.iinfo(np.int64).max) for n in ends.genome.names], np.int64)
         e = np.minimum(e, lim[ends.codes])
     return Loci(ends.codes, s, e, ends.strands, genome=ends.genome)
 
 
-def coverage(L: Loci):
+def coverage(L):
     """Per-base coverage as runs: yields (chrom, start, end, depth) for depth > 0,
     adjacent equal depths merged (the same records as ``bedtools genomecov -bg``)."""
+    L = _loci(L)
     names = L.genome.names
     for c in sorted(np.unique(L.codes), key=lambda x: names[x]):
         m = L.codes == c
@@ -141,20 +152,26 @@ def coverage(L: Loci):
         yield names[c], a[first], z[last], d[first]
 
 
-def to_bigwig(L: Loci, path: str, chrom_sizes: Dict[str, int]) -> str:
-    """Write the coverage of ``L`` (e.g. ``fragments(ends)``) as a bigWig."""
+def to_bigwig(L, path: str, chrom_sizes) -> str:
+    """Write the coverage of ``L`` (e.g. ``fragments(ends)``) as a bigWig;
+    ``chrom_sizes`` is a dict, a .chrom.sizes path or a Genome with sizes."""
     import pybigtools
+    L = _loci(L)
+    sizes = read_sizes(chrom_sizes)
+    if not sizes:
+        raise ValueError("to_bigwig needs chromosome sizes (a dict, a .chrom.sizes path or a Genome with sizes)")
 
     def records():
         for chrom, a, z, d in coverage(L):
             for x in zip([chrom] * len(a), a.tolist(), z.tolist(), d.astype(float).tolist()):
                 yield x
     out = pybigtools.open(path, "w")
-    out.write({k: int(v) for k, v in sorted(chrom_sizes.items())}, records())
+    out.write({k: int(v) for k, v in sorted(sizes.items())}, records())
     return path
 
 
-def to_bedgraph(L: Loci, path: str) -> str:
+def to_bedgraph(L, path: str) -> str:
+    L = _loci(L)
     try:
         import polars as pl
     except ImportError:
@@ -173,16 +190,23 @@ def macs3(bed: str, name: str, outdir: str, *, gsize: str = "hs", extsize: int =
           exe: str = "macs3") -> str:
     """``macs3 callpeak`` with the HiChIP short-range settings; returns the narrowPeak path."""
     Path(outdir).mkdir(parents=True, exist_ok=True)
-    subprocess.run([exe, "callpeak", "-t", bed, "-f", "BED", "-g", gsize, "-n", name, "--outdir", outdir,
-                    "--nomodel", "--extsize", str(extsize), "-q", str(q), "--keep-dup", "all"],
-                   check=True, capture_output=True)
+    if shutil.which(exe) is None:
+        raise RuntimeError(f"{exe!r} not found on PATH: pip install macs3 (or conda install -c bioconda macs3), "
+                           f"or pass exe=/path/to/macs3")
+    cmd = [exe, "callpeak", "-t", bed, "-f", "BED", "-g", gsize, "-n", name, "--outdir", outdir,
+           "--nomodel", "--extsize", str(extsize), "-q", str(q), "--keep-dup", "all"]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        raise RuntimeError(f"macs3 callpeak failed (exit {res.returncode}):\n{res.stderr[-2000:]}")
     return str(Path(outdir) / f"{name}_peaks.narrowPeak")
 
 
-def shortrange_track(pairs: str, out_prefix: str, chrom_sizes: Dict[str, int], *, max_dist: int = 1000,
+def shortrange_track(pairs: str, out_prefix: str, chrom_sizes, *, max_dist: int = 1000,
                      extsize: int = 147, genome: Optional[Genome] = None) -> dict:
-    """The whole recipe minus peak calling: ends BED (for MACS3) + coverage bigWig."""
+    """The whole recipe minus peak calling: ends BED (for MACS3) + coverage bigWig.
+    ``chrom_sizes``: a dict, a .chrom.sizes path or a Genome with sizes."""
+    sizes = read_sizes(chrom_sizes)
     ends = shortrange_ends(pairs, max_dist, genome=genome)
     bed = write_bed(ends, f"{out_prefix}_shortrange_ends.bed")
-    bw = to_bigwig(fragments(ends, extsize, chrom_sizes), f"{out_prefix}_shortrange.bw", chrom_sizes)
+    bw = to_bigwig(fragments(ends, extsize, sizes), f"{out_prefix}_shortrange.bw", sizes)
     return {"ends": ends, "bed": bed, "bigwig": bw}

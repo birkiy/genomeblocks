@@ -21,7 +21,7 @@ Build it like a figure, one track per call (tracks appear in call order)::
     v.save("myc.html")        # or just display `v` in a notebook
 
 For BAM/VCF review or huge remote files, export to IGV instead
-(:func:`genomeblocks.columnar.igv.igv_html`).
+(:func:`genomeblocks.igv_html`).
 """
 from __future__ import annotations
 
@@ -35,7 +35,8 @@ from typing import Dict, Optional
 
 import numpy as np
 
-from .igv import _region
+from .genome import read_sizes
+from .locus import parse_regions
 
 _HERE = Path(__file__).resolve().parent
 _AUTO = ["#46a8e4", "#ffa600", "#2a9d8f", "#d1495b", "#6a4c93", "#577590"]
@@ -62,10 +63,14 @@ class View:
     def __init__(self, architecture=None, *, cre=None, genes=None, samples=None, title="genomeblocks view",
                  subtitle="", anchor_r: int = 5000, anchor_mode: str = "center", gene_half: int = 500_000,
                  chrom_sizes=None):
+        from .interop import as_loci
         self.A = architecture
-        self.L = architecture.loci if architecture is not None else cre
-        if self.L is None:
-            raise ValueError("pass an Architecture or cre=Loci")
+        if architecture is not None:
+            self.L = architecture.loci
+        elif cre is not None:
+            self.L = as_loci(cre)
+        else:
+            raise ValueError("pass an Architecture or cre= (a Loci or anything as_loci takes)")
         self.G = genes
         if samples is None:
             samples = {}
@@ -74,9 +79,7 @@ class View:
         self.samples = list(samples.items())
         self.title, self.subtitle = title, subtitle
         self.anchor_r, self.anchor_mode, self.gene_half = anchor_r, anchor_mode, gene_half
-        if isinstance(chrom_sizes, str):
-            chrom_sizes = {l.split()[0]: int(l.split()[1]) for l in open(chrom_sizes) if l.strip()}
-        self.chrom_sizes = dict(chrom_sizes or {})
+        self.chrom_sizes = read_sizes(chrom_sizes) if chrom_sizes is not None else {}
         self._tracks, self._regions, self._marks, self._hubs = [], [], [], None
         self._scores = None
 
@@ -113,7 +116,8 @@ class View:
         return self
 
     def intervals(self, name, sets, color=None, height=None):
-        """Interval rows: {sample or label: Loci / list of Locus / boolean mask over the CRE rows}."""
+        """Interval rows: {sample or label: intervals (a Loci or anything as_loci takes) /
+        boolean mask over the CRE rows}."""
         raw = []
         for k, v in self._per_sample(sets):
             si = self._sample(k) if (k is None or k in dict(self.samples) or color is None) else None
@@ -165,7 +169,7 @@ class View:
         ``gene`` anchors that gene, ``anchor`` a CRE row."""
         if locus is None and gene is not None and self.G is not None:
             g = self.G[gene]
-            tss = g.start if g.strand == "+" else g.end
+            tss = g.tss.start                              # the TSS base (end - 1 on '-')
             locus = f"{g.chrom}:{max(0, tss - self.gene_half)}-{tss + self.gene_half}"
         self._regions.append({"label": label, "note": note, "locus": locus or label, "gene": gene,
                               "anchorRow": None if anchor is None else int(anchor)})
@@ -272,38 +276,37 @@ class View:
             parts["edges"] = len(D["edges"]["src"]["b"]) + len(D["edges"]["dt"]["b"]) + \
                 sum(len(x["v"]["b"]) for x in D["edges"]["scores"])
 
-        # genes: longest transcript per gene
+        # genes: one transcript per gene (the canonical isoform when selected, else the longest)
         if G is not None:
+            from .genes import tss_base
             T, F, GG = G.transcripts, G.features, G.genes
-            tlen = T.ends - T.starts
-            order = np.lexsort((-tlen, T.cols["gene"]))
-            gs = T.cols["gene"][order]
-            tx = order[np.r_[True, gs[1:] != gs[:-1]]] if len(order) else order
-            tx = tx[np.lexsort((T.starts[tx], remap[T.codes[tx]]))]
-            tx = tx[remap[T.codes[tx]] >= 0]
+            gremap = np.array([cidx.get(n, -1) for n in GG.genome.names], np.int64)   # Genes may have their own Genome
+            tx = G.representative()
+            tx = tx[np.lexsort((T.starts[tx], gremap[T.codes[tx]]))]
+            tx = tx[gremap[T.codes[tx]] >= 0]
             ex = F.cols["kind"] == 0
-            f_tx, f_s, f_e = F.cols["transcript"][ex], F.starts[ex] - 1, F.ends[ex]
+            f_tx, f_s, f_e = F.cols["transcript"][ex], F.starts[ex], F.ends[ex]       # tables are 0-based
             o = np.lexsort((f_s, f_tx))
             f_tx, f_s, f_e = f_tx[o], f_s[o], f_e[o]
             lo, hi = np.searchsorted(f_tx, tx), np.searchsorted(f_tx, tx, side="right")
             ex_idx = np.concatenate([np.arange(a, b) for a, b in zip(lo, hi)]) if len(tx) else np.zeros(0, int)
-            gstart = T.starts[tx] - 1
-            D["genes"] = {"chrom": _pack(remap[T.codes[tx]], np.uint8), "start": _pack(_delta(gstart), np.int32),
+            gstart = T.starts[tx]
+            gi = T.cols["gene"][tx]
+            D["genes"] = {"chrom": _pack(gremap[T.codes[tx]], np.uint8), "start": _pack(_delta(gstart), np.int32),
                           "len": _pack(T.ends[tx] - gstart, np.uint32), "strand": _pack(T.strands[tx], np.uint8),
                           "nex": _pack(hi - lo, np.uint16),
                           "exStart": _pack(f_s[ex_idx] - np.repeat(gstart, hi - lo), np.int32),
                           "exLen": _pack(f_e[ex_idx] - f_s[ex_idx], np.uint32),
-                          # anchor base, as Architecture.support: gene start on '+', gene end on '-'
-                          "tss": _pack(np.where(GG.strands[T.cols["gene"][tx]] == 2, GG.ends[T.cols["gene"][tx]],
-                                                GG.starts[T.cols["gene"][tx]]), np.int32),
-                          "names": GG.cols["gene_name"][T.cols["gene"][tx]].astype(str).tolist()}
+                          # the TSS base, as Architecture.support: start on '+', end - 1 on '-'
+                          "tss": _pack(tss_base(GG.starts[gi], GG.ends[gi], GG.strands[gi]), np.int32),
+                          "names": GG.cols["gene_name"][gi].astype(str).tolist()}
             parts["genes"] = sum(len(v["b"]) for v in D["genes"].values() if isinstance(v, dict)) + \
                 len(json.dumps(D["genes"]["names"]))
 
         # regions → loci
         regions = []
         for r in self._regions:
-            loci = [list(_region(x)) for x in str(r["locus"]).split()]
+            loci = [list(x) for x in parse_regions(r["locus"])]
             regions.append({"label": r["label"], "note": r["note"], "loci": loci, "gene": r["gene"],
                             "anchorRow": r["anchorRow"]})
         D["regions"] = regions
@@ -329,26 +332,29 @@ class View:
                     o["series"].append({"sample": s, "col": len(creCols) - 1})
                 parts[f"track: {t['name']}"] = sum(len(c["v"]["b"]) for c in creCols[-len(t["raw"]):])
             elif t["type"] == "signal":
-                import pybigtools
+                from .backends.bigwig import open_bigwig
                 o["series"], size = [], 0
                 for s, path in t["raw"]:
                     coarse, fine = [], []
-                    with pybigtools.open(path) as bw:
-                        csz = bw.chroms()
+                    h = open_bigwig(path)                     # a path or an open handle
+                    try:
+                        csz = h.chroms()
                         for c in chroms:
                             if c not in csz:
                                 continue
                             n = max(1, csz[c] // t["gbin"])
-                            v = bw.values(c, 0, n * t["gbin"], bins=n, summary="max", missing=0.0)
+                            v = h.stats_array(c, 0, n * t["gbin"], n_bins=n, stat="max", missing=0.0)
                             coarse.append({"chrom": cidx[c], "bin": t["gbin"], "v": _pack(np.nan_to_num(v), np.float32)})
                         for c, a, b in windows:
                             if c not in csz or c not in cidx:
                                 continue
                             a, b = max(0, a - t["flank"]), min(csz[c], b + t["flank"])
                             n = max(1, (b - a) // t["bin"])
-                            v = bw.values(c, a, a + n * t["bin"], bins=n, summary="mean", missing=0.0)
+                            v = h.stats_array(c, a, a + n * t["bin"], n_bins=n, stat="mean", missing=0.0)
                             fine.append({"chrom": cidx[c], "start": a, "bin": t["bin"],
                                          "v": _pack(np.nan_to_num(v), np.float32)})
+                    finally:
+                        h.close()
                     o["series"].append({"sample": s, "coarse": coarse, "fine": fine})
                     size += sum(len(w["v"]["b"]) for w in coarse + fine)
                 parts[f"track: {t['name']}"] = size
@@ -356,18 +362,13 @@ class View:
                 o["series"], size = [], 0
                 if t["color"]:
                     o["color"] = t["color"]
+                from .interop import as_loci
                 for s, label, v in t["raw"]:
                     if isinstance(v, np.ndarray) and v.dtype == bool:
                         enc, _, _ = iv(L.codes[v], L.starts[v], L.ends[v])
-                    elif hasattr(v, "codes"):
-                        lut = np.array([g._add(n) for n in v.genome.names], np.int64)
-                        if len(remap) < len(g.names):
-                            remap = np.concatenate([remap, np.full(len(g.names) - len(remap), -1)])
-                        enc, _, _ = iv(lut[v.codes], v.starts, v.ends)
-                    else:
-                        items = list(v)
-                        enc, _, _ = iv(np.array([x.chrom for x in items], dtype=object),
-                                       np.array([x.start for x in items]), np.array([x.end for x in items]))
+                    else:                                     # a Loci, a frame, a path, a list of regions
+                        vv = as_loci(v)
+                        enc, _, _ = iv(vv.chroms, vv.starts, vv.ends)   # names -> view chromosomes; unknown dropped
                     o["series"].append({"sample": s, "label": label, **enc})
                     size += sum(len(x["b"]) for x in enc.values())
                 parts[f"track: {t['name']}"] = size
