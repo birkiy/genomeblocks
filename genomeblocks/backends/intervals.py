@@ -11,9 +11,10 @@ normalised to genomeblocks' rules whatever the engine:
   on an exact tie the engines may pick different, equally near, rows;
 * ``merge`` fuses overlapping and book-ended intervals (bedtools merge).
 
-Zero-length intervals are points between two bases: genomeblocks, cgranges
-and bioframe report them inside a window; ncls, pyranges and bedtools cannot
-hold them, so with those engines they never overlap anything.
+Zero-length intervals are points between two bases: ``[p, p)`` overlaps
+``[s, e)`` exactly when ``s < p < e``. Every engine's pairs are filtered with
+that rule, so the engines agree on them (bedtools, which widens empty
+intervals on its side, may still miss pairs that need the widened base).
 
 Support matrix::
 
@@ -66,7 +67,18 @@ def overlap_pairs(q, r, *, backend=None):
         return z, z.copy()
     if b == "genomeblocks":
         return _sorted_pairs(*K.overlap_pairs(q.codes, q.starts, q.ends, r.codes, r.starts, r.ends))
-    return _sorted_pairs(*_PAIRS[b](q, r))
+    qi, ri = _PAIRS[b](q, r)
+    return _sorted_pairs(*_half_open(q, r, qi, ri))
+
+
+def _half_open(q, r, qi, ri):
+    """Keep the pairs that satisfy genomeblocks' rule (s1 < e2 and s2 < e1 on
+    the same chromosome): engines differ on zero-length intervals."""
+    qi, ri = np.asarray(qi, np.int64), np.asarray(ri, np.int64)
+    if not len(qi):
+        return qi, ri
+    ok = ((q.codes[qi] == r.codes[ri]) & (q.starts[qi] < r.ends[ri]) & (r.starts[ri] < q.ends[qi]))
+    return qi[ok], ri[ok]
 
 
 def overlap_any(q, r, *, backend=None):
@@ -99,8 +111,6 @@ def _pairs_ncls(q, r):
     qi, ri = [], []
     for c in np.intersect1d(np.unique(q.codes), np.unique(r.codes)):
         rm, qm = np.flatnonzero(r.codes == c), np.flatnonzero(q.codes == c)
-        ok = r.ends[rm] > r.starts[rm]                      # ncls cannot hold empty intervals
-        rm = rm[ok]
         if not len(rm):
             continue
         tree = NCLS(r.starts[rm], r.ends[rm], rm.astype(np.int64))
@@ -156,13 +166,10 @@ def _read_bt(bt):
 
 
 def _pairs_bedtools(q, r):
-    nz_q, nz_r = q.ends > q.starts, r.ends > r.starts         # bedtools widens empty intervals
     res = _read_bt(_bedtool(q).intersect(_bedtool(r), wa=True, wb=True))
     if not len(res):
         return np.zeros(0, np.int64), np.zeros(0, np.int64)
-    qi, ri = res[3].to_numpy(np.int64), res[7].to_numpy(np.int64)
-    keep = nz_q[qi] & nz_r[ri]
-    return qi[keep], ri[keep]
+    return res[3].to_numpy(np.int64), res[7].to_numpy(np.int64)   # half-open filter in overlap_pairs
 
 
 _PAIRS = {"cgranges": _pairs_cgranges, "ncls": _pairs_ncls, "bioframe": _pairs_bioframe,
@@ -286,20 +293,30 @@ def point_rows(L, code: int, start: int, end: int, *, backend=None) -> np.ndarra
             ix.index()
             return ix
         ix = L._index_cache("cgranges", build)
-        return np.array(sorted(j for *_, j in ix.overlap(str(code), int(start), int(end))), np.int64)
+        rows = np.array(sorted(j for *_, j in ix.overlap(str(code), int(start), int(end))), np.int64)
+        return _point_filter(L, rows, start, end)
     if b == "ncls":
         def build():
             from ncls import NCLS
             trees = {}
             for c in np.unique(L.codes):
-                m = np.flatnonzero((L.codes == c) & (L.ends > L.starts))
+                m = np.flatnonzero(L.codes == c)
                 if len(m):
                     trees[int(c)] = NCLS(L.starts[m], L.ends[m], m.astype(np.int64))
             return trees
         tree = L._index_cache("ncls", build).get(int(code))
         if tree is None:
             return np.zeros(0, np.int64)
-        return np.array(sorted(j for *_, j in tree.find_overlap(int(start), int(end))), np.int64)
+        rows = np.array(sorted(j for *_, j in tree.find_overlap(int(start), int(end))), np.int64)
+        return _point_filter(L, rows, start, end)
     one = type(L)([code], [start], [end], genome=L.genome)
     _, ri = overlap_pairs(one, L, backend=b)
     return np.sort(ri)
+
+
+def _point_filter(L, rows, start, end):
+    """Rows that overlap ``[start, end)`` under the half-open rule."""
+    if not len(rows):
+        return rows
+    ok = (L.starts[rows] < end) & (start < L.ends[rows])
+    return rows[ok]

@@ -95,6 +95,13 @@ def frame(obj):
         obj = obj.to_dataframe(disable_auto_names=False)
     elif isinstance(obj, dict):
         import pandas as pd
+        scalars = [k for k, v in obj.items() if isinstance(v, str) or not hasattr(v, "__len__")]
+        if scalars:
+            raise TypeError(f"a dict of columns needs an array per key, but {scalars[:3]} hold scalars; "
+                            f"expected e.g. {{'chrom': [...], 'start': [...], 'end': [...]}}")
+        lens = {k: len(v) for k, v in obj.items()}
+        if len(set(lens.values())) > 1:
+            raise ValueError(f"the columns have different lengths: {lens}")
         obj = pd.DataFrame({k: np.asarray(v) for k, v in obj.items()})
     elif isinstance(obj, np.ndarray) and obj.dtype.names:
         import pandas as pd
@@ -162,6 +169,14 @@ def loci_from_frame(df, chrom=None, start=None, end=None, strand=None, *, keep=T
             c, s, e = first
         else:
             raise ValueError(f"{_EXPECTED}; got columns {cols}")
+    for k in (c, s, e):
+        col = f.get_column(k)
+        n = col.null_count()
+        if not n and col.dtype.is_float():
+            n = int(col.is_nan().sum())
+        if n:
+            raise ValueError(f"column {k!r} has {n} missing value(s) in {len(f)} rows; chrom, start "
+                             f"and end must be complete — drop or fill those rows first")
     d = _find(cols, _STRAND, strand)
     used = {c, s, e} | ({d} if d is not None else set())
     if keep is True:
@@ -208,15 +223,45 @@ def loci_from_anndata(adata, axis: str = "var", *, genome: Optional[Genome] = No
 
 
 def _read_table_file(path: str, *, genome=None, keep=True):
-    """CSV / TSV with a header row (or a headerless BED-like .txt / .tsv)."""
-    from .backends.tables import _open_text
-    sep = "," if path.lower().removesuffix(".gz").endswith(".csv") else "\t"
-    with _open_text(path) as fh:
-        first = next((l for l in fh if l.strip() and not l.startswith("#")), "")
-    fields = first.rstrip("\n").split(sep)
-    headerless = len(fields) >= 3 and fields[1].strip().isdigit() and fields[2].strip().isdigit()
+    """CSV / TSV with a header row (a UCSC ``#chrom  chromStart ...`` header
+    counts), or a header-less BED-like .txt / .tsv whose columns then get the
+    BED names (name, score, strand, ...). Leading ``#`` / track / browser /
+    blank lines are skipped. Row order is kept."""
     import pandas as pd
-    df = pd.read_csv(path, sep=sep, header=None if headerless else 0, comment=None if not headerless else "#")
+    from .backends.tables import _open_text
+    from .loci import _bed_names
+    low = path.lower().removesuffix(".gz")
+    sep = "," if low.endswith(".csv") else "\t"
+    skip, commented, first = 0, None, ""
+    with _open_text(path) as fh:
+        for line in fh:
+            if not line.strip() or line.startswith(("track", "browser")):
+                skip += 1
+            elif line.startswith("#"):
+                skip += 1
+                commented = line                       # a '#chrom ...' header, maybe
+            else:
+                first = line
+                break
+    fields = first.rstrip("\n").split(sep)
+    if not fields or len(fields) < 3:
+        if not first:
+            return loci_from_frame({"chrom": np.zeros(0, object), "start": np.zeros(0, np.int64),
+                                    "end": np.zeros(0, np.int64)}, genome=genome)
+        raise ValueError(f"{path}: expected at least 3 {'comma' if sep == ',' else 'tab'}-separated "
+                         f"columns (chrom, start, end), found {len(fields)}")
+    headerless = fields[1].strip().lstrip("-").isdigit() and fields[2].strip().lstrip("-").isdigit()
+    if not headerless:
+        df = pd.read_csv(path, sep=sep, header=0, skiprows=skip)
+    else:
+        names = None
+        if commented is not None:
+            hf = [h.strip() for h in commented.lstrip("#").rstrip("\n").split(sep)]
+            if len(hf) == len(fields) and not hf[1].isdigit():
+                names = hf
+        if names is None:
+            names = _bed_names(low, len(fields))
+        df = pd.read_csv(path, sep=sep, header=None, skiprows=skip, names=names)
     return loci_from_frame(df, keep=keep, genome=genome)
 
 
@@ -225,7 +270,8 @@ def as_loci(x, *, genome: Optional[Genome] = None, keep=True):
     function uses on its inputs.
 
     Accepts a Loci; a path (BED / narrowPeak / broadPeak / bedGraph, CSV or TSV
-    with a header, parquet; ``.gz`` too); a region string (``'chr1:1-2,000'``);
+    with a header, parquet; ``.gz`` too — rows stay in file order); a region
+    string (``'chr1:1-2,000'``);
     a Locus; any table :func:`frame` takes (pandas, polars, pyarrow, bioframe,
     PyRanges, BedTool, dict of columns, structured array, Arrow / interchange
     protocol objects); an AnnData (its ``var``); a ``(chroms, starts, ends)``
@@ -250,9 +296,12 @@ def as_loci(x, *, genome: Optional[Genome] = None, keep=True):
             return Loci.load(p, genome=genome)
         if low.endswith((".csv", ".tsv", ".txt")):
             return _read_table_file(p, genome=genome, keep=keep)
-        return Loci.make(p, genome=genome, keep=keep)
+        return Loci.make(p, genome=genome, keep=keep, sort=False)   # file order, like every input
     if _mod(x) == "anndata":
         return loci_from_anndata(x, genome=genome, keep=keep)
+    if _mod(x) in ("pandas", "polars", "pyarrow") and frame(x) is None:
+        raise TypeError(f"cannot read intervals from a {type(x).__name__}: pass a DataFrame / Table "
+                        f"with chrom, start and end columns")
     if isinstance(x, tuple) and len(x) in (3, 4) and all(hasattr(v, "__len__") and not isinstance(v, str)
                                                          for v in x):
         data = dict(zip(("chrom", "start", "end", "strand"), x))
@@ -318,7 +367,15 @@ def loci_to_arrow(L):
     arrs = {"chrom": chrom, "start": pa.array(L.starts), "end": pa.array(L.ends), "strand": strand}
     for k, v in L.cols.items():
         v = np.asarray(v)
-        arrs[k] = pa.array(v.tolist() if v.dtype == object else v)
+        if v.dtype == object:
+            import pandas as pd
+            lst = v.tolist()
+            na = pd.isna(v)
+            if na.any():                                # NaN / None / pd.NA -> Arrow null
+                lst = [None if m else x for x, m in zip(lst, na.tolist())]
+            arrs[k] = pa.array(lst)
+        else:
+            arrs[k] = pa.array(v)
     return pa.table(arrs)
 
 
@@ -328,12 +385,16 @@ def loci_to_polars(L):
 
 
 def loci_to_pyranges(L):
-    """PyRanges (Chromosome / Start / End, plus Strand when every row has one)."""
+    """PyRanges (Chromosome / Start / End / Strand and the extra columns).
+
+    The Strand column keeps '.' rows (pyranges treats such an object as
+    unstranded but keeps the values). pyranges 0.x stores rows per chromosome,
+    so it returns them grouped by chromosome: sort the Loci first when the
+    row order matters."""
     import pandas as pd
     import pyranges as pr
-    d = {"Chromosome": _chrom_categorical(L), "Start": L.starts, "End": L.ends}
-    if len(L) and np.all(L.strands > 0):
-        d["Strand"] = L.strand.astype(str)
+    d = {"Chromosome": _chrom_categorical(L), "Start": L.starts, "End": L.ends,
+         "Strand": L.strand.astype(str)}
     df = pd.DataFrame(d)
     for k, v in L.cols.items():
         df[k] = v
@@ -498,11 +559,16 @@ _LIFTOVER_CACHE: dict = {}
 
 def liftover(L, chain_file: str, *, min_match: float = 0.95, verbose: bool = True):
     """UCSC-style liftover through pyliftover (see ``Loci.liftover``)."""
-    from pyliftover import LiftOver
+    try:
+        from pyliftover import LiftOver
+    except ImportError:
+        raise ImportError("Loci.liftover needs pyliftover: pip install pyliftover") from None
     from .loci import SCODE, STRANDS, Loci
-    lo = _LIFTOVER_CACHE.get(chain_file)
+    key = (os.path.abspath(chain_file), os.path.getmtime(chain_file), os.path.getsize(chain_file))
+    lo = _LIFTOVER_CACHE.get(key)
     if lo is None:
-        lo = _LIFTOVER_CACHE[chain_file] = LiftOver(chain_file)
+        _LIFTOVER_CACHE.clear()                         # one chain at a time is the common case
+        lo = _LIFTOVER_CACHE[key] = LiftOver(chain_file)
 
     def walk(chrom, pos, q_strand, step, budget):
         for off in range(budget + 1):

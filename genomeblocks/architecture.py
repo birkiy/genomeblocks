@@ -62,13 +62,13 @@ def _pl_expect(x, y):
     from scipy.optimize import curve_fit
     x, y = np.asarray(x, float), np.asarray(y, float)
     m = (x > 0) & (y > 0) & np.isfinite(x) & np.isfinite(y)
-    if not m.any():
+    if m.sum() < 3 or len(np.unique(x[m])) < 2:        # a fit needs a few distances
         return np.full_like(y, np.nan), {"alpha": np.nan, "C": np.nan}
     try:
         b, a = np.polyfit(np.log10(x[m]), np.log10(y[m]), 1)
         popt, _ = curve_fit(_pl_model, x[m], y[m], p0=[10.0 ** a, -b])
         return _pl_model(x, *popt), {"alpha": float(popt[1]), "C": float(popt[0])}
-    except (RuntimeError, np.linalg.LinAlgError, ValueError):
+    except (RuntimeError, TypeError, np.linalg.LinAlgError, ValueError):
         return np.full_like(y, np.nan), {"alpha": np.nan, "C": np.nan}
 
 
@@ -164,8 +164,7 @@ class Architecture:
         lo, hi = np.minimum(src[ok], tgt[ok]), np.maximum(src[ok], tgt[ok])
         key = np.unique(lo.astype(np.int64) * len(loci) + hi)
         A = cls(loci, key // len(loci), key % len(loci), name=name)
-        n = len(A.src)
-        A.ep.update(w=np.zeros(n), n=np.zeros(n), d=np.zeros(n))
+        A.ep["w"] = np.zeros(len(A.src))          # add_mcool fills w; normalize adds n and d
         if verbose:
             mapped = len(np.intersect1d(np.unique(k1), np.unique(k2)))
             print(f"[INFO] {len(P)} loops | {mapped} mapped ({100 * mapped / max(len(P), 1):.1f}%) | "
@@ -190,10 +189,16 @@ class Architecture:
         pdf = _as_pandas(df)
         if src in pdf and tgt in pdf:
             s, t = pdf[src].to_numpy(np.int64), pdf[tgt].to_numpy(np.int64)
-        else:
+        elif "uid1" in pdf and "uid2" in pdf:
             u = loci.uids
+            bad = [x for x in pdf["uid1"].tolist() + pdf["uid2"].tolist() if x not in u]
+            if bad:
+                raise ValueError(f"{len(bad)} uid(s) in the edge table are not in the loci, e.g. {bad[:3]}")
             s = np.array([u[x] for x in pdf["uid1"]], np.int64)
             t = np.array([u[x] for x in pdf["uid2"]], np.int64)
+        else:
+            raise ValueError(f"an edge table needs vertex rows in {src!r} / {tgt!r} or uids in "
+                             f"'uid1' / 'uid2' (what edges_frame() writes); got columns {list(pdf.columns)}")
         skip = {src, tgt, "uid1", "uid2", "chrom1", "chrom2", "cis"}
         ep = {k: pdf[k].to_numpy(np.float64) for k in pdf.columns
               if k not in skip and np.issubdtype(pdf[k].dtype, np.number)}
@@ -415,7 +420,7 @@ class Architecture:
         gi, ci = overlap_pairs(win, L, backend=backend)
         if mode == "center":
             c = L.centers[ci]
-            ok = (c >= lo[gi]) & (c < hi[gi])
+            ok = (c >= win.starts[gi]) & (c < win.ends[gi])
             gi, ci = gi[ok], ci[ok]
         if linked:
             ok = self.degree[ci] > 0
@@ -445,7 +450,17 @@ class Architecture:
         """
         import cooler
         uri = f"{mcool}::resolutions/{resolution}" if resolution else mcool
-        clr = cooler.Cooler(uri)
+        try:
+            clr = cooler.Cooler(uri)
+        except (KeyError, OSError) as e:
+            try:
+                groups = cooler.fileops.list_coolers(str(mcool))
+            except Exception:                              # noqa: BLE001 — not a cooler file at all
+                raise ValueError(f"{mcool}: not a .cool / .mcool file ({e})") from None
+            res = [g.rsplit("/", 1)[-1] for g in groups if g.startswith("/resolutions/")]
+            if res:
+                raise ValueError(f"{mcool} is multi-resolution: pass resolution= one of {', '.join(res)}") from None
+            raise ValueError(f"{mcool} is a single-resolution cooler: call add_mcool without resolution=") from None
         if clr.binsize is None:
             raise NotImplementedError("variable-size bins")
         L = self.loci

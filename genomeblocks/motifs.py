@@ -152,7 +152,8 @@ def scan_motifs_matrix(loci, fasta, motifs, *, format: str = "jaspar", r: int = 
 
 
 def scan_motifs_matrix_masked(loci, fasta, motifs, anchors: List[str], *, format: str = "jaspar", r: int = 250,
-                              window: int = 10, threshold=13.0, anchor_threshold: Optional[float] = None,
+                              window: int = 10, threshold=13.0, pvalue: Optional[float] = None,
+                              anchor_threshold: Optional[float] = None,
                               norm: bool = True, both_strands: bool = False, skip_anchors: bool = True,
                               seed: Optional[int] = None, workers: Optional[int] = None,
                               backend: Optional[str] = None, verbose: bool = True):
@@ -175,14 +176,15 @@ def scan_motifs_matrix_masked(loci, fasta, motifs, anchors: List[str], *, format
               f"{f' (+{len(names) - 5} more)' if len(names) > 5 else ''}")
     L, seqs, valid = _windows(loci, fasta, r)
     _report(verbose, valid, "mask")
-    a_thr = threshold if anchor_threshold is None else anchor_threshold
+    thr_all = _thresholds(lib, threshold, pvalue)           # one cutoff per library motif
+    a_thr = thr_all if anchor_threshold is None else np.full(len(lib), float(anchor_threshold))
     blk = Block(seqs, backend)
     rng = np.random.default_rng(seed)
     bases = np.frombuffer(b"ACGT", np.uint8)
     masked = [bytearray(q.encode("ascii")) for q in seqs]
     for i in anchor_idx:
         m = lib.logodds(i)
-        rows, pos, _ = blk.hits(m, a_thr if np.isscalar(a_thr) else a_thr[i], both_strands)
+        rows, pos, _ = blk.hits(m, a_thr[i], both_strands)
         c = pos + len(m) // 2
         for row, cc in zip(rows.tolist(), c.tolist()):
             seq = masked[row]
@@ -192,7 +194,7 @@ def scan_motifs_matrix_masked(loci, fasta, motifs, anchors: List[str], *, format
     masked = [b.decode("ascii") for b in masked]
     keep = [i for i in range(len(lib)) if not (skip_anchors and i in set(anchor_idx))]
     sub = lib.take(keep)
-    thr = _thresholds(sub, threshold, None)
+    thr = np.asarray(thr_all, np.float64)[keep]
     counts = _count_matrix(masked, sub, thr, both_strands, backend, workers, verbose, "[scan]")
     vals = counts / sub.widths[None, :] if norm else counts
     return pd.DataFrame(vals, index=pd.Index(L.uid, name="uid"), columns=sub.names)

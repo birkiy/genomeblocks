@@ -8,10 +8,11 @@
                .add_mcool("hic.mcool", resolution=5000)
                .normalize().annotate(genes))
 
-Every table shares one :class:`Genome` and joins on the row number. Heavy
-work runs through swappable backends (:func:`backends`, :func:`set_backend`),
-and every table converts to and from pandas, polars, Arrow, bioframe,
-pyranges, pybedtools, AnnData, Biopython and friends (:mod:`genomeblocks.interop`).
+Tables built from one another share a :class:`Genome` and join on the row
+number. Heavy work runs through swappable backends (``gb.backends()`` lists
+them; ``backend=`` on a call or :func:`use_backend` picks one), and every
+table converts to and from pandas, polars, Arrow, bioframe, pyranges,
+pybedtools, AnnData, Biopython and friends (:mod:`genomeblocks.interop`).
 
 Names are imported on first use, so ``import genomeblocks`` stays light.
 """

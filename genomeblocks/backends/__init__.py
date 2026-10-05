@@ -36,7 +36,8 @@ import importlib.util
 from contextlib import contextmanager
 from typing import Dict, Optional
 
-# family -> backend -> (module to probe, install hint); None = always available
+# family -> backend -> (module to probe, install hint); None = always available;
+# "module+binary" also needs that executable on PATH
 _FAMILIES: Dict[str, Dict[str, tuple]] = {
     "intervals": {
         "genomeblocks": (None, ""),
@@ -44,7 +45,8 @@ _FAMILIES: Dict[str, Dict[str, tuple]] = {
         "ncls": ("ncls", "pip install ncls"),
         "bioframe": ("bioframe", "pip install bioframe"),
         "pyranges": ("pyranges", "pip install pyranges"),
-        "bedtools": ("pybedtools", "pip install pybedtools  (and bedtools on PATH)"),
+        "bedtools": ("pybedtools+bedtools", "pip install pybedtools; conda install -c bioconda bedtools  "
+                                            "(the bedtools binary must be on PATH)"),
     },
     "bigwig": {
         "pybigtools": ("pybigtools", "pip install pybigtools"),
@@ -102,15 +104,23 @@ def families():
 
 def installed(family: str, backend: str) -> bool:
     """True when ``backend`` of ``family`` can be imported here."""
+    _check_family(family)
     backend = _ALIASES.get(backend, backend)
+    if backend not in _FAMILIES[family]:
+        raise ValueError(f"unknown {family} backend {backend!r}; choose from: {', '.join(_FAMILIES[family])}")
     mod, _ = _FAMILIES[family][backend]
     if mod is None:
         return True
     if mod not in _installed_cache:
+        name, _, binary = mod.partition("+")
         try:
-            _installed_cache[mod] = importlib.util.find_spec(mod.split(".")[0]) is not None
+            ok = importlib.util.find_spec(name.split(".")[0]) is not None
         except (ImportError, ValueError):
-            _installed_cache[mod] = False
+            ok = False
+        if ok and binary:
+            import shutil
+            ok = shutil.which(binary) is not None
+        _installed_cache[mod] = ok
     return _installed_cache[mod]
 
 

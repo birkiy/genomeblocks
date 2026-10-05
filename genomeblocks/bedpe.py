@@ -68,7 +68,13 @@ class Pairs:
         cols = list(pdf.columns)
         low = {str(c).lower(): c for c in cols}
         need = _BEDPE[:6]
-        names = [low[n] for n in need] if all(n in low for n in need) else cols[:6]
+        if all(n in low for n in need):
+            names = [low[n] for n in need]
+        elif len(cols) >= 6:
+            names = cols[:6]
+        else:
+            raise ValueError(f"a BEDPE frame needs the columns {list(need)} (by name, or as its first six "
+                             f"columns); got {cols}")
         g = genome if genome is not None else Genome()
 
         def strand(k):
@@ -219,7 +225,11 @@ def _detect_pairs_format(filename: str) -> str:
             if line.startswith("#") or not line.strip():
                 continue
             fields = line.rstrip("\n").split("\t")
-            if len(fields) >= 8 and fields[1] in ("+", "-") and fields[5] in ("+", "-"):
+            num = lambda s: s.lstrip("-").isdigit()                      # noqa: E731
+            # Juicer medium: readname str1 chr1 pos1 frag1 str2 chr2 pos2 frag2 ... with the
+            # strands as +/- or as SAM flags (0 forward, 16 reverse)
+            if (len(fields) >= 8 and fields[1] in ("+", "-", "0", "16") and fields[5] in ("+", "-", "0", "16")
+                    and num(fields[3]) and num(fields[7]) and not num(fields[2]) and not num(fields[6])):
                 return "juicer"
             if len(fields) >= 7 and fields[3] in ("+", "-"):
                 return "allvalidpairs"

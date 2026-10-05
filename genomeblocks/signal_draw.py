@@ -97,9 +97,12 @@ def plot_heatmap(loci, S: np.ndarray, *, groups: Dict[str, object] | None = None
     if S.ndim != 3 or S.shape[0] != len(loci):
         raise ValueError(f"S must be (rows, tracks, bins) with {len(loci)} rows, got shape {S.shape}")
     sets, gidx = _group_masks(loci, groups, sets)
+    n = S.shape[1]
     if samples is None:
-        samples = [f"track_{i}" for i in range(S.shape[1])]
-    n = len(samples)
+        samples = [f"track_{i}" for i in range(n)]
+    samples = list(samples)
+    if len(samples) != n:
+        raise ValueError(f"samples must have length {n} (one label per track), got {len(samples)}")
     cmaps, vms = _bcast(cmap, n, "cmap"), _bcast(vmax, n, "vmax")
     ys, yl = _bcast(ymax, n, "ymax"), _bcast(ymin, n, "ymin")
     if colors is None:

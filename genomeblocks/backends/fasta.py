@@ -125,7 +125,9 @@ def _build_fai(path):
                 if lb == 0:
                     lb, lw = bases, len(raw)
                 elif last_short or bases > lb:
-                    raise ValueError(f"{path}: uneven line lengths in {name}; cannot index")
+                    raise ValueError(f"{path}: uneven line lengths in {name}; the indexed reader needs "
+                                     f"fixed-width records — reformat (e.g. `seqkit seq -w 60`) or pass "
+                                     f"backend='memory' / 'pysam' / 'pyfaidx'")
                 if bases < lb:
                     last_short = True
                 length += bases
@@ -257,9 +259,6 @@ def open_fasta(src, *, backend=None) -> _Source:
     if kind is not None:
         return _SOURCES[kind](src)
     name = resolve("fasta", backend)
-    if name == "genomeblocks" and backend is None:
-        try:
-            return IndexedSource(src)
-        except ValueError:                                # gzip, or uneven lines
-            return MemorySource(src)
+    if name == "genomeblocks" and backend is None and str(src).lower().endswith((".gz", ".bgz")):
+        return MemorySource(src)                          # gzip cannot be indexed
     return _SOURCES[name](src)

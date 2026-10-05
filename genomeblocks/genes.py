@@ -27,7 +27,8 @@ from .loci import SCODE, STRANDS, Loci
 from .locus import Locus
 
 KINDS = ("exon", "CDS", "5UTR", "3UTR")
-_FEATURE = {"exon": 0, "CDS": 1, "five_prime_UTR": 2, "three_prime_UTR": 3, "UTR": 4}
+_FEATURE = {"exon": 0, "CDS": 1, "five_prime_UTR": 2, "three_prime_UTR": 3, "UTR": 4,
+            "five_prime_utr": 2, "three_prime_utr": 3, "utr": 4}      # GENCODE and Ensembl spellings
 _GTF_FEATURE = {0: "exon", 1: "CDS", 2: "five_prime_UTR", 3: "three_prime_UTR"}
 LABELS = np.array(["Intergenic", "Intronic", "Exonic", "3UTR", "5UTR", "Promoter-TSS"], dtype=object)
 
@@ -86,7 +87,7 @@ def _gff3_frame(path, name_k, type_k):
     df = df.with_columns(pl.col("start").cast(pl.Int64), pl.col("end").cast(pl.Int64),
                          attr("ID").alias("ID"), attr("Parent").alias("Parent"),
                          attr("gene_id").alias("a_gene_id"), attr("transcript_id").alias("a_tx_id"),
-                         attr("exon_number").alias("exon_number"),
+                         pl.coalesce(attr("exon_number"), attr("rank")).alias("exon_number"),
                          pl.coalesce(attr(name_k), attr("Name")).alias("a_name"),
                          pl.coalesce(attr(type_k), attr("biotype"), attr("gene_biotype")).alias("a_type")
                          ).with_row_index("line")
@@ -135,7 +136,7 @@ def _tables_polars(path, g, name_k, type_k, chr_map):
                                         return_dtype=pl.Int8).alias("s"),
         pl.col("feature").replace_strict(list(_FEATURE), list(_FEATURE.values()), default=-1,
                                          return_dtype=pl.Int8).alias("kind"))
-    genes = (df.filter(pl.col("feature") == "gene").unique("gene_id", keep="last").sort("line")
+    genes = (df.filter(pl.col("feature") == "gene").unique("gene_id", keep="first").sort("line")
              .with_columns(pl.col(name_k).fill_null(pl.col("gene_id"))))
     tx = df.filter(pl.col("feature") == "transcript")
     orphan = (tx.join(genes.select("gene_id"), on="gene_id", how="anti")
@@ -195,7 +196,7 @@ def _read_gff3_pandas(path, name_k, type_k):
     def strip(c):
         return c.str.replace(r"^(gene|transcript):", "", regex=True)
     df["ID"], df["Parent"] = attr("ID"), attr("Parent")
-    df["exon_number"] = attr("exon_number")
+    df["exon_number"] = attr("exon_number").fillna(attr("rank"))      # Ensembl GFF3 uses rank=
     df["a_name"] = attr(name_k).fillna(attr("Name"))
     df["a_type"] = attr(type_k).fillna(attr("biotype")).fillna(attr("gene_biotype"))
     a_gene, a_tx = attr("gene_id"), attr("transcript_id")
@@ -231,8 +232,8 @@ def _tables_numpy(d, g, gene_name_key, gene_type_key):
     strands = pd.Series(d["strand"]).map(SCODE).fillna(0).to_numpy(np.int8)
     starts, ends = d["start"].astype(np.int64), d["end"].astype(np.int64)
     gi = np.flatnonzero(feat == "gene")
-    _, keep = np.unique(gid[gi][::-1].astype(str), return_index=True)
-    gi = np.sort(gi[::-1][keep])
+    _, keep = np.unique(gid[gi].astype(str), return_index=True)      # first record per gene_id
+    gi = np.sort(gi[keep])
     ti = np.flatnonzero(feat == "transcript")
     known = pd.Index(gid[gi])
     orphan = ti[known.get_indexer(gid[ti]) < 0]
@@ -286,19 +287,35 @@ def _resolve_generic_utr(F, T):
 def _tables_ucsc(path, g, chr_map, keep_alt_contigs):
     import pandas as pd
     raw = pd.read_csv(path, sep="\t", header=None, comment="#", dtype=str, quoting=3)
-    with_bin = raw.shape[1] >= 16 or raw[0].str.fullmatch(r"\d+").all()
-    off = 1 if with_bin else 0
-    name = raw[off].to_numpy(object)
-    chrom = raw[off + 1].to_numpy(object)
+    layout = ("a UCSC genePred table: [bin] name chrom strand txStart txEnd cdsStart cdsEnd exonCount "
+              "exonStarts exonEnds [...] (refGene, ncbiRefSeq, knownGene, genePredExt) or refFlat "
+              "(geneName name chrom strand ...); for GTF / GFF3 use Genes.make()")
+    ncol = raw.shape[1]
+    # the strand column fixes the layout: it is column 2 (name chrom strand ...), 3 with a
+    # leading bin column (bin name chrom strand ...) or 3 for refFlat (geneName name chrom strand ...)
+    sc = next((i for i in range(min(4, ncol)) if raw[i].isin(["+", "-", "."]).all()), None)
+    if sc is None or sc < 2 or ncol < sc + 8:
+        raise ValueError(f"{path}: expected {layout}")
+    try:
+        tx_s, tx_e = raw[sc + 1].astype(np.int64).to_numpy(), raw[sc + 2].astype(np.int64).to_numpy()
+        cds_s, cds_e = raw[sc + 3].astype(np.int64).to_numpy(), raw[sc + 4].astype(np.int64).to_numpy()
+        n_ex = raw[sc + 5].astype(np.int64).to_numpy()
+    except ValueError as e:
+        raise ValueError(f"{path}: expected {layout}; {e}") from None
+    with_bin = sc == 3 and raw[0].str.fullmatch(r"\d+").all()
+    name = raw[sc - 2].to_numpy(object)
+    chrom = raw[sc - 1].to_numpy(object)
     if chr_map:
         chrom = np.array([chr_map.get(c, c) for c in chrom], dtype=object)
-    strand = raw[off + 2].to_numpy(object)
-    tx_s, tx_e = raw[off + 3].astype(np.int64).to_numpy(), raw[off + 4].astype(np.int64).to_numpy()
-    cds_s, cds_e = raw[off + 5].astype(np.int64).to_numpy(), raw[off + 6].astype(np.int64).to_numpy()
-    n_ex = raw[off + 7].astype(np.int64).to_numpy()
-    ex_s = raw[off + 8].to_numpy(object)
-    ex_e = raw[off + 9].to_numpy(object)
-    sym = raw[off + 11].fillna("").to_numpy(object) if raw.shape[1] > off + 11 else name.copy()
+    strand = raw[sc].to_numpy(object)
+    ex_s = raw[sc + 6].to_numpy(object)
+    ex_e = raw[sc + 7].to_numpy(object)
+    if sc == 3 and not with_bin:                           # refFlat: the symbol comes first
+        sym = raw[0].fillna("").to_numpy(object)
+    elif ncol >= sc + 13:                                   # genePredExt: score name2 cdsStartStat ...
+        sym = raw[sc + 9].fillna("").to_numpy(object)
+    else:                                                   # knownGene and plain genePred: no symbol
+        sym = name.copy()
     sym = np.where(sym == "", name, sym)
     # one gene per (symbol, chromosome); the first chromosome seen is the primary one
     first_chrom = {}
@@ -428,6 +445,15 @@ class Genes:
 
     def __init__(self, genes: Loci, transcripts: Loci, features: Loci, *, promoter_r: int = 1000,
                  filename: Optional[str] = None):
+        need = {"genes": ("gene_id", "gene_name", "gene_type"), "transcripts": ("transcript_id", "gene"),
+                "features": ("kind", "transcript", "exon_number")}
+        for what, L in (("genes", genes), ("transcripts", transcripts), ("features", features)):
+            if not isinstance(L, Loci):
+                raise TypeError(f"Genes: {what} must be a Loci, got {type(L).__name__}")
+            missing = [k for k in need[what] if k not in L.cols]
+            if missing:
+                raise ValueError(f"Genes: the {what} table lacks the column(s) {missing}; "
+                                 f"build with Genes.make / make_ucsc / from_frame")
         self.genes, self.transcripts, self.features = genes, transcripts, features
         self.promoter_r = promoter_r
         self.filename = filename
@@ -500,6 +526,16 @@ class Genes:
         s = _find(cols, ("start",), None)
         e = _find(cols, ("end",), None)
         d = _find(cols, ("strand",), None)
+        missing = [w for w, k in (("chrom / seqname / Chromosome", c), ("feature / type", f),
+                                  ("start", s), ("end", e)) if k is None]
+        if missing:
+            raise ValueError(f"Genes.from_frame needs the columns {', '.join(missing)} (one GTF record "
+                             f"per row); got columns {cols}")
+        for req in ("gene_id", "transcript_id"):
+            k = _find(cols, (req,), None)
+            if k is None or pdf[k].isna().all():
+                raise ValueError(f"Genes.from_frame needs a {req!r} column (gene / transcript records "
+                                 f"are linked by it); got columns {cols}")
         if one_based is None:
             one_based = not (is_pr or s == "Start")
 
@@ -540,7 +576,16 @@ class Genes:
         T, G = self.transcripts, self.genes
         r = self.promoter_r if r is None else r
         peaks = _peaks(cre, T.genome)
-        bigwigs = [bw] if isinstance(bw, str) else [str(p) for p in (bw or [])]
+        import os
+        if bw is None:
+            bigwigs = []
+        elif isinstance(bw, (str, os.PathLike)) or not hasattr(bw, "__iter__"):
+            bigwigs = [bw]                                   # one path or one open handle
+        elif isinstance(bw, dict):
+            bigwigs = list(bw.values())
+        else:
+            bigwigs = list(bw)
+        bigwigs = [str(b) if isinstance(b, os.PathLike) else b for b in bigwigs]
         if peaks is None and not bigwigs:
             raise ValueError("select_isoforms() needs `cre` (peaks) and/or `bw` (bigWig).")
         n = len(T)
@@ -773,13 +818,21 @@ class Genes:
         o = np.lexsort((f_s, f_tx))
         f_tx, f_s, f_e = f_tx[o], f_s[o], f_e[o]
         lo, hi = np.searchsorted(f_tx, tx), np.searchsorted(f_tx, tx, side="right")
+        # thickStart / thickEnd: the CDS span of the transcript (thickStart == thickEnd when non-coding)
+        cds = F.cols["kind"] == 1
+        cs = np.full(len(T), np.iinfo(np.int64).max)
+        ce = np.full(len(T), -1, np.int64)
+        if cds.any():
+            np.minimum.at(cs, F.cols["transcript"][cds], F.starts[cds])
+            np.maximum.at(ce, F.cols["transcript"][cds], F.ends[cds])
         names = G.cols["gene_name"]
         lines = []
         for t, a, b in zip(tx.tolist(), lo.tolist(), hi.tolist()):
             s, e = int(T.starts[t]), int(T.ends[t])
             bs, be = (f_s[a:b], f_e[a:b]) if b > a else (np.array([s]), np.array([e]))
+            ts, te = (int(cs[t]), int(ce[t])) if ce[t] > cs[t] else (e, e)
             lines.append(f"{T.genome.names[T.codes[t]]}\t{s}\t{e}\t{names[T.cols['gene'][t]]}\t0\t"
-                         f"{STRANDS[T.strands[t]]}\t{s}\t{e}\t0\t{len(bs)}\t"
+                         f"{STRANDS[T.strands[t]]}\t{ts}\t{te}\t0\t{len(bs)}\t"
                          f"{','.join(str(int(x)) for x in be - bs)}\t{','.join(str(int(x)) for x in bs - s)}")
         text = "\n".join(lines)
         if path is None:

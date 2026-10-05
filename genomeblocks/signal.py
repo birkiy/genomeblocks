@@ -44,21 +44,19 @@ def _even_ranges(total: int, n_chunks: int) -> List[Tuple[int, int]]:
 
 
 def _windows(starts, ends, sizes, n_bins, flank, span):
-    """Per row: (left, right, first bin, number of bins) of the window to read,
-    clipped to the chromosome; bins hanging off an edge stay 0."""
+    """Per row: (left, right, first bin, number of bins) of the window to read
+    and whether the chromosome is in the file. Windows are not clipped: the
+    bigwig handles bin a window that leaves the chromosome over the full grid
+    (bases outside have no data), so edge bins keep the signal they have and
+    every backend agrees."""
     if span:
-        L = np.maximum(starts, 0)
-        R = np.minimum(ends, sizes)
-        pre = np.zeros(len(L), np.int64)
-        core = np.full(len(L), max(1, n_bins), np.int64)
+        L, R = starts.astype(np.int64), ends.astype(np.int64)
     else:
         c = (starts + ends) // 2
         L, R = c - flank, c + flank
-        pre = np.maximum(0, -L)
-        post = np.maximum(0, R - sizes)
-        L, R = np.maximum(L, 0), np.minimum(R, sizes)
-        core = n_bins - (pre + post)
-    ok = (core > 0) & (R > L) & (sizes > 0)
+    pre = np.zeros(len(L), np.int64)
+    core = np.full(len(L), max(1, n_bins), np.int64)
+    ok = (R > L) & (sizes > 0)
     return L, R, pre, core, ok
 
 
@@ -241,7 +239,15 @@ def tmm(cube: np.ndarray) -> np.ndarray:
     """TMM-normalise a (regions x tracks x bins) cube: per-track TMM factors and
     library-size scaling (counts per million), so tracks become comparable."""
     means = np.nanmean(cube, axis=2)
-    factors = _tmm_norm_factors(means)
-    lib_size = means.sum(0)
-    scale = 1.0 / (factors * lib_size / 1_000_000)
+    lib_size = np.nansum(means, axis=0)
+    has = lib_size > 0
+    if not has.any():
+        raise ValueError("tmm: every track is empty (no signal in any region)")
+    if not has.all():
+        import warnings
+        warnings.warn(f"tmm: track(s) {np.flatnonzero(~has).tolist()} have no signal and are left at 0",
+                      RuntimeWarning, stacklevel=2)
+    scale = np.zeros(cube.shape[1])
+    factors = _tmm_norm_factors(means[:, has])
+    scale[has] = 1.0 / (factors * lib_size[has] / 1_000_000)
     return cube * scale[None, :, None]

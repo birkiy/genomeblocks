@@ -35,11 +35,21 @@ def sniff(path, max_lines: int = 50):
     return skip, ncol
 
 
+def _parse_error(path, exc, column=None) -> ValueError:
+    where = f" (column {column + 1})" if column is not None else ""
+    return ValueError(
+        f"{path}: cannot read as a tab-separated BED-like table{where}: {exc}. Header lines must start "
+        f"with '#', 'track' or 'browser'; a file with a column-name header is read with "
+        f"Loci.from_frame(pandas.read_csv(path, sep='\\t')) or as_loci(path) for .tsv / .csv")
+
+
 def read_columns(path, columns: Sequence[int], *, ints: Sequence[int] = (), floats: Sequence[int] = (),
                  backend: Optional[str] = None) -> Dict[int, np.ndarray]:
     """Columns ``columns`` (0-based) of a headerless TSV as numpy arrays.
 
     Columns in ``ints`` become int64, in ``floats`` float64, the rest strings.
+    The header lines counted by :func:`sniff` are skipped; a ``#`` inside a
+    data field is data (as for bedtools / UCSC).
     """
     skip, ncol = sniff(path)
     columns = [c for c in columns if c < max(ncol, 1)]
@@ -49,15 +59,22 @@ def read_columns(path, columns: Sequence[int], *, ints: Sequence[int] = (), floa
                 for c in columns}
     if b == "polars":
         import polars as pl
-        names = [f"c{c}" for c in columns]
-        df = pl.read_csv(path, separator="\t", has_header=False, skip_rows=skip, columns=list(columns),
-                         new_columns=names, infer_schema_length=0, quote_char=None, comment_prefix="#",
-                         truncate_ragged_lines=True)
+        order = sorted(set(columns))                 # polars returns columns in file order
+        names = {c: f"c{c}" for c in order}
+        try:
+            df = pl.read_csv(path, separator="\t", has_header=False, skip_rows=skip, columns=order,
+                             new_columns=[names[c] for c in order], infer_schema_length=0, quote_char=None,
+                             truncate_ragged_lines=True)
+        except Exception as e:                       # noqa: BLE001 — polars has many error classes
+            raise _parse_error(path, e) from None
         out = {}
-        for c, n in zip(columns, names):
-            s = df[n]
+        for c in columns:
+            s = df[names[c]]
             if c in ints:
-                out[c] = s.cast(pl.Int64).to_numpy()
+                try:
+                    out[c] = s.cast(pl.Int64).to_numpy()
+                except Exception as e:               # noqa: BLE001
+                    raise _parse_error(path, e, column=c) from None
             elif c in floats:
                 out[c] = s.cast(pl.Float64, strict=False).to_numpy()
             else:
@@ -65,8 +82,11 @@ def read_columns(path, columns: Sequence[int], *, ints: Sequence[int] = (), floa
         return out
     import pandas as pd
     dtypes = {c: (np.int64 if c in ints else str) for c in columns}
-    df = pd.read_csv(path, sep="\t", header=None, skiprows=skip, usecols=list(columns), dtype=dtypes,
-                     comment="#", quoting=3, engine="c")
+    try:
+        df = pd.read_csv(path, sep="\t", header=None, skiprows=skip, usecols=list(columns), dtype=dtypes,
+                         quoting=3, engine="c")
+    except (ValueError, TypeError) as e:
+        raise _parse_error(path, e) from None
     out = {}
     for c in columns:
         if c in ints:

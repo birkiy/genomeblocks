@@ -103,7 +103,7 @@ class Library:
         from Bio import motifs as bm
         out = []
         for name, c, d in zip(self.names, self.counts, self.descriptions):
-            m = bm.Motif("ACGT", {b: c[:, k].tolist() for k, b in enumerate("ACGT")})
+            m = bm.Motif(alphabet="ACGT", counts={b: c[:, k].tolist() for k, b in enumerate("ACGT")})
             m.name, m.matrix_id = d or name, name
             out.append(m)
         return out
@@ -189,19 +189,42 @@ def load_motifs(src, format: str = "jaspar") -> Library:
     if isinstance(src, Library):
         return src
     if isinstance(src, str) or hasattr(src, "__fspath__"):
+        import os
         path = str(src)
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"no such motif file: {path!r}")
+        if format not in FORMATS:
+            raise ValueError(f"unknown motif format {format!r}; use one of {', '.join(FORMATS)}")
         if format == "meme":
             return Library(*_read_meme(path))
         import lightmotif
         names, counts, descs, lo = [], [], [], []
-        for m in lightmotif.load(path, format=format):
-            c = np.asarray(m.counts, np.float64)[:, _ACGT_FROM_LM]
-            pssm = m.counts.normalize(PSEUDOCOUNT).log_odds()
-            names.append(m.name)
+        try:
+            motifs = list(lightmotif.load(path, format=format))
+        except Exception as e:                           # noqa: BLE001 — lightmotif parse errors
+            raise ValueError(f"{path}: cannot parse as {format} ({e}); JASPAR counts must be integers — "
+                             f"pass format= for another layout, or a {{name: matrix}} dict") from None
+        for k, m in enumerate(motifs):
+            names.append(_lm_name(m, k))
             descs.append(getattr(m, "description", "") or "")
-            counts.append(c)
-            lo.append(np.array([[pssm[i][j] for j in _ACGT_FROM_LM] for i in range(len(pssm))], np.float64))
+            if getattr(m, "counts", None) is not None:
+                c = np.asarray(m.counts, np.float64)[:, _ACGT_FROM_LM]
+                pssm = m.counts.normalize(PSEUDOCOUNT).log_odds()
+                counts.append(c)
+                lo.append(np.array([[pssm[i][j] for j in _ACGT_FROM_LM] for i in range(len(pssm))], np.float64))
+            else:                                        # uniprobe: probabilities only (odds vs 0.25)
+                pwm = m.pwm
+                odds = np.array([[pwm[i][j] for j in _ACGT_FROM_LM] for i in range(len(pwm))], np.float64)
+                p = odds * 0.25
+                counts.append(p / np.maximum(p.sum(1, keepdims=True), 1e-12) * 100.0)
+                lo.append(None)
+        if any(x is None for x in lo):
+            lo = None
         return Library(names, counts, descs, _logodds=lo)
+    if isinstance(src, np.ndarray):
+        src = [src]
+    if isinstance(src, (list, tuple)) and src and all(isinstance(a, (np.ndarray, list, tuple)) for a in src):
+        src = {f"motif{k + 1}": a for k, a in enumerate(src)}       # bare matrices
     if isinstance(src, dict):
         names, counts = [], []
         for k, v in src.items():
@@ -223,10 +246,22 @@ def load_motifs(src, format: str = "jaspar") -> Library:
             descs.append(getattr(m, "name", "") or "")
         else:                                                         # lightmotif
             a = np.asarray(c, np.float64)[:, _ACGT_FROM_LM]
-            names.append(m.name)
+            names.append(_lm_name(m, len(names)))
             descs.append(getattr(m, "description", "") or "")
         counts.append(a)
     return Library(names, counts, descs)
+
+
+FORMATS = ("jaspar", "jaspar16", "transfac", "uniprobe", "meme")
+
+
+def _lm_name(m, k: int) -> str:
+    """A lightmotif motif's name: NA, else ID, else AC, else motif<k+1>."""
+    for attr in ("name", "id", "accession"):
+        v = getattr(m, attr, None)
+        if v:
+            return str(v)
+    return f"motif{k + 1}"
 
 
 # ── scanning ───────────────────────────────────────────────────────────────

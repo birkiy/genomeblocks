@@ -74,9 +74,16 @@ class Genome:
     def encode(self, values) -> np.ndarray:
         """Chromosome names -> int32 codes (unseen names are added)."""
         import pandas as pd
-        inv, uniq = pd.factorize(np.asarray(values, dtype=object), sort=False)
+        arr = np.asarray(values, dtype=object)
+        if not len(arr):
+            return np.zeros(0, np.int32)
+        inv, uniq = pd.factorize(arr, sort=False)
+        if (inv < 0).any():
+            n = int((inv < 0).sum())
+            raise ValueError(f"{n} of {len(arr)} rows have a missing chromosome (None / NaN); "
+                             f"drop those rows or fill the chrom column first")
         lut = np.fromiter((self._add(str(u)) for u in uniq), np.int32, len(uniq))
-        return lut[inv] if len(inv) else np.zeros(0, np.int32)
+        return lut[inv]
 
     def decode(self, codes) -> np.ndarray:
         """int codes -> object array of names."""

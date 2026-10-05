@@ -143,6 +143,11 @@ class Loci(TableMixin):
         if low.endswith(".bedpe"):
             raise ValueError("this is a BEDPE file: use Pairs.make()")
         _, ncol = sniff(filename)
+        if ncol == 0:                                  # empty or header-only file
+            return cls(genome=genome, filename=str(filename))
+        if ncol < 3:
+            raise ValueError(f"{filename}: expected a tab-separated BED with at least 3 columns "
+                             f"(chrom, start, end); the first data line has {ncol}")
         names = _bed_names(low, ncol)
         wanted = []
         if keep is True:
@@ -281,8 +286,8 @@ class Loci(TableMixin):
         same = (np.array_equal(self.codes, o.codes) and np.array_equal(self.starts, o.starts)
                 and np.array_equal(self.ends, o.ends) and np.array_equal(self.strands, o.strands))
         if same and cols:
-            same = set(self.cols) == set(other.cols) and all(
-                np.array_equal(np.asarray(self.cols[k]), np.asarray(other.cols[k])) for k in self.cols)
+            same = set(self.cols) == set(other.cols) and all(_col_equal(self.cols[k], other.cols[k])
+                                                               for k in self.cols)
         return same
 
     # ── sequence protocol ─────────────────────────────────────────────────
@@ -733,6 +738,20 @@ def _join_uid(chroms, starts, ends, strands):
 _NARROWPEAK = ["chrom", "start", "end", "name", "score", "strand", "signalValue", "pValue", "qValue", "peak"]
 _BED12 = ["chrom", "start", "end", "name", "score", "strand", "thickStart", "thickEnd", "itemRgb",
           "blockCount", "blockSizes", "blockStarts"]
+
+
+def _col_equal(a, b) -> bool:
+    """Same values, NaN counting as equal to NaN (float and object columns)."""
+    a, b = np.asarray(a), np.asarray(b)
+    if a.shape != b.shape:
+        return False
+    if a.dtype.kind == "f" and b.dtype.kind == "f":
+        return bool(np.array_equal(a, b, equal_nan=True))
+    if a.dtype == object or b.dtype == object:
+        import pandas as pd
+        na, nb = pd.isna(a), pd.isna(b)
+        return bool(np.array_equal(na, nb) and np.array_equal(a[~na], b[~nb]))
+    return bool(np.array_equal(a, b))
 
 
 def _bed_names(low: str, ncol: int):

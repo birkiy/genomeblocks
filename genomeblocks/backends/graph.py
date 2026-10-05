@@ -86,14 +86,25 @@ def native(A, backend=None, *, vprops=(), loci_cols: bool = False):
         import networkx as nx
         g = nx.Graph()
         g.add_nodes_from(range(n))
+        # nx.Graph holds one edge per pair: parallel edges are merged and their
+        # numeric columns summed, the same sum to_scipy() puts in the adjacency
+        s, t, inv = _merged_pairs(A)
         keys = list(A.ep)
-        cols = [np.asarray(A.ep[k], np.float64).tolist() for k in keys]
-        g.add_edges_from((s, t, dict(zip(keys, vals))) for s, t, *vals in
-                         zip(A.src.tolist(), A.tgt.tolist(), *cols))
+        cols = [np.bincount(inv, weights=np.asarray(A.ep[k], np.float64), minlength=len(s)).tolist()
+                for k in keys]
+        g.add_edges_from((a, b_, dict(zip(keys, vals))) for a, b_, *vals in zip(s.tolist(), t.tolist(), *cols))
         for k, v in vcols.items():
             nx.set_node_attributes(g, dict(enumerate(v.tolist())), k)
         return g
     return to_scipy(A, "w" if "w" in A.ep else None)
+
+
+def _merged_pairs(A):
+    """Unique undirected (src, tgt) pairs and, per edge, the index of its pair."""
+    lo, hi = np.minimum(A.src, A.tgt), np.maximum(A.src, A.tgt)
+    n = len(A.loci)
+    key, inv = np.unique(lo.astype(np.int64) * max(n, 1) + hi, return_inverse=True)
+    return key // max(n, 1), key % max(n, 1), inv.ravel()
 
 
 def _canonical(labels, active):
@@ -150,8 +161,10 @@ def pagerank(A, weight=None, *, damping: float = 0.85, backend=None, tol: float 
         import networkx as nx
         g = nx.Graph()
         g.add_nodes_from(range(len(A.loci)))
-        ww = np.ones(A.n_links) if w is None else w
-        g.add_weighted_edges_from(zip(A.src.tolist(), A.tgt.tolist(), ww.tolist()))
+        ww = np.ones(A.n_links) if w is None else np.asarray(w, np.float64)
+        s, t, inv = _merged_pairs(A)                      # parallel edges: weights summed (as scipy)
+        g.add_weighted_edges_from(zip(s.tolist(), t.tolist(),
+                                      np.bincount(inv, weights=ww, minlength=len(s)).tolist()))
         pr = nx.pagerank(g, alpha=damping, weight="weight", tol=tol, max_iter=1000)
         return np.array([pr[i] for i in range(len(A.loci))], np.float64)
     # scipy: power iteration on the column-stochastic matrix, dangling mass spread uniformly
@@ -214,17 +227,35 @@ def layout(A, rows, *, kind: str = "spring", backend=None, seed: int = 0) -> np.
         g.add_edges_from(zip(s.tolist(), t.tolist()))
         p = nx.spring_layout(g, seed=seed)
         return np.array([p[i] for i in range(m)], np.float64)
-    # scipy: spectral layout from the two smallest non-trivial Laplacian eigenvectors
+    # scipy: spectral layout from the two smallest non-trivial Laplacian eigenvectors,
+    # deterministic (dense solver for small graphs, seeded start vector otherwise)
+    import warnings
     from scipy.sparse import coo_matrix, diags
     from scipy.sparse.linalg import eigsh
+    circle = np.column_stack([np.cos(np.linspace(0, 2 * np.pi, m, endpoint=False)),
+                              np.sin(np.linspace(0, 2 * np.pi, m, endpoint=False))])
     if m < 3 or not len(s):
-        t_ = np.linspace(0, 2 * np.pi, m, endpoint=False)
-        return np.column_stack([np.cos(t_), np.sin(t_)])
+        return circle
     W = coo_matrix((np.ones(2 * len(s)), (np.r_[s, t], np.r_[t, s])), shape=(m, m)).tocsr()
-    L = diags(np.asarray(W.sum(1)).ravel()) - W
+    L = (diags(np.asarray(W.sum(1)).ravel()) - W).astype(float)
     try:
-        vals, vecs = eigsh(L.asfptype() if hasattr(L, "asfptype") else L.astype(float), k=min(3, m - 1), which="SM")
-        return np.asarray(vecs[:, 1:3], np.float64)
-    except Exception:
-        rng = np.random.default_rng(seed)
-        return rng.normal(size=(m, 2))
+        if m <= 2000:
+            vals, vecs = np.linalg.eigh(L.toarray())
+            vecs = vecs[:, 1:3]
+        else:
+            rng = np.random.default_rng(seed)
+            vals, vecs = eigsh(L, k=min(3, m - 1), which="SM", v0=rng.normal(size=m))
+            vecs = vecs[:, 1:3]
+    except Exception as e:                                 # noqa: BLE001
+        warnings.warn(f"spectral layout failed ({e}); using a circular layout", RuntimeWarning, stacklevel=2)
+        return circle
+    pos = np.zeros((m, 2))
+    pos[:, :vecs.shape[1]] = vecs
+    for j in range(vecs.shape[1]):                         # fix the sign: largest entry positive
+        k = np.argmax(np.abs(pos[:, j]))
+        if pos[k, j] < 0:
+            pos[:, j] *= -1
+    rng = np.random.default_rng(seed)
+    scale = float(np.ptp(pos, axis=0).max()) or 1.0
+    pos += rng.normal(scale=1e-3 * scale, size=pos.shape)  # separate structurally equivalent rows
+    return pos
