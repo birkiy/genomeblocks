@@ -21,7 +21,9 @@ def test_every_container_is_a_table(containers):
     for name, obj in containers.items():
         n_rows, n_cols = obj.shape
         assert n_cols == len(obj.columns), name
-        assert obj.head(1) is not None and obj.describe().shape[1] == 1, name
+        d = obj.describe()
+        assert obj.head(1) is not None and list(d.columns) == ["value"], name
+        assert d.index.name is None and str(d).splitlines()[1].split()[0] == d.index[0], name   # no blank header row
         assert obj.to_pandas().shape[1] == n_cols, name
         assert obj.to_polars().shape == (n_rows, n_cols), name
         assert obj.to_arrow().num_rows == n_rows, name

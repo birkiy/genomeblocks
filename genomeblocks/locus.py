@@ -77,13 +77,13 @@ class Locus:
         return NotImplemented if not isinstance(o, Locus) else \
             s.start >= o.start if s.chrom == o.chrom else s.chrom > o.chrom
 
-    def distance_to(s, o: "Locus") -> int:
+    def distance_to(s, other: "Locus") -> int:
         """|center - other.center| on the same chromosome (NotImplemented across)."""
-        return abs(s.center - o.center) if s.chrom == o.chrom else NotImplemented
+        return abs(s.center - other.center) if s.chrom == other.chrom else NotImplemented
 
-    def overlaps(s, o: "Locus") -> bool:
+    def overlaps(s, other: "Locus") -> bool:
         """Same chromosome and intersecting half-open spans."""
-        return (s.chrom == o.chrom) and not (s.end <= o.start or s.start >= o.end)
+        return (s.chrom == other.chrom) and not (s.end <= other.start or s.start >= other.end)
 
     def sequence(s, fasta, r=None) -> str:
         """The bases of this locus (or ``center ± r``) from a FASTA path, a

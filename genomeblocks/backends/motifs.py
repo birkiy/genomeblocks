@@ -185,7 +185,7 @@ class Library(TableMixin):
                 ("width median", float(np.median(w)) if len(w) else 0.0),
                 ("width max", int(w.max()) if len(w) else 0), ("pseudocount", self.pseudocount),
                 ("log-odds", "log2((count + p) / (total + 4p) / 0.25)")]
-        return pd.DataFrame(rows, columns=["", "value"]).set_index("")
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("").rename_axis(None)
 
     summary = describe
 

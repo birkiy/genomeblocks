@@ -676,7 +676,7 @@ class Atlas(TableMixin):
                 ("bins per track median", float(np.median(nb)) if len(nb) else 0.0),
                 ("bins per track max", int(nb.max()) if len(nb) else 0),
                 ("metadata columns", ", ".join(self.columns[3:]) or "—")]
-        return pd.DataFrame(rows, columns=["", "value"]).set_index("")
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("").rename_axis(None)
 
     summary = describe
 

@@ -371,7 +371,7 @@ class Loci(TableMixin):
                 ("length mean", float(lens.mean()) if n else 0.0),
                 ("strand + / - / .", "{} / {} / {}".format(*np.bincount(self.strands, minlength=3)[[1, 2, 0]])),
                 ("genome-sorted", self.is_sorted)]
-        return pd.DataFrame(rows, columns=["", "value"]).set_index("")
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("").rename_axis(None)
 
     summary = describe
 

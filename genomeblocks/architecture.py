@@ -779,7 +779,7 @@ class Architecture(TableMixin):
                 ("cis edges", self.n_links - self.n_trans), ("trans edges", self.n_trans),
                 ("cis blocks (chromosomes)", len([k for k in b if k != "trans"])),
                 ("edge columns", ", ".join(self.ep) or "—"), ("vertex columns", ", ".join(self.vp) or "—")]
-        return pd.DataFrame(rows, columns=["", "value"]).set_index("")
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("").rename_axis(None)
 
     summary = describe
 

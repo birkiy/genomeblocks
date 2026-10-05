@@ -906,7 +906,7 @@ class Genes(TableMixin):
                 ("gene types", int(len(np.unique(G.cols["gene_type"].astype(str)))) if len(G) else 0),
                 ("canonical isoforms", "selected" if "canonical" in G.cols else "not selected"),
                 ("promoter_r", self.promoter_r), ("coordinates", "0-based, half-open")]
-        return pd.DataFrame(rows, columns=["", "value"]).set_index("")
+        return pd.DataFrame(rows, columns=["", "value"]).set_index("").rename_axis(None)
 
     summary = describe
 

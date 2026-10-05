@@ -227,7 +227,7 @@ class Pairs(TableMixin):
             sc = np.asarray(self.cols["score"], float)
             rows += [("score min", float(np.nanmin(sc))), ("score median", float(np.nanmedian(sc))),
                      ("score max", float(np.nanmax(sc)))]
-        return pd.DataFrame({"": [k for k, _ in rows], "value": pd.array([v for _, v in rows], dtype=object)}).set_index("")
+        return pd.DataFrame({"": [k for k, _ in rows], "value": pd.array([v for _, v in rows], dtype=object)}).set_index("").rename_axis(None)
 
     summary = describe
 
