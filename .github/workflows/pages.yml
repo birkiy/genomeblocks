@@ -25,6 +25,8 @@ jobs:
         working-directory: docs
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # the frozen versions are built from older commits
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -41,6 +43,28 @@ jobs:
         run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
         env:
           JEKYLL_ENV: production
+
+      # Every entry of _data/versions.yml with a `ref` is built from that commit
+      # into _site/<path>/, with the current version switcher, a banner that
+      # points to the current version, and noindex.
+      - name: Build the frozen versions
+        env:
+          JEKYLL_ENV: production
+          BASE: ${{ steps.pages.outputs.base_path }}
+        run: |
+          ruby -ryaml -e 'YAML.load_file("_data/versions.yml").each { |v| puts [v["path"], v["version"], v["ref"]].join(" ") if v["ref"] }' |
+          while read -r path version ref; do
+            src="$RUNNER_TEMP/docs-$path"
+            mkdir -p "$src"
+            git -C "$GITHUB_WORKSPACE" archive "$ref" docs | tar -x -C "$src" --strip-components=1
+            mkdir -p "$src/_includes" "$src/_data"
+            cp _includes/header_custom.html "$src/_includes/"
+            cp _data/versions.yml "$src/_data/"
+            echo '<meta name="robots" content="noindex">' >> "$src/_includes/head_custom.html"
+            printf 'docs_version: "%s"\nversion_root: "%s"\n' "$version" "$BASE" > "$src/_config_version.yml"
+            bundle exec jekyll build -s "$src" -d "_site/$path" --baseurl "$BASE/$path" \
+              --config "$src/_config.yml,$src/_config_version.yml"
+          done
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

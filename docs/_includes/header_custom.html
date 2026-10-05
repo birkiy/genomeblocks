@@ -1,0 +1,63 @@
+{% comment %}
+  Version switcher, next to the search box. The versions are listed in
+  _data/versions.yml; the first is the current one, at the site root. A frozen
+  build (made by .github/workflows/pages.yml under /<path>/) sets docs_version
+  and version_root in an extra config file and shows a banner that points to
+  the current version. Switching keeps the page when the other version has it.
+{% endcomment %}
+{%- assign versions = site.data.versions -%}
+{%- if versions and versions.size > 1 -%}
+{%- assign current = versions | first -%}
+{%- assign here = site.docs_version | default: current.version -%}
+{%- assign root = site.version_root | default: site.baseurl -%}
+{%- assign here_path = "" -%}
+{%- for v in versions -%}{%- if v.version == here -%}{%- assign here_path = v.path -%}{%- endif -%}{%- endfor -%}
+<div class="gb-version">
+  <select id="gb-version-select" class="gb-version-select" aria-label="Documentation version"
+          data-root="{{ root }}" data-here="{{ here_path }}">
+    {%- for v in versions %}
+    <option value="{{ v.path }}"{% if v.version == here %} selected{% endif %}>{{ v.label }}</option>
+    {%- endfor %}
+  </select>
+</div>
+{%- if here != current.version %}
+<div id="gb-version-banner" class="gb-version-banner" role="note">
+  This is the documentation of genomeblocks {{ here }}.
+  <a href="{{ root }}/">Read the documentation of the current version, {{ current.version }}.</a>
+</div>
+{%- endif %}
+<style>
+  .gb-version { display: flex; align-items: center; margin-left: auto; padding: 0 1rem; }
+  .gb-version-select {
+    font: inherit; font-size: 0.8rem; line-height: 1.4; color: inherit; cursor: pointer;
+    background: transparent; border: 1px solid rgba(127, 127, 127, 0.55); border-radius: 4px;
+    padding: 0.2rem 0.45rem;
+  }
+  .gb-version-select:focus { outline: 2px solid rgba(127, 127, 127, 0.8); outline-offset: 1px; }
+  .gb-version-banner {
+    margin: 0 0 1.25rem; padding: 0.6rem 0.9rem; border-left: 4px solid #e3a008; border-radius: 4px;
+    background: rgba(227, 160, 8, 0.12); font-size: 0.9rem;
+  }
+</style>
+<script>
+  (function () {
+    var sel = document.getElementById("gb-version-select");
+    sel.addEventListener("change", function () {
+      var root = sel.dataset.root, here = sel.dataset.here, to = sel.value;
+      var base = root + (here ? "/" + here : "");
+      var path = location.pathname;
+      var rel = path.indexOf(base + "/") === 0 ? path.slice(base.length) : "/";
+      var home = root + (to ? "/" + to : "") + "/";
+      var page = root + (to ? "/" + to : "") + rel;
+      fetch(page, { method: "HEAD" })
+        .then(function (r) { location.href = r.ok ? page + location.hash : home; })
+        .catch(function () { location.href = home; });
+    });
+    document.addEventListener("DOMContentLoaded", function () {
+      var banner = document.getElementById("gb-version-banner");
+      var main = document.getElementById("main-content");
+      if (banner && main) { main.insertBefore(banner, main.firstChild); }
+    });
+  })();
+</script>
+{%- endif -%}

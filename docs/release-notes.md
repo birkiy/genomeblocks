@@ -18,7 +18,7 @@ permalink: /release-notes/
 
 ## v2.0.0 — columnar only
 
-`2.0.0` makes the columnar tables introduced in 1.1 **the** API. `genomeblocks.Loci`, `Genes`, `Pairs`, `Architecture` and `Atlas` are tables of numpy columns whose row number is the join key; the 1.x object API (`Loci` as a list of `Locus`, `Gene` / `Transcript` / `Exon` trees, `list[Pair]`, `Architecture` as a `graph_tool.Graph`) is gone, and so is the `genomeblocks.columnar` subpackage — its contents are now the top-level names. There are no compatibility shims. Upgrade: `pip install -U genomeblocks`.
+`2.0.0` makes the columnar tables introduced in 1.1 **the** API. `genomeblocks.Loci`, `Genes`, `Pairs`, `Architecture` and `Atlas` are tables of numpy columns whose row number is the join key; the 1.x object API (`Loci` as a list of `Locus`, `Gene` / `Transcript` / `Exon` trees, `list[Pair]`, `Architecture` as a `graph_tool.Graph`) is gone, and so is the `genomeblocks.columnar` subpackage — its contents are now the top-level names. There are no compatibility shims. Upgrade: `pip install -U genomeblocks`. The 1.1 documentation stays online: pick **1.1** in the version menu at the top of every page.
 
 ### What 2.0 is
 
