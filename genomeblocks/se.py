@@ -30,7 +30,8 @@ def knee(values) -> Tuple[int, np.ndarray]:
     m = len(ys)
     xn = np.arange(m) / (m - 1)
     yn = (ys - ys[0]) / (ys[-1] - ys[0])
-    yn_s = uniform_filter1d(yn, size=min(max(11, m // 200), m), mode="nearest")   # window never exceeds the curve
+    size = max(11, m // 200) if m >= 50 else 1                 # smooth long curves only
+    yn_s = uniform_filter1d(yn, size=size, mode="nearest") if size > 1 else yn
     crossed = np.flatnonzero(np.gradient(yn_s, xn) >= 1.0)
     i = int(crossed[0]) if len(crossed) else m
     return m - i, order
