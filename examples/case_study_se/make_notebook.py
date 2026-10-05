@@ -18,7 +18,7 @@ md, code = nbf.v4.new_markdown_cell, nbf.v4.new_code_cell
 cells = [
 md("""# Case study: HiChIP + ATAC → super-enhancers, prime hubs and a shareable view
 
-Columnar prototype (`genomeblocks.columnar`, branch `columnar-prototype`).
+genomeblocks 2.0: every step below is a table of numpy columns whose row number is the join key.
 
 ```
 chrom sizes ─▶ Genome
@@ -35,10 +35,9 @@ import numpy as np, pandas as pd
 import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore", message=".*(cairo|draw module|default behavior of `values`).*")
 
-import genomeblocks.columnar as gbc
-from genomeblocks.columnar import hichip
-from genomeblocks.columnar.se import call_se, nearest_gene_within
-from genomeblocks.columnar.view import View
+import genomeblocks as gb
+from genomeblocks import hichip, View
+from genomeblocks.se import call_se, nearest_gene_within
 
 @contextmanager
 def timer(label):
@@ -63,22 +62,22 @@ RES, STITCH, W, MAXD, QHIC = 5000, 12_500, 5000, 50_000, 10
 WORK = "work"; os.makedirs(WORK, exist_ok=True)
 MACS3 = shutil.which("macs3") or os.path.join(os.path.dirname(sys.executable), "macs3")
 PR_COL, SE_COL = "#DA0000", "#FF6600\""""),
-md("## 1 · Genome\nOne chromosome table that every other table shares, so codes match everywhere."),
-code("""genome = gbc.set_default_genome(gbc.Genome.from_sizes(CS, name="mm10 (here: synthetic hg38)"))
+md("## 1 · Genome\nOne chromosome table, passed to every reader with `genome=`, so the chromosome codes match across the tables (without it each table gets its own and operations between tables re-code the other side)."),
+code("""genome = gb.Genome.from_sizes(CS, name="mm10 (here: synthetic hg38)")
 sizes = {c: genome.size(c) for c in genome.names}
 genome"""),
 md("## 2 · CREs from ATAC peaks"),
 code("""with timer("Loci.make"):
-    cre = gbc.Loci.make(ATAC_BED)
+    cre = gb.Loci.make(ATAC_BED, genome=genome)
 cre"""),
 md("""## 3 · Genes, isoform-fixed
 
 `cre=` and `bw=` run `select_isoforms`, the same rule as the classic code. A TSS window (± `W`) must overlap an ATAC peak and reach `min_frac` of the best TSS signal in its gene. Each gene then follows its longest supported isoform."""),
 code("""with timer("Genes.make + select_isoforms"):
-    genes = gbc.Genes.make(GTF, promoter_r=2500, cre=cre, bw=[ATAC_BW], r=W,
-                           kw={"min_frac": 0.5, "rank": "longest", "verbose": True})
-plain = gbc.Genes.make(GTF)
-tss = lambda G: np.where(G.genes.strands == 2, G.genes.ends, G.genes.starts)
+    genes = gb.Genes.make(GTF, promoter_r=2500, genome=genome, cre=cre, bw=[ATAC_BW], r=W,
+                          kw={"min_frac": 0.5, "rank": "longest", "verbose": True})
+plain = gb.Genes.make(GTF, genome=genome)
+tss = lambda G: np.where(G.genes.strands == 2, G.genes.ends - 1, G.genes.starts)   # 0-based TSS base
 moved = np.abs(tss(genes) - tss(plain))
 print(f"{(moved > 0).sum():,} of {len(genes):,} genes moved their TSS onto an ATAC-supported isoform "
       f"(median shift {np.median(moved[moved > 0]) / 1e3:.1f} kb)")
@@ -87,7 +86,7 @@ print(g, "· canonical:", g.canonical)
 genes"""),
 md("## 4 · Architecture: loops → Hi-C weights → O/E → genes → prime hubs"),
 code("""with timer("make → add_mcool → normalize → annotate → strength"):
-    A = (gbc.Architecture.make(cre, BEDPE, verbose=False)
+    A = (gb.Architecture.make(cre, BEDPE, verbose=False)
            .add_mcool(MCOOL, resolution=RES, verbose=False)
            .normalize(verbose=False)
            .annotate(genes, key="n", name="gene_n", verbose=False)
@@ -109,11 +108,10 @@ with timer("fragments → coverage → bigWig"):
     K27_BW = hichip.to_bigwig(hichip.fragments(ends, 147, sizes), f"{WORK}/H3K27ac_HiChIP_shortrange.bw", sizes)"""),
 md("## 6 · Super-enhancers (ROSE: stitch 12.5 kb · mean × width · slope-1 knee)"),
 code("""p = pd.read_table(np_path, header=None)
-peaks = gbc.Loci.from_frame(p[p[8] >= QHIC])                     # q-value filter, as in your notebook
+peaks = gb.Loci.from_frame(p[p[8] >= QHIC], genome=genome)      # q-value filter, as in your notebook
 with timer("call_se"):
-    SE = call_se(peaks, [K27_BW], stitch=STITCH, workers=4, verbose=True)
+    SE, allr = call_se(peaks, [K27_BW], stitch=STITCH, workers=4, verbose=True, return_all=True)
 
-allr = SE.all_regions
 y = np.sort(allr.cols["score"])
 fig, ax = plt.subplots(figsize=(5, 3.2))
 ax.plot(np.arange(len(y)), y, color="0.3", lw=1.2)
@@ -130,15 +128,14 @@ names = G.cols["gene_name"].astype(str)
 first = pd.Series(np.arange(len(G))).groupby(names).first()
 uni = first[first.index.isin(U)].to_numpy()
 tss_pos = np.where(G.strands[uni] == 2, G.ends[uni] - 1, G.starts[uni])
-TSS = gbc.Loci(G.codes[uni], tss_pos, tss_pos + 1, genome=G.genome, cols={"gene": names[uni]})
+TSS = gb.Loci(G.codes[uni], tss_pos, tss_pos + 1, genome=G.genome, cols={"gene": names[uni]})
 hit = nearest_gene_within(SE, TSS, MAXD)
 SEG = set(TSS.cols["gene"][hit[hit >= 0]])
 SETS = {"shared": PRIME & SEG, "SE only": SEG - PRIME, "prime only": PRIME - SEG}
 
-indptr, nbr, eid = A._adj()                                        # anchor budget: Σ O/E from anchor to partners
-def budget(rows):
+def budget(rows):                                                  # anchor budget: Σ O/E from anchor to partners
     rs = set(rows.tolist())
-    e = [eid[k] for v in rows for k in range(indptr[v], indptr[v + 1]) if nbr[k] not in rs]
+    e = [k for v in rows for p, k in zip(*A.neighbor_rows(int(v))) if p not in rs]
     n = A.ep.n[e] if e else np.zeros(0)
     return float(n[n > 0].sum())
 BUD = pd.Series({g: budget(rows) for g, rows in FOOT.items()})
