@@ -1,4 +1,4 @@
-<svg class="gbd" viewBox="0 0 880 336" role="img" aria-label="browser() gives every track its own axis on a shared x range and picks the drawer from the track&#x27;s type; bigWigs are read as binned summaries for the region only." xmlns="http://www.w3.org/2000/svg">
+<svg class="gbd" viewBox="0 0 880 336" role="img" aria-label="browser() gives every track its own axis on a shared x range and picks the drawer from the track&#x27;s type: intervals through as_loci, loops through as_pairs, bigWigs as binned summaries of the region only, through the bigwig backend." xmlns="http://www.w3.org/2000/svg">
 <text class="t" x="20" y="40">ruler</text>
 <text class="s" x="632" y="40">region → chrom, start, end</text>
 <polyline class="ln" points="150,44 600,44"/>
@@ -116,21 +116,21 @@
 <rect class="iv fm" x="590" y="181.99" width="4.4" height="6.0101" rx="0"></rect>
 <rect class="iv fm" x="595" y="181.993" width="4.4" height="6.00682" rx="0"></rect>
 <text class="t" x="20" y="216">peaks</text>
-<text class="ms" x="20" y="231">.bed · Loci</text>
-<text class="s" x="632" y="216">rectangles</text>
+<text class="ms" x="20" y="231">Loci · frame · .bed</text>
+<text class="s" x="632" y="216">rectangles, via as_loci</text>
 <rect class="iv fg" x="210" y="214" width="50" height="12" rx="2"></rect>
 <rect class="iv fg" x="330" y="214" width="30" height="12" rx="2"></rect>
 <rect class="iv fg" x="410" y="214" width="70" height="12" rx="2"></rect>
 <rect class="iv fg" x="570" y="214" width="20" height="12" rx="2"></rect>
 <text class="t" x="20" y="260">loops</text>
-<text class="ms" x="20" y="275">.bedpe · [Pair]</text>
+<text class="ms" x="20" y="275">Pairs · .bedpe</text>
 <text class="s" x="632" y="260">half-sine arcs between anchors</text>
 <path class="ln purple" d="M235,276 Q337.5,231.1 440,276"/>
 <path class="ln purple" d="M345,276 Q462.5,225.7 580,276"/>
 <path class="ln purple" d="M450,276 Q470.0,260.8 490,276"/>
 <text class="t" x="20" y="304">genes</text>
 <text class="ms" x="20" y="319">Genes</text>
-<text class="s" x="632" y="304">stacked models, exon/CDS heights</text>
+<text class="s" x="632" y="304">stacked models from the 3 tables</text>
 <polyline class="ln navy thin" points="190,302 480,302"/>
 <rect class="iv fn" x="190" y="299" width="20" height="6" rx="1"></rect>
 <rect class="iv fn" x="210" y="296" width="20" height="12" rx="1"></rect>

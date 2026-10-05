@@ -13,6 +13,13 @@ A complete, real-data walkthrough of `genomeblocks` — from raw peak calls to a
 publication-style figure set — built around one biological question.
 {: .fs-5 .fw-300 }
 
+{: .note }
+> The figures, tables and numbers on these pages come from the notebook's 1.x
+> run on the real data. The code is the **2.0 API**: every snippet has been
+> rewritten for the columnar tables and checked against the 2.0 package, but
+> the notebook has not yet been re-run on 2.0. Coordinates are 0-based,
+> half-open throughout.
+
 The runnable notebook lives at
 [`examples/ar_foxa1_lncap/`](https://github.com/birkiy/genomeblocks/tree/main/examples/ar_foxa1_lncap).
 These pages explain the *concepts* behind each step: the biology, the method,
@@ -40,9 +47,9 @@ We split the 4 h AR cistrome into two sets and characterise each:
 
 Each step maps to one page in this section:
 
-1. **[Peaks, set algebra & categories]({{ '/walkthrough/peaks-and-sets/' | relative_url }})** — load peaks as `Loci`,
-   build accessible chromatin from ATAC, and derive **AR+F** / **AR−F** with set
-   operations and a Venn diagram.
+1. **[Peaks, set algebra & categories]({{ '/walkthrough/peaks-and-sets/' | relative_url }})** — load peaks as `Loci`
+   tables, build accessible chromatin from ATAC, and derive **AR+F** / **AR−F**
+   with set operations and a Venn diagram.
 2. **[Signal heatmaps]({{ '/walkthrough/signal-heatmaps/' | relative_url }})** — extract bigWig signal into a cube,
    average ATAC replicates, and draw grouped heatmaps.
 3. **[Genomic annotation]({{ '/walkthrough/annotation/' | relative_url }})** — label each set by gene context
@@ -72,8 +79,9 @@ Each accession has a **peak** file (`.05.bed`, q < 1e‑5) and a **signal** file
 coverage* you average for heatmaps and browser tracks.
 
 Annotation, motif scanning, and the ChIP-Atlas index also need genome-scale
-references (hg38 FASTA, a GTF, a JASPAR motif database, and a GIGGLE index);
-their paths are set once at the top of the notebook.
+references (hg38 FASTA, a GTF, a JASPAR motif database, and the ChIP-Atlas BED
+collection with its metadata table); their paths are set once at the top of
+the notebook.
 
 {: .note }
 > Every long step in the notebook is wrapped in a small `timer()` context manager

@@ -8,7 +8,11 @@ nav_order: 8
 # Motifs
 {: .no_toc }
 
-Scan TF binding motifs (JASPAR / MEME / custom PSSM) across a `Loci` set using the fast [lightmotif](https://github.com/althonos/lightmotif) backend (Martin Larralde, EMBL) — see [Credits]({{ '/credits/#lightmotif' | relative_url }}) for the citation.
+Scan transcription-factor motifs (JASPAR / TRANSFAC / MEME / your own matrices)
+over the windows of a `Loci` table, read straight from a FASTA. The scan runs on
+[lightmotif](https://github.com/althonos/lightmotif) by default (Martin
+Larralde, EMBL — see [Credits]({{ '/credits/#lightmotif' | relative_url }})),
+or on MOODS / Biopython on request, and every engine reports the same hits.
 {: .fs-5 .fw-300 }
 
 ## Table of contents
@@ -19,158 +23,556 @@ Scan TF binding motifs (JASPAR / MEME / custom PSSM) across a `Loci` set using t
 
 ---
 
-## Preparing the genome
+## The pieces
+
+| piece | what it is |
+|---|---|
+| `gb.load_motifs(src, format=)` | any motif source → a `Library` (count matrices + names) |
+| a FASTA path, dict or open handle | where the sequence comes from (the `fasta` backend family) |
+| `scan_motifs_matrix(loci, fasta, motifs)` | hits per locus and motif, a DataFrame aligned to the rows |
+| `scan_motifs_profile(...)` | *where* in the window the hits fall: a `(rows, motifs, bins)` cube |
+| `bootstrap_enrichment`, `compare_motifs`, `compare_motifs_to_ref` | statistics on those matrices |
+| `pwm_distance_matrix`, `cluster_motifs`, `build_archetypes` | collapse a redundant library into archetypes |
+
+Every function takes its loci as anything [`as_loci`]({{ '/interoperability/' | relative_url }})
+accepts — a `Loci`, a BED path, a pandas / polars frame, a list of region
+strings — and its motifs as anything `load_motifs` accepts. Results are aligned
+to the input rows: row *i* of a matrix or cube is locus *i*, and the index is
+the locus `uid`.
 
 ```python
-from genomeblocks import make_genome
-
-genome = make_genome("hg38.fa.gz")
-# → {"chr1": "ACGT...", "chr2": "ACGT...", ...}
+import genomeblocks as gb
+from genomeblocks import motifs as gm
 ```
-
-Any FASTA (bgzipped or plain) works; a small helper parses it into an in-memory `{chrom: str}` dict. For very large genomes and one-off scans, consider slicing to just the chromosomes present in your `Loci`.
-
-{: .warning }
-> **`lightmotif`'s `jaspar` format is the raw 4-line count format**, *not* the
-> bracketed JASPAR-2016 layout (`A [ … ]`). If your PWM library is in the
-> bracketed form, convert it (one PWM = a header line then four space-separated
-> count rows in `A C G T` order) or load it with `motif_format='jaspar16'`.
-> A ready-to-use, lightmotif-format JASPAR **H14CORE** file lives at
-> `…/motif-db/H14CORE_jaspar_format_lightmotif.txt`.
 
 ---
 
-## Scanning motifs
+## Motif libraries — `load_motifs` and `Library`
+
+`gb.load_motifs` reads one motif collection into a `Library`: a list of
+`(W x 4)` count matrices (columns A C G T) with names and descriptions.
 
 ```python
-from genomeblocks import scan_motifs
+lib = gb.load_motifs("JASPAR2024_CORE.jaspar")                  # raw 4-row counts (lightmotif's 'jaspar')
+lib = gb.load_motifs("JASPAR2024_CORE.txt", format="jaspar16")  # bracketed  A [ 1 2 3 ]  layout
+lib = gb.load_motifs("matrix.dat", format="transfac")
+lib = gb.load_motifs("uniprobe.txt", format="uniprobe")         # probabilities (scaled to 100 sites)
+lib = gb.load_motifs("archetypes.meme", format="meme")          # MEME minimal or full
+```
 
-counts = scan_motifs(
-    loci,
-    genome,
-    motif_path="JASPAR2024_CORE.jaspar",
-    motif_format="jaspar",    # or 'meme'
-    r=250,                    # ±r bp window around each Locus center
-    threshold=13.0,           # log-odds threshold
-    norm=True,                # normalize hit count by motif length
-    verbose=True,
+| `format` | layout |
+|---|---|
+| `jaspar` (default) | `>name description` then four rows of counts, A C G T order |
+| `jaspar16` | the bracketed JASPAR-2016 layout, `A  [ 10 0 0 ]` |
+| `transfac` | TRANSFAC `ID / P0 / 01 ...` blocks |
+| `uniprobe` | UniPROBE `A:` `C:` `G:` `T:` probability rows |
+| `meme` | MEME `MOTIF` blocks with a `letter-probability matrix` |
+
+{: .warning }
+> `jaspar` is the **raw four-line count** layout, not the bracketed JASPAR-2016
+> one. A bracketed file read as `jaspar` fails with a parse error that names the
+> fix — pass `format='jaspar16'`. Counts must be integers in either layout.
+
+Objects work too, so a library can come from anywhere:
+
+```python
+import numpy as np
+from Bio import motifs as bm
+
+lib = gb.load_motifs(bm.parse(open("jaspar.txt"), "jaspar"))     # Biopython motifs (one or a list)
+lib = gb.load_motifs({"CTCF": pfm, "GATA1": pfm2})                # {name: matrix}, 4 x W or W x 4
+lib = gb.load_motifs([np.ones((5, 4)), np.ones((6, 4))])           # bare matrices → motif1, motif2
+lib = gb.load_motifs(lib)                                          # a Library is returned as is
+```
+
+A `{name: matrix}` dict accepts counts or probabilities (a matrix whose rows sum
+to 1 is scaled to 100 sites) and either orientation.
+
+### A `Library` is a table
+
+The rest of this page uses a two-motif library — `motifs.jaspar`, the same file
+the test suite uses:
+
+```
+>M1 TFA
+10 0 0 0
+0 10 0 0
+0 0 10 0
+0 0 0 10
+>M2 TFB
+0 0 10 10
+0 0 0 0
+10 10 0 0
+0 0 0 0
+```
+
+```python
+lib = gb.load_motifs("motifs.jaspar")
+lib
+# -> Library(2 motifs: M1, M2)
+lib.shape, lib.columns
+# -> ((2, 4), ['name', 'description', 'width', 'consensus'])
+lib.head()
+# ->   name description  width consensus
+# -> 0   M1         TFA      4      ACGT
+# -> 1   M2         TFB      4      GGAA
+lib.describe()
+# ->                                                value
+# -> motifs                                              2
+# -> width min                                           4
+# -> width median                                      4.0
+# -> width max                                           4
+# -> pseudocount                                       0.1
+# -> log-odds      log2((count + p) / (total + 4p) / 0.25)
+```
+
+`len(lib)`, `list(lib)` (the names), `lib.head()` / `lib.tail()`,
+`lib.describe()`, `lib.to_pandas()` / `to_polars()` / `to_arrow()` and the
+Arrow / dataframe-interchange protocols are all there, so polars, DuckDB and
+seaborn take a `Library` as they are:
+
+```python
+import polars as pl, duckdb, seaborn as sns
+
+pl.DataFrame(lib)                                       # shape: (2, 4)
+duckdb.sql("select name, width from lib").fetchall()    # [('M1', 4), ('M2', 4)]
+sns.barplot(lib, x="name", y="width")
+```
+
+Indexing gives matrices:
+
+```python
+lib["M1"]                 # the (W x 4) count matrix, by name ...
+lib[0]                    # ... or by position
+lib.names, lib.descriptions, lib.widths
+# -> ['M1', 'M2'] ['TFA', 'TFB'] array([4, 4])
+lib.consensus(1)          # -> 'GGAA'
+lib.logodds(0)            # (W x 4) log2-odds matrix — what the scanners score
+lib.pfm(0)                # (4 x W) probabilities (rows A C G T), for logos and archetypes
+```
+
+Every motif is scored with one log-odds matrix,
+`log2((count + 0.1) / (column total + 0.4) / 0.25)` — lightmotif's own
+`normalize(0.1).log_odds()` — and every engine scans that same matrix.
+
+### Selecting motifs
+
+```python
+lib.select("tfa")                          # case-insensitive substring over names and descriptions
+# -> Library(1 motifs: M1)
+lib.select(["M2"], match="exact")          # verbatim names
+lib.indices("tf")                          # -> [0, 1]   (positions, same matching rules)
+```
+
+`select` searches the description too, so a TF symbol finds its JASPAR
+matrix (`lib.select("CTCF")` matches `MA0139.1 CTCF`). `lib["ctcf"]` works the
+same way when exactly one motif matches.
+
+### Writing a library out
+
+```python
+lib.to_jaspar("lib.jaspar16")              # bracketed JASPAR counts (read back with format='jaspar16')
+lib.to_meme("lib.meme")                    # MEME minimal format, probabilities
+lib.to_biopython()                         # list[Bio.motifs.Motif] (counts; name = description, matrix_id = name)
+lib.to_moods()                             # MOODS matrices: one 4 x W log-odds list per motif
+```
+
+`gm.write_meme({name: pfm}, path)` writes any `{name: (4 x W) probabilities}`
+dict — the archetypes below, for example — as MEME.
+
+---
+
+## Sequence — the FASTA side
+
+Scanning reads each window from a FASTA. Pass the path and the fasta backend
+does the rest:
+
+```python
+M = gm.scan_motifs_matrix(loci, "hg38.fa", "JASPAR2024_CORE.jaspar")
+```
+
+| `fasta` argument | how it is read |
+|---|---|
+| a plain FASTA path | genomeblocks' indexed reader: a samtools `.fai` (built next to the file when missing) and a memory map, so only the requested bases are read |
+| a `.gz` FASTA path | gzip cannot be indexed: the file is read into memory once |
+| `{chrom: str}` dict | used as is (`gb.read_fasta(path)` makes one) |
+| an open `pyfaidx.Fasta`, `pysam.FastaFile` or `Bio.SeqIO.index` | used as is |
+
+The other readers are backends — `pysam`, `pyfaidx`, `memory`, `biopython` —
+chosen per call with `fasta_backend=` (or `backend=` on `Loci.sequences`), or
+for a block with `gb.use_backend(fasta=...)`. All return the same bases.
+
+```python
+seqs = gb.read_fasta("hg38.fa")             # {chrom: str}, the whole file in memory
+genome = gb.Genome.from_fasta("hg38.fa")    # chromosome names and sizes from the .fai
+genome.sizes                                # {'chr1': <length>, 'chr2': <length>, ...}
+
+L = gb.as_loci(["chr1:950-1050", "chr1:4950-5050", "chr1:7000-7100"])
+L.sequences("genome.fa")                    # one string per row, as stored
+L.sequences("genome.fa", r=6)               # centre ± 6 bp
+# -> ['TCCGGAACGTAC', 'GGCCGAGGAAGG', 'AAGCAAAACGTT']
+L.sequences("genome.fa", r=6, backend="pysam")       # same bases, another reader
+L.sequences("genome.fa", strand=True, upper=True)    # reverse-complement '-' rows, upper-case
+L.to_seqrecords("genome.fa", r=6)           # Biopython SeqRecords, id = uid
+L.to_fasta("windows.fa", "genome.fa", r=6)  # write the windows as FASTA
+```
+
+Windows are clipped to the chromosome, so a window at a chromosome end comes
+back shorter; the scanners treat such windows (and chromosomes missing from the
+FASTA) as zero hits and say how many rows that affected.
+
+{: .note }
+> The indexed reader needs fixed-width records (every line of a chromosome the
+> same length, as `samtools faidx` does). A FASTA with uneven lines raises an
+> error that names the fix: reformat it, or pass `backend='memory'`, `'pysam'`
+> or `'pyfaidx'`.
+
+---
+
+## Per-locus x per-motif matrix — `scan_motifs_matrix`
+
+The workhorse. One row per locus, one column per motif, each cell the number
+of positions in the locus's **centre ± `r`** window whose log-odds score
+reaches the threshold.
+
+```python
+M = gm.scan_motifs_matrix(
+    loci, "hg38.fa", "JASPAR2024_CORE.jaspar",
+    r=250,                 # window = centre ± r (500 bp)
+    threshold=13.0,        # log2-odds cutoff; or pvalue=1e-4 for a per-motif cutoff
+    norm=True,             # divide counts by motif width
+    both_strands=False,    # also count reverse-strand matches
+    workers=None,          # processes over motifs; None = half the cores
+    backend=None,          # 'lightmotif' (default), 'moods', 'biopython'
+    fasta_backend=None,    # 'genomeblocks' (default), 'pysam', 'pyfaidx', 'memory', 'biopython'
 )
-# → {motif_name: hit_count_per_bp or raw_count}
+# -> pandas.DataFrame, index = uid (in the loci's order), columns = motif names
 ```
 
-Also attached as a method on `Loci`:
+The same call is a method on `Loci`: `loci.scan_motifs_matrix(fasta, motifs, **kw)`.
+
+On the two-motif library and three windows around the planted sites
+(`ACGT` x 3 at chr1:1000, `GGAA` x 3 at chr1:5000):
 
 ```python
-counts = loci.scan_motifs(genome, motif_path="motifs.jaspar")
+L = gb.as_loci(["chr1:950-1050", "chr1:4950-5050", "chr1:7000-7100"])
+M = gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, norm=False, verbose=False)
+M
+# ->                    M1  M2
+# -> uid
+# -> chr1:950-1050(.)    4   1
+# -> chr1:4950-5050(.)   0   4
+# -> chr1:7000-7100(.)   2   0
 ```
+
+### Threshold or p-value
+
+`threshold` is a log2-odds score: a scalar for every motif, or one value per
+motif. `pvalue` replaces it with a per-motif cutoff — the score each motif
+reaches with that probability under a uniform background (lightmotif's exact
+score distribution), so motifs of different widths and information content are
+cut at a comparable stringency.
+
+```python
+gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=[7.0, 5.0], norm=False)   # per motif
+gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, pvalue=0.01, both_strands=True)       # per-motif cutoff
+```
+
+A 4-mer cannot reach `pvalue=1e-3` (one exact match has p = 1/256), so a
+very strict p-value on a short motif gives zero hits — pick the p-value for
+the widths in your library.
+
+### `norm`, `both_strands`, `workers`
+
+- `norm=True` (default) divides each count by the motif width, so long motifs
+  do not dominate a sum over the library. Set `norm=False` for raw counts.
+- `both_strands=True` also scans the reverse complement of each matrix and
+  adds those hits; a hit that straddles two windows is dropped.
+- `workers` spreads the motifs over a process pool. `None` means half the
+  cores; small jobs (fewer than 16 motifs or 200 windows) stay serial because
+  process start-up would dominate.
+
+Windows that run off a chromosome end or sit on a chromosome missing from the
+FASTA count 0 and are reported:
+
+```python
+gm.scan_motifs_matrix(gb.as_loci(["chr1:10-30", "chrZ:100-200"]), "genome.fa", "motifs.jaspar", r=50)
+# -> [motifs] 2 of 2 windows run off a chromosome or are missing from the FASTA; their rows count 0.
+```
+
+---
+
+## Totals per motif — `scan_motifs`
+
+When you only need the per-motif total over all windows:
+
+```python
+counts = gm.scan_motifs(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, norm=False, verbose=False)
+counts
+# -> {'M1': 6.0, 'M2': 5.0}
+import pandas as pd
+pd.Series(counts).sort_values(ascending=False).head(20)
+```
+
+It is `scan_motifs_matrix(...).sum(axis=0)` with the same arguments (minus
+`workers`), also available as `loci.scan_motifs(fasta, motifs)`.
 
 ---
 
 ## What the scan does
 
-For every motif in the file:
+1. `load_motifs` turns the source into a `Library`; each motif gets one
+   log-odds matrix.
+2. Every window (centre ± `r`) is read from the FASTA once, upper-cased, and
+   the windows are laid end to end into one block.
+3. Each motif is scanned once over that block by the chosen engine; hits are
+   split back per window (a hit spanning two windows is dropped), so the result
+   equals scanning each window on its own.
+4. Counts are divided by the motif width when `norm=True` and returned as a
+   DataFrame indexed by `uid`.
 
-1. Build a PSSM (`counts.normalize(0.1).log_odds()`).
-2. For every `Locus`:
-   - Extract a ±`r` bp window around `.center` from `genome`.
-   - Stripe the sequence (required by `lightmotif` for vectorized scanning).
-   - Count all positions with a log-odds score above `threshold`.
-3. If `norm=True`, divide by the motif width (so long motifs don't dominate).
-
-Returns a `{motif_name: score}` dict that you can turn into a DataFrame:
-
-```python
-import pandas as pd
-pd.Series(counts).sort_values(ascending=False).head(20)
-```
+A window containing a letter other than A C G T N never hits; `N` positions
+score `-inf`.
 
 ---
 
-## Per-locus × per-motif matrix
+## Masking an anchor motif — `scan_motifs_matrix_masked`
 
-When you need a full `(n_loci × n_motifs)` matrix rather than aggregate counts,
-use `scan_motifs_matrix` — it extracts each window once and distributes the
-motifs across a process pool:
-
-```python
-mat = loci.scan_motifs_matrix(
-    genome,
-    motif_path="H14CORE_jaspar_format_lightmotif.txt",
-    r=250, threshold=13.0, norm=True,
-    workers=None,             # None → cpu_count() // 2
-)
-# → pandas.DataFrame, rows = locus uids, columns = motif names
-```
-
-This is the building block for the differential and enrichment helpers below.
-
----
-
-## Differential enrichment between two sets
-
-Given two matrices (e.g. condition-A vs condition-B CREs), `compare_motifs`
-runs a per-motif Mann-Whitney U test plus a log2 fold change of the means, with
-Benjamini-Hochberg FDR:
+"Which co-factors set these regions apart *besides* CTCF?" Mask every match of
+the anchor motifs before scanning the library:
 
 ```python
-from genomeblocks.motifs import compare_motifs, compare_motifs_to_ref
-
-mat_a = a_cre.scan_motifs_matrix(genome, motif_path)
-mat_b = b_cre.scan_motifs_matrix(genome, motif_path)
-
-diff = compare_motifs(mat_a, mat_b, pseudo=0.1)     # Factor, mean_A, mean_B, LFC, U, p, p_adj
-diff.head()
-```
-
-To ask "which motifs are enriched above a background pool?", use
-`compare_motifs_to_ref` (accepts a single matrix or a `dict` of groups sharing
-one reference). `bootstrap_enrichment` gives the resampled point-estimate
-variant.
-
----
-
-## Masking an anchor motif
-
-To ask "which co-factors enrich *independent of* CTCF (or any anchor)?", mask
-every anchor match before scanning:
-
-```python
-masked = loci.scan_motifs_matrix_masked(
-    genome, motif_path,
-    anchors=["CTCF"],        # case-insensitive substring against motif names
-    window=10,               # ±bp replaced with random bases around each hit
+masked = gm.scan_motifs_matrix_masked(
+    loci, "hg38.fa", "JASPAR2024_CORE.jaspar",
+    anchors=["CTCF"],        # case-insensitive substring against motif names and descriptions
+    r=250, threshold=13.0,
+    window=10,               # ±bp around each anchor hit replaced by random bases
+    anchor_threshold=None,   # a separate cutoff for finding the anchor hits (default: threshold / pvalue)
+    skip_anchors=True,       # leave the anchor motifs out of the result
     seed=0,
 )
 ```
 
-Anchor motifs are excluded from the output by default. **Mask the reference the
-same way** before a differential test, or query sets look depleted for reasons
-unrelated to biology.
+On the small library, masking `M1` removes its `ACGT` sites and the column:
+
+```python
+gm.scan_motifs_matrix_masked(L, "genome.fa", "motifs.jaspar", ["M1"], r=50, threshold=7.0, norm=False,
+                             seed=0, verbose=False)
+# ->                    M2
+# -> uid
+# -> chr1:950-1050(.)    0
+# -> chr1:4950-5050(.)   4
+# -> chr1:7000-7100(.)   0
+```
+
+`threshold` may be a list with one value per library motif, and `pvalue` works
+as in `scan_motifs_matrix`. With `skip_anchors=False` the anchor columns stay
+(and show the hits left after masking).
+
+{: .warning }
+> **Mask the reference the same way** before a differential test. A masked
+> query against an unmasked pool looks depleted for every motif that
+> co-occurs with the anchor, for reasons unrelated to biology.
 
 ---
 
-## Motif archetypes (clustering → consensus PWM)
+## Positional profiles — `scan_motifs_profile` and `plot_motif_heatmap`
 
-Collapse a redundant PWM library into consensus archetypes (Sandelin-Wasserman
-similarity → hierarchical clustering → per-cluster consensus), then render
-sequence logos:
+Where in the window do the hits fall? `scan_motifs_profile` returns a
+`(rows, motifs, bins)` cube — the layout of a [signal cube]({{ '/guide/signal/' | relative_url }}),
+so the same heatmap code draws it — plus the names of the motifs on the middle
+axis.
 
 ```python
-from genomeblocks.motifs import build_archetypes, write_meme
-from genomeblocks.motifs_draw import plot_archetypes, plot_dendrogram
-
-res = build_archetypes(motif_path, cutoff=0.3, workers=None)
-plot_archetypes(res["archetypes"], members=res["members"])   # logo grid
-write_meme(res["archetypes"], "archetypes.meme")             # feed back into scanning
+M, names = gm.scan_motifs_profile(
+    loci, "hg38.fa", "JASPAR2024_CORE.jaspar",
+    select=["CTCF", "GATA", "SOX"],   # motifs by name (substring; match='exact' for verbatim); None = all
+    r=500, n_bins=100,                # window centre ± r, split into n_bins (10 bp/bin here)
+    threshold=13.0,                   # or pvalue=
+    both_strands=True,                # default here: reverse matches in forward coordinates
+    smooth=1.0,                       # Gaussian sigma in bins along each row; 0 = raw counts
+    norm=False,                       # divide by motif width
+)
+fig = gb.plot_motif_heatmap(loci, M, names, r=500, groups={"A": a, "B": b})
 ```
 
-`archetype_from_names(motif_path, names=[...])` builds a single consensus from a
-named subset (e.g. the top hits of a differential test).
+Each hit is credited to the bin of its centre. On the planted sites:
+
+```python
+M, names = gm.scan_motifs_profile(L, "genome.fa", "motifs.jaspar", ["M1", "M2"], r=60, n_bins=12,
+                                  threshold=7.0, smooth=0, verbose=False)
+M.shape, names
+# -> ((3, 2, 12), ['M1', 'M2'])
+M[0, 0]                      # M1 hits along the first window: three overlapping ACGT at the centre
+# -> array([0., 0., 0., 0., 0., 2., 4., 2., 0., 0., 0., 0.], dtype=float32)
+```
+
+`gb.plot_motif_heatmap(loci, M, names, *, r=500, groups=None, vmax=None, ymax=None, cmap="Purples")`
+draws one column per motif with `signal_draw.plot_heatmap`: `groups` splits the
+rows like the signal heatmap (`{name: Loci | mask | row numbers}`), `r` labels
+the x axis, and `vmax` / `ymax` default to a per-motif scale (98th percentile
+of the non-zero cells; the top of the group mean profiles). The method form is
+`loci.scan_motifs_profile(fasta, motifs, select, **kw)`.
+
+---
+
+## Enrichment and differential tests
+
+All three take the matrices `scan_motifs_matrix` (or the masked variant)
+returns. Columns are aligned by name, so the matrices need not share a motif
+set — missing columns count 0.
+
+### Bootstrapped log fold change — `bootstrap_enrichment`
+
+Point estimates of each group's mean hit rate against a reference pool, with
+bootstrap resampling for stability:
+
+```python
+mat_a    = gm.scan_motifs_matrix(a_cre,   "hg38.fa", motif_db, r=250)
+mat_b    = gm.scan_motifs_matrix(b_cre,   "hg38.fa", motif_db, r=250)
+mat_pool = gm.scan_motifs_matrix(all_cre, "hg38.fa", motif_db, r=250)
+
+enr = gm.bootstrap_enrichment({"A": mat_a, "B": mat_b}, ref=mat_pool,
+                              boot=100, sample=500, pseudo=0.1, seed=0)
+```
+
+One row per motif: `Factor`, `mean_ref`, then `mean_<g>` and
+`LFC_<g> = log2((mean_g + pseudo) / (mean_ref + pseudo))` per group. With
+exactly two groups there is also `LFC = LFC_<first> - LFC_<second>`, the
+motif's preference for one set over the other. `boot` iterations each draw
+`sample` rows without replacement (capped at the group size).
+
+```python
+enr.sort_values("LFC", ascending=False)[["Factor", "LFC", "LFC_A", "LFC_B"]]
+```
+
+### Two sets against each other — `compare_motifs`
+
+A per-motif Mann-Whitney U test on the per-locus counts (rank-based, right for
+zero-inflated counts) plus a log2 fold change of the means, with
+Benjamini-Hochberg FDR:
+
+```python
+diff = gm.compare_motifs(mat_a, mat_b, pseudo=0.1, alternative="two-sided")
+diff.head()
+# columns: Factor, mean_A, mean_B, LFC, U, p, p_adj  — sorted by LFC
+```
+
+### Sets against a background — `compare_motifs_to_ref`
+
+The same test of one or several query sets against a reference pool, when you
+want per-motif significance rather than the bootstrap's point estimates:
+
+```python
+res = gm.compare_motifs_to_ref({"A": mat_a, "B": mat_b}, ref=mat_pool)
+# columns: Factor, mean_ref, then per group: mean_<g>, LFC_<g>, U_<g>, p_<g>, p_adj_<g>;
+# with two groups also LFC = LFC_A - LFC_B
+res = gm.compare_motifs_to_ref(mat_a, ref=mat_pool)        # one query: the group is called 'query'
+```
+
+`pseudo` is added to both means before the log ratio; set it near the median
+non-zero column mean so it does not dominate small rates.
+
+---
+
+## Motif archetypes — clustering to consensus matrices
+
+A motif library is redundant (dozens of forkhead matrices). Collapse it:
+pairwise Sandelin-Wasserman similarity → hierarchical clustering → one
+consensus matrix per cluster.
+
+```python
+res = gm.build_archetypes("JASPAR2024_CORE.jaspar", cutoff=0.3, workers=None)
+res.keys()
+# -> dict_keys(['D', 'Z', 'labels', 'names', 'pwms', 'archetypes', 'members'])
+res["archetypes"]           # {'ARCH_01': (4 x W) PFM, ...}
+res["members"]              # {'ARCH_01': ['MA0139.1 CTCF', ...], ...}
+gm.write_meme(res["archetypes"], "archetypes.meme")       # scan with the archetypes instead
+```
+
+`cutoff` is a distance (`1 - similarity`): motifs with similarity ≥
+`1 - cutoff` merge. 0.25–0.35 is a typical range; tune it on the dendrogram.
+The steps are available on their own:
+
+```python
+D, names, pwms = gm.pwm_distance_matrix("motifs.jaspar", min_overlap=3)   # (n x n) distances in [0, 1]
+labels, Z = gm.cluster_motifs(D, cutoff=0.5, linkage_method="average")    # 1-based cluster ids, linkage matrix
+pfm = gm.archetype([pwms[0], pwms[1]], min_overlap=3)                     # one consensus (4 x W) from members
+pfm.shape
+# -> (4, 5)
+```
+
+`archetype` picks the medoid, aligns every member to it (best offset and
+strand) and averages the aligned columns, weighting each member by its mean
+information content (`weight_by_ic=True`).
+
+A consensus from a named subset — say the top hits of a differential test —
+without clustering the whole library:
+
+```python
+fox = gm.archetype_from_names("JASPAR2024_CORE.jaspar", ["FOXA1", "FOXA2", "FOXA3"])
+fox["archetype"], fox["members"], fox["pwms"]      # the (4 x W) consensus, the matched names, their PFMs
+```
+
+### Logos
+
+`genomeblocks.motifs_draw` renders logos with `logomaker`
+(`pip install genomeblocks[viz]`):
+
+```python
+from genomeblocks.motifs_draw import plot_archetype, plot_archetypes, plot_cluster_members, plot_dendrogram
+
+plot_archetype(lib.pfm(0), title=lib.names[0])                      # one (4 x W) PFM as a bits logo
+plot_archetypes(res["archetypes"], members=res["members"])          # a grid, sized by cluster
+plot_cluster_members(res["archetypes"]["ARCH_01"], member_pwms, member_names)   # archetype + members for QC
+plot_dendrogram(Z, names=names, cutoff=0.5)                          # the clustering with the cutoff line
+```
+
+---
+
+## The three engines agree
+
+The `motifs` backend family has three members. All score the same log-odds
+matrices and report the same hits; they differ in speed and in what they need
+installed.
+
+| backend | engine | install |
+|---|---|---|
+| `lightmotif` (default) | SIMD scanner, Rust | comes with `pip install genomeblocks` |
+| `moods` | MOODS, C++ (scans the whole library in one pass) | `pip install MOODS-python` |
+| `biopython` | `Bio.motifs` PSSM, numpy | `pip install biopython` |
+
+```python
+ref = gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, verbose=False)
+for b in ["lightmotif", "moods", "biopython"]:
+    assert gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, backend=b,
+                                 verbose=False).equals(ref)
+
+with gb.use_backend(motifs="moods", fasta="pyfaidx"):          # for a block of code
+    M = gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, verbose=False)
+```
+
+A backend that is not installed raises `ImportError` with the install command;
+an unknown name raises `ValueError` listing the choices. There is no silent
+switch. `gb.backends()` shows what is installed and which engine each family
+uses; see [Backends]({{ '/backends/' | relative_url }}).
 
 ---
 
 ## Tips
 
-- `threshold=13.0` is a reasonable default for JASPAR (log-odds in bits). Pick an empirical value by scanning a random-shuffle control.
-- Motif counts scale roughly linearly with `r`; use the same `r` you plan to use in every downstream analysis to stay comparable.
-- `Locus.sequence(genome, r=...)` does the windowed slice — if you already have the index built, reuse it rather than reopening the FASTA.
+- `threshold=13.0` is a reasonable default for JASPAR counts (log2-odds in
+  bits). Pick an empirical value by scanning a shuffled control, or use
+  `pvalue=` so every motif is cut at the same stringency.
+- Motif counts scale roughly with `r`; use the same `r` in every downstream
+  analysis so sets stay comparable.
+- Scanning the background pool is usually the slow step (it is the largest
+  set). `workers` parallelises over motifs; subsample a pool of hundreds of
+  thousands of regions to a few thousand first.
+- `loci.sequences(fasta, r=...)` is the windowed slice the scanners use. For
+  repeated scans, load the motifs once (`lib = gb.load_motifs(path)`) and pass
+  the `Library` instead of the path; the FASTA index is built once and read
+  back from the `.fai` on every later call.
+- See [API → motifs]({{ '/api/motifs/' | relative_url }}) for every signature
+  and [Design → Motifs]({{ '/design/motifs/' | relative_url }}) for how the
+  block scanner works.

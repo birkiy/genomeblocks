@@ -1,12 +1,12 @@
-<svg class="gbd" viewBox="0 0 880 198" role="img" aria-label="The Architecture pipeline: six chained calls, each reading the previous step&#x27;s output and writing graph-tool vertex or edge properties." xmlns="http://www.w3.org/2000/svg">
+<svg class="gbd" viewBox="0 0 880 198" role="img" aria-label="The Architecture pipeline: six chained calls, each reading the previous step&#x27;s output and writing an edge column (ep) or a vertex column (vp)." xmlns="http://www.w3.org/2000/svg">
 <text class="cap" x="88" y="52" text-anchor="end">READS</text>
 <text class="cap" x="88" y="104" text-anchor="end">STEP</text>
 <text class="cap" x="88" y="160" text-anchor="end">WRITES</text>
-<text class="s" x="168" y="56" text-anchor="middle">CRE Loci + BEDPE</text>
+<text class="s" x="168" y="56" text-anchor="middle">Loci + BEDPE / Pairs</text>
 <rect class="bx purple" x="110" y="76" width="116" height="50" rx="8"></rect>
 <text class="tm" x="168" y="106" text-anchor="middle">make()</text>
 <rect class="chip" x="114" y="148" width="108" height="24" rx="12"></rect>
-<text class="s" x="168" y="164" text-anchor="middle">CRE vertices · edges</text>
+<text class="s" x="168" y="164" text-anchor="middle">vertices · edge table</text>
 <polyline class="ln faint" points="168,64 168,74"/>
 <polyline class="ln faint" points="168,128 168,146"/>
 <text class="s" x="296.4" y="56" text-anchor="middle">.mcool at 5 kb</text>

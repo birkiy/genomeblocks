@@ -18,108 +18,164 @@ nav_order: 2
 ## Requirements
 
 - **Python** ≥ 3.10
-- **[graph-tool](https://graph-tool.skewed.de/)** — chromatin-architecture graphs (Peixoto 2014; not pip-installable, use conda/mamba)
-- Standard scientific stack: `numpy`, `pandas`, `scipy`, `matplotlib`
-- Genomics I/O (all pip-installable):
-  - **[pybigtools](https://github.com/jackh726/bigtools)** — threaded bigWig reader (Huey 2023)
-  - **[pyranges](https://github.com/pyranges/pyranges)** — genomic interval DataFrames (Stovner & Sætrom 2020)
-  - **[lightmotif](https://github.com/althonos/lightmotif)** — SIMD-accelerated PSSM scanning (Larralde 2023)
-  - `cooler` — Hi-C `.mcool` I/O
-- **Optional speedup** — **[cgranges](https://github.com/lh3/cgranges)** (Heng Li), a C interval-overlap index. It is **not on PyPI**; genomeblocks uses a pure-Python fallback when it's absent, so overlap ops work without it. Install it (conda, or `pip install git+https://github.com/lh3/cgranges`) for the fast path on large sets.
+- Everything else is declared in `pyproject.toml` and installed by pip.
 
-Everything except `graph-tool` and the optional `cgranges` is pip-installable
-and declared in `pyproject.toml`. TMM normalization (`tmm()`) is **vendored** —
-the edgeR algorithm ships inside `genomeblocks.signal`, so there is no external
-normalization dependency. Because `graph-tool` is a compiled C++/Boost library,
-the recommended path is conda. See the [Credits page]({{ '/credits/' | relative_url }}) for full
-citations of every upstream tool.
+`pip install genomeblocks` brings the **default backend of every family**, so every module works after a plain pip install:
 
----
+| Family | Default engine | Pulled in by pip |
+|---|---|---|
+| intervals (overlap, nearest, merge) | genomeblocks' numpy kernel | — (built in) |
+| bigWig reading | [pybigtools](https://github.com/jackh726/bigtools) | `pybigtools` |
+| motif scanning | [lightmotif](https://github.com/althonos/lightmotif) | `lightmotif` |
+| FASTA | genomeblocks' indexed (`.fai`) reader | — (built in) |
+| text tables (BED, GTF, pairs) | pandas (polars when installed) | `pandas`, `pyarrow` |
+| graph algorithms | scipy (graph-tool when installed) | `scipy` |
+| Hi-C `.cool` / `.mcool` | [cooler](https://github.com/open2c/cooler) | `cooler` |
+| the boundary and the protocols | [narwhals](https://github.com/narwhals-dev/narwhals), [pyarrow](https://arrow.apache.org/) | `narwhals`, `pyarrow` |
 
-## Recommended: conda environment
-
-```bash
-git clone https://github.com/birkiy/genomeblocks.git
-cd genomeblocks
-conda env create -f environment.yml
-conda activate genomeblocks
-pip install -e .
-```
-
-The shipped `environment.yml` pins tested versions of `graph-tool`, `cooler`, and `pybigtools`.
+TMM normalisation (`gb.tmm`) is vendored — the edgeR algorithm ships inside `genomeblocks.signal`. Heavy modules are imported lazily, so `import genomeblocks` itself takes a few milliseconds. See the [Credits page]({{ '/credits/' | relative_url }}) for the citation of every upstream tool.
 
 ---
 
-## Alternative: mamba (faster)
-
-```bash
-mamba env create -f environment.yml
-mamba activate genomeblocks
-pip install -e .
-```
-
----
-
-## pip-only install → **no `Architecture`**
-
-{: .warning }
-> **`graph-tool` is not on PyPI.** `pip install genomeblocks` gives you every
-> subsystem **except `Architecture`** (the chromatin-contact graph), which
-> imports `graph-tool` at first use. If you need `Architecture`, you must use a
-> conda/mamba environment. This is the single most common install surprise.
+## pip
 
 ```bash
 pip install genomeblocks
 ```
 
-Thanks to the lazy imports in `genomeblocks/__init__.py`, the missing dependency
-only surfaces the moment you touch `Architecture` (or `architecture_draw`) — you
-get a clean `ImportError` for `graph_tool`, not a broken package.
+That is the whole default install. Optional extras add engines and converter targets:
 
-| Works pip-only | Needs conda (`graph-tool`) |
-|---|---|
-| `Loci`, `Locus`, `Genes` | `Architecture` |
-| `signal` / `tmm` / heatmaps | `architecture_draw.draw` |
-| `browser`, `Atlas`, `scan_motifs`, `bedpe` | — |
+| Extra | Adds | Use it for |
+|---|---|---|
+| `fast` | `polars` | faster GTF / GFF3 / BED / pairs parsing (same columns as pandas) |
+| `bam` | `pysam` | BAM pileups in `browser` / `gb.coverage`, FASTA through pysam |
+| `viz` | `logomaker` | motif logos (`genomeblocks.motifs_draw`) |
+| `interop` | `polars`, `bioframe`, `pyranges`, `pybedtools`, `anndata`, `xarray`, `biopython`, `networkx`, `igraph`, `MOODS-python`, `pyBigWig`, `ncls`, `pyfaidx`, `pyliftover` | every other backend and every `from_*` / `to_*` target |
+| `all` | `fast` + `bam` + `viz` + `interop` | everything that pip can install |
+| `test` | the above plus `pytest`, `duckdb`, `seaborn`, `plotly`, `altair` | running the test suite |
+
+```bash
+pip install "genomeblocks[all]"        # every pip-installable backend
+pip install "genomeblocks[fast,bam]"   # pick the ones you need
+```
+
+{: .note }
+> Extras only add *choices*. The default engine of each family is already there, and results are identical across engines (the test suite checks it), so install an extra for speed on your data or to hand results to a library you already use — not to make a module work.
+
+---
+
+## conda: the three conda-only engines
+
+Three engines cannot come from PyPI. They are optional backends; `genomeblocks` never needs them:
+
+| Engine | Family | Install | What it adds |
+|---|---|---|---|
+| [graph-tool](https://graph-tool.skewed.de/) | graph | `conda install -c conda-forge graph-tool` | the default graph engine when installed (scipy otherwise; identical components, centralities within tolerance); `A.to_graph_tool()` |
+| [cgranges](https://github.com/lh3/cgranges) | intervals | `conda install -c bioconda cgranges` (or `pip install git+https://github.com/lh3/cgranges`) | a C interval index; `L.to_cgranges()` |
+| [bedtools](https://bedtools.readthedocs.io/) | intervals | `conda install -c bioconda bedtools` + `pip install pybedtools` | the `bedtools` backend (the binary must be on `PATH`); `L.to_bedtool()` |
+
+The repository ships an `environment.yml` with every backend, including these three:
+
+```bash
+git clone https://github.com/birkiy/genomeblocks.git
+cd genomeblocks
+conda env create -f environment.yml      # or: mamba env create -f environment.yml
+conda activate genomeblocks
+```
+
+{: .tip }
+> `Architecture` works on a plain pip install. Graph algorithms run on scipy when graph-tool is absent, and `gb.backends()` tells you which engine is in use.
 
 ---
 
 ## Verifying the install
 
+`gb.backends()` is the one check. It returns a DataFrame with every family and backend, whether it is installed, which one is the automatic default here, which one a call would use right now, and the install command for the missing ones:
+
 ```python
 import genomeblocks as gb
-print(gb.__all__)
-# ['Architecture', 'Atlas', 'CDS', 'Exon', 'Gene', 'Genes', 'Loci', 'Locus',
-#  'Transcript', 'UTR', 'browser', 'compare_heatmap', 'coverage',
-#  'make_genome', 'scan_motifs', 'tmm']
+gb.__version__
+# -> '2.0.0'
+
+gb.backends()
+#        family       backend  installed  default  in use   install
+# 0   intervals  genomeblocks       True     True    True
+# 1   intervals      cgranges      False    False   False   conda install -c bioconda cgranges  (or pip install git+https://github.com/lh3/cgranges)
+# 2   intervals          ncls       True    False   False
+# 3   intervals      bioframe       True    False   False
+# 4   intervals      pyranges       True    False   False
+# 5   intervals      bedtools      False    False   False   pip install pybedtools; conda install -c bioconda bedtools  (the bedtools binary must be on PATH)
+# 6      bigwig    pybigtools       True     True    True
+# ...
+# 19      graph    graph-tool      False    False   False   conda install -c conda-forge graph-tool
+# 20      graph         scipy       True     True    True
+# 21      graph        igraph       True    False   False
+# 22      graph      networkx       True    False   False
+
+gb.backends.families()
+# -> {'intervals': ['genomeblocks', 'cgranges', 'ncls', 'bioframe', 'pyranges', 'bedtools'],
+#     'bigwig': ['pybigtools', 'pybigwig', 'python'],
+#     'motifs': ['lightmotif', 'moods', 'biopython'],
+#     'fasta': ['genomeblocks', 'pysam', 'pyfaidx', 'memory', 'biopython'],
+#     'tables': ['polars', 'pandas'],
+#     'graph': ['graph-tool', 'scipy', 'igraph', 'networkx']}
 ```
 
-Try a no-data smoke test:
+A no-data smoke test:
 
 ```python
-from genomeblocks import Loci, Locus
-loci = Loci([Locus("chr1", 100, 500), Locus("chr1", 300, 700)])
-print(loci.merge())          # Loci(n=1)
-print(loci.slop(100))        # Loci(n=2)  with ±100 bp
+from genomeblocks import Loci
+
+loci = Loci.from_records([("chr1", 100, 500), ("chr1", 300, 700)])
+print(loci)                  # -> Loci(n=2, chroms=1)
+print(loci.merge())          # -> Loci(n=1, chroms=1, sorted)
+print(loci.slop(100))        # -> Loci(n=2, chroms=1)
+print(loci.merge().to_pandas())
+#   chrom  start  end strand
+# 0  chr1    100  700      .
+```
+
+The public surface is the set of names on the package:
+
+```python
+import genomeblocks as gb
+gb.__all__
+# -> ['Architecture', 'Atlas', 'Genes', 'Genome', 'Loci', 'Locus', 'Pairs', 'View',
+#     'as_loci', 'backends', 'browser', 'compare_heatmap', 'coverage', 'igv_html',
+#     'load_motifs', 'plot_motif_heatmap', 'read_fasta', 'tmm', 'use_backend']
 ```
 
 ---
 
-## Optional extras
+## When a backend is missing
 
-| Feature | Dependency | On PyPI? |
-|---|---|---|
-| `Architecture.*` | `graph-tool` | ❌ conda only |
-| `scan_motifs()` / motif matrices | `lightmotif` | ✅ (auto) |
-| `tmm()` | — (edgeR TMM vendored) | — |
-| `Architecture.add_mcool()` | `cooler` | ✅ (auto) |
-| BigWig signal (fast path) | `pybigtools` | ✅ (auto; falls back to pure Python) |
-| Interval overlap (fast path) | `cgranges` | ❌ conda / from source; falls back to pure Python |
-| `pyranges`-backed ops (`Loci.nearest`, `Genes.nearest_genes`) | `pyranges` | ✅ (auto) |
-| BAM tracks in `browser` / `coverage()` | `pysam` | ✅ `pip install genomeblocks[bam]` |
-| Motif logos (`motifs_draw`) | `logomaker` | ✅ (install separately) |
+Asking for an engine that is not installed is an error that names the fix — never a silent switch to another engine:
 
-Everything marked ✅ is declared in `pyproject.toml` and installed by pip. The
-`graph-tool` and `cgranges` fast paths need conda/source — but only
-`graph-tool` is truly required (for `Architecture`); `cgranges` is a pure
-speedup with a built-in pure-Python fallback.
+```python
+loci.merge(backend="cgranges")
+# ImportError: the 'cgranges' intervals backend is not installed:
+#   conda install -c bioconda cgranges  (or pip install git+https://github.com/lh3/cgranges)
+
+with gb.use_backend(graph="graph-tool"):     # checked on entry, before any work
+    ...
+# ImportError: the 'graph-tool' graph backend is not installed: conda install -c conda-forge graph-tool
+
+loci.merge(backend="nope")
+# ValueError: unknown intervals backend 'nope'; choose from: genomeblocks, cgranges, ncls, bioframe, pyranges, bedtools
+```
+
+{: .warning }
+> `pybedtools` writes temporary files. Point `TMPDIR` (or `pybedtools.set_tempdir()`) at a project directory before using the `bedtools` backend on large sets.
+
+---
+
+## Running the tests
+
+The suite is synthetic (no genome, bigWig or ChIP-Atlas download) and runs every installed backend of every family against the default:
+
+```bash
+pip install -e ".[test]"
+pytest
+```
+
+Backends that are not installed are skipped, so the suite passes on a plain pip install as well as on the full `environment.yml`.

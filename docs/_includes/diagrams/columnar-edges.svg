@@ -124,8 +124,8 @@
 <text class="s" x="174" y="230">a few trans dots off it</text>
 <text class="tm" x="420" y="176">A.neighbors(row)</text>
 <text class="s" x="420" y="192">one CSR adjacency over all edges: trans partners included</text>
-<text class="tm" x="420" y="214">A.graph()</text>
-<text class="s" x="420" y="230">graph-tool Graph built from the arrays on first use, cached</text>
+<text class="tm" x="420" y="214">A.graph(backend=)</text>
+<text class="s" x="420" y="230">the graph backend&#x27;s object, built from the arrays on demand</text>
 <text class="tm" x="420" y="252">A.save(path)</text>
 <text class="s" x="420" y="268">parquet: vertices + edges tables, readable from R / polars</text>
 </svg>

@@ -1,36 +1,74 @@
-<svg class="gbd" viewBox="0 0 880 176" role="img" aria-label="read_bedpe is the one BEDPE parser: it yields Pair objects that Architecture.make, the browser and Loci.pair_to_bed all consume." xmlns="http://www.w3.org/2000/svg">
-<rect class="bx dark" x="20" y="30" width="230" height="118" rx="8"></rect>
+<svg class="gbd" viewBox="0 0 880 232" role="img" aria-label="Pairs.make is the one BEDPE parser: it reads the file through the tables backend into two row-aligned Loci, anchor a and anchor b, plus name / score columns; Architecture.make, the browser and Pairs.overlapping all consume that table." xmlns="http://www.w3.org/2000/svg">
+<rect class="bx dark" x="20" y="30" width="214" height="172" rx="8"></rect>
 <text class="cap" x="34" y="50">LOOPS.BEDPE</text>
-<text class="m w" x="34" y="74">chr8 127.73M  chr8 127.80M</text>
-<text class="m w" x="34" y="94">chr8 127.73M  chr8 128.21M</text>
-<text class="m w" x="34" y="114">chr8 127.74M  chr2 41.05M</text>
+<text class="m w" x="34" y="74">chr8 127.73M  chr8 127.80M  l1 5</text>
+<text class="m w" x="34" y="94">chr8 127.73M  chr8 128.21M  l2 3</text>
+<text class="m w" x="34" y="114">chr8 127.74M  chr2 41.05M   l3 1</text>
 <text class="m w" x="34" y="134">…</text>
-<polyline class="ln" points="252,89 314,89"/>
-<polygon class="hd" points="318.0,89.0 311.8,92.3 311.8,85.7"/>
-<text class="ms" x="285" y="78" text-anchor="middle">read_bedpe</text>
-<rect class="bx purple" x="320" y="30" width="250" height="118" rx="8"></rect>
-<text class="t" x="336" y="52">Pair</text>
-<text class="s" x="374" y="52">one loop</text>
-<rect class="chip white" x="336" y="62" width="152" height="22" rx="11"></rect>
-<text class="m" x="412" y="77" text-anchor="middle">chrom1 start1 end1</text>
-<rect class="chip white" x="336" y="90" width="152" height="22" rx="11"></rect>
-<text class="m" x="412" y="105" text-anchor="middle">chrom2 start2 end2</text>
-<text class="ms" x="498" y="78">mid1, mid2</text>
-<text class="ms" x="498" y="106">distance</text>
-<text class="s" x="336" y="138">distance = |mid2 − mid1|, ∞ across chromosomes</text>
-<rect class="bx" x="650" y="18" width="210" height="42" rx="8"></rect>
-<text class="tm" x="755" y="36" text-anchor="middle">Architecture.make</text>
-<text class="s" x="755" y="52" text-anchor="middle">anchors (mid ± r) → CRE edges</text>
-<polyline class="ln" points="572,89 610,89 610,39 644,39"/>
-<polygon class="hd" points="648.0,39.0 641.8,42.3 641.8,35.7"/>
-<rect class="bx" x="650" y="70" width="210" height="42" rx="8"></rect>
-<text class="tm" x="755" y="88" text-anchor="middle">browser</text>
-<text class="s" x="755" y="104" text-anchor="middle">half-sine arcs</text>
-<polyline class="ln" points="572,89 610,89 610,91 644,91"/>
-<polygon class="hd" points="648.0,91.0 641.8,94.3 641.8,87.7"/>
-<rect class="bx" x="650" y="122" width="210" height="42" rx="8"></rect>
-<text class="tm" x="755" y="140" text-anchor="middle">Loci.pair_to_bed</text>
-<text class="s" x="755" y="156" text-anchor="middle">loops touching a set</text>
-<polyline class="ln" points="572,89 610,89 610,143 644,143"/>
-<polygon class="hd" points="648.0,143.0 641.8,146.3 641.8,139.7"/>
+<text class="s w2" x="34" y="166">any frame with these columns:</text>
+<text class="s w2" x="34" y="182">Pairs.from_frame · as_pairs</text>
+<polyline class="ln" points="236,116 288,116"/>
+<polygon class="hd" points="292.0,116.0 285.8,119.3 285.8,112.7"/>
+<text class="ms" x="264" y="104" text-anchor="middle">Pairs.make</text>
+<text class="ms" x="264" y="132" text-anchor="middle">tables backend</text>
+<rect class="bx purple" x="294" y="30" width="346" height="172" rx="8"></rect>
+<text class="t" x="310" y="52">Pairs</text>
+<text class="s" x="354" y="52">two Loci aligned by row + columns</text>
+<text class="tm" x="310" y="66">P.a</text>
+<text class="s" x="336" y="66">Loci</text>
+<text class="s" x="310" y="82">codes</text>
+<text class="s" x="356" y="82">starts</text>
+<text class="s" x="410" y="82">ends</text>
+<text class="s" x="464" y="82">±</text>
+<text class="tm" x="494" y="66">P.b</text>
+<text class="s" x="520" y="66">Loci</text>
+<text class="s" x="494" y="82">codes</text>
+<text class="s" x="540" y="82">starts</text>
+<text class="s" x="594" y="82">ends</text>
+<text class="s" x="648" y="82">±</text>
+<rect class="chip white" x="304" y="91" width="326" height="18" rx="3"></rect>
+<text class="ms" x="310" y="104">0</text>
+<text class="ms" x="356" y="104">127,73…</text>
+<text class="ms" x="410" y="104">127,73…</text>
+<text class="ms" x="464" y="104">+</text>
+<text class="ms" x="494" y="104">0</text>
+<text class="ms" x="540" y="104">127,80…</text>
+<text class="ms" x="594" y="104">127,80…</text>
+<text class="ms" x="648" y="104">−</text>
+<rect class="chip white" x="304" y="111" width="326" height="18" rx="3"></rect>
+<text class="ms" x="310" y="124">0</text>
+<text class="ms" x="356" y="124">127,73…</text>
+<text class="ms" x="410" y="124">127,73…</text>
+<text class="ms" x="464" y="124">+</text>
+<text class="ms" x="494" y="124">0</text>
+<text class="ms" x="540" y="124">128,21…</text>
+<text class="ms" x="594" y="124">128,21…</text>
+<text class="ms" x="648" y="124">+</text>
+<rect class="bx hl" x="304" y="131" width="326" height="18" rx="3"></rect>
+<text class="ms" x="310" y="144">0</text>
+<text class="ms" x="356" y="144">127,74…</text>
+<text class="ms" x="410" y="144">127,74…</text>
+<text class="ms" x="464" y="144">−</text>
+<text class="ms" x="494" y="144">1</text>
+<text class="ms" x="540" y="144">41,05…</text>
+<text class="ms" x="594" y="144">41,05…</text>
+<text class="ms" x="648" y="144">+</text>
+<text class="m" x="310" y="164">P.cols: name · score · …</text>
+<text class="s" x="310" y="184">is_cis = a.codes == b.codes · distance = |mid2 − mid1|, ∞ across chromosomes</text>
+<rect class="bx" x="690" y="22" width="170" height="50" rx="8"></rect>
+<text class="tm" x="775" y="44" text-anchor="middle">Architecture.make</text>
+<text class="s" x="775" y="60" text-anchor="middle">anchors (mid ± r) → overlap_pairs → edges</text>
+<polyline class="ln" points="642,116 666,116 666,47 684,47"/>
+<polygon class="hd" points="688.0,47.0 681.8,50.3 681.8,43.7"/>
+<rect class="bx" x="690" y="84" width="170" height="50" rx="8"></rect>
+<text class="tm" x="775" y="106" text-anchor="middle">browser · View · igv_html</text>
+<text class="s" x="775" y="122" text-anchor="middle">arcs between anchor midpoints</text>
+<polyline class="ln" points="642,116 666,116 666,109 684,109"/>
+<polygon class="hd" points="688.0,109.0 681.8,112.3 681.8,105.7"/>
+<rect class="bx" x="690" y="146" width="170" height="50" rx="8"></rect>
+<text class="tm" x="775" y="168" text-anchor="middle">Pairs.overlapping(loci)</text>
+<text class="s" x="775" y="184" text-anchor="middle">pairtobed: an anchor touches the set</text>
+<polyline class="ln" points="642,116 666,116 666,171 684,171"/>
+<polygon class="hd" points="688.0,171.0 681.8,174.3 681.8,167.7"/>
+<text class="s" x="690" y="212">every consumer calls as_pairs()</text>
 </svg>

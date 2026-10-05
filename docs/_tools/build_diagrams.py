@@ -37,28 +37,29 @@ def row_label(d, y, title, sub=None, x=88):
 
 @fig
 def overview():
-    d = Diagram("overview", 880, 528,
-                "Package map: plotting modules read the domain modules, every domain module builds on "
-                "Locus and Loci, and the columnar package shares Locus and hands tables to the classic API.")
+    d = Diagram("overview", 880, 652,
+                "Package map: plotting modules read the domain modules; every domain module builds on "
+                "Genome, Loci and Locus; whole-set work runs through one backend per family; and the "
+                "boundary layer turns any table, file or region into Loci and back.")
     xs = [100 + i * 128.4 for i in range(6)]
     W = 118
     # ── plot row
     row_label(d, 40, "Plot", "matplotlib, lazy")
     d.node(xs[0], 20, W, 46, "signal_draw", "heatmaps · profiles", mono=True)
-    d.node(xs[1], 20, W * 2 + 10.4, 46, "browserview", "IGV-like region figures", mono=True)
-    d.node(xs[3], 20, W, 46, "motifs_draw", "logos · dendrograms", mono=True)
-    d.node(xs[5], 20, W, 46, "architecture_draw", "network layouts", mono=True)
+    d.node(xs[1], 20, W * 2 + 10.4, 46, "browserview · view · igv", "region figures · one-file pages", mono=True)
+    d.node(xs[3], 20, W, 46, "motifs_draw", "motif heatmaps · logos", mono=True)
+    d.node(xs[5], 20, W, 46, "architecture_draw", "layouts, any graph backend", mono=True)
     for x in (xs[0], xs[1], xs[2], xs[3], xs[5]):
         d.arrow([(x + W / 2, 68), (x + W / 2, 118)])
     d.text(xs[0] + W / 2 + 8, 97, "reads", "lbl", "start")
     # ── domain row
-    row_label(d, 152, "Domain", "one per data type")
-    dom = [("signal", "bigWig → cube", "pybigtools", "green"),
-           ("bedpe", "loops · Hi-C pairs", "pandas", "purple"),
-           ("Genes", "GTF → gene models", "pyranges", "navy"),
-           ("motifs", "PWM hit counts", "lightmotif", "navy"),
-           ("Atlas", "peak-set enrichment", "scipy.sparse", "navy"),
-           ("Architecture", "contact graph", "graph-tool · cooler", "purple")]
+    row_label(d, 152, "Domain", "one table per data type")
+    dom = [("signal", "bigWig → cube", "bigwig backend", "green"),
+           ("Pairs · bedpe", "BEDPE table · Hi-C pairs", "tables backend", "purple"),
+           ("Genes", "GTF → 3 linked tables", "tables · intervals", "navy"),
+           ("motifs", "Library · hit matrices", "motifs · fasta backends", "navy"),
+           ("Atlas", "bins × tracks, CSR", "scipy.sparse", "navy"),
+           ("Architecture", "vertex + edge tables", "intervals · graph backends", "purple")]
     for x, (t, s, dep, k) in zip(xs, dom):
         d.rect(x, 120, W, 76, f"bx {k}")
         d.text(x + W / 2, 146, t, "t")
@@ -69,39 +70,62 @@ def overview():
         d.line([(x + W / 2, 197), (x + W / 2, 226)])
     d.line([(xs[0] + W / 2, 226), (xs[5] + W / 2, 226)])
     d.arrow([(578, 226), (578, 262)])
-    d.text(586, 248, "every module builds on Locus · Loci", "lbl", "start")
+    d.text(586, 248, "every module builds on Genome · Loci · Locus", "lbl", "start")
     # ── core row
-    row_label(d, 300, "Core", "imported by all")
-    d.rect(100, 264, 180, 96, "bx green")
-    d.text(190, 290, "Locus", "t")
-    d.text(190, 306, "one interval", "s")
-    d.chip(114, 318, 152, 24, "chr1:100-200(+)", "white")
-    d.text(190, 354, "uid = the key everywhere", "s")
-    d.rect(296, 264, 564, 96, "bx green")
-    d.text(312, 290, "Loci", "t", "start")
-    d.text(348, 290, "a list of Locus, plus two indexes built on first use", "s", "start")
-    d.chip(312, 300, 146, 24, "uids: uid → row", "white")
-    d.chip(466, 300, 164, 24, "cgr: interval index", "white")
-    d.text(640, 316, "cgranges, or a pure-Python bisect index", "s", "start")
-    d.text(312, 347, "attached at import:", "s", "start")
-    for x, w, s in ((418, 70, ".signal()"), (494, 104, ".count_pairs()"), (604, 108, ".scan_motifs()"),
-                    (718, 76, ".enrich()")):
-        d.chip(x, 332, w, 22, s, "white")
-    # ── columnar band
-    row_label(d, 456, "Tables", "columnar, 1.1")
-    d.rect(100, 420, 760, 94, "bx page")
-    d.text(116, 442, "genomeblocks.columnar", "tm", "start")
-    d.text(296, 442, "numpy columns that line up by row · one shared Genome · objects only on access",
+    row_label(d, 300, "Core", "numpy columns")
+    d.rect(100, 264, 156, 96, "bx")
+    d.text(178, 290, "Genome", "t")
+    d.text(178, 306, "names ↔ int codes · sizes", "s")
+    d.chip(112, 318, 132, 24, "codes[i] → names", "white")
+    d.text(178, 354, "one per table, re-coded on contact", "s")
+    d.rect(272, 264, 436, 96, "bx green")
+    d.text(288, 290, "Loci", "t", "start")
+    d.text(324, 290, "intervals as columns · row number = the join key", "s", "start")
+    for x, w, s in ((288, 84, "codes int32"), (378, 84, "starts int64"), (468, 78, "ends int64"),
+                    (552, 86, "strands int8"), (644, 50, "cols {}")):
+        d.chip(x, 300, w, 22, s, "white")
+    d.text(288, 347, "lookup index built on first use, one per interval backend, dropped when rows change",
            "s", "start")
-    cx = [116 + j * 122.8 for j in range(6)]
-    for x, (t, s, k) in zip(cx, [("Genome", "shared chrom codes", ""), ("Loci", "4 numpy columns", "green"),
-                                 ("Genes", "3 linked tables", "navy"), ("Architecture", "sorted edge table", "purple"),
-                                 ("hichip · se", "short-range → SEs", "purple"), ("view · igv", "one-file browsers", "")]):
-        d.node(x, 454, 114, 46, t, s, kind=k)
-    d.arrow([(190, 418), (190, 362)])
-    d.text(198, 395, "rows are Locus objects", "lbl", "start")
-    d.arrow([(578, 418), (578, 362)])
-    d.text(586, 395, "to_legacy() · classic functions accept it", "lbl", "start")
+    d.rect(724, 264, 136, 96, "bx green")
+    d.text(792, 290, "Locus", "t")
+    d.text(792, 306, "one interval", "s")
+    d.chip(734, 318, 116, 24, "L[i] → LocusView", "white")
+    d.text(792, 354, "reads the columns", "s")
+    # ── backends band
+    row_label(d, 456, "Backends", "one engine per family")
+    d.rect(130, 400, 700, 124, "bx page")
+    d.text(146, 422, "gb.backends()", "tm", "start")
+    d.text(258, 422, "default first, pip-installable · backend= on a call · with gb.use_backend(...) · "
+                     "a missing engine raises with its install command", "s", "start")
+    fams = [("intervals", "genomeblocks", "cgranges · ncls · bioframe", "pyranges · bedtools", "green"),
+            ("bigwig", "pybigtools", "pybigwig · python", "", "green"),
+            ("motifs", "lightmotif", "moods · biopython", "", "navy"),
+            ("fasta", "genomeblocks", "pysam · pyfaidx", "memory · biopython", "navy"),
+            ("tables", "polars, else pandas", "", "", ""),
+            ("graph", "graph-tool, else scipy", "igraph · networkx", "", "purple")]
+    for j, (fam, default, others, others2, k) in enumerate(fams):
+        x = 146 + j * 113.6
+        d.rect(x, 434, 104, 80, f"bx {k}" if k else "bx")
+        d.text(x + 52, 452, fam, "t")
+        d.text(x + 52, 470, default, "m")
+        d.text(x + 52, 488, others, "ms")
+        d.text(x + 52, 502, others2, "ms")
+    d.arrow([(490, 362), (490, 398)])
+    d.text(498, 384, "whole-set work: overlap, signal, scanning, graphs", "lbl", "start")
+    # ── boundary band
+    row_label(d, 584, "Boundary", "interop, in and out")
+    d.rect(100, 548, 760, 84, "bx page")
+    d.text(116, 570, "as_loci(x)", "tm", "start")
+    d.text(200, 570, "every public function calls it on its inputs · columns found by name, lenient on spelling",
+           "s", "start")
+    for x, w, s in ((116, 56, "pandas"), (178, 52, "polars"), (236, 60, "pyarrow"), (302, 64, "bioframe"),
+                    (372, 64, "pyranges"), (442, 74, "pybedtools"), (522, 60, "AnnData"), (588, 112, "BED · CSV · parquet"),
+                    (706, 72, "region strs"), (784, 60, "lists · dicts")):
+        d.chip(x, 580, w, 20, s, "white", "ms")
+    d.text(116, 622, "out: to_pandas · to_polars · to_arrow · to_bioframe · to_pyranges · to_bedtool · to_anndata · "
+                     "to_bed · save   ·   protocols: Arrow C stream · __dataframe__ · narwhals", "s", "start")
+    d.arrow([(114, 546), (114, 362)], both=True)
+    d.arrow([(846, 546), (846, 362)], both=True)
     return d
 
 
@@ -158,52 +182,79 @@ def loci_setops():
 
 @fig
 def loci_index():
-    d = Diagram("loci-index", 880, 292,
-                "An overlap query walks only the intervals whose start lies in [qs − max_len, qe): "
-                "anything starting earlier is too short to reach the query.")
+    d = Diagram("loci-index", 880, 372,
+                "A single-window lookup on the numpy point index: rows are sorted by start with a running "
+                "maximum of their ends; lo is the first row whose running max passes the query start, hi the "
+                "first start at or past the query end, and only rows lo:hi are tested. Other interval "
+                "backends answer the same window with their own index and are normalised to the same rows.")
     X0, X1 = 60, 840
     sx = lambda p: X0 + p * (X1 - X0) / 1000
-    ivs = [(40, 130), (90, 380), (150, 210), (230, 300), (300, 420), (360, 470), (430, 520),
+    ivs = [(40, 130), (90, 380), (150, 210), (230, 300), (300, 420), (360, 470), (430, 520), (440, 460),
            (500, 560), (590, 690), (650, 760), (720, 800), (820, 900)]
     qs, qe = 470, 540
-    max_len = max(e - s for s, e in ivs)
-    lo_pos = qs - max_len
+    srt = sorted(ivs)
+    run = []
+    m = -1
+    for s, e in srt:
+        m = max(m, e)
+        run.append(m)
+    lo = next(i for i, r in enumerate(run) if r > qs)                  # searchsorted(run, qs, 'right')
+    hi = next((i for i, (s, e) in enumerate(srt) if s >= qe), len(srt))  # searchsorted(starts, qe, 'left')
+    cand = {srt[i] for i in range(lo, hi)}
     # query band
-    d.rect(sx(qs), 18, sx(qe) - sx(qs), 150, "bx hl", r=4)
+    d.rect(sx(qs), 18, sx(qe) - sx(qs), 112, "bx hl", r=4)
     d.text(sx(qs) + (sx(qe) - sx(qs)) / 2, 34, "query", "t")
     d.text(sx(qs) + (sx(qe) - sx(qs)) / 2, 48, "[qs, qe)", "ms")
     # pile-up rows (explicit, so nothing collides with the labels)
     row_of = {(40, 130): 0, (150, 210): 0, (230, 300): 0, (360, 470): 0, (500, 560): 0, (650, 760): 0,
-              (820, 900): 0, (300, 420): 1, (430, 520): 1, (590, 690): 1, (720, 800): 1, (90, 380): 2}
+              (820, 900): 0, (300, 420): 1, (430, 520): 1, (590, 690): 1, (720, 800): 1, (90, 380): 2,
+              (440, 460): 2}
     for s, e in ivs:
-        y = 72 + row_of[(s, e)] * 24
-        cand = lo_pos <= s < qe
-        hitq = cand and e > qs
-        k = "fg" if hitq else ("fm" if cand else "fl")
+        y = 66 + row_of[(s, e)] * 22
+        is_c = (s, e) in cand
+        hitq = is_c and e > qs
+        k = "fg" if hitq else ("fm" if is_c else "fl")
         d.interval(sx(s), sx(e), y, 12, k, title=f"[{s}, {e})")
-    d.line([(sx(90), 140), (sx(90), 146), (sx(380), 146), (sx(380), 140)], "ln faint")
-    d.text((sx(90) + sx(380)) / 2, 160, "longest interval = max_len", "s")
-    # starts axis
-    ay = 200
-    d.line([(X0, ay), (X1, ay)], "ln faint")
-    d.text(X0, ay - 10, "sorted starts", "s", "start")
-    for s, e in ivs:
-        cand = lo_pos <= s < qe
-        d.circle(sx(s), ay, 4.5, "dot " + ("navy" if cand else "muted"))
-    # bisect pointers
-    for pos, lab, anchor in ((lo_pos, "lo = bisect(starts, qs − max_len)", "end"),
-                             (qe, "hi = bisect(starts, qe)", "start")):
-        d.arrow([(sx(pos), ay + 44), (sx(pos), ay + 10)], "navy")
-        off = -6 if anchor == "end" else 6
-        d.text(sx(pos) + off, ay + 44, lab, "m", anchor)
-    # bracket
-    d.line([(sx(lo_pos), ay + 62), (sx(lo_pos), ay + 70), (sx(qe), ay + 70), (sx(qe), ay + 62)], "ln navy")
-    d.text((sx(lo_pos) + sx(qe)) / 2, ay + 86, "only these starts are tested: keep the ones with end > qs", "lbl")
     # legend (top right, clear of the pile-up)
     for x, k, lab in ((560, "fg", "overlaps the query"), (690, "fm", "tested, no overlap"),
-                      (820, "fl", "skipped")):
+                      (818, "fl", "skipped")):
         d.interval(x - 24, x - 6, 30, 10, k)
-        d.text(x, 34, lab, "s", "start") if x < 820 else d.text(x - 2, 34, lab, "s", "start")
+        d.text(x, 34, lab, "s", "start")
+    # axis 1: rows sorted by start
+    ay = 158
+    d.line([(X0, ay), (X1, ay)], "ln faint")
+    d.text(X0, ay - 10, "rows sorted by start", "s", "start")
+    for s, e in srt:
+        d.circle(sx(s), ay, 4.5, "dot " + ("navy" if (s, e) in cand else "muted"))
+    # axis 2: running maximum of the ends
+    by = 206
+    d.line([(X0, by), (X1, by)], "ln faint")
+    d.text(X0, by - 10, "running max of the ends, in that order", "s", "start")
+    pts = [(sx(srt[i][0]), by) for i in range(len(srt))]
+    for i, ((s, e), r) in enumerate(zip(srt, run)):
+        d.circle(sx(s), by, 4.5, "dot " + ("navy" if i == lo else "muted"))
+        if i == lo:
+            d.text(sx(s), by + 18, f"run_max = {r} > qs", "ms")
+    # pointers
+    d.arrow([(sx(srt[lo][0]), by - 10), (sx(srt[lo][0]), ay + 10)], "navy")
+    d.text(sx(srt[lo][0]) - 8, by - 20, "lo = searchsorted(run_max, qs, 'right')", "m", "end")
+    d.arrow([(sx(qe), ay + 40), (sx(qe), ay + 10)], "navy")
+    d.text(sx(qe) + 8, ay + 36, "hi = searchsorted(starts, qe, 'left')", "m", "start")
+    # bracket
+    a, b = sx(srt[lo][0]), sx(srt[hi][0]) if hi < len(srt) else X1
+    d.line([(a, by + 28), (a, by + 36), (b, by + 36), (b, by + 28)], "ln navy")
+    d.text((a + b) / 2, by + 52, "rows lo:hi are tested: keep end > qs, return their row numbers, sorted", "lbl")
+    # backend seam
+    yb = 290
+    d.text(20, yb, "SAME WINDOW, OTHER ENGINES", "cap", "start")
+    engines = [("genomeblocks", "PointIndex, numpy (default)", "green"),
+               ("cgranges · ncls", "one tree per Loci, cached on it", ""),
+               ("bioframe · pyranges · bedtools", "overlap_pairs of a 1-row Loci", "")]
+    for j, (t, s, k) in enumerate(engines):
+        x = 20 + j * 226
+        d.node(x, yb + 10, 212, 44, t, s, kind=k, mono=True)
+    d.arrow([(700, yb + 32), (730, yb + 32)])
+    d.node(732, yb + 10, 128, 44, "same rows", "half-open · sorted", kind="green")
     return d
 
 
@@ -213,35 +264,63 @@ def loci_index():
 
 @fig
 def genes_model():
-    d = Diagram("genes-model", 880, 240,
-                "Genes.make reads GTF lines into a dictionary of Gene objects, each holding its "
-                "Transcripts, which hold their exons, CDS and UTRs; every node is a Locus.")
-    d.rect(20, 20, 330, 200, "bx dark")
-    d.text(36, 42, "GTF LINES", "cap", "start")
-    lines = [("gene", "chr8 127735434  +", "G1 · MYC"), ("transcript", "chr8 127735434  +", "T1"),
-             ("exon", "chr8 127735434  +", "T1 #1"), ("five_prime_UTR", "chr8 127735434  +", "T1"),
-             ("CDS", "chr8 127736231  +", "T1"), ("exon", "chr8 127740396  +", "T1 #2"),
-             ("transcript", "chr8 127736623  +", "T2"), ("…", "", "")]
+    d = Diagram("genes-model", 880, 318,
+                "Genes.make reads GTF lines into three row-aligned tables: genes, transcripts (gene = the "
+                "gene's row) and features (kind, transcript = the transcript's row); every table is a Loci "
+                "with 0-based starts, so start − 1 is applied once while parsing.")
+    d.rect(20, 20, 300, 278, "bx dark")
+    d.text(36, 42, "GTF LINES · 1-BASED, CLOSED", "cap", "start")
+    lines = [("gene", "chr8  127735434  +", "MYC"), ("transcript", "chr8  127735434  +", "T1"),
+             ("exon", "chr8  127735434  +", "T1 #1"), ("five_prime_UTR", "chr8  127735434  +", "T1"),
+             ("CDS", "chr8  127736231  +", "T1"), ("exon", "chr8  127740396  +", "T1 #2"),
+             ("transcript", "chr8  127736623  +", "T2"), ("exon", "chr8  127736623  +", "T2 #1"), ("…", "", "")]
     for i, (f, c, k) in enumerate(lines):
-        y = 66 + i * 19
+        y = 68 + i * 20
         d.text(36, y, f, "m w", "start")
-        d.text(148, y, c, "ms w2", "start")
-        d.text(334, y, k, "m w", "end")
-    d.arrow([(352, 120), (398, 120)])
-    d.text(375, 108, "make", "ms")
-    d.rect(400, 20, 460, 200, "bx page")
-    d.text(416, 42, "Genes", "t", "start")
-    d.text(466, 42, "dict: gene_id → Gene", "s", "start")
-    d.rect(414, 54, 432, 154, "bx navy")
-    d.text(430, 76, "Gene MYC", "t", "start")
-    d.text(500, 76, "a Locus: span · tss · gene_id, gene_name, gene_type · canonical", "s", "start")
-    for x, tid, note in ((428, "Transcript T1", "a Locus · tss · tss_score"), (636, "Transcript T2", "a Locus · tss · tss_support")):
-        d.rect(x, 88, 196, 108, "bx")
-        d.text(x + 14, 110, tid, "t", "start")
-        d.text(x + 14, 126, note, "s", "start")
-        for j, (c, w) in enumerate((("exons [Exon]", 92), ("cds [CDS]", 72))):
-            d.chip(x + 14 + j * 98, 138, w, 22, c, "navy")
-        d.chip(x + 14, 166, 120, 22, "utr [UTR 5′ / 3′]", "navy")
+        d.text(146, y, c, "ms w2", "start")
+        d.text(304, y, k, "m w", "end")
+    d.text(36, 268, "polars (else pandas) parses the file;", "s w2", "start")
+    d.text(36, 284, "joins on gene_id / transcript_id give the links", "s w2", "start")
+    d.arrow([(322, 150), (356, 150)])
+    d.text(339, 138, "make", "ms")
+    # three tables
+    def table(x, y, title, cols, rows, hl_col=None, k="navy"):
+        w = 16 + sum(c[1] for c in cols)
+        d.rect(x, y, w, 24 + 20 * len(rows) + 8, f"bx {k}")
+        d.text(x + 10, y + 17, title, "t", "start")
+        cx = x + 10
+        for name, cw in cols:
+            d.text(cx + 2, y + 34, name, "s", "start")
+            cx += cw
+        for i, r in enumerate(rows):
+            yy = y + 52 + i * 20
+            cx = x + 10
+            for (name, cw), v in zip(cols, r):
+                d.text(cx + 2, yy, str(v), "m", "start")
+                cx += cw
+        return w
+    gx = 360
+    base = (("row", 34), ("chrom", 46), ("start", 82), ("end", 82), ("±", 24))
+    table(gx, 20, "genes", base + (("gene_id", 70), ("gene_name", 76), ("gene_type", 90)),
+          [(0, "chr8", "127735433", "127742951", "+", "ENSG…", "MYC", "protein_coding")])
+    d.text(gx + 10, 86, "0-based: 127735434 − 1 · TSS = start on '+', end − 1 on '−'", "s", "start")
+    table(gx, 104, "transcripts", base + (("transcript_id", 96), ("gene →", 56)),
+          [(0, "chr8", "127735433", "127742951", "+", "T1", 0), (1, "chr8", "127736622", "127742951", "+", "T2", 0)])
+    table(gx, 196, "features", base + (("kind", 44), ("transcript →", 88), ("exon_number", 84)),
+          [(0, "chr8", "127735433", "127736230", "+", "exon", 0, 1), (1, "chr8", "127735433", "127735582", "+", "5UTR", 0, 1),
+           (2, "chr8", "127736230", "127736623", "+", "CDS", 0, 1), (3, "chr8", "127736622", "127737000", "+", "exon", 1, 1)])
+    # links: row numbers, not ids
+    tx_gene_x = gx + 10 + 34 + 46 + 82 + 82 + 24 + 96 + 12
+    d.path(f"M{tx_gene_x + 14},{150} C{tx_gene_x + 60},{150} {tx_gene_x + 60},{66} {gx + 44},{66}", "ln navy")
+    d.head(gx + 44, 66, math.pi, "hd navy", 6)
+    d.path(f"M{tx_gene_x + 14},{170} C{tx_gene_x + 60},{170} {tx_gene_x + 60},{66} {gx + 44},{66}", "ln navy thin")
+    ft_tx_x = gx + 10 + 34 + 46 + 82 + 82 + 24 + 44 + 12
+    d.path(f"M{ft_tx_x + 12},{246} C{ft_tx_x + 50},{246} {ft_tx_x + 50},{156} {gx + 44},{156}", "ln navy thin")
+    d.path(f"M{ft_tx_x + 12},{306} C{ft_tx_x + 56},{306} {ft_tx_x + 56},{176} {gx + 44},{176}", "ln navy thin")
+    d.head(gx + 44, 156, math.pi, "hd navy", 6)
+    d.head(gx + 44, 176, math.pi, "hd navy", 6)
+    d.text(gx + 10, 316, "links are row numbers: transcripts['gene'][k] indexes the genes table, "
+                         "features['transcript'][j] the transcripts table", "s", "start")
     return d
 
 
@@ -373,7 +452,7 @@ def signal_cube():
             d.line([(x0, 50), (x0, base)], "grid")
     d.line([(X0, base + 12), (X0, base + 18), (X1, base + 18), (X1, base + 12)], "ln")
     d.text((X0 + X1) / 2, base + 34, "centre ± flank, split into n_bins", "s")
-    d.text((X0 + X1) / 2, base + 52, "values(chrom, L, R, bins=n_bins): one native call", "ms")
+    d.text((X0 + X1) / 2, base + 52, "stats_array(chrom, L, R, n_bins): one call to the bigwig backend", "ms")
     d.arrow([(222, 81), (X0 - 10, 81)])
     # cube
     gx, gy, cw, ch = 652, 62, 18, 22
@@ -438,7 +517,7 @@ def motifs_block():
     # block
     y = 128
     d.text(X0, 100, "ONE STRIPED BLOCK", "cap", "start")
-    d.text(152, 100, "· hits of motif j from one lightmotif.scan() call", "s", "start")
+    d.text(152, 100, "· hits of motif j from one engine call (lightmotif · MOODS · Biopython)", "s", "start")
     BW = 5 * W
     for i in range(5):
         d.rect(X0 + i * W, y, W, 22, "iv fnl" if i % 2 == 0 else "iv fl", r=0)
@@ -482,29 +561,53 @@ def motifs_block():
 
 @fig
 def bedpe_reader():
-    d = Diagram("bedpe-reader", 880, 176,
-                "read_bedpe is the one BEDPE parser: it yields Pair objects that Architecture.make, the "
-                "browser and Loci.pair_to_bed all consume.")
-    d.rect(20, 30, 230, 118, "bx dark")
+    d = Diagram("bedpe-reader", 880, 232,
+                "Pairs.make is the one BEDPE parser: it reads the file through the tables backend into two "
+                "row-aligned Loci, anchor a and anchor b, plus name / score columns; Architecture.make, the "
+                "browser and Pairs.overlapping all consume that table.")
+    d.rect(20, 30, 214, 172, "bx dark")
     d.text(34, 50, "LOOPS.BEDPE", "cap", "start")
-    for i, l in enumerate(("chr8 127.73M  chr8 127.80M", "chr8 127.73M  chr8 128.21M", "chr8 127.74M  chr2 41.05M",
-                           "…")):
+    for i, l in enumerate(("chr8 127.73M  chr8 127.80M  l1 5", "chr8 127.73M  chr8 128.21M  l2 3",
+                           "chr8 127.74M  chr2 41.05M   l3 1", "…")):
         d.text(34, 74 + i * 20, l, "m w", "start")
-    d.arrow([(252, 89), (318, 89)])
-    d.text(285, 78, "read_bedpe", "ms")
-    d.rect(320, 30, 250, 118, "bx purple")
-    d.text(336, 52, "Pair", "t", "start")
-    d.text(374, 52, "one loop", "s", "start")
-    for i, (c, w) in enumerate((("chrom1 start1 end1", 152), ("chrom2 start2 end2", 152))):
-        d.chip(336, 62 + i * 28, w, 22, c, "white")
-    d.text(498, 78, "mid1, mid2", "ms", "start")
-    d.text(498, 106, "distance", "ms", "start")
-    d.text(336, 138, "distance = |mid2 − mid1|, ∞ across chromosomes", "s", "start")
-    for i, (t, s) in enumerate((("Architecture.make", "anchors (mid ± r) → CRE edges"),
-                                ("browser", "half-sine arcs"), ("Loci.pair_to_bed", "loops touching a set"))):
-        y = 18 + i * 52
-        d.node(650, y, 210, 42, t, s, mono=True)
-        d.arrow([(572, 89), (610, 89), (610, y + 21), (648, y + 21)])
+    d.text(34, 166, "any frame with these columns:", "s w2", "start")
+    d.text(34, 182, "Pairs.from_frame · as_pairs", "s w2", "start")
+    d.arrow([(236, 116), (292, 116)])
+    d.text(264, 104, "Pairs.make", "ms")
+    d.text(264, 132, "tables backend", "ms")
+    d.rect(294, 30, 346, 172, "bx purple")
+    d.text(310, 52, "Pairs", "t", "start")
+    d.text(354, 52, "two Loci aligned by row + columns", "s", "start")
+    # anchor a / anchor b / cols as three column groups over 3 rows
+    hdr_y = 76
+    groups = (("a", 310, (("codes", 46), ("starts", 54), ("ends", 54), ("±", 18)), "fp"),
+              ("b", 494, (("codes", 46), ("starts", 54), ("ends", 54), ("±", 18)), "fp"),)
+    for name, x, cols, k in groups:
+        d.text(x, hdr_y - 10, f"P.{name}", "tm", "start")
+        d.text(x + 26, hdr_y - 10, "Loci", "s", "start")
+        cx = x
+        for c, w in cols:
+            d.text(cx, hdr_y + 6, c, "s", "start")
+            cx += w
+    vals_a = (("0", "127,73…", "127,73…", "+"), ("0", "127,73…", "127,73…", "+"), ("0", "127,74…", "127,74…", "−"))
+    vals_b = (("0", "127,80…", "127,80…", "−"), ("0", "128,21…", "128,21…", "+"), ("1", "41,05…", "41,05…", "+"))
+    for i in range(3):
+        y = hdr_y + 28 + i * 20
+        d.rect(304, y - 13, 326, 18, "bx hl" if i == 2 else "chip white", r=3)
+        for (name, x, cols, k), vals in zip(groups, (vals_a, vals_b)):
+            cx = x
+            for (c, w), v in zip(cols, vals[i]):
+                d.text(cx, y, v, "ms", "start")
+                cx += w
+    d.text(310, 164, "P.cols: name · score · …", "m", "start")
+    d.text(310, 184, "is_cis = a.codes == b.codes · distance = |mid2 − mid1|, ∞ across chromosomes", "s", "start")
+    for i, (t, s) in enumerate((("Architecture.make", "anchors (mid ± r) → overlap_pairs → edges"),
+                                ("browser · View · igv_html", "arcs between anchor midpoints"),
+                                ("Pairs.overlapping(loci)", "pairtobed: an anchor touches the set"))):
+        y = 22 + i * 62
+        d.node(690, y, 170, 50, t, s, mono=True)
+        d.arrow([(642, 116), (666, 116), (666, y + 25), (688, y + 25)])
+    d.text(690, 212, "every consumer calls as_pairs()", "s", "start")
     return d
 
 
@@ -639,8 +742,8 @@ def atlas_index():
 def arch_pipeline():
     d = Diagram("arch-pipeline", 880, 198,
                 "The Architecture pipeline: six chained calls, each reading the previous step's output "
-                "and writing graph-tool vertex or edge properties.")
-    steps = [("make", "CRE Loci + BEDPE", "CRE vertices · edges"),
+                "and writing an edge column (ep) or a vertex column (vp).")
+    steps = [("make", "Loci + BEDPE / Pairs", "vertices · edge table"),
              ("add_mcool", ".mcool at 5 kb", "ep.w (Hi-C count)"),
              ("normalize", "CRE positions", "ep.d · ep.n (O/E)"),
              ("annotate", "Genes", "vp.annot · vp.gene"),
@@ -779,15 +882,16 @@ def arch_hubs():
 def browser_tracks():
     d = Diagram("browser-tracks", 880, 336,
                 "browser() gives every track its own axis on a shared x range and picks the drawer from "
-                "the track's type; bigWigs are read as binned summaries for the region only.")
+                "the track's type: intervals through as_loci, loops through as_pairs, bigWigs as binned "
+                "summaries of the region only, through the bigwig backend.")
     X0, X1 = 150, 600
     rows = [("ruler", None, "region → chrom, start, end"),
             ("ATAC", ".bw", "binned means, one native call"),
             ("H3K27ac ×2", "[.bw, .bw]", "replicates averaged per bin"),
             ("reads", ".bam", "per-base pileup, mismatches coloured"),
-            ("peaks", ".bed · Loci", "rectangles"),
-            ("loops", ".bedpe · [Pair]", "half-sine arcs between anchors"),
-            ("genes", "Genes", "stacked models, exon/CDS heights")]
+            ("peaks", "Loci · frame · .bed", "rectangles, via as_loci"),
+            ("loops", "Pairs · .bedpe", "half-sine arcs between anchors"),
+            ("genes", "Genes", "stacked models from the 3 tables")]
     import math
     for i, (name, src, note) in enumerate(rows):
         y = 26 + i * 44
@@ -839,8 +943,8 @@ def browser_tracks():
 @fig
 def columnar_rows():
     d = Diagram("columnar-rows", 880, 330,
-                "In genomeblocks.columnar every table describing the CREs is aligned by row, and the "
-                "Architecture's edges store row numbers, so joins are array indexing.")
+                "Every table describing the CREs is aligned by row, and the Architecture's edges store "
+                "row numbers, so joins are array indexing.")
     y0, rh = 62, 26
     # edges (left)
     d.text(20, 24, "ARCHITECTURE EDGES", "cap", "start")
@@ -945,7 +1049,7 @@ def columnar_edges():
     d.text(ax + n * c + 14, ay + 34, "cis blocks on the diagonal,", "s", "start")
     d.text(ax + n * c + 14, ay + 48, "a few trans dots off it", "s", "start")
     for k, (t, s_) in enumerate((("A.neighbors(row)", "one CSR adjacency over all edges: trans partners included"),
-                                 ("A.graph()", "graph-tool Graph built from the arrays on first use, cached"),
+                                 ("A.graph(backend=)", "the graph backend's object, built from the arrays on demand"),
                                  ("A.save(path)", "parquet: vertices + edges tables, readable from R / polars"))):
         yy = 176 + k * 38
         d.text(420, yy, t, "tm", "start")

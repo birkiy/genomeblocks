@@ -1,18 +1,18 @@
-<svg class="gbd" viewBox="0 0 880 528" role="img" aria-label="Package map: plotting modules read the domain modules, every domain module builds on Locus and Loci, and the columnar package shares Locus and hands tables to the classic API." xmlns="http://www.w3.org/2000/svg">
+<svg class="gbd" viewBox="0 0 880 652" role="img" aria-label="Package map: plotting modules read the domain modules; every domain module builds on Genome, Loci and Locus; whole-set work runs through one backend per family; and the boundary layer turns any table, file or region into Loci and back." xmlns="http://www.w3.org/2000/svg">
 <text class="cap" x="88" y="40" text-anchor="end">PLOT</text>
 <text class="s" x="88" y="54" text-anchor="end">matplotlib, lazy</text>
 <rect class="bx" x="100" y="20" width="118" height="46" rx="8"></rect>
 <text class="tm" x="159" y="40" text-anchor="middle">signal_draw</text>
 <text class="s" x="159" y="56" text-anchor="middle">heatmaps · profiles</text>
 <rect class="bx" x="228.4" y="20" width="246.4" height="46" rx="8"></rect>
-<text class="tm" x="351.6" y="40" text-anchor="middle">browserview</text>
-<text class="s" x="351.6" y="56" text-anchor="middle">IGV-like region figures</text>
+<text class="tm" x="351.6" y="40" text-anchor="middle">browserview · view · igv</text>
+<text class="s" x="351.6" y="56" text-anchor="middle">region figures · one-file pages</text>
 <rect class="bx" x="485.2" y="20" width="118" height="46" rx="8"></rect>
 <text class="tm" x="544.2" y="40" text-anchor="middle">motifs_draw</text>
-<text class="s" x="544.2" y="56" text-anchor="middle">logos · dendrograms</text>
+<text class="s" x="544.2" y="56" text-anchor="middle">motif heatmaps · logos</text>
 <rect class="bx" x="742" y="20" width="118" height="46" rx="8"></rect>
 <text class="tm" x="801" y="40" text-anchor="middle">architecture_draw</text>
-<text class="s" x="801" y="56" text-anchor="middle">network layouts</text>
+<text class="s" x="801" y="56" text-anchor="middle">layouts, any graph backend</text>
 <polyline class="ln" points="159,68 159,114"/>
 <polygon class="hd" points="159.0,118.0 155.7,111.8 162.3,111.8"/>
 <polyline class="ln" points="287.4,68 287.4,114"/>
@@ -25,31 +25,31 @@
 <polygon class="hd" points="801.0,118.0 797.7,111.8 804.3,111.8"/>
 <text class="lbl" x="167" y="97">reads</text>
 <text class="cap" x="88" y="152" text-anchor="end">DOMAIN</text>
-<text class="s" x="88" y="166" text-anchor="end">one per data type</text>
+<text class="s" x="88" y="166" text-anchor="end">one table per data type</text>
 <rect class="bx green" x="100" y="120" width="118" height="76" rx="8"></rect>
 <text class="t" x="159" y="146" text-anchor="middle">signal</text>
 <text class="s" x="159" y="162" text-anchor="middle">bigWig → cube</text>
-<text class="ms" x="159" y="184" text-anchor="middle">pybigtools</text>
+<text class="ms" x="159" y="184" text-anchor="middle">bigwig backend</text>
 <rect class="bx purple" x="228.4" y="120" width="118" height="76" rx="8"></rect>
-<text class="t" x="287.4" y="146" text-anchor="middle">bedpe</text>
-<text class="s" x="287.4" y="162" text-anchor="middle">loops · Hi-C pairs</text>
-<text class="ms" x="287.4" y="184" text-anchor="middle">pandas</text>
+<text class="t" x="287.4" y="146" text-anchor="middle">Pairs · bedpe</text>
+<text class="s" x="287.4" y="162" text-anchor="middle">BEDPE table · Hi-C pairs</text>
+<text class="ms" x="287.4" y="184" text-anchor="middle">tables backend</text>
 <rect class="bx navy" x="356.8" y="120" width="118" height="76" rx="8"></rect>
 <text class="t" x="415.8" y="146" text-anchor="middle">Genes</text>
-<text class="s" x="415.8" y="162" text-anchor="middle">GTF → gene models</text>
-<text class="ms" x="415.8" y="184" text-anchor="middle">pyranges</text>
+<text class="s" x="415.8" y="162" text-anchor="middle">GTF → 3 linked tables</text>
+<text class="ms" x="415.8" y="184" text-anchor="middle">tables · intervals</text>
 <rect class="bx navy" x="485.2" y="120" width="118" height="76" rx="8"></rect>
 <text class="t" x="544.2" y="146" text-anchor="middle">motifs</text>
-<text class="s" x="544.2" y="162" text-anchor="middle">PWM hit counts</text>
-<text class="ms" x="544.2" y="184" text-anchor="middle">lightmotif</text>
+<text class="s" x="544.2" y="162" text-anchor="middle">Library · hit matrices</text>
+<text class="ms" x="544.2" y="184" text-anchor="middle">motifs · fasta backends</text>
 <rect class="bx navy" x="613.6" y="120" width="118" height="76" rx="8"></rect>
 <text class="t" x="672.6" y="146" text-anchor="middle">Atlas</text>
-<text class="s" x="672.6" y="162" text-anchor="middle">peak-set enrichment</text>
+<text class="s" x="672.6" y="162" text-anchor="middle">bins × tracks, CSR</text>
 <text class="ms" x="672.6" y="184" text-anchor="middle">scipy.sparse</text>
 <rect class="bx purple" x="742" y="120" width="118" height="76" rx="8"></rect>
 <text class="t" x="801" y="146" text-anchor="middle">Architecture</text>
-<text class="s" x="801" y="162" text-anchor="middle">contact graph</text>
-<text class="ms" x="801" y="184" text-anchor="middle">graph-tool · cooler</text>
+<text class="s" x="801" y="162" text-anchor="middle">vertex + edge tables</text>
+<text class="ms" x="801" y="184" text-anchor="middle">intervals · graph backends</text>
 <polyline class="ln" points="159,197 159,226"/>
 <polyline class="ln" points="287.4,197 287.4,226"/>
 <polyline class="ln" points="415.8,197 415.8,226"/>
@@ -59,59 +59,103 @@
 <polyline class="ln" points="159,226 801,226"/>
 <polyline class="ln" points="578,226 578,258"/>
 <polygon class="hd" points="578.0,262.0 574.7,255.8 581.3,255.8"/>
-<text class="lbl" x="586" y="248">every module builds on Locus · Loci</text>
+<text class="lbl" x="586" y="248">every module builds on Genome · Loci · Locus</text>
 <text class="cap" x="88" y="300" text-anchor="end">CORE</text>
-<text class="s" x="88" y="314" text-anchor="end">imported by all</text>
-<rect class="bx green" x="100" y="264" width="180" height="96" rx="8"></rect>
-<text class="t" x="190" y="290" text-anchor="middle">Locus</text>
-<text class="s" x="190" y="306" text-anchor="middle">one interval</text>
-<rect class="chip white" x="114" y="318" width="152" height="24" rx="12"></rect>
-<text class="m" x="190" y="334" text-anchor="middle">chr1:100-200(+)</text>
-<text class="s" x="190" y="354" text-anchor="middle">uid = the key everywhere</text>
-<rect class="bx green" x="296" y="264" width="564" height="96" rx="8"></rect>
-<text class="t" x="312" y="290">Loci</text>
-<text class="s" x="348" y="290">a list of Locus, plus two indexes built on first use</text>
-<rect class="chip white" x="312" y="300" width="146" height="24" rx="12"></rect>
-<text class="m" x="385" y="316" text-anchor="middle">uids: uid → row</text>
-<rect class="chip white" x="466" y="300" width="164" height="24" rx="12"></rect>
-<text class="m" x="548" y="316" text-anchor="middle">cgr: interval index</text>
-<text class="s" x="640" y="316">cgranges, or a pure-Python bisect index</text>
-<text class="s" x="312" y="347">attached at import:</text>
-<rect class="chip white" x="418" y="332" width="70" height="22" rx="11"></rect>
-<text class="m" x="453" y="347" text-anchor="middle">.signal()</text>
-<rect class="chip white" x="494" y="332" width="104" height="22" rx="11"></rect>
-<text class="m" x="546" y="347" text-anchor="middle">.count_pairs()</text>
-<rect class="chip white" x="604" y="332" width="108" height="22" rx="11"></rect>
-<text class="m" x="658" y="347" text-anchor="middle">.scan_motifs()</text>
-<rect class="chip white" x="718" y="332" width="76" height="22" rx="11"></rect>
-<text class="m" x="756" y="347" text-anchor="middle">.enrich()</text>
-<text class="cap" x="88" y="456" text-anchor="end">TABLES</text>
-<text class="s" x="88" y="470" text-anchor="end">columnar, 1.1</text>
-<rect class="bx page" x="100" y="420" width="760" height="94" rx="8"></rect>
-<text class="tm" x="116" y="442">genomeblocks.columnar</text>
-<text class="s" x="296" y="442">numpy columns that line up by row · one shared Genome · objects only on access</text>
-<rect class="bx" x="116" y="454" width="114" height="46" rx="8"></rect>
-<text class="t" x="173" y="474" text-anchor="middle">Genome</text>
-<text class="s" x="173" y="490" text-anchor="middle">shared chrom codes</text>
-<rect class="bx green" x="238.8" y="454" width="114" height="46" rx="8"></rect>
-<text class="t" x="295.8" y="474" text-anchor="middle">Loci</text>
-<text class="s" x="295.8" y="490" text-anchor="middle">4 numpy columns</text>
-<rect class="bx navy" x="361.6" y="454" width="114" height="46" rx="8"></rect>
-<text class="t" x="418.6" y="474" text-anchor="middle">Genes</text>
-<text class="s" x="418.6" y="490" text-anchor="middle">3 linked tables</text>
-<rect class="bx purple" x="484.4" y="454" width="114" height="46" rx="8"></rect>
-<text class="t" x="541.4" y="474" text-anchor="middle">Architecture</text>
-<text class="s" x="541.4" y="490" text-anchor="middle">sorted edge table</text>
-<rect class="bx purple" x="607.2" y="454" width="114" height="46" rx="8"></rect>
-<text class="t" x="664.2" y="474" text-anchor="middle">hichip · se</text>
-<text class="s" x="664.2" y="490" text-anchor="middle">short-range → SEs</text>
-<rect class="bx" x="730" y="454" width="114" height="46" rx="8"></rect>
-<text class="t" x="787" y="474" text-anchor="middle">view · igv</text>
-<text class="s" x="787" y="490" text-anchor="middle">one-file browsers</text>
-<polyline class="ln" points="190,418 190,366"/>
-<polygon class="hd" points="190.0,362.0 193.3,368.2 186.7,368.2"/>
-<text class="lbl" x="198" y="395">rows are Locus objects</text>
-<polyline class="ln" points="578,418 578,366"/>
-<polygon class="hd" points="578.0,362.0 581.3,368.2 574.7,368.2"/>
-<text class="lbl" x="586" y="395">to_legacy() · classic functions accept it</text>
+<text class="s" x="88" y="314" text-anchor="end">numpy columns</text>
+<rect class="bx" x="100" y="264" width="156" height="96" rx="8"></rect>
+<text class="t" x="178" y="290" text-anchor="middle">Genome</text>
+<text class="s" x="178" y="306" text-anchor="middle">names ↔ int codes · sizes</text>
+<rect class="chip white" x="112" y="318" width="132" height="24" rx="12"></rect>
+<text class="m" x="178" y="334" text-anchor="middle">codes[i] → names</text>
+<text class="s" x="178" y="354" text-anchor="middle">one per table, re-coded on contact</text>
+<rect class="bx green" x="272" y="264" width="436" height="96" rx="8"></rect>
+<text class="t" x="288" y="290">Loci</text>
+<text class="s" x="324" y="290">intervals as columns · row number = the join key</text>
+<rect class="chip white" x="288" y="300" width="84" height="22" rx="11"></rect>
+<text class="m" x="330" y="315" text-anchor="middle">codes int32</text>
+<rect class="chip white" x="378" y="300" width="84" height="22" rx="11"></rect>
+<text class="m" x="420" y="315" text-anchor="middle">starts int64</text>
+<rect class="chip white" x="468" y="300" width="78" height="22" rx="11"></rect>
+<text class="m" x="507" y="315" text-anchor="middle">ends int64</text>
+<rect class="chip white" x="552" y="300" width="86" height="22" rx="11"></rect>
+<text class="m" x="595" y="315" text-anchor="middle">strands int8</text>
+<rect class="chip white" x="644" y="300" width="50" height="22" rx="11"></rect>
+<text class="m" x="669" y="315" text-anchor="middle">cols {}</text>
+<text class="s" x="288" y="347">lookup index built on first use, one per interval backend, dropped when rows change</text>
+<rect class="bx green" x="724" y="264" width="136" height="96" rx="8"></rect>
+<text class="t" x="792" y="290" text-anchor="middle">Locus</text>
+<text class="s" x="792" y="306" text-anchor="middle">one interval</text>
+<rect class="chip white" x="734" y="318" width="116" height="24" rx="12"></rect>
+<text class="m" x="792" y="334" text-anchor="middle">L[i] → LocusView</text>
+<text class="s" x="792" y="354" text-anchor="middle">reads the columns</text>
+<text class="cap" x="88" y="456" text-anchor="end">BACKENDS</text>
+<text class="s" x="88" y="470" text-anchor="end">one engine per family</text>
+<rect class="bx page" x="130" y="400" width="700" height="124" rx="8"></rect>
+<text class="tm" x="146" y="422">gb.backends()</text>
+<text class="s" x="258" y="422">default first, pip-installable · backend= on a call · with gb.use_backend(...) · a missing engine raises with its install command</text>
+<rect class="bx green" x="146" y="434" width="104" height="80" rx="8"></rect>
+<text class="t" x="198" y="452" text-anchor="middle">intervals</text>
+<text class="m" x="198" y="470" text-anchor="middle">genomeblocks</text>
+<text class="ms" x="198" y="488" text-anchor="middle">cgranges · ncls · bioframe</text>
+<text class="ms" x="198" y="502" text-anchor="middle">pyranges · bedtools</text>
+<rect class="bx green" x="259.6" y="434" width="104" height="80" rx="8"></rect>
+<text class="t" x="311.6" y="452" text-anchor="middle">bigwig</text>
+<text class="m" x="311.6" y="470" text-anchor="middle">pybigtools</text>
+<text class="ms" x="311.6" y="488" text-anchor="middle">pybigwig · python</text>
+<text class="ms" x="311.6" y="502" text-anchor="middle"></text>
+<rect class="bx navy" x="373.2" y="434" width="104" height="80" rx="8"></rect>
+<text class="t" x="425.2" y="452" text-anchor="middle">motifs</text>
+<text class="m" x="425.2" y="470" text-anchor="middle">lightmotif</text>
+<text class="ms" x="425.2" y="488" text-anchor="middle">moods · biopython</text>
+<text class="ms" x="425.2" y="502" text-anchor="middle"></text>
+<rect class="bx navy" x="486.8" y="434" width="104" height="80" rx="8"></rect>
+<text class="t" x="538.8" y="452" text-anchor="middle">fasta</text>
+<text class="m" x="538.8" y="470" text-anchor="middle">genomeblocks</text>
+<text class="ms" x="538.8" y="488" text-anchor="middle">pysam · pyfaidx</text>
+<text class="ms" x="538.8" y="502" text-anchor="middle">memory · biopython</text>
+<rect class="bx" x="600.4" y="434" width="104" height="80" rx="8"></rect>
+<text class="t" x="652.4" y="452" text-anchor="middle">tables</text>
+<text class="m" x="652.4" y="470" text-anchor="middle">polars, else pandas</text>
+<text class="ms" x="652.4" y="488" text-anchor="middle"></text>
+<text class="ms" x="652.4" y="502" text-anchor="middle"></text>
+<rect class="bx purple" x="714" y="434" width="104" height="80" rx="8"></rect>
+<text class="t" x="766" y="452" text-anchor="middle">graph</text>
+<text class="m" x="766" y="470" text-anchor="middle">graph-tool, else scipy</text>
+<text class="ms" x="766" y="488" text-anchor="middle">igraph · networkx</text>
+<text class="ms" x="766" y="502" text-anchor="middle"></text>
+<polyline class="ln" points="490,362 490,394"/>
+<polygon class="hd" points="490.0,398.0 486.7,391.8 493.3,391.8"/>
+<text class="lbl" x="498" y="384">whole-set work: overlap, signal, scanning, graphs</text>
+<text class="cap" x="88" y="584" text-anchor="end">BOUNDARY</text>
+<text class="s" x="88" y="598" text-anchor="end">interop, in and out</text>
+<rect class="bx page" x="100" y="548" width="760" height="84" rx="8"></rect>
+<text class="tm" x="116" y="570">as_loci(x)</text>
+<text class="s" x="200" y="570">every public function calls it on its inputs · columns found by name, lenient on spelling</text>
+<rect class="chip white" x="116" y="580" width="56" height="20" rx="10"></rect>
+<text class="ms" x="144" y="594" text-anchor="middle">pandas</text>
+<rect class="chip white" x="178" y="580" width="52" height="20" rx="10"></rect>
+<text class="ms" x="204" y="594" text-anchor="middle">polars</text>
+<rect class="chip white" x="236" y="580" width="60" height="20" rx="10"></rect>
+<text class="ms" x="266" y="594" text-anchor="middle">pyarrow</text>
+<rect class="chip white" x="302" y="580" width="64" height="20" rx="10"></rect>
+<text class="ms" x="334" y="594" text-anchor="middle">bioframe</text>
+<rect class="chip white" x="372" y="580" width="64" height="20" rx="10"></rect>
+<text class="ms" x="404" y="594" text-anchor="middle">pyranges</text>
+<rect class="chip white" x="442" y="580" width="74" height="20" rx="10"></rect>
+<text class="ms" x="479" y="594" text-anchor="middle">pybedtools</text>
+<rect class="chip white" x="522" y="580" width="60" height="20" rx="10"></rect>
+<text class="ms" x="552" y="594" text-anchor="middle">AnnData</text>
+<rect class="chip white" x="588" y="580" width="112" height="20" rx="10"></rect>
+<text class="ms" x="644" y="594" text-anchor="middle">BED · CSV · parquet</text>
+<rect class="chip white" x="706" y="580" width="72" height="20" rx="10"></rect>
+<text class="ms" x="742" y="594" text-anchor="middle">region strs</text>
+<rect class="chip white" x="784" y="580" width="60" height="20" rx="10"></rect>
+<text class="ms" x="814" y="594" text-anchor="middle">lists · dicts</text>
+<text class="s" x="116" y="622">out: to_pandas · to_polars · to_arrow · to_bioframe · to_pyranges · to_bedtool · to_anndata · to_bed · save   ·   protocols: Arrow C stream · __dataframe__ · narwhals</text>
+<polyline class="ln" points="114,542 114,366"/>
+<polygon class="hd" points="114.0,362.0 117.3,368.2 110.7,368.2"/>
+<polygon class="hd" points="114.0,546.0 110.7,539.8 117.3,539.8"/>
+<polyline class="ln" points="846,542 846,366"/>
+<polygon class="hd" points="846.0,362.0 849.3,368.2 842.7,368.2"/>
+<polygon class="hd" points="846.0,546.0 842.7,539.8 849.3,539.8"/>
 </svg>

@@ -10,6 +10,8 @@ nav_order: 6
 > result tables. The previous pages explain the *concepts*; this one shows the
 > actual run. Source:
 > [`examples/ar_foxa1_lncap/`](https://github.com/birkiy/genomeblocks/tree/main/examples/ar_foxa1_lncap).
+> The outputs shown are from the 1.x run; the code cells are the 2.0 API and
+> the notebook has not yet been re-run on 2.0.
 
 # AR & FOXA1 in LNCaP (±DHT)
 
@@ -35,10 +37,9 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 import genomeblocks as gb
-from genomeblocks import Loci, Genes, Atlas, make_genome, tmm
+from genomeblocks import Loci, Genes, Atlas, tmm, browser
 from genomeblocks.signal_draw import plot_heatmap
 from genomeblocks.motifs import scan_motifs_matrix, bootstrap_enrichment
-from genomeblocks import browser
 
 
 @contextmanager
@@ -99,13 +100,14 @@ for k, v in peaks.items():
 ## 2. Accessible chromatin — union of ATAC peaks
 
 Concatenate the four ATAC peak sets (both conditions, both reps) and `merge()`
-overlapping intervals into one accessible-region set.
+overlapping intervals into one accessible-region set (the result comes back in
+genome order).
 
 
 ```python
 with timer("ATAC union (accessible regions)"):
     accessible = (peaks["ATAC_0h_r1"] + peaks["ATAC_0h_r2"]
-                  + peaks["ATAC_4h_r1"] + peaks["ATAC_4h_r2"]).sort().merge()
+                  + peaks["ATAC_4h_r1"] + peaks["ATAC_4h_r2"]).merge()
 
 print(f"accessible regions (merged): {len(accessible):,}")
 ```
@@ -170,7 +172,8 @@ print(f"accessible  FOXA1 0h={len(F0):,}  FOXA1 4h={len(F4):,}  AR 4h={len(A4):,
 ## 5. Venn — FOXA1 (0h, 4h) vs AR (4h)
 
 To venn genomic intervals we merge all peaks into a shared region *universe*,
-then label each region by which input set overlaps it. From this:
+then label each region by which input set overlaps it (`overlap_any` gives one
+boolean per universe row; the row numbers are the region ids). From this:
 
 - **AR+F** = AR 4h peaks that overlap FOXA1 (0h or 4h) — FOXA1-dependent AR
 - **AR−F** = AR 4h peaks that overlap no FOXA1 peak — FOXA1-independent AR
@@ -182,13 +185,8 @@ from matplotlib_venn import venn3
 def venn_id_sets(sets):
     """Merge all peaks into a region universe; return one set of region-ids per
     input set (the ids it overlaps) so matplotlib_venn can count the regions."""
-    universe = Loci([l for s in sets for l in s]).sort().merge()
-    id_sets = [set() for _ in sets]
-    for i, reg in enumerate(tqdm(universe, desc="venn membership")):
-        for si, s in enumerate(sets):
-            if any(True for _ in s.cgr.overlap(reg.chrom, reg.start, reg.end)):
-                id_sets[si].add(i)
-    return id_sets
+    universe = sum(sets[1:], sets[0]).merge()
+    return [set(np.flatnonzero(universe.overlap_any(s)).tolist()) for s in sets]
 
 with timer("venn3 membership"):
     ids = venn_id_sets([F0, F4, A4])
@@ -225,7 +223,7 @@ ax.set_title("Accessible peaks: FOXA1 (0h, 4h) vs AR (4h)")
 
 ```python
 with timer("define AR+F / AR-F"):
-    F_any = (F0 + F4).sort().merge()     # FOXA1-bound at either timepoint
+    F_any = (F0 + F4).merge()            # FOXA1-bound at either timepoint
     ARpF  = A4 & F_any                   # AR 4h that IS FOXA1-bound
     ARmF  = A4 - F_any                   # AR 4h that is NOT FOXA1-bound
 
@@ -330,20 +328,22 @@ plt.tight_layout()
 
 Scan JASPAR motifs over AR+F, AR−F, and a subsample of the accessible (ATAC)
 pool as background, then bootstrap the log-fold-change. Sorting by `LFC`
-(= LFC_AR+F − LFC_AR−F) gives motifs preferential to each set.
+(= LFC_AR+F − LFC_AR−F) gives motifs preferential to each set. The scanners
+read the windows from the FASTA through its index; to hold the genome in
+memory instead, pass `gb.read_fasta(GENOME_FA)` in place of the path.
 
 
 ```python
-with timer("load genome FASTA"):
-    genome = make_genome(GENOME_FA)
+with timer("index genome FASTA"):
+    genome = gb.Genome.from_fasta(GENOME_FA)     # builds hg38.fa.fai once; names and sizes
 
 # background pool = subsample of accessible chromatin (keeps scanning cheap)
 pool = accessible
 
 with timer("scan motifs (AR+F, AR-F, pool)"):
-    mat_pf   = scan_motifs_matrix(ARpF, genome, MOTIF_DB, r=250, workers=8)
-    mat_mf   = scan_motifs_matrix(ARmF, genome, MOTIF_DB, r=250, workers=8)
-    mat_pool = scan_motifs_matrix(pool, genome, MOTIF_DB, r=250, workers=8)
+    mat_pf   = scan_motifs_matrix(ARpF, GENOME_FA, MOTIF_DB, r=250, workers=8)
+    mat_mf   = scan_motifs_matrix(ARmF, GENOME_FA, MOTIF_DB, r=250, workers=8)
+    mat_pool = scan_motifs_matrix(pool, GENOME_FA, MOTIF_DB, r=250, workers=8)
 
 with timer("bootstrap enrichment"):
     enr = bootstrap_enrichment({"AR+F": mat_pf, "AR-F": mat_mf},
@@ -357,8 +357,8 @@ print("Top motifs in AR-F (FOXA1-independent):")
 display(ranked.tail(10)[show].iloc[::-1])
 ```
 
-    ▶ load genome FASTA ...
-    ✓ load genome FASTA — 20.4s
+    ▶ index genome FASTA ...
+    ✓ index genome FASTA — 20.4s
     ▶ scan motifs (AR+F, AR-F, pool) ...
 
 
@@ -592,7 +592,8 @@ each region set as the other's reference to find TF tracks differentially
 enriched between AR+F and AR−F.
 
 > Building the index over the full ChIP-Atlas is heavy (minutes, several GB
-> RAM). Pickle `atlas` to reuse it across sessions.
+> RAM). `atlas.save("chipatlas_hg38_1kb.npz")` / `Atlas.load(...)` reuse it
+> across sessions.
 
 
 ```python
@@ -1002,7 +1003,8 @@ display(enr_mf.head(15)[cols])
 ## 10. Browser view — `chr19:50,792,009-50,923,669`
 
 All six conditions as signal tracks (ATAC replicates passed as a **list** of
-bigwigs are averaged into one track), their peak calls, and gene models.
+bigwigs are averaged into one track), their peak calls, and gene models. The
+region string is 0-based, half-open like every table.
 
 
 ```python

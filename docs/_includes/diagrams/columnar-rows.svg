@@ -1,4 +1,4 @@
-<svg class="gbd" viewBox="0 0 880 330" role="img" aria-label="In genomeblocks.columnar every table describing the CREs is aligned by row, and the Architecture&#x27;s edges store row numbers, so joins are array indexing." xmlns="http://www.w3.org/2000/svg">
+<svg class="gbd" viewBox="0 0 880 330" role="img" aria-label="Every table describing the CREs is aligned by row, and the Architecture&#x27;s edges store row numbers, so joins are array indexing." xmlns="http://www.w3.org/2000/svg">
 <text class="cap" x="20" y="24">ARCHITECTURE EDGES</text>
 <text class="s" x="28" y="48">src</text>
 <text class="s" x="64" y="48">tgt</text>

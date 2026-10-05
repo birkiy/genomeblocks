@@ -8,7 +8,7 @@ nav_order: 2
 # Signal heatmaps
 {: .no_toc }
 
-Turning bigWig coverage into a region × track × bin **signal cube**, averaging
+Turning bigWig coverage into a region x track x bin **signal cube**, averaging
 replicates, and drawing grouped heatmaps of AR+F vs AR−F.
 {: .fs-5 .fw-300 }
 
@@ -28,10 +28,12 @@ every base. Heatmaps and browser tracks are built from bigWigs.
 
 ## The signal cube
 
-`signal()` (also available as `Loci.signal`) extracts binned coverage for a set
-of loci across a list of bigWigs:
+`genomeblocks.signal.signal()` (also `Loci.signal`) extracts binned coverage
+for a set of loci across a list of bigWigs:
 
 ```python
+import numpy as np
+
 regions = ARpF + ARmF                       # rows: AR+F peaks then AR-F peaks
 bw_order = ["ATAC_0h_r1", "ATAC_0h_r2", "ATAC_4h_r1", "ATAC_4h_r2",
             "AR_0h", "AR_4h", "FOXA1_0h", "FOXA1_4h"]
@@ -42,17 +44,20 @@ S = np.nan_to_num(regions.signal(bigwigs, n_bins=200, flank=2000, workers=4))
 
 The return value `S` is a NumPy array of shape **`(n_loci, n_tracks, n_bins)`**:
 
-- **`n_loci`** rows — here every AR+F peak followed by every AR−F peak.
-- **`n_tracks`** — one slab per bigWig, in the order you passed them.
-- **`n_bins`** columns — each region is split into `n_bins` equal bins.
+- **`n_loci`** rows — one per row of `regions`, in its order: every AR+F peak
+  followed by every AR−F peak.
+- **`n_tracks`** — one slab per bigWig, in the order you passed them (a
+  `{name: path}` dict works too, tracks in its order).
+- **`n_bins`** columns — each window is split into `n_bins` equal bins.
 
 Key arguments:
 
 | arg | meaning |
 |---|---|
 | `n_bins=200` | bins per region (heatmap column resolution) |
-| `flank=2000` | window is the locus **center ± `flank`** bp (set `span=True` to use the full interval instead) |
-| `workers=4` | parallel extraction across processes; the default `1` is a fast single Rust pass |
+| `flank=2000` | window is the locus **centre ± `flank`** bp (set `span=True` to bin the whole interval instead) |
+| `workers=4` | parallel extraction across processes into a shared-memory cube; the default `1` is one sequential native pass |
+| `backend=` | the bigWig reader: `pybigtools` (default), `pybigwig` or `python` — same numbers from each |
 
 {: .note }
 > bigWigs can have gaps (no coverage); `np.nan_to_num` turns those `NaN`s into 0
@@ -61,8 +66,8 @@ Key arguments:
 ## Grouping replicates by averaging columns
 
 The two ATAC replicates are two adjacent track slabs. Averaging them is just a
-mean over the track axis — exactly what the browser does internally for a list
-of bigWigs. We collapse 8 tracks into 6 conditions:
+mean over the track axis — exactly what the browser does for a list of
+bigWigs. We collapse 8 tracks into 6 conditions:
 
 ```python
 S6 = np.stack([
@@ -86,7 +91,7 @@ one heatmap column per track, optionally split into row groups:
 ```python
 from genomeblocks.signal_draw import plot_heatmap
 
-vmax = float(np.percentile(S6, 99))         # robust color cap
+vmax = float(np.percentile(S6, 99))         # robust colour cap
 fig = plot_heatmap(regions, S6,
                    groups={"AR+F": ARpF, "AR-F": ARmF},
                    sets=["AR+F", "AR-F"],
@@ -96,19 +101,23 @@ fig = plot_heatmap(regions, S6,
 
 How the arguments shape the figure:
 
-- **`groups`** — a plain `dict[str, Loci]`. Each group becomes a block of rows;
-  membership is by `uid`, so `regions` is split into its AR+F and AR−F halves.
-  (There is no separate "tags" object — grouping is just a dict of `Loci`.)
+- **`groups`** — a plain dict `{name: rows}`. Each group becomes a block of
+  rows. A group is a `Loci` (rows of `regions` with the same chromosome, start
+  and end), a boolean mask over `regions`, or row numbers — so
+  `{"AR+F": np.arange(len(ARpF)), "AR-F": np.arange(len(ARpF), len(regions))}`
+  draws the same figure.
 - **`sets`** — the order (top → bottom) the groups are drawn in.
 - **`samples`** — column labels, one per track in `S6`.
-- **`vmax` / `ymax`** — color scale cap and profile-track y-max. Using the 99th
-  percentile keeps a few hot bins from washing out the rest.
+- **`vmax` / `ymax`** — colour-scale cap and profile-track y-max (a scalar, or
+  one per track). Using the 99th percentile keeps a few hot bins from washing
+  out the rest.
 
 {: .tip }
 > To make tracks comparable across the figure, TMM-normalise the cube first with
 > `from genomeblocks import tmm; S = tmm(S)` before grouping. The notebook leaves
 > this commented out so the raw coverage is shown; flip it on when comparing
-> libraries of different depth.
+> libraries of different depth. `genomeblocks.interop.cube_to_xarray(S6, regions, samples, flank=2000)`
+> labels the cube's axes if you would rather slice it in xarray.
 
 ## Reading the result
 
