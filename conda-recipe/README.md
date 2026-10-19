@@ -50,13 +50,13 @@ optional engine (Python 3.12, pandas 3.0, numpy 2.5).
    wheel through PyPI trusted publishing (the project on PyPI trusts this
    repository's `publish.yml` in the `pypi` environment; no token anywhere):
    ```bash
-   git tag v2.0.0 && git push origin v2.0.0
+   git tag v2.0.1 && git push origin v2.0.1
    ```
    The tag must name the version in `pyproject.toml`. By hand, for comparison:
    `python -m build && twine upload dist/*`.
 2. **Fill the sha256** of the sdist in `genomeblocks/meta.yaml`:
    ```bash
-   curl -sL https://pypi.org/packages/source/g/genomeblocks/genomeblocks-2.0.0.tar.gz | sha256sum
+   curl -sL https://pypi.org/packages/source/g/genomeblocks/genomeblocks-2.0.1.tar.gz | sha256sum
    ```
 3. **Submit**: fork [bioconda-recipes](https://github.com/bioconda/bioconda-recipes),
    copy `genomeblocks/` (meta.yaml and run_test.py) to `recipes/genomeblocks/`,

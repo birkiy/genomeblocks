@@ -16,6 +16,12 @@ permalink: /release-notes/
 
 ---
 
+## v2.0.1 — polars 2.0
+
+A bug fix for polars 2.0.0 (released 2026-10-06), which names the columns of a headerless file `column_0, column_1, …` (1.x: `column_1, column_2, …`) and rejects a `new_columns` list shorter than the file. The GTF / GFF3 readers behind `Genes.make`, the BED-like table reader behind `as_loci` / `Loci.make`, and `hichip.shortrange_ends` selected columns through those names: the first two raised a `SchemaError`, the HiChIP reader silently returned no rows. All of them now select columns by position, on polars 1.x and 2.x alike. No API change.
+
+---
+
 ## v2.0.0 — columnar only
 
 `2.0.0` makes the columnar tables introduced in 1.1 **the** API. `genomeblocks.Loci`, `Genes`, `Pairs`, `Architecture` and `Atlas` are tables of numpy columns whose row number is the join key; the 1.x object API (`Loci` as a list of `Locus`, `Gene` / `Transcript` / `Exon` trees, `list[Pair]`, `Architecture` as a `graph_tool.Graph`) is gone, and so is the `genomeblocks.columnar` subpackage — its contents are now the top-level names. There are no compatibility shims. Upgrade: `pip install -U genomeblocks`. The 1.1 documentation stays online: pick **1.1** in the version menu at the top of every page.

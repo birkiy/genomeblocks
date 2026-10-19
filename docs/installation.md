@@ -104,7 +104,7 @@ conda activate genomeblocks
 ```python
 import genomeblocks as gb
 gb.__version__
-# -> '2.0.0'
+# -> '2.0.1'
 
 gb.backends()                    # here: a pip install with the interop extra, no conda-only engines
 #        family       backend  installed  default  in use   install

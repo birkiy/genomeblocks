@@ -19,7 +19,7 @@ Names are imported on first use, so ``import genomeblocks`` stays light.
 from importlib import import_module
 from typing import Dict
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 
 _EXPORTS: Dict[str, tuple] = {
     # tables
