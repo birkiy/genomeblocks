@@ -41,13 +41,24 @@ def tss_base(starts, ends, strands) -> np.ndarray:
 
 # ── GTF / GFF3 parsing (polars, with a pandas fallback) ────────────────────
 
+def _gff_columns(path):
+    """Columns 1, 3, 4, 5, 7, 9 of a GTF / GFF3 as strings: chrom, feature, start, end, strand, attr.
+
+    Selected by position and named afterwards: polars names headerless columns
+    differently across versions (``column_1`` before 2.0, ``column_0`` from 2.0)
+    and 2.0 wants ``new_columns`` to cover every column of the file."""
+    import polars as pl
+    df = pl.read_csv(path, separator="\t", comment_prefix="#", has_header=False,
+                     columns=[0, 2, 3, 4, 6, 8], quote_char=None, infer_schema_length=0)
+    df.columns = ["chrom", "feature", "start", "end", "strand", "attr"]
+    return df
+
+
 def _gtf_frame(path, keys):
     """GTF -> polars frame: chrom, feature, start, end, strand + one column per attribute."""
     import polars as pl
     pats = {k: rf'(?:^|;\s*){k} "?([^";]*)"?' for k in keys}
-    df = pl.read_csv(path, separator="\t", comment_prefix="#", has_header=False,
-                     columns=[0, 2, 3, 4, 6, 8], quote_char=None, infer_schema_length=0,
-                     new_columns=["chrom", "feature", "start", "end", "strand", "attr"])
+    df = _gff_columns(path)
     return df.with_columns([pl.col("start").cast(pl.Int64), pl.col("end").cast(pl.Int64)]
                            + [pl.col("attr").str.extract(p, 1).alias(k) for k, p in pats.items()]
                            ).drop("attr").with_row_index("line")
@@ -82,9 +93,7 @@ def _gff3_frame(path, name_k, type_k):
 
     def strip(c):
         return c.str.replace(r"^(gene|transcript):", "")
-    df = pl.read_csv(path, separator="\t", comment_prefix="#", has_header=False,
-                     columns=[0, 2, 3, 4, 6, 8], quote_char=None, infer_schema_length=0,
-                     new_columns=["chrom", "feature", "start", "end", "strand", "attr"])
+    df = _gff_columns(path)
     df = df.with_columns(pl.col("start").cast(pl.Int64), pl.col("end").cast(pl.Int64),
                          attr("ID").alias("ID"), attr("Parent").alias("Parent"),
                          attr("gene_id").alias("a_gene_id"), attr("transcript_id").alias("a_tx_id"),

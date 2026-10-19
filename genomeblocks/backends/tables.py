@@ -73,8 +73,8 @@ def read_columns(path, columns: Sequence[int], *, ints: Sequence[int] = (), floa
         names = {c: f"c{c}" for c in order}
         try:
             df = pl.read_csv(path, separator="\t", has_header=False, skip_rows=skip, columns=order,
-                             new_columns=[names[c] for c in order], infer_schema_length=0, quote_char=None,
-                             truncate_ragged_lines=True)
+                             infer_schema_length=0, quote_char=None, truncate_ragged_lines=True)
+            df.columns = [names[c] for c in order]   # by position: polars' default names differ by version
         except Exception as e:                       # noqa: BLE001 — polars has many error classes
             raise _parse_error(path, e) from None
         out = {}

@@ -49,9 +49,10 @@ def shortrange_ends(pairs: str, max_dist: int = 1000, *, columns: Optional[Dict[
         import polars as pl
     except ImportError:
         return _shortrange_ends_pandas(pairs, max_dist, c, g)
-    names = {i: f"column_{i + 1}" for i in c.values()}
     lf = pl.scan_csv(pairs, separator="\t", has_header=False, comment_prefix="#", quote_char=None,
                      infer_schema_length=0)
+    cols = lf.collect_schema().names()               # polars' default names differ by version
+    names = {i: cols[i] for i in c.values()}
     col = lambda k: pl.col(names[c[k]])
     lf = (lf.select(col("chr1").alias("c1"), col("pos1").cast(pl.Int64).alias("p1"), col("strand1").alias("s1"),
                     col("chr2").alias("c2"), col("pos2").cast(pl.Int64).alias("p2"), col("strand2").alias("s2"))
