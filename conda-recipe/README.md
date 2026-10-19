@@ -45,12 +45,15 @@ optional engine (Python 3.12, pandas 3.0, numpy 2.5).
 
 ## From a release to Bioconda
 
-1. **Release on PyPI** (PyPI has 1.0.0 and 1.0.1 only; 1.1.0 was never
-   uploaded):
+1. **Release on PyPI**: push the version tag and
+   `.github/workflows/publish.yml` builds, checks and uploads the sdist and
+   wheel through PyPI trusted publishing (the project on PyPI trusts this
+   repository's `publish.yml` in the `pypi` environment; no token anywhere):
    ```bash
-   python -m build              # sdist + wheel in dist/
-   twine upload dist/*
+   git tag v2.0.0 && git push origin v2.0.0
    ```
+   The tag must name the version in `pyproject.toml`. By hand, for comparison:
+   `python -m build && twine upload dist/*`.
 2. **Fill the sha256** of the sdist in `genomeblocks/meta.yaml`:
    ```bash
    curl -sL https://pypi.org/packages/source/g/genomeblocks/genomeblocks-2.0.0.tar.gz | sha256sum
