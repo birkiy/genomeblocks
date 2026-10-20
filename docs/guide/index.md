@@ -14,6 +14,7 @@ Task-oriented walkthroughs for each subsystem. Each page assumes the concepts in
 |---|---|
 | [Loci]({{ '/guide/loci/' | relative_url }}) | Intervals, set algebra, merge/sort/slop/nearest. |
 | [Genes]({{ '/guide/genes/' | relative_url }}) | Parse GTF / UCSC RefSeq; enhancer-to-gene assignment. |
+| [Expression]({{ '/guide/expression/' | relative_url }}) | RNA-seq quantifications (salmon, kallisto, RSEM, featureCounts, STAR, HTSeq, nf-core) as a matrix on the gene rows; tximport-style summarising, TMM / size factors / CPM. |
 | [Architecture]({{ '/guide/architecture/' | relative_url }}) | Chromatin-contact graphs from loops + Hi-C. |
 | [Signal]({{ '/guide/signal/' | relative_url }}) | Threaded bigWig extraction, TMM, heatmaps. |
 | [Browser]({{ '/guide/browser/' | relative_url }}) | IGV-like SVG region plots. |

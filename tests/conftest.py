@@ -172,6 +172,135 @@ def sizes_path(data_dir):
     return str(data_dir / "genome.chrom.sizes")
 
 
+# ── synthetic RNA-seq quantifications ─────────────────────────────────────────
+
+RNASEQ_SAMPLES = ["WT_1", "WT_2", "WT_3", "KO_1", "KO_2", "KO_3"]
+#: transcript counts of the fixture GTF's four transcripts plus a spike-in that is not in the GTF;
+#: zeros where tximport's gene-length rule has to fill in
+RNASEQ_TX = {
+    "T1": [100, 120, 110, 100, 90, 95],
+    "T1b": [50, 40, 60, 200, 220, 180],
+    "T2": [300, 280, 310, 0, 0, 160],          # GENE_B: nothing in KO_1 / KO_2
+    "T3": [0, 0, 0, 0, 0, 0],                  # GENE_C: nothing anywhere
+    "ERCC-00002": [20, 25, 15, 22, 18, 24],
+}
+RNASEQ_TX_LEN = {"T1": 1800, "T1b": 2900, "T2": 800, "T3": 9800, "ERCC-00002": 1061}
+#: how the quantifier spells the ids: versions, and one GENCODE pipe header
+RNASEQ_TX_ID = {"T1": "T1.2", "T1b": "T1b.1", "T2": "T2.3|G2.1|OTTHUMG1|OTTHUMT1|GENE_B-201|GENE_B|800|lncRNA|",
+                "T3": "T3.1", "ERCC-00002": "ERCC-00002"}
+RNASEQ_TX_GENE = {"T1": "G1", "T1b": "G1", "T2": "G2", "T3": "G3"}
+RNASEQ_GENES = {"G1": "GENE_A", "G2": "GENE_B", "G3": "GENE_C"}
+
+
+def rnaseq_matrices():
+    """(counts, effective lengths, TPM) as (5 x 6) arrays in RNASEQ_TX order."""
+    tx = list(RNASEQ_TX)
+    counts = np.array([RNASEQ_TX[t] for t in tx], float)
+    eff = np.array([[RNASEQ_TX_LEN[t] - 180 + 5 * j for j in range(6)] for t in tx], float)
+    rate = counts / eff
+    tpm = rate / rate.sum(axis=0) * 1e6
+    return counts, eff, tpm
+
+
+def rnaseq_gene_counts():
+    """Gene counts (3 x 6) = summed transcript counts, G1..G3."""
+    g = {k: np.zeros(6) for k in RNASEQ_GENES}
+    for t, gene in RNASEQ_TX_GENE.items():
+        g[gene] += np.array(RNASEQ_TX[t], float)
+    return np.array([g[k] for k in RNASEQ_GENES])
+
+
+def write_rnaseq(d):
+    """Every quantification layout, holding the same numbers, under ``d``."""
+    import os
+    d = __import__("pathlib").Path(d)
+    tx = list(RNASEQ_TX)
+    counts, eff, tpm = rnaseq_matrices()
+    gcounts = rnaseq_gene_counts()
+    genes = list(RNASEQ_GENES)
+    for j, s in enumerate(RNASEQ_SAMPLES):
+        # salmon
+        p = d / "salmon" / s
+        p.mkdir(parents=True, exist_ok=True)
+        with open(p / "quant.sf", "w") as f:
+            f.write("Name\tLength\tEffectiveLength\tTPM\tNumReads\n")
+            for i, t in enumerate(tx):
+                f.write(f"{RNASEQ_TX_ID[t]}\t{RNASEQ_TX_LEN[t]}\t{eff[i, j]:.3f}\t{tpm[i, j]:.6f}\t{counts[i, j]:.3f}\n")
+        # kallisto
+        p = d / "kallisto" / s
+        p.mkdir(parents=True, exist_ok=True)
+        with open(p / "abundance.tsv", "w") as f:
+            f.write("target_id\tlength\teff_length\test_counts\ttpm\n")
+            for i, t in enumerate(tx):
+                f.write(f"{RNASEQ_TX_ID[t]}\t{RNASEQ_TX_LEN[t]}\t{eff[i, j]:.3f}\t{counts[i, j]:.3f}\t{tpm[i, j]:.6f}\n")
+        # RSEM isoforms / genes
+        p = d / "rsem"
+        p.mkdir(parents=True, exist_ok=True)
+        with open(p / f"{s}.isoforms.results", "w") as f:
+            f.write("transcript_id\tgene_id\tlength\teffective_length\texpected_count\tTPM\tFPKM\tIsoPct\n")
+            for i, t in enumerate(tx):
+                f.write(f"{RNASEQ_TX_ID[t]}\t{RNASEQ_TX_GENE.get(t, 'ERCC')}\t{RNASEQ_TX_LEN[t]}\t{eff[i, j]:.3f}\t"
+                        f"{counts[i, j]:.2f}\t{tpm[i, j]:.2f}\t0\t100\n")
+        with open(p / f"{s}.genes.results", "w") as f:
+            f.write("gene_id\ttranscript_id(s)\tlength\teffective_length\texpected_count\tTPM\tFPKM\n")
+            for k, g in enumerate(genes):
+                f.write(f"{g}.1\tx\t1000\t900\t{gcounts[k, j]:.2f}\t0\t0\n")
+        # STAR (reverse-stranded library), HTSeq
+        p = d / "star"
+        p.mkdir(parents=True, exist_ok=True)
+        with open(p / f"{s}.ReadsPerGene.out.tab", "w") as f:
+            f.write("N_unmapped\t1000\t1000\t1000\nN_multimapping\t50\t50\t50\nN_noFeature\t20\t800\t30\n"
+                    "N_ambiguous\t5\t2\t5\n")
+            for k, g in enumerate(genes):
+                c = int(gcounts[k, j])
+                f.write(f"{g}\t{c + 7}\t{c // 20}\t{c}\n")
+        p = d / "htseq"
+        p.mkdir(parents=True, exist_ok=True)
+        with open(p / f"{s}.counts.txt", "w") as f:
+            for k, g in enumerate(genes):
+                f.write(f"{g}\t{int(gcounts[k, j])}\n")
+            f.write("__no_feature\t20\n__ambiguous\t5\n__too_low_aQual\t0\n__not_aligned\t1000\n"
+                    "__alignment_not_unique\t50\n")
+    # featureCounts: one file, BAM paths as sample columns
+    with open(d / "counts.featureCounts.txt", "w") as f:
+        f.write("# Program:featureCounts v2.0.6; Command:\"featureCounts\" \"-a\" \"genes.gtf\"\n")
+        f.write("Geneid\tChr\tStart\tEnd\tStrand\tLength\t" + "\t".join(f"bam/{s}.sorted.bam" for s in RNASEQ_SAMPLES) + "\n")
+        for k, g in enumerate(genes):
+            f.write(f"{g}\tchr1;chr1\t1001;2001\t1200;2500\t+;+\t{[1800, 800, 9800][k]}\t"
+                    + "\t".join(str(int(c)) for c in gcounts[k]) + "\n")
+    # nf-core/rnaseq matrices
+    p = d / "nfcore"
+    p.mkdir(parents=True, exist_ok=True)
+    with open(p / "salmon.merged.gene_counts.tsv", "w") as f:
+        f.write("gene_id\tgene_name\t" + "\t".join(RNASEQ_SAMPLES) + "\n")
+        for k, g in enumerate(genes):
+            f.write(f"{g}\t{RNASEQ_GENES[g]}\t" + "\t".join(f"{c:.3f}" for c in gcounts[k]) + "\n")
+    gt = np.zeros((3, 6))
+    for i, t in enumerate(tx):
+        if t in RNASEQ_TX_GENE:
+            gt[genes.index(RNASEQ_TX_GENE[t])] += tpm[i]
+    with open(p / "salmon.merged.gene_tpm.tsv", "w") as f:
+        f.write("gene_id\tgene_name\t" + "\t".join(RNASEQ_SAMPLES) + "\n")
+        for k, g in enumerate(genes):
+            f.write(f"{g}\t{RNASEQ_GENES[g]}\t" + "\t".join(f"{c:.4f}" for c in gt[k]) + "\n")
+    # a CSV keyed by gene name, missing GENE_C, with an extra text column
+    with open(d / "by_name.csv", "w") as f:
+        f.write("symbol,biotype," + ",".join(RNASEQ_SAMPLES) + "\n")
+        for k, g in enumerate(genes[:2]):
+            f.write(f"{RNASEQ_GENES[g]},protein_coding," + ",".join(str(int(c)) for c in gcounts[k]) + "\n")
+    # sample metadata
+    with open(d / "samples.tsv", "w") as f:
+        f.write("sample\tcondition\tbatch\n")
+        for s in RNASEQ_SAMPLES:
+            f.write(f"{s}\t{s.split('_')[0]}\tb{s[-1]}\n")
+    return d
+
+
+@pytest.fixture(scope="session")
+def rnaseq_dir(tmp_path_factory):
+    return write_rnaseq(tmp_path_factory.mktemp("rnaseq"))
+
+
 # ── in-memory tables ──────────────────────────────────────────────────────────
 
 @pytest.fixture

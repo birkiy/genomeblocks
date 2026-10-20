@@ -9,6 +9,7 @@
 #   bedtools, computeMatrix (deepTools), cooler, bgzip,
 #   GIGGLE=/path/to/giggle  (github.com/ryanlayer/giggle, built from source)
 #   FIMO=/path/to/fimo      (MEME suite: micromamba create -c bioconda meme)
+#   GB_RSCRIPT=/path/Rscript:/other/Rscript  (R with tximport / DESeq2 / edgeR, for bench_expression)
 set -euo pipefail
 cd "$(dirname "$0")"
 PY=${PY:-python}
@@ -16,7 +17,7 @@ PY=${PY:-python}
 [[ -f data/hg38.chrom.sizes ]] || "$PY" make_data.py
 
 BENCHES=("$@")
-[[ ${#BENCHES[@]} -gt 0 ]] || BENCHES=(import backends loci signal atlas motifs pairs genes architecture shortrange)
+[[ ${#BENCHES[@]} -gt 0 ]] || BENCHES=(import backends loci signal atlas motifs pairs genes architecture shortrange expression)
 
 for b in "${BENCHES[@]}"; do
     echo "=== bench_$b ==="

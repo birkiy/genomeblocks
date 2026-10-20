@@ -5,6 +5,7 @@ Fluent building blocks for regulatory genomics, as columnar tables.
 
 - `Loci`: interval tables with set algebra (`& | - ^`), `slop` / `sort` / `merge` / `nearest`, indexed lookups and signal extraction.
 - `Genes`: GTF / GFF3 / UCSC gene models as three linked tables (genes, transcripts, features); annotation and ATAC-supported isoforms.
+- `Expression`: RNA-seq quantifications (salmon, kallisto, RSEM, featureCounts, STAR, HTSeq, nf-core, any matrix) as a features × samples table on the gene rows; tximport-style summarising, TMM / size factors / CPM.
 - `Pairs` and `Architecture`: BEDPE loops and the chromatin-contact graph over CREs — Hi-C weights from `.mcool`, O/E normalisation, hubs.
 - `signal`: bigWig signal cubes, TMM normalisation, heatmaps; `motifs`: motif scanning with any engine; `Atlas`: GIGGLE-style enrichment.
 - `browser`, `igv_html`, `View`: a matplotlib region view, a shareable IGV page and a one-file interactive browser.

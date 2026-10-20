@@ -689,10 +689,15 @@ class Genes(TableMixin):
         hit = np.char.find(np.char.lower(names), pattern.lower()) >= 0
         return [GeneView(self, int(i)) for i in np.flatnonzero(hit)]
 
-    def rows(self, names) -> np.ndarray:
-        """Gene rows for gene names / ids (KeyError on an unknown one)."""
+    def rows(self, names, *, missing: Optional[int] = None) -> np.ndarray:
+        """Gene rows for gene names / ids. An unknown name raises KeyError,
+        or becomes ``missing`` (e.g. ``-1``) when that is given."""
         ix = self._key_index()
-        return np.array([ix[n] for n in ([names] if isinstance(names, str) else names)], np.int64)
+        keys = [names] if isinstance(names, str) else names
+        if missing is None:
+            return np.array([ix[n] for n in keys], np.int64)
+        get = ix.get
+        return np.fromiter((get(n, missing) for n in keys), np.int64, len(keys))
 
     # ── TSS and the annotation index ─────────────────────────────────────
     def get_tss(self, gene_type=None) -> Loci:
