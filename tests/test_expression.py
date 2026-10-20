@@ -321,8 +321,11 @@ def test_normalisation_matches_edger_and_deseq2(matrix20):
     assert E.filter_by_expr("condition").astype(int).tolist() == EDGER_FILTER_GROUP
     assert E.filter_by_expr().astype(int).tolist() == EDGER_FILTER_NOGROUP
     np.testing.assert_allclose(E.cpm(norm="size")[0], E.counts[0] / (E.lib_size * E.size_factors()) * 1e6)
+    np.testing.assert_array_equal(E.log_cpm(factors=E.tmm()), lc)
     with pytest.raises(ValueError, match="norm"):
         E.cpm(norm="quantile")
+    with pytest.raises(ValueError, match="factors"):
+        E.cpm(norm="tmm", factors=E.tmm())
     # NaN rows take no part and stay NaN
     X = E.counts.copy()
     X[0] = np.nan

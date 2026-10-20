@@ -523,9 +523,9 @@ def sec_expression(md, tl):
             rt = pick(d, part="to_genes", step="to_genes (length_scaled_tpm)", engine="R tximport::summarizeToGene",
                       n_samples=n_samples)
             if gbt and rt:
-                tl.append(("tximport in numpy", fx(rt["seconds"] / gbt["seconds"]),
-                           f"faster than tximport::summarizeToGene at {n_tx:,} transcripts × {n_samples} samples, "
-                           f"max |Δ| {_fdiff(rt.get('max_abs_diff'))}", "navy"))
+                tl.append(("to_genes vs tximport", f"max |Δ| {_fdiff(rt.get('max_abs_diff'))}",
+                           f"same gene counts as summarizeToGene at {n_tx:,} transcripts × {n_samples} samples; "
+                           f"{ftime(gbt['seconds'])} against {ftime(rt['seconds'])} in R", "navy"))
             gbr = pick(d, part="read", engine="genomeblocks (polars)", n_samples=n_samples)
             rr = pick(d, part="read", engine="R tximport (txOut)", n_samples=n_samples)
             if gbr and rr:

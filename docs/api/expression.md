@@ -156,8 +156,8 @@ Expression.from_frame({"Geneid": ["chr1:900-1100", "chr1_1900_2100", "chr9:1-2"]
 
 | Method | Signature | Returns |
 |---|---|---|
-| `cpm` | `cpm(*, log=False, prior=2.0, norm=None) -> ndarray` | Counts per million by library size (edgeR's `cpm`); `norm="tmm"` / `"size"` scales the library sizes by `tmm()` / `size_factors()`; `log=True` adds the library-scaled prior count before log2. |
-| `log_cpm` | `log_cpm(*, prior=2.0, norm=None) -> ndarray` | `cpm(log=True, ...)`. |
+| `cpm` | `cpm(*, log=False, prior=2.0, norm=None, factors=None) -> ndarray` | Counts per million by library size (edgeR's `cpm`); `norm="tmm"` / `"size"` scales the library sizes by `tmm()` / `size_factors()`, or `factors=` ones you computed once; `log=True` adds the library-scaled prior count before log2. |
+| `log_cpm` | `log_cpm(*, prior=2.0, norm=None, factors=None) -> ndarray` | `cpm(log=True, ...)`. |
 | `tmm` | `tmm(*, trim_lfc=0.3, trim_mag=0.05, ref=None, lib_size=None) -> ndarray` | edgeR's TMM factors, one per sample, geometric mean 1. |
 | `size_factors` | `size_factors() -> ndarray` | DESeq2's median-of-ratios size factors. |
 | `filter_by_expr` | `filter_by_expr(group=None, *, lib_size=None, min_count=10, min_total_count=15, large_n=10, min_prop=0.7) -> bool array` | edgeR's `filterByExpr` mask over the rows; `group` is a `samples` column name or an array. |

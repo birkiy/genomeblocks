@@ -1,0 +1,1172 @@
+{
+ "bench": "expression",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+  "cores": 64,
+  "mem_gb": 811.27890944,
+  "python": "3.12.12",
+  "platform": "Linux-5.15.0-198-generic-x86_64-with-glibc2.35",
+  "versions": {
+   "genomeblocks": "2.0.1",
+   "numpy": "2.3.4",
+   "scipy": "1.16.3",
+   "pandas": "2.3.3",
+   "polars": "1.44.2",
+   "pyarrow": "21.0.0",
+   "narwhals": "2.10.2",
+   "pybigtools": "0.2.5",
+   "pyBigWig": "0.3.24",
+   "cgranges": "installed",
+   "ncls": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "pybedtools": "0.12.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.86",
+   "MOODS": "installed",
+   "graph_tool": "2.98 (commit c96a6bf3, )",
+   "igraph": "0.11.9",
+   "networkx": "3.6.1",
+   "bedtools": "v2.31.0"
+  }
+ },
+ "meta": {
+  "sizes": [
+   {
+    "n_genes": 20000,
+    "n_samples": 6
+   },
+   {
+    "n_genes": 60000,
+    "n_samples": 24
+   },
+   {
+    "n_genes": 60000,
+    "n_samples": 96
+   }
+  ],
+  "r_versions": {
+   "R": "R version 4.4.3 (2025-02-28)",
+   "tximport": "1.34.0",
+   "readr": "2.1.6"
+  },
+  "rscript": {
+   "tximport": "/home/ualtintas/micromamba/envs/notebook_r/bin/Rscript",
+   "edgeR": "/home/ualtintas/micromamba/envs/hichip/bin/Rscript"
+  }
+ },
+ "rows": [
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (polars)",
+   "seconds": 0.09156418799830135,
+   "runs": [
+    0.09156418799830135,
+    0.07660575599584263,
+    0.0935070999985328
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (pandas)",
+   "seconds": 0.10096175999206025,
+   "runs": [
+    0.10137811000458896,
+    0.09993934500380419,
+    0.10096175999206025
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R read.delim",
+   "seconds": 0.0650000000000004,
+   "runs": [
+    0.151000000000001,
+    0.0650000000000004,
+    0.0579999999999998
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R data.table::fread",
+   "seconds": 0.0120000000000005,
+   "runs": [
+    0.0120000000000005,
+    0.0120000000000005,
+    0.0110000000000001
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (polars)",
+   "seconds": 0.7574526450043777,
+   "runs": [
+    0.772609702005866,
+    0.7574526450043777,
+    0.7493549810023978
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (pandas)",
+   "seconds": 0.8204069160128711,
+   "runs": [
+    0.8135728149936767,
+    0.8204069160128711,
+    0.8380462150089443
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R read.delim",
+   "seconds": 0.429,
+   "runs": [
+    0.511000000000001,
+    0.429,
+    0.395
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R data.table::fread",
+   "seconds": 0.0339999999999989,
+   "runs": [
+    0.0530000000000008,
+    0.0339999999999989,
+    0.032
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (polars)",
+   "seconds": 2.8163508950092364,
+   "runs": [
+    2.8163508950092364
+   ],
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (pandas)",
+   "seconds": 3.1114987659966573,
+   "runs": [
+    3.1114987659966573
+   ],
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R read.delim",
+   "seconds": 1.29,
+   "runs": 1.29,
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R data.table::fread",
+   "seconds": 0.0750000000000028,
+   "runs": 0.0750000000000028,
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "normalise",
+   "step": "tmm",
+   "engine": "genomeblocks",
+   "seconds": 0.02758607899886556,
+   "runs": [
+    0.029984617009176873,
+    0.02582154299307149,
+    0.02758607899886556
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "normalise",
+   "step": "size_factors",
+   "engine": "genomeblocks",
+   "seconds": 0.00485914500313811,
+   "runs": [
+    0.00485914500313811,
+    0.007523895998019725,
+    0.004415477000293322
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "normalise",
+   "step": "log_cpm (tmm)",
+   "engine": "genomeblocks",
+   "seconds": 0.0015937939897412434,
+   "runs": [
+    0.0015937939897412434,
+    0.001529721004772,
+    0.0028183769900351763
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "normalise",
+   "step": "filter_by_expr",
+   "engine": "genomeblocks",
+   "seconds": 0.002692077003302984,
+   "runs": [
+    0.002357181001571007,
+    0.002692077003302984,
+    0.005184996000025421
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "normalise",
+   "step": "size_factors",
+   "engine": "R DESeq2",
+   "seconds": 0.0120000000000005,
+   "runs": [
+    0.0139999999999993,
+    0.0120000000000005,
+    0.0109999999999992
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "max_abs_diff": 8.881784197001252e-16,
+   "max_rel_diff": 6.672618056690182e-16,
+   "agrees": true
+  },
+  {
+   "part": "normalise",
+   "step": "tmm",
+   "engine": "R edgeR calcNormFactors",
+   "seconds": 0.103,
+   "runs": [
+    0.114,
+    0.103,
+    0.100000000000001
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "max_abs_diff": 4.440892098500626e-16,
+   "max_rel_diff": 4.434844847364381e-16,
+   "agrees": true
+  },
+  {
+   "part": "normalise",
+   "step": "log_cpm (tmm)",
+   "engine": "R edgeR cpm(log=TRUE)",
+   "seconds": 0.00499999999999989,
+   "runs": [
+    0.00499999999999989,
+    0.00599999999999934,
+    0.00399999999999956
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "max_abs_diff": 5.3290705182007514e-14,
+   "max_rel_diff": 1.494490284651114e-14,
+   "agrees": true
+  },
+  {
+   "part": "normalise",
+   "step": "filter_by_expr",
+   "engine": "R edgeR filterByExpr",
+   "seconds": 0.00200000000000067,
+   "runs": [
+    0.00200000000000067,
+    0.00300000000000011,
+    0.00199999999999978
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "agrees": true,
+   "disagreements": 0
+  },
+  {
+   "part": "normalise",
+   "step": "tmm",
+   "engine": "genomeblocks",
+   "seconds": 0.3707157409953652,
+   "runs": [
+    0.3760278599947924,
+    0.3684399469930213,
+    0.3707157409953652
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "normalise",
+   "step": "size_factors",
+   "engine": "genomeblocks",
+   "seconds": 0.05142442700162064,
+   "runs": [
+    0.052557903007254936,
+    0.05142442700162064,
+    0.05097819499496836
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "normalise",
+   "step": "log_cpm (tmm)",
+   "engine": "genomeblocks",
+   "seconds": 0.014462812992860563,
+   "runs": [
+    0.014619644003687426,
+    0.014462812992860563,
+    0.014268886006902903
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "normalise",
+   "step": "filter_by_expr",
+   "engine": "genomeblocks",
+   "seconds": 0.01636053500988055,
+   "runs": [
+    0.01630863999889698,
+    0.01641330799611751,
+    0.01636053500988055
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "normalise",
+   "step": "size_factors",
+   "engine": "R DESeq2",
+   "seconds": 0.178999999999998,
+   "runs": [
+    0.178999999999998,
+    0.184000000000001,
+    0.175999999999998
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "max_abs_diff": 1.1102230246251565e-15,
+   "max_rel_diff": 7.963231317556828e-16,
+   "agrees": true
+  },
+  {
+   "part": "normalise",
+   "step": "tmm",
+   "engine": "R edgeR calcNormFactors",
+   "seconds": 1.331,
+   "runs": [
+    1.331,
+    1.296,
+    1.357
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "max_abs_diff": 4.440892098500626e-16,
+   "max_rel_diff": 4.477000709462914e-16,
+   "agrees": true
+  },
+  {
+   "part": "normalise",
+   "step": "log_cpm (tmm)",
+   "engine": "R edgeR cpm(log=TRUE)",
+   "seconds": 0.0400000000000009,
+   "runs": [
+    0.0400000000000009,
+    0.0410000000000004,
+    0.0350000000000001
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "max_abs_diff": 5.1514348342607263e-14,
+   "max_rel_diff": 8.029568361003228e-14,
+   "agrees": true
+  },
+  {
+   "part": "normalise",
+   "step": "filter_by_expr",
+   "engine": "R edgeR filterByExpr",
+   "seconds": 0.0219999999999985,
+   "runs": [
+    0.0289999999999999,
+    0.0219999999999985,
+    0.0210000000000008
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "agrees": true,
+   "disagreements": 0
+  },
+  {
+   "part": "normalise",
+   "step": "tmm",
+   "engine": "genomeblocks",
+   "seconds": 1.7269728829996893,
+   "runs": [
+    1.7269728829996893
+   ],
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "normalise",
+   "step": "size_factors",
+   "engine": "genomeblocks",
+   "seconds": 0.20526757100014947,
+   "runs": [
+    0.20526757100014947
+   ],
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "normalise",
+   "step": "log_cpm (tmm)",
+   "engine": "genomeblocks",
+   "seconds": 0.059697781995055266,
+   "runs": [
+    0.059697781995055266
+   ],
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "normalise",
+   "step": "filter_by_expr",
+   "engine": "genomeblocks",
+   "seconds": 0.054995416998281144,
+   "runs": [
+    0.054995416998281144
+   ],
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "normalise",
+   "step": "size_factors",
+   "engine": "R DESeq2",
+   "seconds": 0.681000000000001,
+   "runs": 0.681000000000001,
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "max_abs_diff": 1.5543122344752192e-15,
+   "max_rel_diff": 1.6099817277564302e-15,
+   "agrees": true
+  },
+  {
+   "part": "normalise",
+   "step": "tmm",
+   "engine": "R edgeR calcNormFactors",
+   "seconds": 5.292,
+   "runs": 5.292,
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "max_abs_diff": 4.440892098500626e-16,
+   "max_rel_diff": 4.538627891484858e-16,
+   "agrees": true
+  },
+  {
+   "part": "normalise",
+   "step": "log_cpm (tmm)",
+   "engine": "R edgeR cpm(log=TRUE)",
+   "seconds": 0.207000000000001,
+   "runs": 0.207000000000001,
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "max_abs_diff": 5.3290705182007514e-14,
+   "max_rel_diff": 7.865501367036325e-13,
+   "agrees": true
+  },
+  {
+   "part": "normalise",
+   "step": "filter_by_expr",
+   "engine": "R edgeR filterByExpr",
+   "seconds": 0.106999999999999,
+   "runs": 0.106999999999999,
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "agrees": true,
+   "disagreements": 0
+  },
+  {
+   "part": "align",
+   "step": "align to genes.transcripts",
+   "engine": "genomeblocks",
+   "seconds": 0.2147785899869632,
+   "runs": [
+    0.2147785899869632,
+    0.21255310000560712,
+    0.21559898399573285
+   ],
+   "n": 70028,
+   "rule": "transcript_id, version stripped",
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (counts)",
+   "engine": "genomeblocks",
+   "seconds": 0.0225391599960858,
+   "runs": [
+    0.022021736003807746,
+    0.023613504992681555,
+    0.0225391599960858
+   ],
+   "n": 70028,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (scaled_tpm)",
+   "engine": "genomeblocks",
+   "seconds": 0.02383695800381247,
+   "runs": [
+    0.02383695800381247,
+    0.0238289430126315,
+    0.02396305299771484
+   ],
+   "n": 70028,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (length_scaled_tpm)",
+   "engine": "genomeblocks",
+   "seconds": 0.025004356997669674,
+   "runs": [
+    0.025607187999412417,
+    0.024753570003667846,
+    0.025004356997669674
+   ],
+   "n": 70028,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "to_genes",
+   "step": "read + align + to_genes (length_scaled_tpm)",
+   "engine": "genomeblocks",
+   "seconds": 0.482421027001692,
+   "runs": [
+    0.482421027001692,
+    0.465169508010149,
+    0.5000997229944915
+   ],
+   "n": 420168,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (counts)",
+   "engine": "R tximport::summarizeToGene",
+   "seconds": 0.382000000000001,
+   "runs": [
+    0.382000000000001,
+    0.417,
+    0.374000000000001
+   ],
+   "n": 70028,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "max_abs_diff": 0.0,
+   "max_rel_diff": 0.0,
+   "agrees": true,
+   "max_abs_diff_length": 4.547473508864641e-11,
+   "max_abs_diff_abundance": 1.8189894035458565e-12
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (scaled_tpm)",
+   "engine": "R tximport::summarizeToGene",
+   "seconds": 0.391,
+   "runs": [
+    0.423,
+    0.391,
+    0.372
+   ],
+   "n": 70028,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "max_abs_diff": 1.4915713109076023e-10,
+   "max_rel_diff": 1.0953365699061266e-14,
+   "agrees": true
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (length_scaled_tpm)",
+   "engine": "R tximport::summarizeToGene",
+   "seconds": 0.372,
+   "runs": [
+    0.391,
+    0.369999999999999,
+    0.372
+   ],
+   "n": 70028,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "max_abs_diff": 4.547473508864641e-11,
+   "max_rel_diff": 7.945279737398204e-15,
+   "agrees": true
+  },
+  {
+   "part": "to_genes",
+   "step": "read + align + to_genes (length_scaled_tpm)",
+   "engine": "R tximport",
+   "seconds": 0.867999999999999,
+   "runs": [
+    0.998000000000001,
+    0.852,
+    0.867999999999999
+   ],
+   "n": 420168,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "align",
+   "step": "align to genes.transcripts",
+   "engine": "genomeblocks",
+   "seconds": 1.070554981008172,
+   "runs": [
+    1.0718466369871749,
+    1.0186505659949034,
+    1.070554981008172
+   ],
+   "n": 210070,
+   "rule": "transcript_id, version stripped",
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (counts)",
+   "engine": "genomeblocks",
+   "seconds": 0.3517723660042975,
+   "runs": [
+    0.3517723660042975,
+    0.351816319001955,
+    0.3516726509988075
+   ],
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (scaled_tpm)",
+   "engine": "genomeblocks",
+   "seconds": 0.27429708899580874,
+   "runs": [
+    0.27429708899580874,
+    0.27318232899415307,
+    0.29058251999958884
+   ],
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (length_scaled_tpm)",
+   "engine": "genomeblocks",
+   "seconds": 0.2919443319988204,
+   "runs": [
+    0.2996509680087911,
+    0.2919443319988204,
+    0.27586254199559335
+   ],
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "to_genes",
+   "step": "read + align + to_genes (length_scaled_tpm)",
+   "engine": "genomeblocks",
+   "seconds": 3.529076716004056,
+   "runs": [
+    3.5594068659993354,
+    3.452244657994015,
+    3.529076716004056
+   ],
+   "n": 5041680,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (counts)",
+   "engine": "R tximport::summarizeToGene",
+   "seconds": 1.778,
+   "runs": [
+    2.012,
+    1.778,
+    1.706
+   ],
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "max_abs_diff": 0.0,
+   "max_rel_diff": 0.0,
+   "agrees": true,
+   "max_abs_diff_length": 5.820766091346741e-11,
+   "max_abs_diff_abundance": 7.275957614183426e-12
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (scaled_tpm)",
+   "engine": "R tximport::summarizeToGene",
+   "seconds": 1.719,
+   "runs": [
+    1.666,
+    1.725,
+    1.719
+   ],
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "max_abs_diff": 5.587935447692871e-09,
+   "max_rel_diff": 1.8770380472856337e-14,
+   "agrees": true
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (length_scaled_tpm)",
+   "engine": "R tximport::summarizeToGene",
+   "seconds": 1.576,
+   "runs": [
+    1.66999999999999,
+    1.576,
+    1.541
+   ],
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "max_abs_diff": 8.149072527885437e-10,
+   "max_rel_diff": 1.5086974075960932e-14,
+   "agrees": true
+  },
+  {
+   "part": "to_genes",
+   "step": "read + align + to_genes (length_scaled_tpm)",
+   "engine": "R tximport",
+   "seconds": 5.217,
+   "runs": [
+    5.123,
+    5.217,
+    6.00700000000001
+   ],
+   "n": 5041680,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "align",
+   "step": "align to genes.transcripts",
+   "engine": "genomeblocks",
+   "seconds": 2.0950251579924952,
+   "runs": [
+    2.0950251579924952
+   ],
+   "n": 210070,
+   "rule": "transcript_id, version stripped",
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (counts)",
+   "engine": "genomeblocks",
+   "seconds": 0.8322030039998936,
+   "runs": [
+    0.8322030039998936
+   ],
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (scaled_tpm)",
+   "engine": "genomeblocks",
+   "seconds": 0.9551752679981291,
+   "runs": [
+    0.9551752679981291
+   ],
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (length_scaled_tpm)",
+   "engine": "genomeblocks",
+   "seconds": 1.087747189012589,
+   "runs": [
+    1.087747189012589
+   ],
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "to_genes",
+   "step": "read + align + to_genes (length_scaled_tpm)",
+   "engine": "genomeblocks",
+   "seconds": 14.926690106003662,
+   "runs": [
+    14.926690106003662
+   ],
+   "n": 20166720,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (counts)",
+   "engine": "R tximport::summarizeToGene",
+   "seconds": 3.14,
+   "runs": 3.14,
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "max_abs_diff": 0.0,
+   "max_rel_diff": 0.0,
+   "agrees": true,
+   "max_abs_diff_length": 8.003553375601768e-11,
+   "max_abs_diff_abundance": 7.275957614183426e-12
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (scaled_tpm)",
+   "engine": "R tximport::summarizeToGene",
+   "seconds": 2.7,
+   "runs": 2.7,
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "max_abs_diff": 4.94765117764473e-09,
+   "max_rel_diff": 1.9202813584674548e-14,
+   "agrees": true
+  },
+  {
+   "part": "to_genes",
+   "step": "to_genes (length_scaled_tpm)",
+   "engine": "R tximport::summarizeToGene",
+   "seconds": 2.84399999999999,
+   "runs": 2.84399999999999,
+   "n": 210070,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "max_abs_diff": 1.1932570487260818e-09,
+   "max_rel_diff": 2.4158505441649567e-14,
+   "agrees": true
+  },
+  {
+   "part": "to_genes",
+   "step": "read + align + to_genes (length_scaled_tpm)",
+   "engine": "R tximport",
+   "seconds": 23.049,
+   "runs": 23.049,
+   "n": 20166720,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "read",
+   "step": "read quant.sf files",
+   "engine": "genomeblocks (polars)",
+   "seconds": 0.2230008810001891,
+   "runs": [
+    0.2710713609994855,
+    0.2210914769966621,
+    0.2230008810001891
+   ],
+   "n": 420168,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "agrees": true
+  },
+  {
+   "part": "read",
+   "step": "read quant.sf files",
+   "engine": "genomeblocks (pandas)",
+   "seconds": 0.9242063529964071,
+   "runs": [
+    0.9242063529964071,
+    0.9185853389935801,
+    0.951410437002778
+   ],
+   "n": 420168,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "max_abs_diff": 0.0,
+   "max_rel_diff": 0.0,
+   "agrees": true
+  },
+  {
+   "part": "read",
+   "step": "read quant.sf files",
+   "engine": "R tximport (txOut)",
+   "seconds": 0.428000000000001,
+   "runs": [
+    5.006,
+    0.428000000000001,
+    0.427
+   ],
+   "n": 420168,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "max_abs_diff": 0.0,
+   "max_rel_diff": 0.0,
+   "agrees": true,
+   "max_abs_diff_abundance": 0.0,
+   "max_abs_diff_length": 0.0
+  },
+  {
+   "part": "read",
+   "step": "read quant.sf files",
+   "engine": "genomeblocks (polars)",
+   "seconds": 2.2029453400027705,
+   "runs": [
+    2.577137672997196,
+    2.1474486270017223,
+    2.2029453400027705
+   ],
+   "n": 5041680,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "agrees": true
+  },
+  {
+   "part": "read",
+   "step": "read quant.sf files",
+   "engine": "genomeblocks (pandas)",
+   "seconds": 11.098918621995836,
+   "runs": [
+    11.321300758994767,
+    11.098918621995836,
+    11.069557527007419
+   ],
+   "n": 5041680,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "max_abs_diff": 0.0,
+   "max_rel_diff": 0.0,
+   "agrees": true
+  },
+  {
+   "part": "read",
+   "step": "read quant.sf files",
+   "engine": "R tximport (txOut)",
+   "seconds": 3.433,
+   "runs": [
+    6.412,
+    3.433,
+    3.433
+   ],
+   "n": 5041680,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "max_abs_diff": 0.0,
+   "max_rel_diff": 0.0,
+   "agrees": true,
+   "max_abs_diff_abundance": 0.0,
+   "max_abs_diff_length": 0.0
+  },
+  {
+   "part": "read",
+   "step": "read quant.sf files",
+   "engine": "genomeblocks (polars)",
+   "seconds": 12.569732853997266,
+   "runs": [
+    12.569732853997266
+   ],
+   "n": 20166720,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "agrees": true
+  },
+  {
+   "part": "read",
+   "step": "read quant.sf files",
+   "engine": "genomeblocks (pandas)",
+   "seconds": 52.48445016199548,
+   "runs": [
+    52.48445016199548
+   ],
+   "n": 20166720,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "max_abs_diff": 0.0,
+   "max_rel_diff": 0.0,
+   "agrees": true
+  },
+  {
+   "part": "read",
+   "step": "read quant.sf files",
+   "engine": "R tximport (txOut)",
+   "seconds": 25.078,
+   "runs": 25.078,
+   "n": 20166720,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "max_abs_diff": 0.0,
+   "max_rel_diff": 0.0,
+   "agrees": true,
+   "max_abs_diff_abundance": 0.0,
+   "max_abs_diff_length": 0.0
+  }
+ ]
+}

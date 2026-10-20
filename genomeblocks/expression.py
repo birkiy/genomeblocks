@@ -523,38 +523,33 @@ def _summarise(layers: Dict[str, np.ndarray], target: np.ndarray, n_targets: int
     anywhere, the plain mean over members and samples. ``how`` rescales the
     counts from TPM (``scaled_tpm`` / ``length_scaled_tpm``). A target no
     quantified feature points at is NaN."""
+    from scipy.sparse import csr_matrix
     ok = target >= 0
     t = target[ok]
     main = "counts" if "counts" in layers else next(iter(layers))
     m = layers[main].shape[1]
     present = {k: ~np.isnan(v[ok]) for k, v in layers.items()}
-    hit = np.zeros((n_targets, m))
-    np.add.at(hit, t, present[main].astype(float))
+    # one sparse (targets x members) matrix sums any (members x samples) block in one product,
+    # far faster than np.add.at on a wide matrix
+    S = csr_matrix((np.ones(len(t)), (t, np.arange(len(t)))), shape=(n_targets, len(t)))
 
-    def total(k):
-        v = np.where(present[k], layers[k][ok], 0.0)
-        out = np.zeros((n_targets, m))
-        np.add.at(out, t, v)
-        return out
+    def total(v):
+        return np.asarray(S @ v)
 
+    hit = total(present[main].astype(float))
     out = {}
     for k in layers:
         if k != "length":
-            out[k] = total(k)
+            out[k] = total(np.where(present[k], layers[k][ok], 0.0))
     if "length" in layers:
         ln = np.where(present["length"], layers["length"][ok], 0.0)
-        n_len = np.zeros((n_targets, m))
-        np.add.at(n_len, t, present["length"].astype(float))
-        plain = np.zeros((n_targets, m))
-        np.add.at(plain, t, ln)
+        n_len = total(present["length"].astype(float))
         with np.errstate(invalid="ignore", divide="ignore"):
-            plain = plain / n_len                                  # plain mean of the members' lengths, per sample
+            plain = total(ln) / n_len                               # plain mean of the members' lengths, per sample
         if "tpm" in layers:
             w = np.where(present["tpm"] & present["length"], layers["tpm"][ok], 0.0)
-            num = np.zeros((n_targets, m))
-            np.add.at(num, t, w * ln)
-            den = np.zeros((n_targets, m))
-            np.add.at(den, t, w)
+            num = total(w * ln)
+            den = total(w)
             with np.errstate(invalid="ignore", divide="ignore"):
                 length = num / den                                 # NaN where the target has no abundance
                 gap = ~(den > 0) & (hit > 0)
@@ -944,12 +939,16 @@ class Expression(TableMixin):
         return lib_sizes(self.counts)
 
     # ── normalisation ─────────────────────────────────────────────────────
-    def cpm(self, *, log: bool = False, prior: float = 2.0, norm: Optional[str] = None) -> np.ndarray:
+    def cpm(self, *, log: bool = False, prior: float = 2.0, norm: Optional[str] = None,
+            factors=None) -> np.ndarray:
         """Counts per million (edgeR's ``cpm``); ``norm="tmm"`` / ``"size"``
-        scales the library sizes by :meth:`tmm` / :meth:`size_factors`;
-        ``log=True`` gives log2 with a library-scaled prior count."""
+        scales the library sizes by :meth:`tmm` / :meth:`size_factors`, or
+        pass ``factors`` you computed once; ``log=True`` gives log2 with a
+        library-scaled prior count."""
         from ._norm import cpm
-        f = None
+        f = None if factors is None else np.asarray(factors, float)
+        if f is not None and norm not in (None, "none"):
+            raise ValueError("pass either norm= or factors=, not both")
         if norm == "tmm":
             f = self.tmm()
         elif norm in ("size", "size_factors", "deseq2"):
@@ -958,8 +957,8 @@ class Expression(TableMixin):
             raise ValueError(f"norm must be None, 'tmm' or 'size', got {norm!r}")
         return cpm(self.counts, factors=f, log=log, prior=prior)
 
-    def log_cpm(self, *, prior: float = 2.0, norm: Optional[str] = None) -> np.ndarray:
-        return self.cpm(log=True, prior=prior, norm=norm)
+    def log_cpm(self, *, prior: float = 2.0, norm: Optional[str] = None, factors=None) -> np.ndarray:
+        return self.cpm(log=True, prior=prior, norm=norm, factors=factors)
 
     def tmm(self, **kw) -> np.ndarray:
         """edgeR's TMM factors, one per sample (geometric mean 1)."""

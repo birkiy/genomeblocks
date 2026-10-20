@@ -21,7 +21,9 @@ and a featureCounts matrix of the summed gene counts.
 
 R: GB_RSCRIPT="/path/Rscript:/other/Rscript" (default: Rscript on PATH); each
 R step runs on the first Rscript that has its packages, and is skipped (and
-listed) otherwise. GB_BENCH_EXPR="20000x6,60000x24" picks the sizes.
+listed) otherwise. GB_BENCH_EXPR="20000x6,60000x24" picks the sizes and
+GB_BENCH_PARTS="normalise,featurecounts" re-runs some parts (rows of the
+other parts already in results/expression.json are kept).
 """
 from __future__ import annotations
 
@@ -44,6 +46,7 @@ EXPR = DATA / "expression"
 EXPR.mkdir(parents=True, exist_ok=True)
 SIZES = [tuple(int(v) for v in s.split("x"))
          for s in os.environ.get("GB_BENCH_EXPR", "20000x6,60000x24,60000x96").split(",")]
+PARTS = set(os.environ.get("GB_BENCH_PARTS", "read,align,to_genes,normalise,featurecounts").split(","))
 RSCRIPTS = [p for p in os.environ.get("GB_RSCRIPT", "Rscript").split(":") if p]
 
 # ── R side ──────────────────────────────────────────────────────────────────
@@ -56,12 +59,13 @@ out <- list(versions = list(R = R.version.string))
 
 R_TXIMPORT = R_COMMON + r'''
 suppressMessages({ library(tximport); library(data.table) })
-dir <- args[1]; outdir <- args[2]; reps <- as.integer(args[3])
+dir <- args[1]; outdir <- args[2]; reps <- as.integer(args[3]); do_tx <- args[4] == "1"; do_sf <- args[5] == "1"
 samples <- readLines(file.path(dir, "samples.txt"))
 files <- file.path(dir, samples, "quant.sf"); names(files) <- samples
 tx2gene <- read.delim(file.path(dir, "tx2gene.tsv"), header = FALSE, col.names = c("tx", "gene"))
 out$versions$tximport <- as.character(packageVersion("tximport"))
 out$versions$readr <- if (requireNamespace("readr", quietly = TRUE)) as.character(packageVersion("readr")) else NA
+if (do_tx) {
 # read (txOut): the files into transcript-level matrices
 out$read <- tm(function() tximport(files, type = "salmon", txOut = TRUE, ignoreTxVersion = TRUE), reps)
 txi <- tximport(files, type = "salmon", txOut = TRUE, ignoreTxVersion = TRUE)
@@ -83,7 +87,8 @@ for (cfa in c("no", "scaledTPM", "lengthScaledTPM")) {
 # the whole thing end to end, as people call it
 out$tximport_end_to_end <- tm(function() tximport(files, type = "salmon", tx2gene = tx2gene,
                                                   countsFromAbundance = "lengthScaledTPM", ignoreTxVersion = TRUE), reps)
-if (requireNamespace("DESeq2", quietly = TRUE)) {
+}
+if (do_sf && requireNamespace("DESeq2", quietly = TRUE)) {
   suppressMessages(library(DESeq2))
   out$versions$DESeq2 <- as.character(packageVersion("DESeq2"))
   x <- as.matrix(fread(file.path(dir, "gene_counts.tsv"), header = TRUE), rownames = 1)
@@ -250,71 +255,83 @@ if __name__ == "__main__":
         # read: the two table backends
         ref = None
         for b in tables:
-            t = timeit(lambda: Expression.make(glob, backend=b, verbose=False), repeat=reps, warmup=1)
+            if "read" in PARTS:
+                t = timeit(lambda: Expression.make(glob, backend=b, verbose=False), repeat=reps, warmup=1)
             E = Expression.make(glob, backend=b, verbose=False)
             ex = {"agrees": True} if ref is None else diff(E.counts, ref.counts) | {
                 "agrees": all(np.array_equal(E.layers[k], ref.layers[k]) for k in ref.layers)}
             ref = ref or E
-            rec.add(part="read", step="read quant.sf files", engine=f"genomeblocks ({b})", seconds=t["median"],
-                    runs=t["runs"], n=n_tx * n_samples, **size, **ex)
+            if "read" in PARTS:
+                rec.add(part="read", step="read quant.sf files", engine=f"genomeblocks ({b})", seconds=t["median"],
+                        runs=t["runs"], n=n_tx * n_samples, **size, **ex)
         E_tx = ref
 
         # align + summarise in genomeblocks
-        t = timeit(lambda: E_tx.align(genes=G, level="transcript", verbose=False), repeat=reps)
         A = E_tx.align(genes=G, level="transcript", verbose=False)
-        rec.add(part="align", step="align to genes.transcripts", engine="genomeblocks", seconds=t["median"],
-                runs=t["runs"], n=n_tx, rule=A.meta["key_rule"], **size)
+        if "align" in PARTS:
+            t = timeit(lambda: E_tx.align(genes=G, level="transcript", verbose=False), repeat=reps)
+            rec.add(part="align", step="align to genes.transcripts", engine="genomeblocks", seconds=t["median"],
+                    runs=t["runs"], n=n_tx, rule=A.meta["key_rule"], **size)
         gb_genes = {}
         for how in ("counts", "scaled_tpm", "length_scaled_tpm"):
-            t = timeit(lambda: A.to_genes(how=how, verbose=False), repeat=reps)
             gb_genes[how] = A.to_genes(how=how, verbose=False)
-            rec.add(part="to_genes", step=f"to_genes ({how})", engine="genomeblocks", seconds=t["median"],
-                    runs=t["runs"], n=n_tx, **size)
-        t = timeit(lambda: Expression.make(glob, genes=G, verbose=False), repeat=reps)
-        rec.add(part="to_genes", step="read + align + to_genes (length_scaled_tpm)", engine="genomeblocks",
-                seconds=t["median"], runs=t["runs"], n=n_tx * n_samples, **size)
+            if "to_genes" in PARTS:
+                t = timeit(lambda: A.to_genes(how=how, verbose=False), repeat=reps)
+                rec.add(part="to_genes", step=f"to_genes ({how})", engine="genomeblocks", seconds=t["median"],
+                        runs=t["runs"], n=n_tx, **size)
+        if "to_genes" in PARTS:
+            t = timeit(lambda: Expression.make(glob, genes=G, verbose=False), repeat=reps)
+            rec.add(part="to_genes", step="read + align + to_genes (length_scaled_tpm)", engine="genomeblocks",
+                    seconds=t["median"], runs=t["runs"], n=n_tx * n_samples, **size)
         Eg = gb_genes["counts"]
 
-        # normalisation in genomeblocks (on the summed gene counts, as R gets them)
+        # normalisation in genomeblocks (on the summed gene counts, as R gets them; log-CPM from TMM factors
+        # computed once, as R's cpm() takes them from the DGEList)
         group = np.array([s.split("_")[0] for s in Eg.sample_names])
         norm = {}
+        f_tmm = Eg.tmm()
         for step, fn in (("tmm", lambda: Eg.tmm()), ("size_factors", lambda: Eg.size_factors()),
-                         ("log_cpm (tmm)", lambda: Eg.log_cpm(norm="tmm")),
+                         ("log_cpm (tmm)", lambda: Eg.log_cpm(factors=f_tmm)),
                          ("filter_by_expr", lambda: Eg.filter_by_expr(group))):
-            t = timeit(fn, repeat=reps)
             norm[step] = fn()
-            rec.add(part="normalise", step=step, engine="genomeblocks", seconds=t["median"], runs=t["runs"],
-                    n=len(Eg) * n_samples, **size)
+            if "normalise" in PARTS:
+                t = timeit(fn, repeat=reps)
+                rec.add(part="normalise", step=step, engine="genomeblocks", seconds=t["median"], runs=t["runs"],
+                        n=len(Eg) * n_samples, **size)
 
         # featureCounts file: the two backends
         fc = str(d / "featureCounts.txt")
-        fref = None
-        for b in tables:
-            t = timeit(lambda: Expression.make(fc, backend=b, verbose=False), repeat=reps)
-            F = Expression.make(fc, backend=b, verbose=False)
-            ex = {"agrees": True} if fref is None else {"agrees": np.array_equal(F.counts, fref.counts)}
-            fref = fref or F
-            rec.add(part="featurecounts", step="read featureCounts matrix", engine=f"genomeblocks ({b})",
-                    seconds=t["median"], runs=t["runs"], n=len(F) * n_samples, **size, **ex)
-        assert np.array_equal(fref.take_samples(Eg.sample_names).counts, Eg.counts), \
-            "featureCounts matrix differs from the summed counts"
+        if "featurecounts" in PARTS:
+            fref = None
+            for b in tables:
+                t = timeit(lambda: Expression.make(fc, backend=b, verbose=False), repeat=reps)
+                F = Expression.make(fc, backend=b, verbose=False)
+                ex = {"agrees": True} if fref is None else {"agrees": np.array_equal(F.counts, fref.counts)}
+                fref = fref or F
+                rec.add(part="featurecounts", step="read featureCounts matrix", engine=f"genomeblocks ({b})",
+                        seconds=t["median"], runs=t["runs"], n=len(F) * n_samples, **size, **ex)
+            assert np.array_equal(fref.take_samples(Eg.sample_names).counts, Eg.counts), \
+                "featureCounts matrix differs from the summed counts"
 
         # R: tximport (+ DESeq2 size factors)
         rout = d / "r_out"
         rout.mkdir(exist_ok=True)
-        if r_tx:
+        do_tx = bool(PARTS & {"read", "to_genes"})
+        if r_tx and (do_tx or "normalise" in PARTS):
             print(f"  [R] tximport on {n_samples} files ...", flush=True)
-            run_r(R_TXIMPORT, "expr_tximport", [d, rout, reps], r_tx)
+            run_r(R_TXIMPORT, "expr_tximport", [d, rout, reps, int(do_tx), int("normalise" in PARTS)], r_tx)
             j = json.loads((rout / "tximport.json").read_text())
             r_versions.update(j["versions"])
+        if r_tx and do_tx:
             tx_ids = [ln.strip() for ln in open(rout / "tx_ids.txt")]
             order = np.array([E_tx.row(i) for i in tx_ids])          # R's rows onto ours (same order, checked)
             ex = diff(E_tx.counts[order], _read_tsv_matrix(rout / "tx_counts.tsv"))
             ex_a = diff(E_tx.tpm[order], _read_tsv_matrix(rout / "tx_abundance.tsv"))
             ex_l = diff(E_tx.length[order], _read_tsv_matrix(rout / "tx_length.tsv"))
-            rec.add(part="read", step="read quant.sf files", engine="R tximport (txOut)", seconds=float(np.median(j["read"])),
-                    runs=j["read"], n=n_tx * n_samples, **size, **ex,
-                    max_abs_diff_abundance=ex_a["max_abs_diff"], max_abs_diff_length=ex_l["max_abs_diff"])
+            if "read" in PARTS:                 # only parts in PARTS may add rows: save() replaces those parts
+                rec.add(part="read", step="read quant.sf files", engine="R tximport (txOut)",
+                        seconds=float(np.median(j["read"])), runs=j["read"], n=n_tx * n_samples, **size, **ex,
+                        max_abs_diff_abundance=ex_a["max_abs_diff"], max_abs_diff_length=ex_l["max_abs_diff"])
             gids = [ln.strip() for ln in open(rout / "gene_ids.txt")]
             gorder = G.rows(gids)
             for how, cfa in (("counts", "no"), ("scaled_tpm", "scaledTPM"), ("length_scaled_tpm", "lengthScaledTPM")):
@@ -325,40 +342,46 @@ if __name__ == "__main__":
                     extra["max_abs_diff_length"] = diff(gb_genes[how].length[gorder], _read_tsv_matrix(rout / "gene_length.tsv"))["max_abs_diff"]
                     extra["max_abs_diff_abundance"] = diff(gb_genes[how].tpm[gorder], _read_tsv_matrix(rout / "gene_abundance.tsv"))["max_abs_diff"]
                 k = f"summarize_{cfa}"
-                rec.add(part="to_genes", step=f"to_genes ({how})", engine="R tximport::summarizeToGene",
-                        seconds=float(np.median(j[k])), runs=j[k], n=n_tx, **size, **ex, **extra)
-            rec.add(part="to_genes", step="read + align + to_genes (length_scaled_tpm)", engine="R tximport",
-                    seconds=float(np.median(j["tximport_end_to_end"])), runs=j["tximport_end_to_end"],
-                    n=n_tx * n_samples, **size)
+                if "to_genes" in PARTS:
+                    rec.add(part="to_genes", step=f"to_genes ({how})", engine="R tximport::summarizeToGene",
+                            seconds=float(np.median(j[k])), runs=j[k], n=n_tx, **size, **ex, **extra)
+            if "to_genes" in PARTS:
+                rec.add(part="to_genes", step="read + align + to_genes (length_scaled_tpm)", engine="R tximport",
+                        seconds=float(np.median(j["tximport_end_to_end"])), runs=j["tximport_end_to_end"],
+                        n=n_tx * n_samples, **size)
+        if r_tx and "normalise" in PARTS:
+            j = json.loads((rout / "tximport.json").read_text())
             if "size_factors" in j:
                 sf = np.array([float(v) for v in open(rout / "size_factors.txt").read().split()])
                 rec.add(part="normalise", step="size_factors", engine="R DESeq2", seconds=float(np.median(j["size_factors"])),
                         runs=j["size_factors"], n=len(Eg) * n_samples, **size, **diff(norm["size_factors"], sf))
-        else:
+        if not r_tx:
             rec.add(part="read", step="skipped", engine="R tximport", reason="no Rscript with tximport", **size)
 
         # R: edgeR + file reading
-        if r_edger:
+        if r_edger and PARTS & {"normalise", "featurecounts"}:
             print(f"  [R] edgeR on {len(Eg):,} x {n_samples} ...", flush=True)
             run_r(R_EDGER, "expr_edger", [d, rout, reps], r_edger)
             j = json.loads((rout / "edger.json").read_text())
             r_versions.update(j["versions"])
-            tmm = np.array([float(v) for v in open(rout / "tmm.txt").read().split()])
-            rec.add(part="normalise", step="tmm", engine="R edgeR calcNormFactors", seconds=float(np.median(j["tmm"])),
-                    runs=j["tmm"], n=len(Eg) * n_samples, **size, **diff(norm["tmm"], tmm))
-            lc = _read_tsv_matrix(rout / "logcpm.tsv")
-            rec.add(part="normalise", step="log_cpm (tmm)", engine="R edgeR cpm(log=TRUE)",
-                    seconds=float(np.median(j["logcpm"])), runs=j["logcpm"], n=len(Eg) * n_samples, **size,
-                    **diff(norm["log_cpm (tmm)"], lc))
-            flt = np.array([int(v) for v in open(rout / "filter.txt").read().split()], bool)
-            rec.add(part="normalise", step="filter_by_expr", engine="R edgeR filterByExpr",
-                    seconds=float(np.median(j["filter"])), runs=j["filter"], n=len(Eg) * n_samples, **size,
-                    agrees=bool((flt == norm["filter_by_expr"]).all()),
-                    disagreements=int((flt != norm["filter_by_expr"]).sum()))
-            for step, key in (("R read.delim", "fc_read_delim"), ("R data.table::fread", "fc_fread")):
-                rec.add(part="featurecounts", step="read featureCounts matrix", engine=step,
-                        seconds=float(np.median(j[key])), runs=j[key], n=len(Eg) * n_samples, **size)
-        else:
+            if "normalise" in PARTS:
+                tmm = np.array([float(v) for v in open(rout / "tmm.txt").read().split()])
+                rec.add(part="normalise", step="tmm", engine="R edgeR calcNormFactors", seconds=float(np.median(j["tmm"])),
+                        runs=j["tmm"], n=len(Eg) * n_samples, **size, **diff(norm["tmm"], tmm))
+                lc = _read_tsv_matrix(rout / "logcpm.tsv")
+                rec.add(part="normalise", step="log_cpm (tmm)", engine="R edgeR cpm(log=TRUE)",
+                        seconds=float(np.median(j["logcpm"])), runs=j["logcpm"], n=len(Eg) * n_samples, **size,
+                        **diff(norm["log_cpm (tmm)"], lc))
+                flt = np.array([int(v) for v in open(rout / "filter.txt").read().split()], bool)
+                rec.add(part="normalise", step="filter_by_expr", engine="R edgeR filterByExpr",
+                        seconds=float(np.median(j["filter"])), runs=j["filter"], n=len(Eg) * n_samples, **size,
+                        agrees=bool((flt == norm["filter_by_expr"]).all()),
+                        disagreements=int((flt != norm["filter_by_expr"]).sum()))
+            if "featurecounts" in PARTS:
+                for step, key in (("R read.delim", "fc_read_delim"), ("R data.table::fread", "fc_fread")):
+                    rec.add(part="featurecounts", step="read featureCounts matrix", engine=step,
+                            seconds=float(np.median(j[key])), runs=j[key], n=len(Eg) * n_samples, **size)
+        elif not r_edger:
             rec.add(part="normalise", step="skipped", engine="R edgeR", reason="no Rscript with edgeR", **size)
 
     rec.save(sizes=[{"n_genes": a, "n_samples": b} for a, b in SIZES], r_versions=r_versions,

@@ -330,8 +330,8 @@ take no part. Nothing is stored unless you put it in a layer.
 | Call | Returns | Rule |
 |---|---|---|
 | `E.lib_size` | `(m,)` | column totals of `counts` over the quantified rows |
-| `E.cpm(log=False, prior=2.0, norm=None)` | `(n, m)` | counts per million; `norm="tmm"` / `"size"` scales the library sizes; `log=True` adds edgeR's library-scaled prior count before log2 |
-| `E.log_cpm(prior=2.0, norm=None)` | `(n, m)` | `cpm(log=True)` |
+| `E.cpm(log=False, prior=2.0, norm=None, factors=None)` | `(n, m)` | counts per million; `norm="tmm"` / `"size"` scales the library sizes (or `factors=` ones computed once); `log=True` adds edgeR's library-scaled prior count before log2 |
+| `E.log_cpm(prior=2.0, norm=None, factors=None)` | `(n, m)` | `cpm(log=True)` |
 | `E.tmm(trim_lfc=0.3, trim_mag=0.05, ref=None)` | `(m,)` | edgeR's trimmed mean of M-values, geometric mean 1 |
 | `E.size_factors()` | `(m,)` | DESeq2's median of ratios |
 | `E.filter_by_expr(group=None, min_count=10, min_total_count=15, large_n=10, min_prop=0.7)` | `(n,)` bool | edgeR's `filterByExpr`; `group` is a column of `E.samples` by name or an array |
