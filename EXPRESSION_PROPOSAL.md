@@ -1,6 +1,6 @@
 # Proposal: expression tables and differential expression (genomeblocks 2.1)
 
-*Status: draft for discussion, 2026-10-20. Branch `expression`. Nothing here is built yet.*
+*Status: accepted 2026-10-20 with the recommended option of every decision in §15; phase 1 (the table, §2–§5 and §7's `Genes` changes) is being built on branch `expression`, with a benchmark against R added to its scope. Phases 2 and 3 are not started.*
 
 genomeblocks 2.0 has no place for RNA-seq. A `Genes` object knows where every
 gene and transcript is, `Architecture.annotate` names the gene of every CRE,

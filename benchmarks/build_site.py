@@ -470,6 +470,78 @@ def sec_genes(md, tl):
                      "index; the counts are CREs labelled."))
 
 
+def _fdiff(x):
+    if x is None:
+        return "—"
+    if x == 0:
+        return "0"
+    return f"{x:.1e}".replace("e-0", "e-").replace("e+0", "e+")
+
+
+def sec_expression(md, tl):
+    d = load("expression")
+    if not d:
+        return
+    md.append('## Expression\n{: .sec-navy #expression }\n')
+    rows = [r for r in d["rows"] if r.get("step") != "skipped"]
+    sizes = []
+    for r in rows:
+        k = (r["n_genes"], r["n_transcripts"], r["n_samples"])
+        if k not in sizes:
+            sizes.append(k)
+    rv = d.get("meta", {}).get("r_versions", {})
+    rtxt = ", ".join(f"{k} {v}" for k, v in rv.items() if k != "R" and v)
+    md.append("salmon-style `quant.sf` files over a GENCODE-shaped GTF, read with both table backends and summarised "
+              "to genes as tximport does; the gene counts normalised as edgeR and DESeq2 do. Every genomeblocks "
+              "number is checked against R" + (f" ({escape(rtxt)})" if rtxt else "") + ": the tables give the "
+              "largest absolute difference over every entry of the matrix.\n")
+    big = max(sizes, key=lambda k: k[1] * k[2])
+    for n_genes, n_tx, n_samples in sizes:
+        sel = [r for r in rows if (r["n_genes"], r["n_transcripts"], r["n_samples"]) == (n_genes, n_tx, n_samples)]
+        md.append(f"### {n_genes:,} genes · {n_tx:,} transcripts · {n_samples} samples\n{{: .no_toc }}\n")
+        for part, label, kind in (("read", "read quant.sf files", "green"), ("to_genes", "transcripts → genes", "navy"),
+                                  ("normalise", "normalise", "navy"), ("featurecounts", "read a featureCounts matrix", "green")):
+            at = [r for r in sel if r["part"] == part]
+            if not at:
+                continue
+            pts = [((r["engine"] if part in ("read", "featurecounts") else f"{r['step']} · {r['engine']}"), r["seconds"],
+                    is_gb(r["engine"]), "" if r.get("max_abs_diff") is None else f"max |Δ| {_fdiff(r['max_abs_diff'])}")
+                   for r in at]
+            md.append(figure(dotplot(pts, kind=kind, label=f"expression: {label}"),
+                             f"<strong>{escape(label)}</strong> at {n_genes:,} genes × {n_samples} samples; genomeblocks in colour. "
+                             + ("Hover for the exactness against R." if part != "featurecounts" else "")))
+        ex = [r for r in sel if r["engine"].startswith("R ") and (r.get("max_abs_diff") is not None or "disagreements" in r)]
+        if ex:
+            md.append("| step | genomeblocks vs | max \\|Δ\\| | max rel. Δ | agree |\n|---|---|---|---|---|")
+            for r in ex:
+                md.append(f"| {escape(r['step'])} | {escape(r['engine'])} | {_fdiff(r.get('max_abs_diff'))} | "
+                          f"{_fdiff(r.get('max_rel_diff'))} | "
+                          + ("yes" if r.get("agrees") else f"{r.get('disagreements', '')} differ") + " |")
+            md.append("")
+        if (n_genes, n_tx, n_samples) == big:
+            gbt = pick(d, part="to_genes", step="to_genes (length_scaled_tpm)", engine="genomeblocks", n_samples=n_samples)
+            rt = pick(d, part="to_genes", step="to_genes (length_scaled_tpm)", engine="R tximport::summarizeToGene",
+                      n_samples=n_samples)
+            if gbt and rt:
+                tl.append(("tximport in numpy", fx(rt["seconds"] / gbt["seconds"]),
+                           f"faster than tximport::summarizeToGene at {n_tx:,} transcripts × {n_samples} samples, "
+                           f"max |Δ| {_fdiff(rt.get('max_abs_diff'))}", "navy"))
+            gbr = pick(d, part="read", engine="genomeblocks (polars)", n_samples=n_samples)
+            rr = pick(d, part="read", engine="R tximport (txOut)", n_samples=n_samples)
+            if gbr and rr:
+                tl.append(("Reading quant.sf", fx(rr["seconds"] / gbr["seconds"]),
+                           f"faster than tximport's readr path for {n_samples} files, same numbers", "green"))
+            gbm = pick(d, part="normalise", step="tmm", engine="genomeblocks", n_samples=n_samples)
+            rm = pick(d, part="normalise", step="tmm", engine="R edgeR calcNormFactors", n_samples=n_samples)
+            if gbm and rm:
+                tl.append(("TMM factors", f"max |Δ| {_fdiff(rm.get('max_abs_diff'))}",
+                           f"against edgeR at {n_genes:,} genes × {n_samples} samples", "navy"))
+    skipped_ = [r for r in d["rows"] if r.get("step") == "skipped"]
+    if skipped_:
+        md.append("Skipped (no R with the package on the benchmark machine): "
+                  + ", ".join(sorted({r["engine"] for r in skipped_})) + ".\n")
+
+
 def sec_architecture(md, tl):
     d = load("architecture")
     if not d:
@@ -570,7 +642,7 @@ def sec_import(md, tl):
 def build():
     md, tl = [], []
     secs = [sec_backends, sec_loci, sec_signal, sec_atlas, sec_motifs, sec_pairs, sec_genes, sec_architecture,
-            sec_shortrange, sec_import]
+            sec_expression, sec_shortrange, sec_import]
     for s in secs:
         s(md, tl)
     env = next((load(n)["env"] for n in ("backends", "loci", "signal", "motifs") if load(n)), {})

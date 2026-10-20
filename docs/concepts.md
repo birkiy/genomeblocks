@@ -49,6 +49,7 @@ The other tables are built from `Loci`:
 | Table | Rows | Linked by |
 |---|---|---|
 | `Genes` | `genes`, `transcripts`, `features` — three `Loci` | `transcripts['gene'][k]` is the gene row of transcript `k`; `features['transcript'][j]` the transcript row of feature `j` |
+| `Expression` | features × samples layers (`counts`, `tpm`, `length`) | row `i` is row `i` of `genes.genes`, `genes.transcripts` or a `Loci`; a row the input did not quantify is NaN |
 | `Pairs` | anchors `a` and `b` — two row-aligned `Loci` | pair `i` is `a[i]` and `b[i]` |
 | `Architecture` | vertices = the `Loci`; edges = `src`, `tgt` + `ep` columns | `vp` columns are aligned to the `Loci` rows, `ep` columns to the edges |
 | `Atlas` | a sparse bins × tracks matrix | tracks are rows of the track table |

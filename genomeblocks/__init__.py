@@ -30,6 +30,7 @@ _EXPORTS: Dict[str, tuple] = {
     "Pairs": (".bedpe", "Pairs"),
     "Architecture": (".architecture", "Architecture"),
     "Atlas": (".atlas", "Atlas"),
+    "Expression": (".expression", "Expression"),
     # backends
     "backends": (".backends", None),          # the module; calling it lists the backends
     "use_backend": (".backends", "use_backend"),

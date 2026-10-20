@@ -30,6 +30,9 @@ most 8 worker processes</p>
 <div class="gb-tile navy"><span class="tile-label">Enrichment vs 500 peak files</span><span class="tile-value">11 ms</span><span class="tile-ctx">per 20k-peak query including Fisher tests</span></div>
 <div class="gb-tile navy"><span class="tile-label">Motif scanning</span><span class="tile-value">131×</span><span class="tile-ctx">faster than MEME FIMO, 187× faster than Biopython</span></div>
 <div class="gb-tile purple"><span class="tile-label">Hi-C pair counting</span><span class="tile-value">1.6M/s</span><span class="tile-ctx">read pairs into 50 kb windows: 2.9× the rate of cooler cload</span></div>
+<div class="gb-tile navy"><span class="tile-label">tximport in numpy</span><span class="tile-value">5.1×</span><span class="tile-ctx">faster than tximport::summarizeToGene at 6,984 transcripts × 4 samples, max |Δ| 5.6e-11</span></div>
+<div class="gb-tile green"><span class="tile-label">Reading quant.sf</span><span class="tile-value">6.7×</span><span class="tile-ctx">faster than tximport's readr path for 4 files, same numbers</span></div>
+<div class="gb-tile navy"><span class="tile-label">TMM factors</span><span class="tile-value">max |Δ| 4.4e-16</span><span class="tile-ctx">against edgeR at 2,000 genes × 4 samples</span></div>
 </div>
 
 1. TOC
@@ -1396,6 +1399,225 @@ The pipeline on 100k CREs and 50k loops (114,367 edges), step by step, then the 
 </g>
 </svg>
 </div><figcaption><strong>Architecture pipeline steps</strong> (wall time; log scale). Graph algorithms run once per installed engine, with identical results; the default engine in colour.</figcaption></figure>
+
+## Expression
+{: .sec-navy #expression }
+
+salmon-style `quant.sf` files over a GENCODE-shaped GTF, read with both table backends and summarised to genes as tximport does; the gene counts normalised as edgeR and DESeq2 do. Every genomeblocks number is checked against R (tximport 1.34.0, readr 2.1.6, DESeq2 1.46.0, edgeR 4.4.0, data.table 1.17.8): the tables give the largest absolute difference over every entry of the matrix.
+
+### 2,000 genes · 6,984 transcripts · 4 samples
+{: .no_toc }
+
+<figure class="gb-fig gb-chart"><div class="gb-fig-body">
+<svg class="gbc" viewBox="0 0 880 126" role="img" aria-label="expression: read quant.sf files" xmlns="http://www.w3.org/2000/svg">
+<line class="grid" x1="300.0" y1="8" x2="300.0" y2="100"/>
+<text class="tick" x="300.0" y="116" text-anchor="middle">10 ms</text>
+<line class="grid" x1="542.0" y1="8" x2="542.0" y2="100"/>
+<text class="tick" x="542.0" y="116" text-anchor="middle">100 ms</text>
+<line class="grid" x1="784.0" y1="8" x2="784.0" y2="100"/>
+<text class="tick" x="784.0" y="116" text-anchor="middle">1 s</text>
+<g class="row gb green"><title>genomeblocks (polars): 26 ms</title>
+<rect class="hit" x="0" y="8.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="22.0" x2="784" y2="22.0"/>
+<text class="lab" x="286" y="26.0" text-anchor="end">genomeblocks (polars)</text>
+<circle class="dot" cx="402.4" cy="22.0" r="5.5"/>
+<text class="val" x="413.4" y="26.0">26 ms</text>
+</g>
+<g class="row gb green"><title>genomeblocks (pandas): 86 ms · max |Δ| 0</title>
+<rect class="hit" x="0" y="36.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="50.0" x2="784" y2="50.0"/>
+<text class="lab" x="286" y="54.0" text-anchor="end">genomeblocks (pandas)</text>
+<circle class="dot" cx="525.8" cy="50.0" r="5.5"/>
+<text class="val" x="536.8" y="54.0">86 ms</text>
+</g>
+<g class="row"><title>R tximport (txOut): 177 ms · max |Δ| 0</title>
+<rect class="hit" x="0" y="64.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="78.0" x2="784" y2="78.0"/>
+<text class="lab" x="286" y="82.0" text-anchor="end">R tximport (txOut)</text>
+<circle class="dot" cx="602.0" cy="78.0" r="5.5"/>
+<text class="val" x="613.0" y="82.0">177 ms</text>
+</g>
+</svg>
+</div><figcaption><strong>read quant.sf files</strong> at 2,000 genes × 4 samples; genomeblocks in colour. Hover for the exactness against R.</figcaption></figure>
+
+<figure class="gb-fig gb-chart"><div class="gb-fig-body">
+<svg class="gbc" viewBox="0 0 880 266" role="img" aria-label="expression: transcripts → genes" xmlns="http://www.w3.org/2000/svg">
+<line class="grid" x1="300.0" y1="8" x2="300.0" y2="240"/>
+<text class="tick" x="300.0" y="256" text-anchor="middle">1 ms</text>
+<line class="grid" x1="461.3" y1="8" x2="461.3" y2="240"/>
+<text class="tick" x="461.3" y="256" text-anchor="middle">10 ms</text>
+<line class="grid" x1="622.7" y1="8" x2="622.7" y2="240"/>
+<text class="tick" x="622.7" y="256" text-anchor="middle">100 ms</text>
+<line class="grid" x1="784.0" y1="8" x2="784.0" y2="240"/>
+<text class="tick" x="784.0" y="256" text-anchor="middle">1 s</text>
+<g class="row gb navy"><title>to_genes (length_scaled_tpm) · genomeblocks: 5.9 ms</title>
+<rect class="hit" x="0" y="8.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="22.0" x2="784" y2="22.0"/>
+<text class="lab" x="286" y="26.0" text-anchor="end">to_genes (length_scaled_tpm) · genomeblocks</text>
+<circle class="dot" cx="424.8" cy="22.0" r="5.5"/>
+<text class="val" x="435.8" y="26.0">5.9 ms</text>
+</g>
+<g class="row gb navy"><title>to_genes (scaled_tpm) · genomeblocks: 6.4 ms</title>
+<rect class="hit" x="0" y="36.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="50.0" x2="784" y2="50.0"/>
+<text class="lab" x="286" y="54.0" text-anchor="end">to_genes (scaled_tpm) · genomeblocks</text>
+<circle class="dot" cx="429.5" cy="50.0" r="5.5"/>
+<text class="val" x="440.5" y="54.0">6.4 ms</text>
+</g>
+<g class="row gb navy"><title>to_genes (counts) · genomeblocks: 7.1 ms</title>
+<rect class="hit" x="0" y="64.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="78.0" x2="784" y2="78.0"/>
+<text class="lab" x="286" y="82.0" text-anchor="end">to_genes (counts) · genomeblocks</text>
+<circle class="dot" cx="437.5" cy="78.0" r="5.5"/>
+<text class="val" x="448.5" y="82.0">7.1 ms</text>
+</g>
+<g class="row"><title>to_genes (scaled_tpm) · R tximport::summarizeToGene: 30 ms · max |Δ| 8.4e-11</title>
+<rect class="hit" x="0" y="92.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="106.0" x2="784" y2="106.0"/>
+<text class="lab" x="286" y="110.0" text-anchor="end">to_genes (scaled_tpm) · R tximport::summarizeToGene</text>
+<circle class="dot" cx="538.3" cy="106.0" r="5.5"/>
+<text class="val" x="549.3" y="110.0">30 ms</text>
+</g>
+<g class="row"><title>to_genes (length_scaled_tpm) · R tximport::summarizeToGene: 30 ms · max |Δ| 5.6e-11</title>
+<rect class="hit" x="0" y="120.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="134.0" x2="784" y2="134.0"/>
+<text class="lab" x="286" y="138.0" text-anchor="end">to_genes (length_scaled_tpm) · R tximport::summarizeToGene</text>
+<circle class="dot" cx="538.3" cy="134.0" r="5.5"/>
+<text class="val" x="549.3" y="138.0">30 ms</text>
+</g>
+<g class="row"><title>to_genes (counts) · R tximport::summarizeToGene: 31 ms · max |Δ| 0</title>
+<rect class="hit" x="0" y="148.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="162.0" x2="784" y2="162.0"/>
+<text class="lab" x="286" y="166.0" text-anchor="end">to_genes (counts) · R tximport::summarizeToGene</text>
+<circle class="dot" cx="540.6" cy="162.0" r="5.5"/>
+<text class="val" x="551.6" y="166.0">31 ms</text>
+</g>
+<g class="row gb navy"><title>read + align + to_genes (length_scaled_tpm) · genomeblocks: 64 ms</title>
+<rect class="hit" x="0" y="176.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="190.0" x2="784" y2="190.0"/>
+<text class="lab" x="286" y="194.0" text-anchor="end">read + align + to_genes (length_scaled_tpm) · genomeblocks</text>
+<circle class="dot" cx="591.7" cy="190.0" r="5.5"/>
+<text class="val" x="602.7" y="194.0">64 ms</text>
+</g>
+<g class="row"><title>read + align + to_genes (length_scaled_tpm) · R tximport: 205 ms</title>
+<rect class="hit" x="0" y="204.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="218.0" x2="784" y2="218.0"/>
+<text class="lab" x="286" y="222.0" text-anchor="end">read + align + to_genes (length_scaled_tpm) · R tximport</text>
+<circle class="dot" cx="673.0" cy="218.0" r="5.5"/>
+<text class="val" x="684.0" y="222.0">205 ms</text>
+</g>
+</svg>
+</div><figcaption><strong>transcripts → genes</strong> at 2,000 genes × 4 samples; genomeblocks in colour. Hover for the exactness against R.</figcaption></figure>
+
+<figure class="gb-fig gb-chart"><div class="gb-fig-body">
+<svg class="gbc" viewBox="0 0 880 238" role="img" aria-label="expression: normalise" xmlns="http://www.w3.org/2000/svg">
+<line class="grid" x1="300.0" y1="8" x2="300.0" y2="212"/>
+<text class="tick" x="300.0" y="228" text-anchor="middle">100 µs</text>
+<line class="grid" x1="542.0" y1="8" x2="542.0" y2="212"/>
+<text class="tick" x="542.0" y="228" text-anchor="middle">1 ms</text>
+<line class="grid" x1="784.0" y1="8" x2="784.0" y2="212"/>
+<text class="tick" x="784.0" y="228" text-anchor="middle">10 ms</text>
+<g class="row gb navy"><title>filter_by_expr · genomeblocks: 444 µs</title>
+<rect class="hit" x="0" y="8.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="22.0" x2="784" y2="22.0"/>
+<text class="lab" x="286" y="26.0" text-anchor="end">filter_by_expr · genomeblocks</text>
+<circle class="dot" cx="456.6" cy="22.0" r="5.5"/>
+<text class="val" x="467.6" y="26.0">444 µs</text>
+</g>
+<g class="row gb navy"><title>size_factors · genomeblocks: 671 µs</title>
+<rect class="hit" x="0" y="36.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="50.0" x2="784" y2="50.0"/>
+<text class="lab" x="286" y="54.0" text-anchor="end">size_factors · genomeblocks</text>
+<circle class="dot" cx="500.1" cy="50.0" r="5.5"/>
+<text class="val" x="511.1" y="54.0">671 µs</text>
+</g>
+<g class="row"><title>filter_by_expr · R edgeR filterByExpr: 1000 µs</title>
+<rect class="hit" x="0" y="64.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="78.0" x2="784" y2="78.0"/>
+<text class="lab" x="286" y="82.0" text-anchor="end">filter_by_expr · R edgeR filterByExpr</text>
+<circle class="dot" cx="542.0" cy="78.0" r="5.5"/>
+<text class="val" x="553.0" y="82.0">1000 µs</text>
+</g>
+<g class="row"><title>size_factors · R DESeq2: 2.0 ms · max |Δ| 8.9e-16</title>
+<rect class="hit" x="0" y="92.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="106.0" x2="784" y2="106.0"/>
+<text class="lab" x="286" y="110.0" text-anchor="end">size_factors · R DESeq2</text>
+<circle class="dot" cx="614.8" cy="106.0" r="5.5"/>
+<text class="val" x="625.8" y="110.0">2.0 ms</text>
+</g>
+<g class="row gb navy"><title>log_cpm (tmm) · genomeblocks: 2.9 ms</title>
+<rect class="hit" x="0" y="120.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="134.0" x2="784" y2="134.0"/>
+<text class="lab" x="286" y="138.0" text-anchor="end">log_cpm (tmm) · genomeblocks</text>
+<circle class="dot" cx="653.0" cy="134.0" r="5.5"/>
+<text class="val" x="664.0" y="138.0">2.9 ms</text>
+</g>
+<g class="row gb navy"><title>tmm · genomeblocks: 3.2 ms</title>
+<rect class="hit" x="0" y="148.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="162.0" x2="784" y2="162.0"/>
+<text class="lab" x="286" y="166.0" text-anchor="end">tmm · genomeblocks</text>
+<circle class="dot" cx="662.7" cy="162.0" r="5.5"/>
+<text class="val" x="673.7" y="166.0">3.2 ms</text>
+</g>
+<g class="row"><title>tmm · R edgeR calcNormFactors: 5.0 ms · max |Δ| 4.4e-16</title>
+<rect class="hit" x="0" y="176.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="190.0" x2="784" y2="190.0"/>
+<text class="lab" x="286" y="194.0" text-anchor="end">tmm · R edgeR calcNormFactors</text>
+<circle class="dot" cx="711.2" cy="190.0" r="5.5"/>
+<text class="val" x="722.2" y="194.0">5.0 ms</text>
+</g>
+</svg>
+</div><figcaption><strong>normalise</strong> at 2,000 genes × 4 samples; genomeblocks in colour. Hover for the exactness against R.</figcaption></figure>
+
+<figure class="gb-fig gb-chart"><div class="gb-fig-body">
+<svg class="gbc" viewBox="0 0 880 154" role="img" aria-label="expression: read a featureCounts matrix" xmlns="http://www.w3.org/2000/svg">
+<line class="grid" x1="300.0" y1="8" x2="300.0" y2="128"/>
+<text class="tick" x="300.0" y="144" text-anchor="middle">1 ms</text>
+<line class="grid" x1="542.0" y1="8" x2="542.0" y2="128"/>
+<text class="tick" x="542.0" y="144" text-anchor="middle">10 ms</text>
+<line class="grid" x1="784.0" y1="8" x2="784.0" y2="128"/>
+<text class="tick" x="784.0" y="144" text-anchor="middle">100 ms</text>
+<g class="row"><title>R data.table::fread: 3.0 ms</title>
+<rect class="hit" x="0" y="8.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="22.0" x2="784" y2="22.0"/>
+<text class="lab" x="286" y="26.0" text-anchor="end">R data.table::fread</text>
+<circle class="dot" cx="415.5" cy="22.0" r="5.5"/>
+<text class="val" x="426.5" y="26.0">3.0 ms</text>
+</g>
+<g class="row"><title>R read.delim: 6.0 ms</title>
+<rect class="hit" x="0" y="36.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="50.0" x2="784" y2="50.0"/>
+<text class="lab" x="286" y="54.0" text-anchor="end">R read.delim</text>
+<circle class="dot" cx="488.3" cy="50.0" r="5.5"/>
+<text class="val" x="499.3" y="54.0">6.0 ms</text>
+</g>
+<g class="row gb green"><title>genomeblocks (polars): 8.7 ms</title>
+<rect class="hit" x="0" y="64.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="78.0" x2="784" y2="78.0"/>
+<text class="lab" x="286" y="82.0" text-anchor="end">genomeblocks (polars)</text>
+<circle class="dot" cx="527.7" cy="78.0" r="5.5"/>
+<text class="val" x="538.7" y="82.0">8.7 ms</text>
+</g>
+<g class="row gb green"><title>genomeblocks (pandas): 9.6 ms</title>
+<rect class="hit" x="0" y="92.0" width="880" height="28"/>
+<line class="rowline" x1="300" y1="106.0" x2="784" y2="106.0"/>
+<text class="lab" x="286" y="110.0" text-anchor="end">genomeblocks (pandas)</text>
+<circle class="dot" cx="537.8" cy="106.0" r="5.5"/>
+<text class="val" x="548.8" y="110.0">9.6 ms</text>
+</g>
+</svg>
+</div><figcaption><strong>read a featureCounts matrix</strong> at 2,000 genes × 4 samples; genomeblocks in colour. </figcaption></figure>
+
+| step | genomeblocks vs | max \|Δ\| | max rel. Δ | agree |
+|---|---|---|---|---|
+| read quant.sf files | R tximport (txOut) | 0 | 0 | yes |
+| to_genes (counts) | R tximport::summarizeToGene | 0 | 0 | yes |
+| to_genes (scaled_tpm) | R tximport::summarizeToGene | 8.4e-11 | 6.6e-15 | yes |
+| to_genes (length_scaled_tpm) | R tximport::summarizeToGene | 5.6e-11 | 6.2e-15 | yes |
+| size_factors | R DESeq2 | 8.9e-16 | 7.3e-16 | yes |
+| tmm | R edgeR calcNormFactors | 4.4e-16 | 4.3e-16 | yes |
+| log_cpm (tmm) | R edgeR cpm(log=TRUE) | 5.2e-14 | 5.0e-15 | yes |
+| filter_by_expr | R edgeR filterByExpr | — | — | yes |
 
 ## HiChIP short-range track
 {: .sec-purple #shortrange }

@@ -202,37 +202,10 @@ def _run_multiprocess(cube, paths, chroms, starts, ends, n_bins, flank, agg, spa
 
 
 def _tmm_norm_factors(data, trim_lfc=0.3, trim_mag=0.05, index_ref=None):
-    """edgeR Trimmed-Mean-of-M-values factors, one per column (Robinson & Oshlack 2010),
-    scaled to a geometric mean of 1. Rows are features, columns samples."""
-    x = np.asarray(data, dtype=float).T
-    lib_size = x.sum(axis=1)
-    mask = x == 0
-    if index_ref is None:
-        xr = x.copy()
-        xr[:, np.all(mask, axis=0)] = np.nan
-        p75 = np.nanpercentile(xr, 75, axis=1)
-        index_ref = int(np.argmin(np.abs(p75 - p75.mean())))
-    mask = mask.copy()
-    mask[:, mask[index_ref]] = True
-    x = x.copy()
-    x[mask] = np.nan
-    with np.errstate(invalid="ignore", divide="ignore"):
-        norm_x = x / lib_size[:, None]
-        logs = np.log2(norm_x)
-        m_g = logs - logs[index_ref]
-        a_g = (logs + logs[index_ref]) / 2
-        pm = np.nanquantile(m_g, [trim_lfc, 1 - trim_lfc], axis=1, method="nearest")[..., None]
-        pa = np.nanquantile(a_g, [trim_mag, 1 - trim_mag], axis=1, method="nearest")[..., None]
-        mask = mask | (m_g < pm[0]) | (m_g > pm[1])
-        mask = mask | (a_g < pa[0]) | (a_g > pa[1])
-        w = (1 - norm_x) / x
-        w = 1 / (w + w[index_ref])
-    w[mask] = 0
-    m_g[mask] = 0
-    w /= w.sum(axis=1)[:, None]
-    f = np.sum(w * m_g, axis=1)
-    f -= f.mean()
-    return 2 ** f
+    """edgeR TMM factors (rows = features, columns = samples); the shared rule lives in
+    :mod:`genomeblocks._norm`."""
+    from ._norm import tmm_factors
+    return tmm_factors(data, trim_lfc=trim_lfc, trim_mag=trim_mag, ref=index_ref)
 
 
 def tmm(cube: np.ndarray) -> np.ndarray:

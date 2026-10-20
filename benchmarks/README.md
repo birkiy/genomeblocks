@@ -26,7 +26,10 @@ on `PATH`: bedtools, deepTools `computeMatrix`, cooler. Optional:
 github.com/ryanlayer/giggle; skipped when missing). Backends that are not
 installed are skipped and listed in the results (`graph-tool`, `cgranges`
 and `bedtools` are conda-only). `GB_BENCH_SIZES=1000,10000` limits the
-interval sizes for a quick run.
+interval sizes for a quick run. `bench_expression.py` runs R through
+`GB_RSCRIPT=/path/Rscript:/other/Rscript` (the first Rscript with the step's
+packages is used; steps without one are skipped and listed) and
+`GB_BENCH_EXPR=20000x6,60000x24` picks its sizes.
 
 ## Files
 
@@ -43,6 +46,7 @@ interval sizes for a quick run.
 | `bench_architecture.py` | the Architecture pipeline step by step, graph backends, save / load |
 | `bench_shortrange.py` | HiChIP short-range track vs the awk / sort / bedtools recipe |
 | `bench_import.py` | import cost of each entry point |
+| `bench_expression.py` | reading salmon / featureCounts tables with both table backends, tximport-style summarising and TMM / size factors / CPM / filterByExpr against R's tximport, edgeR and DESeq2 — exactness (max \|Δ\|) and time; generates its own GTF-scale data |
 | `build_site.py` | writes `docs/benchmarks/index.md` |
 
 ## Design studies (historical)

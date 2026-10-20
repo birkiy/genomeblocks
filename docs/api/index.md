@@ -20,6 +20,7 @@ import genomeblocks as gb
 |---|---|---|
 | `gb.Loci`, `gb.Locus`, `gb.Genome` | Intervals as a table; one interval; chromosome names ↔ codes. | [loci]({{ '/api/loci/' | relative_url }}), [locus]({{ '/api/locus/' | relative_url }}) |
 | `gb.Genes` | Genes / transcripts / features, three linked tables. | [genes]({{ '/api/genes/' | relative_url }}) |
+| `gb.Expression` | A features × samples matrix on the rows of a `Genes` table or a `Loci`. | [expression]({{ '/api/expression/' | relative_url }}) |
 | `gb.Pairs` | BEDPE as a table (anchors `a` and `b`). | [bedpe]({{ '/api/bedpe/' | relative_url }}) |
 | `gb.Architecture` | A CRE interaction graph: vertices = a `Loci`, edges = a table. | [architecture]({{ '/api/architecture/' | relative_url }}) |
 | `gb.Atlas` | A sparse bins x tracks index for enrichment. | [atlas]({{ '/api/atlas/' | relative_url }}) |
@@ -39,6 +40,7 @@ Names are imported on first use, so `import genomeblocks` stays light.
 | `genomeblocks.genome` | `Genome` (`from_sizes`, `from_fasta`, `encode` / `decode`, `rank`, `sizes`), `read_sizes` | [loci]({{ '/api/loci/' | relative_url }}#genome), [Concepts]({{ '/concepts/' | relative_url }}) |
 | `genomeblocks.loci` | `Loci`, `LocusView`, `STRANDS`, `SCODE` | [loci]({{ '/api/loci/' | relative_url }}) |
 | `genomeblocks.genes` | `Genes`, `GeneView`, `tss_base`, `LABELS`, `KINDS` | [genes]({{ '/api/genes/' | relative_url }}) |
+| `genomeblocks.expression` | `Expression`, `sniff_format`, `sample_name`, `read_table`, `LEVELS`, `HOW` (and `genomeblocks._norm`: `lib_sizes`, `cpm`, `tmm_factors`, `size_factors`, `filter_by_expr`) | [expression]({{ '/api/expression/' | relative_url }}) |
 | `genomeblocks.bedpe` | `Pairs`, `read_bedpe`, `as_pairs`, `read_pairs_chunks`, `PAIRS_FORMAT_COLUMNS`, `count_pairs`, `count_pairs_2d`, `pair_2d_block`, `pair_2d_to_frame` | [bedpe]({{ '/api/bedpe/' | relative_url }}) |
 | `genomeblocks.architecture` | `Architecture`, `Props` | [architecture]({{ '/api/architecture/' | relative_url }}) |
 | `genomeblocks.architecture_draw` | `draw` | [architecture]({{ '/api/architecture/' | relative_url }}) |
