@@ -474,7 +474,7 @@ def _fdiff(x):
     if x is None:
         return "—"
     if x == 0:
-        return "0"
+        return "identical"
     return f"{x:.1e}".replace("e-0", "e-").replace("e+0", "e+")
 
 
@@ -489,53 +489,128 @@ def sec_expression(md, tl):
         k = (r["n_genes"], r["n_transcripts"], r["n_samples"])
         if k not in sizes:
             sizes.append(k)
+    sizes.sort(key=lambda k: k[1] * k[2])
     rv = d.get("meta", {}).get("r_versions", {})
     rtxt = ", ".join(f"{k} {v}" for k, v in rv.items() if k != "R" and v)
-    md.append("salmon-style `quant.sf` files over a GENCODE-shaped GTF, read with both table backends and summarised "
-              "to genes as tximport does; the gene counts normalised as edgeR and DESeq2 do. Every genomeblocks "
-              "number is checked against R" + (f" ({escape(rtxt)})" if rtxt else "") + ": the tables give the "
-              "largest absolute difference over every entry of the matrix.\n")
-    big = max(sizes, key=lambda k: k[1] * k[2])
-    for n_genes, n_tx, n_samples in sizes:
-        sel = [r for r in rows if (r["n_genes"], r["n_transcripts"], r["n_samples"]) == (n_genes, n_tx, n_samples)]
-        md.append(f"### {n_genes:,} genes · {n_tx:,} transcripts · {n_samples} samples\n{{: .no_toc }}\n")
-        for part, label, kind in (("read", "read quant.sf files", "green"), ("to_genes", "transcripts → genes", "navy"),
-                                  ("normalise", "normalise", "navy"), ("featurecounts", "read a featureCounts matrix", "green")):
-            at = [r for r in sel if r["part"] == part]
-            if not at:
+    size_txt = ", ".join(f"{g:,} genes / {t:,} transcripts × {m} samples" for g, t, m in sizes)
+    md.append(f"salmon-style `quant.sf` files over GENCODE-shaped GTFs at three sizes ({size_txt}), read with "
+              "both table backends and summarised to genes as tximport does; the summed gene counts normalised as "
+              "edgeR and DESeq2 do. Every genomeblocks number is checked against R"
+              + (f" ({escape(rtxt)})" if rtxt else "") + "; the last table gives the largest absolute difference "
+              "over every entry of each matrix, at every size. Wall time, log scales, genomeblocks in colour.\n")
+    big = sizes[-1]
+    key = lambda r: (r["n_genes"], r["n_transcripts"], r["n_samples"])        # noqa: E731
+    col = lambda k: f"{k[0] // 1000}k × {k[2]}"                                # noqa: E731
+
+    def series_for(part, step=None, x="tx", rename=None):
+        out = []
+        for r in rows:
+            if r["part"] != part or (step and r["step"] != step):
                 continue
-            pts = [((r["engine"] if part in ("read", "featurecounts") else f"{r['step']} · {r['engine']}"), r["seconds"],
-                    is_gb(r["engine"]), "" if r.get("max_abs_diff") is None else f"max |Δ| {_fdiff(r['max_abs_diff'])}")
-                   for r in at]
-            md.append(figure(dotplot(pts, kind=kind, label=f"expression: {label}"),
-                             f"<strong>{escape(label)}</strong> at {n_genes:,} genes × {n_samples} samples; genomeblocks in colour. "
-                             + ("Hover for the exactness against R." if part != "featurecounts" else "")))
-        ex = [r for r in sel if r["engine"].startswith("R ") and (r.get("max_abs_diff") is not None or "disagreements" in r)]
-        if ex:
-            md.append("| step | genomeblocks vs | max \\|Δ\\| | max rel. Δ | agree |\n|---|---|---|---|---|")
-            for r in ex:
-                md.append(f"| {escape(r['step'])} | {escape(r['engine'])} | {_fdiff(r.get('max_abs_diff'))} | "
-                          f"{_fdiff(r.get('max_rel_diff'))} | "
-                          + ("yes" if r.get("agrees") else f"{r.get('disagreements', '')} differ") + " |")
-            md.append("")
-        if (n_genes, n_tx, n_samples) == big:
-            gbt = pick(d, part="to_genes", step="to_genes (length_scaled_tpm)", engine="genomeblocks", n_samples=n_samples)
-            rt = pick(d, part="to_genes", step="to_genes (length_scaled_tpm)", engine="R tximport::summarizeToGene",
-                      n_samples=n_samples)
-            if gbt and rt:
-                tl.append(("to_genes vs tximport", f"max |Δ| {_fdiff(rt.get('max_abs_diff'))}",
-                           f"same gene counts as summarizeToGene at {n_tx:,} transcripts × {n_samples} samples; "
-                           f"{ftime(gbt['seconds'])} against {ftime(rt['seconds'])} in R", "navy"))
-            gbr = pick(d, part="read", engine="genomeblocks (polars)", n_samples=n_samples)
-            rr = pick(d, part="read", engine="R tximport (txOut)", n_samples=n_samples)
-            if gbr and rr:
-                tl.append(("Reading quant.sf", fx(rr["seconds"] / gbr["seconds"]),
-                           f"faster than tximport's readr path for {n_samples} files, same numbers", "green"))
-            gbm = pick(d, part="normalise", step="tmm", engine="genomeblocks", n_samples=n_samples)
-            rm = pick(d, part="normalise", step="tmm", engine="R edgeR calcNormFactors", n_samples=n_samples)
-            if gbm and rm:
-                tl.append(("TMM factors", f"max |Δ| {_fdiff(rm.get('max_abs_diff'))}",
-                           f"against edgeR at {n_genes:,} genes × {n_samples} samples", "navy"))
+            name = (rename or {}).get(r["engine"], r["engine"])
+            if step is None and part == "to_genes":
+                name = f"{r['step']} · {name}"
+            k = key(r)
+            xv = k[1] * k[2] if x == "tx" else k[0] * k[2]
+            for s in out:
+                if s[0] == name:
+                    s[1].append((xv, r["seconds"]))
+                    break
+            else:
+                out.append([name, [(xv, r["seconds"])], is_gb(r["engine"])])
+        return [tuple(s) for s in out if len(s[1]) > 1]
+
+    # read quant.sf: three engines, three sizes
+    ser = series_for("read", "read quant.sf files")
+    if ser:
+        md.append(figure(linechart(ser, kind="green", xlab="transcripts × samples", ylab="s",
+                                   label="expression: read quant.sf files", yfmt=ftime, ytick=ftick),
+                         "<strong>Reading the quant.sf files</strong> — both table backends and tximport's readr "
+                         "path, which give the same numbers. x: transcript rows × samples in the run."))
+    # transcripts -> genes: the default mode and the end-to-end call, genomeblocks vs R
+    rn = {"genomeblocks": "genomeblocks", "R tximport::summarizeToGene": "R summarizeToGene", "R tximport": "R tximport"}
+    ser = [s for s in series_for("to_genes", x="tx", rename=rn)
+           if s[0].startswith("to_genes (length_scaled_tpm)") or s[0].startswith("read + align + to_genes")]
+    ser = [(n.replace("to_genes (length_scaled_tpm)", "to_genes").replace("read + align + to_genes (length_scaled_tpm)",
+                                                                           "end to end"), p, g)
+           for n, p, g in ser]
+    if ser:
+        md.append(figure(linechart(ser, kind="navy", xlab="transcripts × samples", ylab="s",
+                                   label="expression: transcripts to genes", yfmt=ftime, ytick=ftick),
+                         "<strong>Transcripts → genes</strong> (<code>length_scaled_tpm</code>, the default): the "
+                         "summarising step alone against <code>summarizeToGene</code>, and end to end — files to a "
+                         "gene table — against <code>tximport()</code>."))
+    # normalisation: one table, steps x sizes, genomeblocks / R
+    norm_steps = []
+    for r in rows:
+        if r["part"] == "normalise" and r["step"] not in norm_steps:
+            norm_steps.append(r["step"])
+    if norm_steps:
+        md.append("| normalise | " + " | ".join(col(k) for k in sizes) + " |")
+        md.append("|---|" + "---|" * len(sizes))
+        for st in norm_steps:
+            cells = []
+            for k in sizes:
+                g = next((r for r in rows if r["part"] == "normalise" and r["step"] == st and key(r) == k
+                          and is_gb(r["engine"])), None)
+                R = next((r for r in rows if r["part"] == "normalise" and r["step"] == st and key(r) == k
+                          and r["engine"].startswith("R ")), None)
+                cells.append((f"**{ftime(g['seconds'])}**" if g else "—") + " / " + (ftime(R["seconds"]) if R else "—"))
+            rname = next((r["engine"][2:] for r in rows if r["part"] == "normalise" and r["step"] == st
+                          and r["engine"].startswith("R ")), "R")
+            md.append(f"| `{st}` vs {escape(rname)} | " + " | ".join(cells) + " |")
+        md.append("\n**Normalisation**: genomeblocks (bold) / R, wall time per call on the summed gene counts; "
+                  "columns are genes × samples. `log_cpm` takes TMM factors computed once, as R's `cpm()` takes them "
+                  "from the DGEList.\n")
+    # featureCounts read: four engines
+    ser = series_for("featurecounts", "read featureCounts matrix", x="genes")
+    if ser:
+        md.append(figure(linechart(ser, kind="green", xlab="genes × samples", ylab="s",
+                                   label="expression: read a featureCounts matrix", yfmt=ftime, ytick=ftick),
+                         "<strong>Reading a featureCounts matrix</strong> — both table backends against R's "
+                         "<code>read.delim</code> and <code>data.table::fread</code>."))
+    # exactness: steps x sizes
+    ex_steps = []
+    order = {"read": 0, "to_genes": 1, "normalise": 2}
+    for r in sorted(rows, key=lambda r: order.get(r["part"], 9)):
+        if r["engine"].startswith("R ") and (r.get("max_abs_diff") is not None or "disagreements" in r):
+            kk = (r["step"], r["engine"])
+            if kk not in ex_steps:
+                ex_steps.append(kk)
+    if ex_steps:
+        md.append("| genomeblocks vs R, max \\|Δ\\| | " + " | ".join(col(k) for k in sizes) + " |")
+        md.append("|---|" + "---|" * len(sizes))
+        for st, eng in ex_steps:
+            cells = []
+            for k in sizes:
+                r = next((r for r in rows if r["step"] == st and r["engine"] == eng and key(r) == k), None)
+                if r is None:
+                    cells.append("—")
+                elif "disagreements" in r and r.get("max_abs_diff") is None:
+                    cells.append("identical" if r["disagreements"] == 0 else f"{r['disagreements']} differ")
+                else:
+                    cells.append(_fdiff(r.get("max_abs_diff")))
+            md.append(f"| `{st}` vs {escape(eng[2:])} | " + " | ".join(cells) + " |")
+        md.append("\n**Exactness**: the largest absolute difference between the genomeblocks and R matrices "
+                  "(counts are of order 10³, factors of order 1; `identical` = every entry equal).\n")
+    n_genes, n_tx, n_samples = big
+    gbt = pick(d, part="to_genes", step="to_genes (length_scaled_tpm)", engine="genomeblocks", n_samples=n_samples)
+    rt = pick(d, part="to_genes", step="to_genes (length_scaled_tpm)", engine="R tximport::summarizeToGene",
+              n_samples=n_samples)
+    if gbt and rt:
+        tl.append(("to_genes vs tximport", f"max |Δ| {_fdiff(rt.get('max_abs_diff'))}",
+                   f"same gene counts as summarizeToGene at {n_tx:,} transcripts × {n_samples} samples; "
+                   f"{ftime(gbt['seconds'])} against {ftime(rt['seconds'])} in R", "navy"))
+    gbr = pick(d, part="read", engine="genomeblocks (polars)", n_samples=n_samples)
+    rr = pick(d, part="read", engine="R tximport (txOut)", n_samples=n_samples)
+    if gbr and rr:
+        tl.append(("Reading quant.sf", fx(rr["seconds"] / gbr["seconds"]),
+                   f"faster than tximport's readr path for {n_samples} files, same numbers", "green"))
+    gbm = pick(d, part="normalise", step="tmm", engine="genomeblocks", n_samples=n_samples)
+    rm = pick(d, part="normalise", step="tmm", engine="R edgeR calcNormFactors", n_samples=n_samples)
+    if gbm and rm:
+        tl.append(("TMM factors", f"max |Δ| {_fdiff(rm.get('max_abs_diff'))}",
+                   f"against edgeR at {n_genes:,} genes × {n_samples} samples", "navy"))
     skipped_ = [r for r in d["rows"] if r.get("step") == "skipped"]
     if skipped_:
         md.append("Skipped (no R with the package on the benchmark machine): "

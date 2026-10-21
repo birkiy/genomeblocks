@@ -384,5 +384,8 @@ if __name__ == "__main__":
         elif not r_edger:
             rec.add(part="normalise", step="skipped", engine="R edgeR", reason="no Rscript with edgeR", **size)
 
+    prev = (EXPR.parent.parent / "results" / "expression.json")
+    if prev.exists():                                   # a partial re-run keeps the versions the other parts recorded
+        r_versions = {**json.loads(prev.read_text()).get("meta", {}).get("r_versions", {}), **r_versions}
     rec.save(sizes=[{"n_genes": a, "n_samples": b} for a, b in SIZES], r_versions=r_versions,
              rscript={"tximport": r_tx, "edgeR": r_edger})
