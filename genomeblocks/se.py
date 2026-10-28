@@ -1,7 +1,11 @@
 """Super-enhancers, ROSE-style, on columnar tables.
 
-    peaks ─▶ stitch (peaks within ``stitch`` bp become one region) ─▶ score = mean signal x width
+    peaks ─▶ stitch (peaks within ``stitch`` bp become one region) ─▶ score = summed signal
           ─▶ slope-1 knee on the ranked scores ─▶ SEs
+
+The score is the region's total signal (``Loci.signal(agg='sum')``), what ROSE
+ranks by. A bigWig mean averages only the bases that carry data, so mean x width
+would inflate regions with gaps in their coverage.
 
 ``knee`` is the same slope-1 rule as ``Architecture.elbow`` (prime hubs), so
 SEs and hubs are cut the same way.
@@ -60,13 +64,14 @@ def stitch_peaks(peaks, stitch: int = 12_500, *, backend: Optional[str] = None) 
 
 def call_se(peaks, bigwigs, *, stitch: int = 12_500, workers: int = 1, verbose: bool = False,
             return_all: bool = False, backend: Optional[str] = None, **signal_kw):
-    """ROSE with genomeblocks: stitch peaks, score mean signal (averaged over
-    ``bigwigs``) x width, keep the stitched regions above the slope-1 knee.
+    """ROSE with genomeblocks: stitch peaks, score each region by its summed
+    signal (averaged over ``bigwigs``), keep the stitched regions above the
+    slope-1 knee.
 
     ``peaks``: anything :func:`~genomeblocks.as_loci` takes. ``bigwigs``: one
     or several bigWig paths / open handles / a ``{name: path}`` dict (what
     :meth:`Loci.signal` takes; extra keywords such as ``backend=`` for the
-    bigWig engine go to it).
+    bigWig engine go to it; ``agg`` is fixed to ``'sum'``).
 
     Returns the SEs in genome order with columns ``n_peaks``, ``score`` and
     ``rank`` (1 = strongest). ``return_all=True`` also returns every stitched
@@ -80,9 +85,9 @@ def call_se(peaks, bigwigs, *, stitch: int = 12_500, workers: int = 1, verbose: 
         return (se, st) if return_all else se
     signal_kw.setdefault("progress", False)
     signal_kw.setdefault("verbose", False)
-    cube = st.signal(bigwigs, span=True, n_bins=1, workers=workers, backend=backend, **signal_kw)
-    sig = np.nan_to_num(cube[:, :, 0]).mean(1)
-    score = sig * st.lengths
+    signal_kw.setdefault("dtype", np.float64)
+    cube = st.signal(bigwigs, span=True, n_bins=1, agg="sum", workers=workers, backend=backend, **signal_kw)
+    score = np.nan_to_num(cube[:, :, 0]).mean(1)
     cut, order = knee(score)
     keep = order[:cut]
     rank = np.zeros(len(st), np.int64)

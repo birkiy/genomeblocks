@@ -1062,7 +1062,7 @@ def columnar_edges():
 def columnar_se():
     d = Diagram("columnar-se", 880, 200,
                 "HiChIP short-range read ends behave like ChIP reads: they give a coverage track and MACS3 "
-                "peaks, and stitched peaks scored by signal × width are cut at the same slope-1 knee as hubs.")
+                "peaks, and stitched peaks scored by summed signal are cut at the same slope-1 knee as hubs.")
     nodes = [(20, 76, 120, "allValidPairs", "HiC-Pro pairs"),
              (170, 76, 140, "shortrange_ends", "cis, |Δpos| ≤ 1 kb"),
              (360, 20, 150, "write_bed → macs3", "narrowPeak"),
