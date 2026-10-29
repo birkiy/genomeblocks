@@ -257,8 +257,8 @@ atlas.describe()
 {: .sec-navy }
 
 Super-enhancers, ROSE-style, on columnar tables: stitch peaks within
-`stitch` bp into regions, score each region as mean signal x width, and cut
-the ranked scores at the slope-1 knee.
+`stitch` bp into regions, score each region by its summed signal (the total
+ROSE ranks by), and cut the ranked scores at the slope-1 knee.
 
 ```python
 from genomeblocks import se
@@ -302,8 +302,11 @@ se.stitch_peaks(peaks.to_pandas()).to_records()        # the ROSE default, 12.5 
 
 `bigwigs` is one or several bigWig paths / open handles / a `{name: path}`
 dict — what [`Loci.signal`]({{ '/api/signal/' | relative_url }}) takes;
-the score averages the tracks. Extra keywords (e.g. `exact=False`) go to
-`signal`; `backend` picks the bigWig engine. Regions with a zero score get
+the score is each track's summed signal over the region (`agg='sum'`),
+averaged over the tracks. A bigWig mean counts only bases with data, so
+mean × width would inflate regions with gaps; the sum does not. Extra
+keywords (e.g. `exact=False`) go to `signal`; `agg` is fixed; `backend`
+picks the bigWig engine. Regions with a zero score get
 rank 0. Also `Loci.call_se(bigwigs, **kw)`.
 
 ```python
@@ -311,10 +314,10 @@ ses, every = se.call_se(peaks, "signal.bw", stitch=1000, return_all=True, verbos
 # -> [INFO] 6 peaks → 4 stitched regions → 2 SEs (median 1,500 bp)
 every.to_pandas()
 # ->   chrom  start    end strand  n_peaks         score  rank
-#    0  chr1   1000   3000      .        3  11472.912788     1
-#    1  chr1  10000  11000      .        1   5850.211143     2
-#    2  chr1  15000  15500      .        1   1742.084980     3
-#    3  chr2    100    200      .        1      0.000000     0
+#    0  chr1   1000   3000      .        3  5736.456251     1
+#    1  chr1  10000  11000      .        1  2925.105512     2
+#    2  chr1  15000  15500      .        1   871.042508     3
+#    3  chr2    100    200      .        1     0.000000     0
 ses
 # -> Loci(n=2, chroms=1, cols=[n_peaks, score, rank])
 peaks.call_se(["signal.bw", "signal2.bw"], stitch=1000, backend="python")

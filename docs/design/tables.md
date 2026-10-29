@@ -249,7 +249,7 @@ none, it gets its own.
 <figure class="gb-fig"><div class="gb-fig-body">
 {% include diagrams/columnar-se.svg %}
 </div><figcaption>
-<strong>A ChIP track from HiChIP pairs.</strong> Pairs closer than about 1 kb are mostly undigested ChIP fragments, so their 5′ ends behave like ChIP-seq reads. <code>hichip</code> turns them into a BED for MACS3 and a 147-bp-fragment coverage bigWig. <code>se.call_se</code> stitches peaks, scores each stitched region by mean signal × width, and cuts at the same slope-1 knee as prime hubs.
+<strong>A ChIP track from HiChIP pairs.</strong> Pairs closer than about 1 kb are mostly undigested ChIP fragments, so their 5′ ends behave like ChIP-seq reads. <code>hichip</code> turns them into a BED for MACS3 and a 147-bp-fragment coverage bigWig. <code>se.call_se</code> stitches peaks, scores each stitched region by its summed signal, and cuts at the same slope-1 knee as prime hubs.
 </figcaption></figure>
 
 Both modules work on the columns. `hichip.shortrange_ends` reads a HiC-Pro
@@ -272,8 +272,8 @@ usual `awk | sort | bedtools genomecov` recipe.
 `se.stitch_peaks` is `slop(stitch / 2).merge()` on the interval backend plus
 one `overlap_pairs` to find each cluster's first start and last end, so it
 returns ROSE's stitched regions with an `n_peaks` column; `se.call_se` scores
-them from one `Loci.signal` call (`span=True, n_bins=1`) and cuts at the
-knee:
+them from one `Loci.signal` call (`span=True, n_bins=1, agg='sum'`) and cuts
+at the knee:
 
 ```python
 st = se.stitch_peaks(cre, stitch=1000)

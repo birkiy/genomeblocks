@@ -47,6 +47,8 @@ def test_call_se(bw_path):
     assert every.cols["rank"][pos].min() == 1 and (every.cols["rank"][~pos] == 0).all()    # zero scores are unranked
     assert every.cols["score"][every.cols["rank"] == 1][0] == every.cols["score"].max()
     assert 0 < len(ses) <= len(every) and ses.is_sorted
+    total = every.signal(bw_path, span=True, n_bins=1, agg="sum", dtype=np.float64, progress=False, verbose=False)[:, 0, 0]
+    assert np.allclose(every.cols["score"], np.nan_to_num(total))                         # score = summed signal, no width factor
     assert list(peaks.call_se([bw_path], stitch=1000, backend="python").cols) == ["n_peaks", "score", "rank"]
     cut, order = se.knee([10, 9, 8, 1, 0.5, 0.2, 0])
     assert cut <= 6 and len(order) == 6

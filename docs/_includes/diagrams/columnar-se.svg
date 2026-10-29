@@ -1,4 +1,4 @@
-<svg class="gbd" viewBox="0 0 880 200" role="img" aria-label="HiChIP short-range read ends behave like ChIP reads: they give a coverage track and MACS3 peaks, and stitched peaks scored by signal × width are cut at the same slope-1 knee as hubs." xmlns="http://www.w3.org/2000/svg">
+<svg class="gbd" viewBox="0 0 880 200" role="img" aria-label="HiChIP short-range read ends behave like ChIP reads: they give a coverage track and MACS3 peaks, and stitched peaks scored by summed signal are cut at the same slope-1 knee as hubs." xmlns="http://www.w3.org/2000/svg">
 <rect class="bx" x="20" y="76" width="120" height="48" rx="8"></rect>
 <text class="tm" x="80" y="97" text-anchor="middle">allValidPairs</text>
 <text class="s" x="80" y="113" text-anchor="middle">HiC-Pro pairs</text>
