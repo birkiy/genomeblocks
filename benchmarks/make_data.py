@@ -21,6 +21,7 @@ Outputs (in ``$GB_BENCH_DATA`` or ``benchmarks/data``):
   hic_trans_5kb.cool        hic.pairs + ~40 read pairs at each inter-chromosomal loop
   hichip.allValidPairs      HiC-Pro style H3K27ac HiChIP pairs: 3M short-range pairs over
                             H3K27ac-like CREs (with SE-like clusters) + 1M Hi-C background
+  hichip_5kb.cool           hichip.allValidPairs + contacts at the loops.bedpe loops, 5 kb (bench_loops)
   genome.fa                 chr21 + chr22, random sequence at 41% GC
   jaspar.txt                JASPAR CORE vertebrates (jaspar16 format)
 
@@ -452,6 +453,32 @@ def hichip_avp(n_short=3_000_000, n_bg=1_000_000):
     print(f"            hichip.allValidPairs: {len(out):,} pairs", flush=True)
 
 
+def hichip_cool():
+    """hichip.allValidPairs + Poisson(score) contacts at each loop of loops.bedpe (ends ~ anchor centre +-
+    N(0, 1.5 kb)), binned at 5 kb: the cooler bench_loops calls loops on (anchors: peaks_A_100000.bed)."""
+    import subprocess
+    rng = np.random.default_rng(10)
+    lp = pd.read_csv(DATA / "loops.bedpe", sep="\t", header=None, usecols=[0, 1, 2, 3, 4, 5, 7])
+    k = rng.poisson(lp[7].to_numpy())
+    i = np.repeat(np.arange(len(lp)), k)
+    x = ((lp[1].to_numpy() + lp[2].to_numpy()) // 2)[i] + rng.normal(0, 1500, len(i)).astype(np.int64)
+    y = ((lp[4].to_numpy() + lp[5].to_numpy()) // 2)[i] + rng.normal(0, 1500, len(i)).astype(np.int64)
+    extra = pd.DataFrame({"id": [f"l{n}" for n in range(len(i))], "c1": lp[0].to_numpy()[i], "p1": np.maximum(x, 1),
+                          "s1": "+", "c2": lp[3].to_numpy()[i], "p2": np.maximum(y, 1), "s2": "-"})
+    avp = pd.read_csv(DATA / "hichip.allValidPairs", sep="\t", header=None, usecols=range(7),
+                      names=["id", "c1", "p1", "s1", "c2", "p2", "s2"])
+    pairs = pd.concat([avp, extra], ignore_index=True)
+    cs = read_chromsizes()                                     # short-range pairs near a chromosome end overhang it
+    pairs["p1"] = np.minimum(pairs.p1, pairs.c1.map(cs))
+    pairs["p2"] = np.minimum(pairs.p2, pairs.c2.map(cs))
+    out = DATA / "hichip_loops.pairs"
+    pairs.to_csv(out, sep="\t", header=False, index=False)
+    subprocess.run([tool("cooler"), "cload", "pairs", "-c1", "2", "-p1", "3", "-c2", "5", "-p2", "6",
+                    f"{DATA / 'hg38.chrom.sizes'}:5000", str(out), str(DATA / "hichip_5kb.cool")], check=True)
+    out.unlink()
+    print(f"            hichip_5kb.cool: {len(avp):,} HiChIP pairs + {len(i):,} at loops", flush=True)
+
+
 # ── genome FASTA + motifs ────────────────────────────────────────────────────
 
 def genome():
@@ -483,7 +510,7 @@ def motifs():
 STEPS = {"chromsizes": chromsizes, "peaks": peaks, "bw": bigwigs,
          "atlas": atlas, "gtf": gtf, "pairs": pairs, "loops": loops,
          "loops_trans": loops_trans, "loops_scale": loops_scale, "hic_trans": hic_trans,
-         "hichip_avp": hichip_avp,
+         "hichip_avp": hichip_avp, "hichip_cool": hichip_cool,
          "genome": genome, "motifs": motifs}
 
 if __name__ == "__main__":

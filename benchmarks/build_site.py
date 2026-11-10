@@ -696,6 +696,65 @@ def sec_shortrange(md, tl):
                   + "</tbody></table></details>\n")
 
 
+def _agrees(r):
+    """'identical' when gb and FitHiChIP have the same loops and merged loops (and tested pairs, when known)."""
+    same = (r.get("loops_ref") == r.get("loops_gb") == r.get("loops_shared")
+            and r.get("merged_ref") == r.get("merged_gb") == r.get("merged_shared"))
+    if "tested_ref" in r:
+        same = same and r["tested_ref"] == r["tested_gb"] == r["tested_shared"] and r.get("counts_equal", False)
+    return same
+
+
+def _igv_text(r):
+    """How FitHiChIP's two IGV files compare with genomeblocks'."""
+    if r["igv_identical"] and r["merged_igv_identical"]:
+        return "byte-identical"
+    n = r.get("igv_lines_differing", 0) + r.get("merged_igv_lines_differing", 0)
+    tot = r.get("igv_lines", 0) + r.get("merged_igv_lines", 0)
+    return (f"identical but for {n:,} of {tot:,} lines (last digit of −log10 q)" if tot else "differ")
+
+
+def sec_loops(md, tl):
+    d = load("loops")
+    if not d:
+        return
+    md.append('## HiChIP loops (FitHiChIP)\n{: .sec-purple #loops }\n')
+    md.append("`genomeblocks.fithichip` fits FitHiChIP's peak-to-all model (equal-occupancy distance spline, "
+              "coverage-bias regression, binomial test, BH, merging of adjacent loops) on the pixels of a cooler, "
+              "and is compared with FitHiChIP 11.0 run on the same cooler and peaks.\n")
+    gb = pick(d, part="synthetic", impl="genomeblocks")
+    fh = pick(d, part="synthetic", impl="FitHiChIP")
+    ag = pick(d, part="synthetic", impl="agreement")
+    if gb and fh and ag:
+        md.append(f"On the synthetic HiChIP cooler: **{ftime(gb['seconds'])}** and {gb['peak_mb'] / 1e3:.1f} GB "
+                  f"against {ftime(fh['seconds'])} for FitHiChIP; {ag['tested_gb']:,} tested pairs, "
+                  f"{ag['loops_gb']:,} loops and {ag['merged_gb']:,} merged loops, "
+                  f"{'the same as' if _agrees(ag) else 'differing from'} FitHiChIP's; IGV files {_igv_text(ag)}"
+                  + (f"; P and q within {max(ag['max_rel_P'], ag['max_rel_Q']):.0e} (relative)" if "max_rel_P" in ag
+                     else "") + ".\n")
+        tl.append(("HiChIP loops vs FitHiChIP", fx(fh["seconds"] / gb["seconds"]),
+                   f"synthetic cooler: {ftime(gb['seconds'])} vs {ftime(fh['seconds'])}"
+                   + (", same loops" if _agrees(ag) else ""), "purple"))
+    elif gb:
+        md.append(f"On the synthetic HiChIP cooler: **{ftime(gb['seconds'])}** (FitHiChIP not run).\n")
+    real = rows_where(d, part="real")
+    if real:
+        md.append('<details class="gb-table" open><summary>HiChIP samples</summary><table><thead><tr>'
+                  "<th>sample</th><th>tested pairs</th><th>loops</th><th>merged</th><th>FitHiChIP</th>"
+                  "<th>genomeblocks</th><th>speed-up</th><th>same result</th><th>IGV files</th><th>FitHiChIP run</th>"
+                  "</tr></thead><tbody>"
+                  + "".join(f"<tr><td>{escape(r['sample'])}</td><td>{r['tested_gb']:,}</td><td>{r['loops_gb']:,}</td>"
+                            f"<td>{r['merged_gb']:,}</td><td>{ftime(r['fithichip_seconds'])}</td>"
+                            f"<td>{ftime(r['seconds'])}</td><td>{fx(r['fithichip_seconds'] / r['seconds'])}</td>"
+                            f"<td>{'yes' if _agrees(r) else 'no'}"
+                            + (f" (P, q within {max(r['max_rel_P'], r['max_rel_Q']):.0e})" if "max_rel_P" in r else "")
+                            + f"</td><td>{_igv_text(r)}</td><td>{escape(r.get('note', ''))}</td></tr>" for r in real)
+                  + "</tbody></table></details>\n")
+        md.append("FitHiChIP times are the wall times of the original runs (nf-core / Nextflow traces, one core); "
+                  "the loop sets are compared with those runs' output files. Where FitHiChIP kept its table of "
+                  "tested pairs, P and q are compared pair by pair.\n")
+
+
 def sec_import(md, tl):
     d = load("import")
     if not d:
@@ -717,7 +776,7 @@ def sec_import(md, tl):
 def build():
     md, tl = [], []
     secs = [sec_backends, sec_loci, sec_signal, sec_atlas, sec_motifs, sec_pairs, sec_genes, sec_architecture,
-            sec_expression, sec_shortrange, sec_import]
+            sec_expression, sec_shortrange, sec_loops, sec_import]
     for s in secs:
         s(md, tl)
     env = next((load(n)["env"] for n in ("backends", "loci", "signal", "motifs") if load(n)), {})

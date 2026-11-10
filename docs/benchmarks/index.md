@@ -33,6 +33,7 @@ most 8 worker processes</p>
 <div class="gb-tile navy"><span class="tile-label">to_genes vs tximport</span><span class="tile-value">max |Δ| 1.2e-9</span><span class="tile-ctx">same gene counts as summarizeToGene at 210,070 transcripts × 96 samples; 1.1 s against 2.8 s in R</span></div>
 <div class="gb-tile green"><span class="tile-label">Reading quant.sf</span><span class="tile-value">2.0×</span><span class="tile-ctx">faster than tximport's readr path for 96 files, same numbers</span></div>
 <div class="gb-tile navy"><span class="tile-label">TMM factors</span><span class="tile-value">max |Δ| 4.4e-16</span><span class="tile-ctx">against edgeR at 60,000 genes × 96 samples</span></div>
+<div class="gb-tile purple"><span class="tile-label">HiChIP loops vs FitHiChIP</span><span class="tile-value">131×</span><span class="tile-ctx">synthetic cooler: 2.5 s vs 5.4 min, same loops</span></div>
 </div>
 
 1. TOC
@@ -1570,6 +1571,17 @@ salmon-style `quant.sf` files over GENCODE-shaped GTFs at three sizes (20,000 ge
 From allValidPairs to a coverage bigWig: **17 s** and 1.0 GB peak memory with `genomeblocks.hichip`, against 2.3 min and 1.9 GB for the `awk | sort | bedtools` recipe, with the same ends and a byte-identical bedGraph.
 
 <details class="gb-table"><summary>Steps</summary><table><thead><tr><th>implementation</th><th>step</th><th>time</th><th>peak memory</th></tr></thead><tbody><tr><td>shell</td><td>extract ends (awk)</td><td>6.1 s</td><td>20 MB</td></tr><tr><td>shell</td><td>fragments + sort + genomecov</td><td>2.0 min</td><td>1,903 MB</td></tr><tr><td>shell</td><td>bedGraph -&gt; bigWig</td><td>8.9 s</td><td>–</td></tr><tr><td>genomeblocks</td><td>ends</td><td>4.5 s</td><td>–</td></tr><tr><td>genomeblocks</td><td>write BED</td><td>897 ms</td><td>–</td></tr><tr><td>genomeblocks</td><td>coverage (bedGraph)</td><td>3.6 s</td><td>–</td></tr><tr><td>genomeblocks</td><td>bigWig</td><td>7.8 s</td><td>–</td></tr></tbody></table></details>
+
+## HiChIP loops (FitHiChIP)
+{: .sec-purple #loops }
+
+`genomeblocks.fithichip` fits FitHiChIP's peak-to-all model (equal-occupancy distance spline, coverage-bias regression, binomial test, BH, merging of adjacent loops) on the pixels of a cooler, and is compared with FitHiChIP 11.0 run on the same cooler and peaks.
+
+On the synthetic HiChIP cooler: **2.5 s** and 0.3 GB against 5.4 min for FitHiChIP; 277,102 tested pairs, 52,797 loops and 39,813 merged loops, the same as FitHiChIP's; IGV files identical but for 28 of 92,610 lines (last digit of −log10 q); P and q within 2e-06 (relative).
+
+<details class="gb-table" open><summary>HiChIP samples</summary><table><thead><tr><th>sample</th><th>tested pairs</th><th>loops</th><th>merged</th><th>FitHiChIP</th><th>genomeblocks</th><th>speed-up</th><th>same result</th><th>IGV files</th><th>FitHiChIP run</th></tr></thead><tbody><tr><td>K5K19 (4 M read pairs)</td><td>466,408</td><td>7,401</td><td>5,636</td><td>22.1 min</td><td>2.9 s</td><td>464×</td><td>yes (P, q within 8e-08)</td><td>byte-identical</td><td>IntType 3</td></tr><tr><td>CM</td><td>9,593,124</td><td>222,482</td><td>115,768</td><td>273.5 min</td><td>20 s</td><td>819×</td><td>yes</td><td>identical but for 28 of 338,250 lines (last digit of −log10 q)</td><td>IntType 5 (all four interaction types)</td></tr><tr><td>mESC</td><td>52,256,865</td><td>482,351</td><td>244,760</td><td>885.4 min</td><td>89 s</td><td>598×</td><td>yes</td><td>identical but for 1 of 727,111 lines (last digit of −log10 q)</td><td>IntType 5 (all four interaction types)</td></tr><tr><td>GM12878</td><td>36,178,586</td><td>1,115,590</td><td>398,112</td><td>1005.0 min</td><td>65 s</td><td>933×</td><td>yes</td><td>identical but for 5 of 1,513,702 lines (last digit of −log10 q)</td><td>IntType 5 (all four interaction types)</td></tr><tr><td>K562</td><td>33,197,566</td><td>1,222,113</td><td>439,048</td><td>1159.6 min</td><td>61 s</td><td>1,138×</td><td>yes</td><td>identical but for 11 of 1,661,161 lines (last digit of −log10 q)</td><td>IntType 5 (all four interaction types)</td></tr></tbody></table></details>
+
+FitHiChIP times are the wall times of the original runs (nf-core / Nextflow traces, one core); the loop sets are compared with those runs' output files. Where FitHiChIP kept its table of tested pairs, P and q are compared pair by pair.
 
 ## Import cost
 {: .sec-navy #import }
