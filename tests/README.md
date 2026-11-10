@@ -32,6 +32,7 @@ beyond `pip install genomeblocks`.
 | `test_motifs.py` | motif formats, `Library` as a table, every scanning engine finds the planted sites, masked / profile scans, statistics, FASTA backends agree |
 | `test_atlas.py` | `Atlas.make` inputs, columnar bin ranges, search / bootstrap on any interval input, metadata, save / load, table protocols |
 | `test_browser.py` | `browser()` with every track kind (incl. BAM), `igv_html`, `View` payload (0-based genes, TSS) |
+| `test_loops.py` | R `smooth.spline(cv = TRUE)` and `p.adjust` parity, possible-pair counting vs brute force, the merging rule, planted loops found, FitHiChIP's tested-pair definition, its IGV format |
 | `test_bam.py` | BAM pileups, `se.stitch_peaks` / `call_se`, HiChIP short-range tracks |
 | `test_columnar.py` | the table contract on every container; seaborn / plotly / altair take a Loci; no hidden global state; backend differences do not leak |
 | `test_functional.py` | end to end: peaks → genes → architecture → signal → motifs → enrichment → views |

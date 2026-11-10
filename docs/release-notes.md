@@ -18,6 +18,7 @@ permalink: /release-notes/
 
 ## Unreleased
 
+- `gb.fithichip` (new module `genomeblocks.loops`): HiChIP loops with FitHiChIP 11.0's peak-to-all model (coverage-bias regression, binomial test, BH, merging of adjacent loops), straight from a cooler. On a synthetic cooler and five HiChIP samples it returns FitHiChIP's tested pairs, loops and merged loops (P and q within 1e-7–1e-5 relative) in 3 s – 1.5 min, where FitHiChIP took 5 min – 19 h. R's `smooth.spline(cv = TRUE)` is ported to numpy for it (`genomeblocks._smoothspline`). `bedpe.open_cooler` opens a .cool / .mcool with the resolution checks `Architecture.add_mcool` had. `benchmarks/bench_loops.py` compares it with FitHiChIP.
 - `se.call_se` scores each stitched region by its summed signal (`Loci.signal(agg='sum')`, the total ROSE ranks by) instead of mean signal × width. A bigWig mean averages only the bases with data, so mean × width inflated regions with gaps in coverage (nf-core bigWigs carry no zero intervals). SE calls change at the margin of the knee; `agg` can no longer be passed through.
 
 ---
