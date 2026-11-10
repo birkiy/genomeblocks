@@ -29,7 +29,11 @@ and `bedtools` are conda-only). `GB_BENCH_SIZES=1000,10000` limits the
 interval sizes for a quick run. `bench_expression.py` runs R through
 `GB_RSCRIPT=/path/Rscript:/other/Rscript` (the first Rscript with the step's
 packages is used; steps without one are skipped and listed) and
-`GB_BENCH_EXPR=20000x6,60000x24` picks its sizes.
+`GB_BENCH_EXPR=20000x6,60000x24` picks its sizes. `bench_loops.py` runs
+FitHiChIP when `FITHICHIP_HOME` names its directory (`FITHICHIP_EXEC`, e.g.
+`singularity exec fithichip.sif`, prefixes the call; without it genomeblocks is
+timed alone) and compares real samples with existing FitHiChIP runs listed in
+`GB_BENCH_LOOPS_REAL=samples.tsv`.
 
 ## Files
 
@@ -45,6 +49,7 @@ packages is used; steps without one are skipped and listed) and
 | `bench_genes.py` | GTF parsing, annotation index, labelling, nearest gene, isoform choice |
 | `bench_architecture.py` | the Architecture pipeline step by step, graph backends, save / load |
 | `bench_shortrange.py` | HiChIP short-range track vs the awk / sort / bedtools recipe |
+| `bench_loops.py` | HiChIP loop calling: `fithichip` vs FitHiChIP 11.0 on the same cooler and peaks — tested pairs, loops, merged loops, P / q values and FitHiChIP's IGV files compared, wall time and memory; synthetic cooler, plus real samples on request |
 | `bench_import.py` | import cost of each entry point |
 | `bench_expression.py` | reading salmon / featureCounts tables with both table backends, tximport-style summarising and TMM / size factors / CPM / filterByExpr against R's tximport, edgeR and DESeq2 — exactness (max \|Δ\|) and time; generates its own GTF-scale data |
 | `build_site.py` | writes `docs/benchmarks/index.md` |

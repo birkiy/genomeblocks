@@ -43,6 +43,7 @@ _EXPORTS: Dict[str, tuple] = {
     "compare_heatmap": (".signal_draw", "compare_heatmap"),
     "plot_motif_heatmap": (".motifs_draw", "plot_motif_heatmap"),
     "coverage": (".bam", "coverage"),
+    "fithichip": (".loops", "fithichip"),
     # viewers
     "browser": (".browserview", "browser"),
     "View": (".view", "View"),
