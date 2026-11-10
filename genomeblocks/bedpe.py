@@ -258,6 +258,30 @@ def as_pairs(x, *, genome: Optional[Genome] = None) -> Pairs:
     return Pairs.from_frame(x, genome=genome)
 
 
+# ── coolers ────────────────────────────────────────────────────────────────
+
+def open_cooler(path: str, resolution: Optional[int] = None, *, caller: str = "this function"):
+    """A fixed-bin ``cooler.Cooler``: ``path`` is a .cool, a cooler URI, or an .mcool with ``resolution``.
+    The two usual mistakes (an .mcool without ``resolution``, a .cool with one) raise a ValueError that says
+    which resolutions the file holds."""
+    import cooler
+    uri = f"{path}::resolutions/{resolution}" if resolution else path
+    try:
+        clr = cooler.Cooler(uri)
+    except (KeyError, OSError) as e:
+        try:
+            groups = cooler.fileops.list_coolers(str(path))
+        except Exception:                              # noqa: BLE001 — not a cooler file at all
+            raise ValueError(f"{path}: not a .cool / .mcool file ({e})") from None
+        res = [g.rsplit("/", 1)[-1] for g in groups if g.startswith("/resolutions/")]
+        if res:
+            raise ValueError(f"{path} is multi-resolution: pass resolution= one of {', '.join(res)}") from None
+        raise ValueError(f"{path} is a single-resolution cooler: call {caller} without resolution=") from None
+    if clr.binsize is None:
+        raise NotImplementedError("variable-size bins")
+    return clr
+
+
 # ── pairs files: contacts per window ───────────────────────────────────────
 
 # (chrom1_col, pos1_col, chrom2_col, pos2_col) — 0-based columns

@@ -454,21 +454,8 @@ class Architecture(TableMixin):
         block at a time (rows of the lower bin), so memory stays bounded and
         trans pixels are found in the same pass.
         """
-        import cooler
-        uri = f"{mcool}::resolutions/{resolution}" if resolution else mcool
-        try:
-            clr = cooler.Cooler(uri)
-        except (KeyError, OSError) as e:
-            try:
-                groups = cooler.fileops.list_coolers(str(mcool))
-            except Exception:                              # noqa: BLE001 — not a cooler file at all
-                raise ValueError(f"{mcool}: not a .cool / .mcool file ({e})") from None
-            res = [g.rsplit("/", 1)[-1] for g in groups if g.startswith("/resolutions/")]
-            if res:
-                raise ValueError(f"{mcool} is multi-resolution: pass resolution= one of {', '.join(res)}") from None
-            raise ValueError(f"{mcool} is a single-resolution cooler: call add_mcool without resolution=") from None
-        if clr.binsize is None:
-            raise NotImplementedError("variable-size bins")
+        from .bedpe import open_cooler
+        clr = open_cooler(mcool, resolution, caller="add_mcool")
         L = self.loci
         nb = int(clr.info["nbins"])
         names = L.genome.names
