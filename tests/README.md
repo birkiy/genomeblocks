@@ -26,7 +26,7 @@ beyond `pip install genomeblocks`.
 | `test_interop.py` | `as_loci` on every input, lenient column names, CSV / TSV readers, file order, nulls, cube converters, liftover |
 | `test_genes.py` | 0-based GTF / GFF3 / genePred tables, both parsers agree, Ensembl spellings, duplicate gene ids, UCSC layouts, `from_frame`, annotation on every backend, `select_isoforms`, `to_gtf` / `to_bed12` / save / load, table protocols |
 | `test_bedpe.py` | `Pairs` (headers, frames, filters, overlaps, protocols), pairs-file format detection, `count_pairs` vs brute force |
-| `test_architecture.py` | `make` on every interval backend, normalize / prune / annotate / strength / hubs / support, views, graph backends agree, exports, `add_mcool`, `draw` |
+| `test_architecture.py` | `make` on every interval backend, normalize / prune / annotate / strength / hubs / support, views, graph backends agree, exports, `add_mcool` (equal split, `weights=` peak mask and fallback, the self-contact pixel, contact conservation), `draw` |
 | `test_signal.py` | the three bigWig backends bin alike (every stat, fractional bins, chromosome edges), `signal()` inputs and handles, multiprocess parity, `tmm` |
 | `test_signal_draw.py` | `plot_heatmap` / `plot_profiles` / `compare_heatmap` / `plot_motif_heatmap` headless |
 | `test_motifs.py` | motif formats, `Library` as a table, every scanning engine finds the planted sites, masked / profile scans, statistics, FASTA backends agree |

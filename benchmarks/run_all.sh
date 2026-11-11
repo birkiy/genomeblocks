@@ -19,7 +19,7 @@ PY=${PY:-python}
 [[ -f data/hg38.chrom.sizes ]] || "$PY" make_data.py
 
 BENCHES=("$@")
-[[ ${#BENCHES[@]} -gt 0 ]] || BENCHES=(import backends loci signal atlas motifs pairs genes architecture shortrange loops expression)
+[[ ${#BENCHES[@]} -gt 0 ]] || BENCHES=(import backends loci signal atlas motifs pairs genes architecture mcool_split shortrange loops expression)
 
 for b in "${BENCHES[@]}"; do
     echo "=== bench_$b ==="

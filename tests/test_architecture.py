@@ -186,6 +186,90 @@ def test_add_mcool_weights(cre, pairs, tmp_path):
         A.add_mcool(str(tmp_path / "t.cool"), resolution=1000)
 
 
+# ── add_mcool: how a pixel is shared ──────────────────────────────────────
+# 1 kb bins on chr1. CREs 0 and 1 share bin 0, CRE 2 is in bin 5, CRE 3 starts in bin 9 and straddles into bin 10,
+# CRE 4 is in bin 10. Pixels: (0, 5) = 12, (5, 10) = 7, (9, 10) = 4, and the self-contacts (0, 0) = 500, (9, 9) = 300.
+SPLIT_CRE = [("chr1", 100, 300), ("chr1", 600, 800), ("chr1", 5100, 5300), ("chr1", 9800, 10300), ("chr1", 10500, 10700)]
+
+
+@pytest.fixture
+def split_cool(tmp_path):
+    cooler = pytest.importorskip("cooler")
+    bins = pd.DataFrame({"chrom": "chr1", "start": range(0, 20_000, 1000), "end": range(1000, 21_000, 1000)})
+    pix = pd.DataFrame({"bin1_id": [0, 0, 5, 9, 9], "bin2_id": [0, 5, 10, 9, 10], "count": [500, 12, 7, 300, 4]})
+    cooler.create_cooler(str(tmp_path / "split.cool"), bins, pix)
+    return str(tmp_path / "split.cool")
+
+
+def split_arch(edges):
+    src, tgt = zip(*edges)
+    return Architecture.from_edges(as_loci(SPLIT_CRE), np.array(src), np.array(tgt))
+
+
+def test_add_mcool_equal_split(split_cool):
+    A = split_arch([(0, 2), (1, 2), (2, 4)]).add_mcool(split_cool, verbose=False)
+    assert A.ep["w"].tolist() == [6.0, 6.0, 7.0]                   # (0, 5) = 12 shared by two edges
+
+
+def test_add_mcool_equal_weights_are_the_equal_split(split_cool):
+    A = split_arch([(0, 2), (1, 2), (2, 4), (3, 4)])
+    w0 = A.copy().add_mcool(split_cool, verbose=False).ep["w"]
+    assert np.array_equal(A.copy().add_mcool(split_cool, weights=np.ones(5), verbose=False).ep["w"], w0)
+    assert np.allclose(A.copy().add_mcool(split_cool, weights=np.full(5, 2.5), verbose=False).ep["w"], w0)
+    A.vp["peak"] = np.ones(5, bool)
+    assert np.array_equal(A.copy().add_mcool(split_cool, weights="peak", verbose=False).ep["w"], w0)
+
+
+def test_add_mcool_peak_mask(split_cool):
+    """CRE 1 has no peak in this sample: the pixel it shares with CRE 0 goes to CRE 0's edge alone."""
+    A = split_arch([(0, 2), (1, 2), (2, 4)]).add_mcool(split_cool, weights=[1, 0, 1, 1, 1], verbose=False)
+    assert A.ep["w"].tolist() == [12.0, 0.0, 7.0]
+    B = split_arch([(0, 2), (1, 2)]).add_mcool(split_cool, weights=[3, 1, 1, 1, 1], verbose=False)
+    assert B.ep["w"].tolist() == [9.0, 3.0]                         # in proportion to w_i * w_j
+
+
+def test_add_mcool_pixel_without_weight_is_shared_equally(split_cool):
+    A = split_arch([(0, 2), (1, 2), (2, 4)]).add_mcool(split_cool, weights=[0, 0, 1, 1, 1], verbose=False)
+    assert A.ep["w"].tolist() == [6.0, 6.0, 7.0]                   # nobody in (0, 5) carries weight: equal split
+
+
+def test_add_mcool_diagonal(split_cool):
+    A = split_arch([(0, 1), (0, 2)])                               # 0–1: both CREs in bin 0
+    assert A.copy().add_mcool(split_cool, verbose=False).ep["w"].tolist() == [0.0, 12.0]
+    assert A.copy().add_mcool(split_cool, diagonal=True, verbose=False).ep["w"].tolist() == [500.0, 12.0]
+
+
+def test_add_mcool_adjacent_bin_loop_makes_a_diagonal_edge(split_cool):
+    """A loop between bins 9 and 10 (anchor windows = the two bins) catches the straddling CRE under both anchors;
+    it starts in bin 9, so its edge to the other bin-9 CRE reads bin 9's self-contact, not the loop pixel (9, 10)."""
+    cre = as_loci([("chr1", 9100, 9300), ("chr1", 9800, 10300), ("chr1", 10500, 10700)])
+    loop = gb.Pairs.from_frame(pd.DataFrame({"chrom1": ["chr1"], "start1": [9499], "end1": [9501],
+                                             "chrom2": ["chr1"], "start2": [10499], "end2": [10501]}))
+    A = Architecture.make(cre, loop, r=500, verbose=False)
+    assert list(A) == [(0, 1), (0, 2), (1, 2)]
+    assert A.copy().add_mcool(split_cool, verbose=False).ep["w"].tolist() == [0.0, 2.0, 2.0]   # (9, 10) = 4, two edges
+    assert A.copy().add_mcool(split_cool, diagonal=True, verbose=False).ep["w"].tolist() == [300.0, 2.0, 2.0]
+
+
+@pytest.mark.parametrize("kw", [{}, {"diagonal": True}, {"weights": [1, 0, 1, 1, 1]}, {"weights": [0.5, 2, 1, 3, 1]},
+                                {"weights": [0, 0, 0, 0, 0], "diagonal": True}])
+def test_add_mcool_conserves_contact(split_cool, kw):
+    """Every pixel touched is handed out once: the edge weights sum to the pixels' counts."""
+    A = split_arch([(0, 1), (0, 2), (1, 2), (2, 4), (3, 4)]).add_mcool(split_cool, verbose=False, **kw)
+    pixels = {(0, 5): 12, (5, 10): 7, (9, 10): 4} | ({(0, 0): 500} if kw.get("diagonal") else {})
+    assert A.ep["w"].sum() == pytest.approx(sum(pixels.values()))
+
+
+def test_add_mcool_bad_weights(split_cool):
+    A = split_arch([(0, 2)])
+    for bad in ([1, 1], [1, -1, 1, 1, 1], [1, np.nan, 1, 1, 1]):
+        with pytest.raises(ValueError, match="one finite, non-negative value per CRE"):
+            A.add_mcool(split_cool, weights=bad, verbose=False)
+    with pytest.raises(ValueError, match="vertex column 'peak' not found"):
+        A.add_mcool(split_cool, weights="peak", verbose=False)
+
+
+
 def test_union_keeps_edge_property_order(arch):
     B = arch.copy()
     assert list(arch.ep) == ["w", "d", "n"]

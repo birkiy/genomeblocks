@@ -50,6 +50,7 @@ timed alone) and compares real samples with existing FitHiChIP runs listed in
 | `bench_architecture.py` | the Architecture pipeline step by step, graph backends, save / load |
 | `bench_shortrange.py` | HiChIP short-range track vs the awk / sort / bedtools recipe |
 | `bench_loops.py` | HiChIP loop calling: `fithichip` vs FitHiChIP 11.0 on the same cooler and peaks — tested pairs, loops, merged loops, P / q values and FitHiChIP's IGV files compared, wall time and memory; synthetic cooler, plus real samples on request |
+| `bench_mcool_split.py` | `add_mcool`'s pixel split: each sample's own graph against a union graph under eight sharing rules (equal split, no split, each pixel once per CRE, centre binning, ATAC-weighted, peak mask, with and without the self-contact pixel) — super-hubs lost, CREs diluted, contact conservation; seeded synthetic cooler, plus the T-cell HiChIP numbers recorded as measured |
 | `bench_import.py` | import cost of each entry point |
 | `bench_expression.py` | reading salmon / featureCounts tables with both table backends, tximport-style summarising and TMM / size factors / CPM / filterByExpr against R's tximport, edgeR and DESeq2 — exactness (max \|Δ\|) and time; generates its own GTF-scale data |
 | `build_site.py` | writes `docs/benchmarks/index.md` |
