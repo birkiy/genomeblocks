@@ -163,11 +163,11 @@ A.ep.w
 ```
 
 Each CRE is assigned to the bin holding its start; the count of the (bin, bin)
-pixel the edge spans is shared equally among the edges that fall in the same
-pixel, and lands in `ep.w` (or the `name=` you pass — call it again with
-another file and name to stack weights from several experiments). Pixels are
-read one chromosome block at a time, so memory stays bounded and trans pixels
-are found in the same pass.
+pixel the edge spans is shared among the edges that fall in the same pixel
+(equally, unless you pass `weights=`; see below), and lands in `ep.w` (or the
+`name=` you pass — call it again with another file and name to stack weights
+from several experiments). Pixels are read one chromosome block at a time, so
+memory stays bounded and trans pixels are found in the same pass.
 
 <figure class="gb-fig"><div class="gb-fig-body">
 {% include diagrams/arch-weights.svg %}
@@ -178,6 +178,39 @@ are found in the same pass.
 The file type is checked: a multi-resolution file without `resolution=`
 raises and lists the resolutions it holds; a single-resolution file with
 `resolution=` raises too.
+
+### Graphs on the CREs of several samples
+
+A graph built on the CREs of several samples (say, every CRE with a peak in
+any of three cell states) holds CREs that are closed in the sample whose
+cooler you read. With the equal split, such a CRE takes an equal share of
+every pixel it sits in, so an open CRE next to it in the same bin loses half
+its reads. Pass the sample's peak mask as `weights=`: the pixel then goes to
+the edges between CREs with a peak, and the CRE strengths of the sample's own
+graph are kept.
+
+```python
+for s, peaks in sample_peaks.items():                       # one cooler per sample, one graph for all
+    A.add_mcool(coolers[s], resolution=5000, name=f"w_{s}", weights=A.loci.overlap_any(peaks))
+```
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-mcool-split.svg %}
+</div><figcaption>
+<strong>Who gets a shared pixel.</strong> The equal split gives each of two edges half of a 12-count pixel. In a union graph, CRE <code>b</code> has a peak only in another sample, yet takes half of the reads <code>a</code> had in this sample's own graph. With <code>weights=</code> set to the peak mask, <code>a–c</code> gets all 12 again and the pixel is still handed out once.
+</figcaption></figure>
+
+Edges whose two CREs fall in one bin get 0 by default (`diagonal=False`):
+their pixel is the bin's self-contact, which in H3K27ac HiChIP at 5 kb is
+about a hundred times a loop pixel, and no loop is called inside one bin.
+Such edges appear when a CRE crosses the boundary between the two anchors of a
+loop between adjacent bins. `diagonal=True` reads them, as 2.0.1 did.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-mcool-diagonal.svg %}
+</div><figcaption>
+<strong>The self-contact pixel.</strong> A loop between adjacent bins has the two bins as anchor windows. CRE <code>y</code> crosses the boundary, so it sits under both anchors and is linked to <code>x</code>; both start in bin <i>i</i>, so the edge would read pixel (<i>i</i>, <i>i</i>), the bin's self-contact, not the loop pixel (<i>i</i>, <i>i</i> + 1).
+</figcaption></figure>
 
 ---
 

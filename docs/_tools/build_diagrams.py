@@ -828,6 +828,157 @@ def arch_weights():
 
 
 @fig
+def arch_mcool_binning():
+    d = Diagram("arch-mcool-binning", 880, 196,
+                "add_mcool puts a CRE in the bin of its first base: a CRE that crosses a bin boundary is binned "
+                "where it starts, even when most of it, and its centre, lie in the next bin.")
+    d.text(20, 22, "WHICH BIN A CRE GOES TO", "cap", "start")
+    y, x0, bw = 100, 70, 185
+    d.line([(x0, y), (x0 + 4 * bw, y)], "ln faint")
+    for k in range(5):
+        d.line([(x0 + k * bw, y - 34), (x0 + k * bw, y + 30)], "ln faint dash")
+    for k, lab in enumerate(("bin i − 1", "bin i", "bin i + 1", "bin i + 2")):
+        d.text(x0 + k * bw + bw / 2, y - 44, lab, "ms")
+    a0, a1 = x0 + bw + 50, x0 + bw + 110
+    d.interval(a0, a1, y, 14, "fg")
+    d.text((a0 + a1) / 2, y - 14, "a", "m")
+    s, e = x0 + 2 * bw - 30, x0 + 2 * bw + 100
+    c = (s + e) / 2
+    d.interval(s, e, y, 14, "fg")
+    d.text(c, y - 14, "b", "m")
+    d.line([(s, y + 9), (s, y + 44)], "ln purple")
+    d.text(s - 6, y + 50, "start → bin i (add_mcool)", "m", "end")
+    d.line([(c, y + 9), (c, y + 44)], "ln dash")
+    d.text(c + 6, y + 50, "centre → bin i + 1", "ms", "start")
+    d.text(440, y + 84, "a: start and centre in bin i · b: starts in bin i, centre in bin i + 1, so its pixels "
+                        "are read from bin i's row", "s")
+    return d
+
+
+def _pixel_pair(d, x, y, left, right, edges):
+    """Bin i (left dots) and bin j (right dots) with the edges between them: left / right = [(label, open)],
+    edges = [(left index, right index, weight label, line class)]."""
+    for bx, lab in ((x, "bin i"), (x + 170, "bin j")):
+        d.rect(bx, y, 70, 112, "bx ghost", r=6)
+        d.text(bx + 35, y - 8, lab, "ms")
+    P = {}
+    for k, (lab, on) in enumerate(left):
+        P["L", k] = (x + 35, y + 32 + k * 48)
+    for k, (lab, on) in enumerate(right):
+        P["R", k] = (x + 205, y + 56 + k * 48)
+    for li, ri, wl, cls in edges:
+        (x1, y1), (x2, y2) = P["L", li], P["R", ri]
+        d.line([(x1 + 10, y1), (x2 - 10, y2)], cls)
+        t = 0.42
+        d.text(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t - 7, wl, "m")
+    for side, dots in (("L", left), ("R", right)):
+        for k, (lab, on) in enumerate(dots):
+            px, py = P[side, k]
+            d.circle(px, py, 9, "dot green" if on else "dot muted")
+            d.text(px, py + 4, lab, "m w")
+
+
+@fig
+def arch_mcool_split():
+    d = Diagram("arch-mcool-split", 880, 300,
+                "A pixel shared by two edges: the equal split gives each 6 of 12; in a union graph a CRE with no "
+                "peak in the sample takes half of its neighbour's reads; the peak mask (weights=) gives them all "
+                "to the edge between CREs with a peak.")
+    panels = (("1 · EQUAL SPLIT", [("a", True), ("b", True)], [(0, 0, "6", "ln purple thick"), (1, 0, "6", "ln purple thick")],
+               ("pixel (i, j) = 12, two edges", "each CRE of bin i: 12 / 2")),
+              ("2 · UNION GRAPH: DILUTION", [("a", True), ("b", False)], [(0, 0, "6", "ln purple thick"), (1, 0, "6", "ln purple thick")],
+               ("b: a peak in another sample only", "own graph a–c = 12 · union 6")),
+              ("3 · PEAK MASK (weights=)", [("a", True), ("b", False)], [(0, 0, "12", "ln purple thick"), (1, 0, "0", "ln faint dash")],
+               ("weights a = 1, b = 0: a–c 12, b–c 0", "own graph unchanged · 12 handed out once")))
+    for k, (title, left, edges, foot) in enumerate(panels):
+        x = 30 + k * 290
+        d.text(x, 22, title, "cap", "start")
+        _pixel_pair(d, x + 10, 62, left, [("c", True)], edges)
+        d.text(x, 214, foot[0], "s", "start")
+        d.text(x, 232, foot[1], "m", "start")
+    d.circle(40, 276, 7, "dot green")
+    d.text(54, 280, "peak in this sample", "s", "start")
+    d.circle(200, 276, 7, "dot muted")
+    d.text(214, 280, "no peak in this sample", "s", "start")
+    return d
+
+
+@fig
+def arch_mcool_diagonal():
+    d = Diagram("arch-mcool-diagonal", 880, 296,
+                "A loop between adjacent bins: its anchor windows are the two bins, so a CRE crossing the "
+                "boundary sits under both anchors; its edge to the other CRE of its start bin reads the bin's "
+                "self-contact (i, i) instead of the loop pixel (i, i + 1).")
+    d.text(20, 22, "A LOOP BETWEEN ADJACENT BINS", "cap", "start")
+    y, b0, bw = 160, 80, 200
+    d.line([(b0 - 30, y), (b0 + 2 * bw + 30, y)], "ln faint")
+    for k, lab in enumerate(("anchor 1 ± r = bin i", "anchor 2 ± r = bin i + 1")):
+        d.rect(b0 + k * bw + 2, y - 26, bw - 4, 52, "bx ghost", r=6)
+        d.text(b0 + k * bw + bw / 2, y + 44, lab, "ms")
+    d.path(f"M{b0 + bw / 2},{y - 28} Q{b0 + bw},{y - 120} {b0 + 1.5 * bw},{y - 28}", "ln purple")
+    d.text(b0 + bw, y - 82, "loop", "lbl")
+    for lab, s, e in (("x", 120, 170), ("y", 250, 330), ("z", 380, 430)):
+        d.interval(s, e, y, 12, "fg")
+        d.text((s + e) / 2, y - 12, lab, "m")
+    d.text(20, y + 84, "x–y: both start in bin i → pixel (i, i), the bin's self-contact", "m", "start")
+    d.text(20, y + 104, "x–z, y–z: → pixel (i, i + 1), the called loop", "m", "start")
+    d.text(20, y + 124, "diagonal=False (default): x–y gets 0; a loop never has both anchors in one bin", "s", "start")
+    # the contact map
+    px, py, c = 620, 44, 30
+    d.text(px, 22, "CONTACT MAP (5 kb)", "cap", "start")
+    for i in range(6):
+        for j in range(i, 6):
+            cls = "iv fp" if i == j else ("iv fpl" if j - i == 1 else "chip")
+            d.rect(px + j * c, py + i * c, c - 3, c - 3, cls, r=2)
+    d.rect(px + 2 * c - 3, py + 2 * c - 3, c + 3, c + 3, "bx ghost", r=4)
+    d.text(px + 2 * c + 13, py + 2 * c + 19, "x–y", "ms w")
+    d.text(px + 3 * c + 13, py + 2 * c + 19, "loop", "ms")
+    d.text(px, py + 6 * c + 22, "diagonal: self-contact, ~100× a loop", "s", "start")
+    d.text(px, py + 6 * c + 40, "pixel (H3K27ac HiChIP, 5 kb)", "s", "start")
+    return d
+
+
+@fig
+def arch_mcool_rules():
+    d = Diagram("arch-mcool-rules", 880, 330,
+                "Seven ways to give a pixel's count to the edges in it, scored on contact conservation, "
+                "dilution by CREs without a peak, self-contact pixels, and the super-hubs three T-cell states "
+                "lose between their own and a union graph.")
+    cols = ((270, "CONSERVES", "CONTACT"), (360, "NO DILUTION", "BY CLOSED CRES"), (450, "NO SELF-", "CONTACT"),
+            (550, "HUBS LOST", "N / TH17 / TREG"))
+    d.text(20, 30, "RULE", "cap", "start")
+    for x, a, b in cols:
+        d.text(x, 24, a, "cap")
+        d.text(x, 38, b, "cap")
+    d.text(620, 30, "TRADE-OFF", "cap", "start")
+    rows = (("equal split", "diagonal=True (2.0.1)", "yes", "no", "no", "76 / 43 / 171", "closed CREs in a bin take equal shares"),
+            ("no split", "full count per edge", "no", "yes", "no", "0 / 3 / 2", "+19–27% contact; partner CREs inflate"),
+            ("each pixel once per CRE", "a node rule", "no", "yes", "no", "68 / 51 / 0", "+9–13%; one bin's CREs counted twice"),
+            ("centre binning", "bin of the CRE centre", "yes", "no", "no", "30 / 31 / 49", "more edges on their loop pixel; dilutes"),
+            ("ATAC-weighted", "weights=accessibility", "yes", "partly", "no", "31 / 25 / 18", "closed CREs keep a residual share"),
+            ("peak mask", "weights=mask, diagonal=True", "yes", "yes", "no", "35 / 0 / 121", "self-contacts still lift the knee"),
+            ("peak mask, no diagonal", "weights=mask (default diag.)", "yes", "yes", "yes", "8 / 0 / 7", "every graph's hubs move 14–29%"))
+    for k, (name, sub, *checks, lost, trade) in enumerate(rows):
+        y = 58 + k * 38
+        if k == len(rows) - 1:
+            d.rect(12, y - 4, 856, 36, "bx hl", r=6)
+        d.text(20, y + 12, name, "t", "start")
+        d.text(20, y + 26, sub, "ms", "start")
+        for (x, *_), v in zip(cols, checks):
+            if v == "yes":
+                d.chip(x - 26, y + 3, 52, 20, "yes", "green", "s")
+            elif v == "no":
+                d.rect(x - 26, y + 3, 52, 20, "bx warn", r=10)
+                d.text(x, y + 17, "no", "s")
+            else:
+                d.chip(x - 26, y + 3, 52, 20, v, "", "s")
+        d.text(550, y + 17, lost, "m")
+        d.text(620, y + 17, trade, "s", "start")
+    return d
+
+
+
+@fig
 def arch_hubs():
     d = Diagram("arch-hubs", 880, 290,
                 "annotate gives promoter CREs their nearest gene and every other CRE the gene of its "

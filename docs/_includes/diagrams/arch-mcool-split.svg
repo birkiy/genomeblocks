@@ -1,0 +1,57 @@
+<svg class="gbd" viewBox="0 0 880 300" role="img" aria-label="A pixel shared by two edges: the equal split gives each 6 of 12; in a union graph a CRE with no peak in the sample takes half of its neighbour&#x27;s reads; the peak mask (weights=) gives them all to the edge between CREs with a peak." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="30" y="22">1 · EQUAL SPLIT</text>
+<rect class="bx ghost" x="40" y="62" width="70" height="112" rx="6"></rect>
+<text class="ms" x="75" y="54" text-anchor="middle">bin i</text>
+<rect class="bx ghost" x="210" y="62" width="70" height="112" rx="6"></rect>
+<text class="ms" x="245" y="54" text-anchor="middle">bin j</text>
+<polyline class="ln purple thick" points="85,94 235,118"/>
+<text class="m" x="146.4" y="97.08" text-anchor="middle">6</text>
+<polyline class="ln purple thick" points="85,142 235,118"/>
+<text class="m" x="146.4" y="124.92" text-anchor="middle">6</text>
+<circle class="dot green" cx="75" cy="94" r="9"/>
+<text class="m w" x="75" y="98" text-anchor="middle">a</text>
+<circle class="dot green" cx="75" cy="142" r="9"/>
+<text class="m w" x="75" y="146" text-anchor="middle">b</text>
+<circle class="dot green" cx="245" cy="118" r="9"/>
+<text class="m w" x="245" y="122" text-anchor="middle">c</text>
+<text class="s" x="30" y="214">pixel (i, j) = 12, two edges</text>
+<text class="m" x="30" y="232">each CRE of bin i: 12 / 2</text>
+<text class="cap" x="320" y="22">2 · UNION GRAPH: DILUTION</text>
+<rect class="bx ghost" x="330" y="62" width="70" height="112" rx="6"></rect>
+<text class="ms" x="365" y="54" text-anchor="middle">bin i</text>
+<rect class="bx ghost" x="500" y="62" width="70" height="112" rx="6"></rect>
+<text class="ms" x="535" y="54" text-anchor="middle">bin j</text>
+<polyline class="ln purple thick" points="375,94 525,118"/>
+<text class="m" x="436.4" y="97.08" text-anchor="middle">6</text>
+<polyline class="ln purple thick" points="375,142 525,118"/>
+<text class="m" x="436.4" y="124.92" text-anchor="middle">6</text>
+<circle class="dot green" cx="365" cy="94" r="9"/>
+<text class="m w" x="365" y="98" text-anchor="middle">a</text>
+<circle class="dot muted" cx="365" cy="142" r="9"/>
+<text class="m w" x="365" y="146" text-anchor="middle">b</text>
+<circle class="dot green" cx="535" cy="118" r="9"/>
+<text class="m w" x="535" y="122" text-anchor="middle">c</text>
+<text class="s" x="320" y="214">b: a peak in another sample only</text>
+<text class="m" x="320" y="232">own graph a–c = 12 · union 6</text>
+<text class="cap" x="610" y="22">3 · PEAK MASK (weights=)</text>
+<rect class="bx ghost" x="620" y="62" width="70" height="112" rx="6"></rect>
+<text class="ms" x="655" y="54" text-anchor="middle">bin i</text>
+<rect class="bx ghost" x="790" y="62" width="70" height="112" rx="6"></rect>
+<text class="ms" x="825" y="54" text-anchor="middle">bin j</text>
+<polyline class="ln purple thick" points="665,94 815,118"/>
+<text class="m" x="726.4" y="97.08" text-anchor="middle">12</text>
+<polyline class="ln faint dash" points="665,142 815,118"/>
+<text class="m" x="726.4" y="124.92" text-anchor="middle">0</text>
+<circle class="dot green" cx="655" cy="94" r="9"/>
+<text class="m w" x="655" y="98" text-anchor="middle">a</text>
+<circle class="dot muted" cx="655" cy="142" r="9"/>
+<text class="m w" x="655" y="146" text-anchor="middle">b</text>
+<circle class="dot green" cx="825" cy="118" r="9"/>
+<text class="m w" x="825" y="122" text-anchor="middle">c</text>
+<text class="s" x="610" y="214">weights a = 1, b = 0: a–c 12, b–c 0</text>
+<text class="m" x="610" y="232">own graph unchanged · 12 handed out once</text>
+<circle class="dot green" cx="40" cy="276" r="7"/>
+<text class="s" x="54" y="280">peak in this sample</text>
+<circle class="dot muted" cx="200" cy="276" r="7"/>
+<text class="s" x="214" y="280">no peak in this sample</text>
+</svg>

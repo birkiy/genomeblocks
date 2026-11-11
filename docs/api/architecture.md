@@ -133,24 +133,47 @@ Architecture.from_frame(cre, df[["w"]])
 {: .sec-navy }
 
 ```python
-A.add_mcool(mcool, *, resolution=None, name="w", verbose=True) -> Architecture
+A.add_mcool(mcool, *, resolution=None, name="w", weights=None, diagonal=False, verbose=True) -> Architecture
 ```
 
 Edge weight = the Hi-C count of the (bin, bin) pixel that holds the two
-CREs, shared equally among the edges that fall in the same pixel. Pixels are
-read one chromosome block at a time, so memory stays bounded and trans
-pixels are found in the same pass. Pass `resolution=` for a multi-resolution
-`.mcool`; a single-resolution `.cool` takes none. Both mistakes raise a
-`ValueError` that lists the resolutions available.
+CREs (each CRE in the bin of its start), shared among the edges that fall in
+the same pixel, so every pixel's count is handed out once and the edge
+weights sum to the counts of the pixels they touch. Pixels are read one
+chromosome block at a time, so memory stays bounded and trans pixels are
+found in the same pass. Pass `resolution=` for a multi-resolution `.mcool`;
+a single-resolution `.cool` takes none. Both mistakes raise a `ValueError`
+that lists the resolutions available.
+
+| Argument | Default | What it does |
+|---|---|---|
+| `weights` | `None` | One non-negative value per CRE (an array, or the name of a vertex column). Each pixel is shared in proportion to `weights[i] * weights[j]` instead of equally; a pixel whose edges all weigh 0 is shared equally. A 0/1 mask of the CREs with a peak in this sample keeps a graph built on the CREs of several samples from handing this sample's reads to CREs that are closed in it. |
+| `diagonal` | `False` | Edges whose two CREs fall in one bin get 0: their pixel is the bin's self-contact, not a loop pixel. `diagonal=True` reads it, as 2.0.1 did. |
+
+With `weights=`, an edge can get 0 while its pixel holds reads; prune on the
+counts of an unweighted call if the graph should keep such edges.
 
 ```python
-A.add_mcool("hic.cool")
-# -> [INFO] Set distributed weights for 4/4 edges from cooler. [w]
+# split.cool: 1 kb bins; pixel (0, 5) = 12, (5, 10) = 7, bin 0's self-contact (0, 0) = 500
+cre = gb.as_loci([("chr1", 100, 300), ("chr1", 600, 800), ("chr1", 5100, 5300),
+                  ("chr1", 9800, 10300), ("chr1", 10500, 10700)])          # CREs 0 and 1 share bin 0
+A = Architecture.from_edges(cre, np.array([0, 1, 2]), np.array([2, 2, 4]))
+A.add_mcool("split.cool")
+# -> [INFO] Set distributed weights for 3/3 edges from cooler. [w]
 A.ep["w"].tolist()
-# -> [6.0, 3.0, 4.0, 9.0]
-A.add_mcool("hic.cool", resolution=1000)
-# -> ValueError: hic.cool is a single-resolution cooler: call add_mcool without resolution=
+# -> [6.0, 6.0, 7.0]
+A.add_mcool("split.cool", weights=[1, 0, 1, 1, 1], verbose=False).ep["w"].tolist()   # CRE 1 has no peak here
+# -> [12.0, 0.0, 7.0]
+B = Architecture.from_edges(cre, np.array([0, 0]), np.array([1, 2]))     # 0–1: both CREs in bin 0
+B.add_mcool("split.cool")
+# -> [INFO] Set distributed weights for 1/2 edges from cooler; 1 edge with both CREs in one bin left at 0 (diagonal=False). [w]
+B.add_mcool("split.cool", diagonal=True, verbose=False).ep["w"].tolist()   # bin 0's self-contact
+# -> [500.0, 12.0]
+A.add_mcool("split.cool", resolution=1000)
+# -> ValueError: split.cool is a single-resolution cooler: call add_mcool without resolution=
 ```
+
+Why these rules, and what the alternatives cost: [Sharing a pixel]({{ '/design/architecture/#sharing-a-pixel' | relative_url }}).
 
 ---
 

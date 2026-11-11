@@ -1,0 +1,46 @@
+<svg class="gbd" viewBox="0 0 880 296" role="img" aria-label="A loop between adjacent bins: its anchor windows are the two bins, so a CRE crossing the boundary sits under both anchors; its edge to the other CRE of its start bin reads the bin&#x27;s self-contact (i, i) instead of the loop pixel (i, i + 1)." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="22">A LOOP BETWEEN ADJACENT BINS</text>
+<polyline class="ln faint" points="50,160 510,160"/>
+<rect class="bx ghost" x="82" y="134" width="196" height="52" rx="6"></rect>
+<text class="ms" x="180" y="204" text-anchor="middle">anchor 1 ± r = bin i</text>
+<rect class="bx ghost" x="282" y="134" width="196" height="52" rx="6"></rect>
+<text class="ms" x="380" y="204" text-anchor="middle">anchor 2 ± r = bin i + 1</text>
+<path class="ln purple" d="M180.0,132 Q280,40 380.0,132"/>
+<text class="lbl" x="280" y="78" text-anchor="middle">loop</text>
+<rect class="iv fg" x="120" y="154" width="50" height="12" rx="2"></rect>
+<text class="m" x="145" y="148" text-anchor="middle">x</text>
+<rect class="iv fg" x="250" y="154" width="80" height="12" rx="2"></rect>
+<text class="m" x="290" y="148" text-anchor="middle">y</text>
+<rect class="iv fg" x="380" y="154" width="50" height="12" rx="2"></rect>
+<text class="m" x="405" y="148" text-anchor="middle">z</text>
+<text class="m" x="20" y="244">x–y: both start in bin i → pixel (i, i), the bin&#x27;s self-contact</text>
+<text class="m" x="20" y="264">x–z, y–z: → pixel (i, i + 1), the called loop</text>
+<text class="s" x="20" y="284">diagonal=False (default): x–y gets 0; a loop never has both anchors in one bin</text>
+<text class="cap" x="620" y="22">CONTACT MAP (5 kb)</text>
+<rect class="iv fp" x="620" y="44" width="27" height="27" rx="2"></rect>
+<rect class="iv fpl" x="650" y="44" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="680" y="44" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="710" y="44" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="740" y="44" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="770" y="44" width="27" height="27" rx="2"></rect>
+<rect class="iv fp" x="650" y="74" width="27" height="27" rx="2"></rect>
+<rect class="iv fpl" x="680" y="74" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="710" y="74" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="740" y="74" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="770" y="74" width="27" height="27" rx="2"></rect>
+<rect class="iv fp" x="680" y="104" width="27" height="27" rx="2"></rect>
+<rect class="iv fpl" x="710" y="104" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="740" y="104" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="770" y="104" width="27" height="27" rx="2"></rect>
+<rect class="iv fp" x="710" y="134" width="27" height="27" rx="2"></rect>
+<rect class="iv fpl" x="740" y="134" width="27" height="27" rx="2"></rect>
+<rect class="chip" x="770" y="134" width="27" height="27" rx="2"></rect>
+<rect class="iv fp" x="740" y="164" width="27" height="27" rx="2"></rect>
+<rect class="iv fpl" x="770" y="164" width="27" height="27" rx="2"></rect>
+<rect class="iv fp" x="770" y="194" width="27" height="27" rx="2"></rect>
+<rect class="bx ghost" x="677" y="101" width="33" height="33" rx="4"></rect>
+<text class="ms w" x="693" y="123" text-anchor="middle">x–y</text>
+<text class="ms" x="723" y="123" text-anchor="middle">loop</text>
+<text class="s" x="620" y="246">diagonal: self-contact, ~100× a loop</text>
+<text class="s" x="620" y="264">pixel (H3K27ac HiChIP, 5 kb)</text>
+</svg>

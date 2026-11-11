@@ -100,12 +100,14 @@ A.neighbors(0)
   per loop (`_cross`, a `repeat`-based group product), self-pairs are
   dropped, and `unique` on `lo · n + hi` keys makes each CRE pair one edge.
   Every interval backend gives the same edge list.
-- **`add_mcool(mcool, resolution=)`** maps every CRE to its cooler bin from
-  the bin offsets, forms one `(bin1, bin2)` key per edge, and reads the
-  pixel table one chromosome block at a time (rows of the lower bin), so
-  memory stays bounded and trans pixels are found in the same pass. A
-  pixel's count is split evenly across the edges in it, so dense clusters of
-  CREs do not multiply one contact. Edges without a pixel keep `w = 0`.
+- **`add_mcool(mcool, resolution=, weights=None, diagonal=False)`** maps every
+  CRE to the cooler bin of its start from the bin offsets, forms one
+  `(bin1, bin2)` key per edge, and reads the pixel table one chromosome block
+  at a time (rows of the lower bin), so memory stays bounded and trans pixels
+  are found in the same pass. A pixel's count is split across the edges in it
+  (evenly, or in proportion to `weights[i] · weights[j]`), so dense clusters
+  of CREs do not multiply one contact. Edges with both CREs in one bin, and
+  edges without a pixel, keep `w = 0`. See [Sharing a pixel](#sharing-a-pixel).
 - **`normalize(source="w", name="n")`** fits `w ≈ C · d^−α` on cis edges with
   positive distance and weight and writes `ep.d` and `ep.n = w / E(d)`. The
   fit needs at least three such edges at two distinct distances; without
@@ -121,6 +123,90 @@ A.normalize()
 A.ep["d"], A.ep["n"].round(3)
 # -> (array([4000., 9000., 4500.,   inf]), array([1.341, 1.11 , 0.562, 1.   ]))
 ```
+
+## Sharing a pixel
+{: .sec-purple }
+
+A pixel is the finest thing a cooler measures, and CREs are smaller than a
+bin, so `add_mcool` has to decide which bin a CRE belongs to and who gets a
+pixel that several edges fall in. Both choices shape CRE strengths, and with
+them the super-hubs. The effect is largest when the CRE set changes: one
+sample's graph against a graph on the CREs of several samples.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-mcool-binning.svg %}
+</div><figcaption>
+<strong>A CRE is binned by its first base.</strong> <code>b</code> crosses the boundary into bin <i>i</i> + 1 and its centre lies there, but its edges read row <i>i</i> of the map.
+</figcaption></figure>
+
+**Binning.** Start binning is cheap and unambiguous, but on ATAC-seq CREs
+(median ~950 bp) 23% cross a 5 kb boundary and 11% have their centre in
+another bin. Binning by centre would put 89–90% of counted edges on a pixel
+FitHiChIP called as a loop, against 82–83% now. It is not the default: it
+fixes neither problem below, and on its own it moves about a quarter of the
+super-hubs.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-mcool-split.svg %}
+</div><figcaption>
+<strong>The equal split, its dilution in a union graph, and the peak mask.</strong> Every CRE pair of two bins is usually an edge, so the equal split gives each CRE the pixel count divided by the CREs in its own bin. A CRE with no peak in the sample still counts, so in a union graph it takes half of its neighbour's reads; <code>weights=</code> set to the sample's peak mask hands the pixel to the edges between CREs with a peak.
+</figcaption></figure>
+
+**The equal split.** Within one graph the equal split conserves contact
+exactly: the edge weights sum to the counts of the pixels they touch. But the
+denominator is the number of edges the skeleton puts in the pixel, so it
+depends on the CRE set. On H3K27ac HiChIP of naive CD4, Th17 and Treg cells,
+a union graph (the CREs with a peak in any of the three states, the loops of
+all three) shares 3.5–4.3% of each state's contact with edges that touch a
+CRE closed in that state. Those edges land on a few CREs: 42 of the 43
+super-hubs Th17 loses between its own graph and the union have such a CRE in
+their 5 kb bin and keep 0.54× of their strength (median). `weights=` with
+the state's peak mask removes that loss and leaves each state's own graph
+bit for bit as it was, since every CRE of an own graph has a peak.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-mcool-diagonal.svg %}
+</div><figcaption>
+<strong>The self-contact pixel.</strong> A loop between adjacent bins has the two bins as anchor windows; a CRE crossing the boundary sits under both, so start binning puts both CREs of an edge in one bin and the edge reads the bin's self-contact.
+</figcaption></figure>
+
+**The diagonal.** About 9% of FitHiChIP loops at 5 kb join adjacent bins.
+The edges they produce between two CREs of one bin are 0.2–0.3% of the
+T-cell edges but carry ~10% of the contact (median self-contact 1,100–1,800
+reads against 15 for a counted pixel), and 17–22% of the super-hubs take more
+than half of their strength from them. A union graph adds the other states'
+adjacent-bin loops, which lifts the knee for everyone else. `diagonal=False`
+(the default) gives these edges 0.
+
+<figure class="gb-fig"><div class="gb-fig-body">
+{% include diagrams/arch-mcool-rules.svg %}
+</div><figcaption>
+<strong>Seven rules on the T-cell graphs.</strong> Super-hubs = slope-1 knee on CRE strength; "lost" = own-graph super-hubs that are not super-hubs of the union graph (naive / Th17 / Treg). Conservation = summed edge weight over the summed counts of the pixels touched.
+</figcaption></figure>
+
+| rule | `add_mcool` call | super-hubs lost, N / Th17 / Treg | contact conserved | own graphs vs 2.0.1 |
+|---|---|---|---|---|
+| equal split (2.0.1) | `diagonal=True` | 76 / 43 / 171 | yes | same |
+| no split | — | 0 / 3 / 2 | +19–27% | 24–32% of super-hubs move |
+| each pixel once per CRE | — | 68 / 51 / 0 | +9–13% | 15–37% move |
+| centre binning | — | 30 / 31 / 49 | yes | 21–26% move |
+| ATAC-weighted | `weights=atac, diagonal=True` | 31 / 25 / 18 | yes | 5–17% move |
+| peak mask | `weights=mask, diagonal=True` | 35 / 0 / 121 | yes | same |
+| peak mask, no diagonal | `weights=mask` | **8 / 0 / 7** | yes | 14–29% move |
+
+The two rules that remove the dilution without double counting are the ones
+`add_mcool` offers. The peak mask needs the sample's peaks, which only the
+caller has, so `weights=None` stays the default. The self-contact is never a
+loop pixel, so `diagonal=False` is the default; `diagonal=True` gives the
+2.0.1 weights. In the T-cell graphs the two together turn 76 / 43 / 171 lost
+super-hubs into 8 / 0 / 7, and the IKZF2 promoter in Treg (two CREs in one
+bin, 2,180 counts each in the union) clears the union cut-off (2,012). The
+script and these numbers are in `benchmarks/bench_mcool_split.py` and
+`benchmarks/results/mcool_split.json`. The script also runs the comparison on
+a seeded synthetic pair of samples: with the equal split ~255 own CREs are
+weaker in the union, and the ~360 that share a bin with a CRE closed in the
+sample keep 0.62–0.67× of their own-graph strength; with the peak mask 1–2 are
+weaker and those ~360 keep 1.11–1.21×.
 
 ## Genes and hubs
 {: .sec-purple }

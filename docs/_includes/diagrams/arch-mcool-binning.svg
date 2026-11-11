@@ -1,0 +1,22 @@
+<svg class="gbd" viewBox="0 0 880 196" role="img" aria-label="add_mcool puts a CRE in the bin of its first base: a CRE that crosses a bin boundary is binned where it starts, even when most of it, and its centre, lie in the next bin." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="22">WHICH BIN A CRE GOES TO</text>
+<polyline class="ln faint" points="70,100 810,100"/>
+<polyline class="ln faint dash" points="70,66 70,130"/>
+<polyline class="ln faint dash" points="255,66 255,130"/>
+<polyline class="ln faint dash" points="440,66 440,130"/>
+<polyline class="ln faint dash" points="625,66 625,130"/>
+<polyline class="ln faint dash" points="810,66 810,130"/>
+<text class="ms" x="162.5" y="56" text-anchor="middle">bin i − 1</text>
+<text class="ms" x="347.5" y="56" text-anchor="middle">bin i</text>
+<text class="ms" x="532.5" y="56" text-anchor="middle">bin i + 1</text>
+<text class="ms" x="717.5" y="56" text-anchor="middle">bin i + 2</text>
+<rect class="iv fg" x="305" y="93" width="60" height="14" rx="2"></rect>
+<text class="m" x="335" y="86" text-anchor="middle">a</text>
+<rect class="iv fg" x="410" y="93" width="130" height="14" rx="2"></rect>
+<text class="m" x="475" y="86" text-anchor="middle">b</text>
+<polyline class="ln purple" points="410,109 410,144"/>
+<text class="m" x="404" y="150" text-anchor="end">start → bin i (add_mcool)</text>
+<polyline class="ln dash" points="475,109 475,144"/>
+<text class="ms" x="481" y="150">centre → bin i + 1</text>
+<text class="s" x="440" y="184" text-anchor="middle">a: start and centre in bin i · b: starts in bin i, centre in bin i + 1, so its pixels are read from bin i&#x27;s row</text>
+</svg>

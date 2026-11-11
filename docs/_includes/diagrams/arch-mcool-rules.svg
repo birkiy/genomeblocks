@@ -1,0 +1,83 @@
+<svg class="gbd" viewBox="0 0 880 330" role="img" aria-label="Seven ways to give a pixel&#x27;s count to the edges in it, scored on contact conservation, dilution by CREs without a peak, self-contact pixels, and the super-hubs three T-cell states lose between their own and a union graph." xmlns="http://www.w3.org/2000/svg">
+<text class="cap" x="20" y="30">RULE</text>
+<text class="cap" x="270" y="24" text-anchor="middle">CONSERVES</text>
+<text class="cap" x="270" y="38" text-anchor="middle">CONTACT</text>
+<text class="cap" x="360" y="24" text-anchor="middle">NO DILUTION</text>
+<text class="cap" x="360" y="38" text-anchor="middle">BY CLOSED CRES</text>
+<text class="cap" x="450" y="24" text-anchor="middle">NO SELF-</text>
+<text class="cap" x="450" y="38" text-anchor="middle">CONTACT</text>
+<text class="cap" x="550" y="24" text-anchor="middle">HUBS LOST</text>
+<text class="cap" x="550" y="38" text-anchor="middle">N / TH17 / TREG</text>
+<text class="cap" x="620" y="30">TRADE-OFF</text>
+<text class="t" x="20" y="70">equal split</text>
+<text class="ms" x="20" y="84">diagonal=True (2.0.1)</text>
+<rect class="chip green" x="244" y="61" width="52" height="20" rx="10"></rect>
+<text class="s" x="270" y="75" text-anchor="middle">yes</text>
+<rect class="bx warn" x="334" y="61" width="52" height="20" rx="10"></rect>
+<text class="s" x="360" y="75" text-anchor="middle">no</text>
+<rect class="bx warn" x="424" y="61" width="52" height="20" rx="10"></rect>
+<text class="s" x="450" y="75" text-anchor="middle">no</text>
+<text class="m" x="550" y="75" text-anchor="middle">76 / 43 / 171</text>
+<text class="s" x="620" y="75">closed CREs in a bin take equal shares</text>
+<text class="t" x="20" y="108">no split</text>
+<text class="ms" x="20" y="122">full count per edge</text>
+<rect class="bx warn" x="244" y="99" width="52" height="20" rx="10"></rect>
+<text class="s" x="270" y="113" text-anchor="middle">no</text>
+<rect class="chip green" x="334" y="99" width="52" height="20" rx="10"></rect>
+<text class="s" x="360" y="113" text-anchor="middle">yes</text>
+<rect class="bx warn" x="424" y="99" width="52" height="20" rx="10"></rect>
+<text class="s" x="450" y="113" text-anchor="middle">no</text>
+<text class="m" x="550" y="113" text-anchor="middle">0 / 3 / 2</text>
+<text class="s" x="620" y="113">+19–27% contact; partner CREs inflate</text>
+<text class="t" x="20" y="146">each pixel once per CRE</text>
+<text class="ms" x="20" y="160">a node rule</text>
+<rect class="bx warn" x="244" y="137" width="52" height="20" rx="10"></rect>
+<text class="s" x="270" y="151" text-anchor="middle">no</text>
+<rect class="chip green" x="334" y="137" width="52" height="20" rx="10"></rect>
+<text class="s" x="360" y="151" text-anchor="middle">yes</text>
+<rect class="bx warn" x="424" y="137" width="52" height="20" rx="10"></rect>
+<text class="s" x="450" y="151" text-anchor="middle">no</text>
+<text class="m" x="550" y="151" text-anchor="middle">68 / 51 / 0</text>
+<text class="s" x="620" y="151">+9–13%; one bin&#x27;s CREs counted twice</text>
+<text class="t" x="20" y="184">centre binning</text>
+<text class="ms" x="20" y="198">bin of the CRE centre</text>
+<rect class="chip green" x="244" y="175" width="52" height="20" rx="10"></rect>
+<text class="s" x="270" y="189" text-anchor="middle">yes</text>
+<rect class="bx warn" x="334" y="175" width="52" height="20" rx="10"></rect>
+<text class="s" x="360" y="189" text-anchor="middle">no</text>
+<rect class="bx warn" x="424" y="175" width="52" height="20" rx="10"></rect>
+<text class="s" x="450" y="189" text-anchor="middle">no</text>
+<text class="m" x="550" y="189" text-anchor="middle">30 / 31 / 49</text>
+<text class="s" x="620" y="189">more edges on their loop pixel; dilutes</text>
+<text class="t" x="20" y="222">ATAC-weighted</text>
+<text class="ms" x="20" y="236">weights=accessibility</text>
+<rect class="chip green" x="244" y="213" width="52" height="20" rx="10"></rect>
+<text class="s" x="270" y="227" text-anchor="middle">yes</text>
+<rect class="chip" x="334" y="213" width="52" height="20" rx="10"></rect>
+<text class="s" x="360" y="227" text-anchor="middle">partly</text>
+<rect class="bx warn" x="424" y="213" width="52" height="20" rx="10"></rect>
+<text class="s" x="450" y="227" text-anchor="middle">no</text>
+<text class="m" x="550" y="227" text-anchor="middle">31 / 25 / 18</text>
+<text class="s" x="620" y="227">closed CREs keep a residual share</text>
+<text class="t" x="20" y="260">peak mask</text>
+<text class="ms" x="20" y="274">weights=mask, diagonal=True</text>
+<rect class="chip green" x="244" y="251" width="52" height="20" rx="10"></rect>
+<text class="s" x="270" y="265" text-anchor="middle">yes</text>
+<rect class="chip green" x="334" y="251" width="52" height="20" rx="10"></rect>
+<text class="s" x="360" y="265" text-anchor="middle">yes</text>
+<rect class="bx warn" x="424" y="251" width="52" height="20" rx="10"></rect>
+<text class="s" x="450" y="265" text-anchor="middle">no</text>
+<text class="m" x="550" y="265" text-anchor="middle">35 / 0 / 121</text>
+<text class="s" x="620" y="265">self-contacts still lift the knee</text>
+<rect class="bx hl" x="12" y="282" width="856" height="36" rx="6"></rect>
+<text class="t" x="20" y="298">peak mask, no diagonal</text>
+<text class="ms" x="20" y="312">weights=mask (default diag.)</text>
+<rect class="chip green" x="244" y="289" width="52" height="20" rx="10"></rect>
+<text class="s" x="270" y="303" text-anchor="middle">yes</text>
+<rect class="chip green" x="334" y="289" width="52" height="20" rx="10"></rect>
+<text class="s" x="360" y="303" text-anchor="middle">yes</text>
+<rect class="chip green" x="424" y="289" width="52" height="20" rx="10"></rect>
+<text class="s" x="450" y="303" text-anchor="middle">yes</text>
+<text class="m" x="550" y="303" text-anchor="middle">8 / 0 / 7</text>
+<text class="s" x="620" y="303">every graph&#x27;s hubs move 14–29%</text>
+</svg>
