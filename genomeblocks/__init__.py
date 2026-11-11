@@ -44,6 +44,10 @@ _EXPORTS: Dict[str, tuple] = {
     "plot_motif_heatmap": (".motifs_draw", "plot_motif_heatmap"),
     "coverage": (".bam", "coverage"),
     "fithichip": (".loops", "fithichip"),
+    "maps": ("._maps", "maps"),
+    "mustache": ("._mustache", "mustache"),
+    "hiccups": ("._hiccups", "hiccups"),
+    "HiCCUPS": ("._hiccups", "HiCCUPS"),
     # viewers
     "browser": (".browserview", "browser"),
     "View": (".view", "View"),

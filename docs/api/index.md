@@ -24,7 +24,7 @@ import genomeblocks as gb
 | `gb.Pairs` | BEDPE as a table (anchors `a` and `b`). | [bedpe]({{ '/api/bedpe/' | relative_url }}) |
 | `gb.Architecture` | A CRE interaction graph: vertices = a `Loci`, edges = a table. | [architecture]({{ '/api/architecture/' | relative_url }}) |
 | `gb.Atlas` | A sparse bins x tracks index for enrichment. | [atlas]({{ '/api/atlas/' | relative_url }}) |
-| `gb.fithichip` | HiChIP loops from a cooler and anchor peaks (FitHiChIP's model). | [loops]({{ '/api/loops/' | relative_url }}) |
+| `gb.fithichip`, `gb.maps`, `gb.mustache`, `gb.hiccups` | Loop calling: FitHiChIP's and MAPS's HiChIP models; Mustache and Juicer's HiCCUPS on a cooler. | [loops]({{ '/api/loops/' | relative_url }}) |
 | `gb.as_loci` | Anything interval-like → `Loci`; what every function calls on its inputs. | [interop]({{ '/api/interop/' | relative_url }}) |
 | `gb.read_fasta`, `gb.load_motifs` | A FASTA as `{chrom: seq}`; a motif file as a `Library`. | [backends]({{ '/api/backends/' | relative_url }}) |
 | `gb.backends()`, `gb.use_backend` | List the engines; pick one for a block of code. | [backends]({{ '/api/backends/' | relative_url }}) |
@@ -43,7 +43,7 @@ Names are imported on first use, so `import genomeblocks` stays light.
 | `genomeblocks.genes` | `Genes`, `GeneView`, `tss_base`, `LABELS`, `KINDS` | [genes]({{ '/api/genes/' | relative_url }}) |
 | `genomeblocks.expression` | `Expression`, `sniff_format`, `sample_name`, `read_table`, `LEVELS`, `HOW` (and `genomeblocks._norm`: `lib_sizes`, `cpm`, `tmm_factors`, `size_factors`, `filter_by_expr`) | [expression]({{ '/api/expression/' | relative_url }}) |
 | `genomeblocks.bedpe` | `Pairs`, `read_bedpe`, `as_pairs`, `read_pairs_chunks`, `PAIRS_FORMAT_COLUMNS`, `count_pairs`, `count_pairs_2d`, `pair_2d_block`, `pair_2d_to_frame`, `open_cooler` | [bedpe]({{ '/api/bedpe/' | relative_url }}) |
-| `genomeblocks.loops` | `fithichip`, `FitHiChIP` | [loops]({{ '/api/loops/' | relative_url }}) |
+| `genomeblocks.loops` | `fithichip`, `FitHiChIP` (and `genomeblocks._maps`: `maps`, `MAPS`; `genomeblocks._mustache`: `mustache`, `Mustache`; `genomeblocks._hiccups`: `hiccups`, `HiCCUPS`) | [loops]({{ '/api/loops/' | relative_url }}) |
 | `genomeblocks.architecture` | `Architecture`, `Props` | [architecture]({{ '/api/architecture/' | relative_url }}) |
 | `genomeblocks.architecture_draw` | `draw` | [architecture]({{ '/api/architecture/' | relative_url }}) |
 | `genomeblocks.signal` | `signal`, `tmm` | [signal]({{ '/api/signal/' | relative_url }}) |

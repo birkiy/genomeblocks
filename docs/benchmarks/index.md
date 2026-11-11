@@ -34,6 +34,9 @@ most 8 worker processes</p>
 <div class="gb-tile green"><span class="tile-label">Reading quant.sf</span><span class="tile-value">2.0×</span><span class="tile-ctx">faster than tximport's readr path for 96 files, same numbers</span></div>
 <div class="gb-tile navy"><span class="tile-label">TMM factors</span><span class="tile-value">max |Δ| 4.4e-16</span><span class="tile-ctx">against edgeR at 60,000 genes × 96 samples</span></div>
 <div class="gb-tile purple"><span class="tile-label">HiChIP loops vs FitHiChIP</span><span class="tile-value">131×</span><span class="tile-ctx">synthetic cooler: 2.5 s vs 5.4 min, same loops</span></div>
+<div class="gb-tile purple"><span class="tile-label">HiChIP loops vs MAPS</span><span class="tile-value">10×</span><span class="tile-ctx">synthetic pairs: 4.7 s vs 49 s, same loops</span></div>
+<div class="gb-tile purple"><span class="tile-label">Hi-C loops vs Mustache</span><span class="tile-value">9.1×</span><span class="tile-ctx">synthetic cooler: 8.0 s vs 73 s, same loops</span></div>
+<div class="gb-tile purple"><span class="tile-label">Hi-C loops vs HiCCUPS</span><span class="tile-value">16×</span><span class="tile-ctx">synthetic map: 10 s vs 2.7 min, all byte-identical</span></div>
 </div>
 
 1. TOC
@@ -1582,6 +1585,39 @@ On the synthetic HiChIP cooler: **2.5 s** and 0.3 GB against 5.4 min for FitHiCh
 <details class="gb-table" open><summary>HiChIP samples</summary><table><thead><tr><th>sample</th><th>tested pairs</th><th>loops</th><th>merged</th><th>FitHiChIP</th><th>genomeblocks</th><th>speed-up</th><th>same result</th><th>IGV files</th><th>FitHiChIP run</th></tr></thead><tbody><tr><td>K5K19 (4 M read pairs)</td><td>466,408</td><td>7,401</td><td>5,636</td><td>22.1 min</td><td>2.9 s</td><td>464×</td><td>yes (P, q within 8e-08)</td><td>byte-identical</td><td>IntType 3</td></tr><tr><td>CM</td><td>9,593,124</td><td>222,482</td><td>115,768</td><td>273.5 min</td><td>20 s</td><td>819×</td><td>yes</td><td>identical but for 28 of 338,250 lines (last digit of −log10 q)</td><td>IntType 5 (all four interaction types)</td></tr><tr><td>mESC</td><td>52,256,865</td><td>482,351</td><td>244,760</td><td>885.4 min</td><td>89 s</td><td>598×</td><td>yes</td><td>identical but for 1 of 727,111 lines (last digit of −log10 q)</td><td>IntType 5 (all four interaction types)</td></tr><tr><td>GM12878</td><td>36,178,586</td><td>1,115,590</td><td>398,112</td><td>1005.0 min</td><td>65 s</td><td>933×</td><td>yes</td><td>identical but for 5 of 1,513,702 lines (last digit of −log10 q)</td><td>IntType 5 (all four interaction types)</td></tr><tr><td>K562</td><td>33,197,566</td><td>1,222,113</td><td>439,048</td><td>1159.6 min</td><td>61 s</td><td>1,138×</td><td>yes</td><td>identical but for 11 of 1,661,161 lines (last digit of −log10 q)</td><td>IntType 5 (all four interaction types)</td></tr></tbody></table></details>
 
 FitHiChIP times are the wall times of the original runs (nf-core / Nextflow traces, one core); the loop sets are compared with those runs' output files. Where FitHiChIP kept its table of tested pairs, P and q are compared pair by pair.
+
+## HiChIP loops (MAPS)
+{: .sec-purple #maps }
+
+`genomeblocks.maps` reproduces MAPS (feather's short / long split, AND / XOR bin pairs, zero-truncated Poisson regression per chromosome as VGAM fits it, two-pass refit, BH, 15 kb clusters) from a pairs file, and is compared with MAPS run on the same pairs and peaks.
+
+On the synthetic HiChIP pairs: **4.7 s** and 0.9 GB against 49 s for MAPS (after 19 s writing its per-chromosome input files); 162,412 tested bin pairs and 23,941 reported loops, the same as MAPS's; expected within 5e-15, P and fdr within 6e-14 (relative).
+
+<details class="gb-table" open><summary>HiChIP samples</summary><table><thead><tr><th>sample</th><th>tested bin pairs</th><th>loops</th><th>MAPS</th><th>genomeblocks</th><th>speed-up</th><th>same result</th><th>MAPS run</th></tr></thead><tbody><tr><td>K5K19 (6.4 M pairs)</td><td>352,678</td><td>396</td><td>53 s</td><td>11 s</td><td>4.9×</td><td>yes (P, fdr within 8e-14)</td><td>MAPS with VGAM 1.1-2</td></tr><tr><td>CM (114 M pairs)</td><td>6,804,225</td><td>61,894</td><td>15.1 min</td><td>99 s</td><td>9.2×</td><td>yes (P, fdr within 2e-10)</td><td>MAPS with VGAM 1.1-2 (1.1-14 stops on this sample)</td></tr></tbody></table></details>
+
+MAPS times are MAPS.py + regression + formatting on the per-chromosome files feather would write from the same pairs; genomeblocks' include reading the pairs file.
+
+## Hi-C / HiChIP loops (Mustache)
+{: .sec-purple #mustache }
+
+`genomeblocks` runs Mustache's multi-scale loop caller (diagonal-wise local z-scores, difference-of-Gaussian scale space in overlapping blocks, exponential P, BH, sparsity and diagonal-enrichment filters) on the pixels of a balanced cooler, and is compared with Mustache 1.3.3 on the same cooler, both with 4 cores.
+
+On a synthetic 5 kb cooler (chr21 + chr22, 1,488 planted loops): **8.0 s** and 1.2 GB against 73 s for Mustache; 660 loops, the same as Mustache's, FDR within 2e-12 (relative; 653 identical to the bit).
+
+<details class="gb-table" open><summary>HiChIP samples</summary><table><thead><tr><th>sample</th><th>loops</th><th>Mustache</th><th>genomeblocks</th><th>speed-up</th><th>same loops</th><th>FDR (max rel. diff.)</th><th>Mustache run</th></tr></thead><tbody><tr><td>CM HiChIP 10 kb</td><td>4,290</td><td>10.5 min</td><td>41 s</td><td>15×</td><td>yes</td><td>3e-12</td><td>iPSC-CM H3K27ac HiChIP, cooler balance (ICE); mustache -p 4</td></tr><tr><td>CM HiChIP 5 kb</td><td>760</td><td>20.3 min</td><td>2.3 min</td><td>8.9×</td><td>yes</td><td>2e-12</td><td>iPSC-CM H3K27ac HiChIP, cooler balance (ICE); mustache -p 4</td></tr><tr><td>K5K19 HiChIP 5 kb (subset)</td><td>0</td><td>15.7 min</td><td>2.7 s</td><td>351×</td><td>yes</td><td>0e+00</td><td>small HiChIP subset: every block under Mustache&#x27;s 10 000 tested pixels; mustache -p 4</td></tr><tr><td>GM12878 HiChIP 5 kb</td><td>2,159</td><td>21.1 min</td><td>2.4 min</td><td>8.8×</td><td>yes</td><td>7e-12</td><td>GM12878 H3K27ac HiChIP, cooler balance (ICE); mustache -p 4</td></tr></tbody></table></details>
+
+Mustache times are the wall times of `mustache -p 4` on the same balanced coolers; the loop sets and FDRs are compared with those runs' output files.
+
+## Hi-C loops (HiCCUPS)
+{: .sec-purple #hiccups }
+
+`genomeblocks.hiccups` reproduces Juicer's HiCCUPS (`juicer_tools 2.13.06 hiccups --cpu`, the ENCODE pipeline's version) on an .mcool: expected by distance, the four local backgrounds, lambda-chunk Poisson FDR thresholds, clustering and the 5 / 10 / 25 kb merge. Fed Juicer's SCALE vectors and expected, it is compared with Juicer file by file.
+
+On the synthetic Hi-C map (8 threads / workers): **10 s** against 2.7 min for Juicer; 182 merged loops, Juicer's output files all byte-identical; with the cooler's own balancing weights 11 s.
+
+<details class="gb-table" open><summary>Samples</summary><table><thead><tr><th>sample</th><th>merged loops</th><th>Juicer</th><th>genomeblocks</th><th>speed-up</th><th>output files</th><th>note</th></tr></thead><tbody><tr><td>CM</td><td>21,413</td><td>35.8 min (32 threads)</td><td>3.0 min (32 workers)</td><td>12×</td><td>same rows; only fdrBL, fdrDonut, fdrH, fdrV differ</td><td>CM HiChIP H3K27ac, 114M pairs</td></tr></tbody></table></details>
+
+Juicer ran with several threads here. Its CPU path updates the shared FDR histograms without a lock (`GPUOutputContainer.updateHistograms` is synchronized per tile), so the q-value columns (`fdrBL/Donut/H/V`) of a multi-threaded run lose counts and change from run to run; every other column, the pixel and loop sets and the thresholds match. genomeblocks reproduces the single-thread run byte for byte (synthetic map).
 
 ## Import cost
 {: .sec-navy #import }
