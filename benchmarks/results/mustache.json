@@ -1,0 +1,143 @@
+{
+ "bench": "mustache",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+  "cores": 64,
+  "mem_gb": 811.277991936,
+  "python": "3.12.12",
+  "platform": "Linux-5.15.0-113-generic-x86_64-with-glibc2.35",
+  "versions": {
+   "genomeblocks": "2.0.1",
+   "numpy": "2.3.4",
+   "scipy": "1.16.3",
+   "pandas": "2.3.3",
+   "polars": "1.44.2",
+   "pyarrow": "21.0.0",
+   "narwhals": "2.10.2",
+   "pybigtools": "0.2.5",
+   "pyBigWig": "0.3.24",
+   "cgranges": "installed",
+   "ncls": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "pybedtools": "0.12.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.86",
+   "MOODS": "installed",
+   "graph_tool": "2.98 (commit c96a6bf3, )",
+   "igraph": "0.11.9",
+   "networkx": "3.6.1",
+   "bedtools": "v2.31.0"
+  }
+ },
+ "meta": {
+  "mustache": "1.3.3 (github.com/ay-lab/mustache df71aa1)",
+  "threads": 4
+ },
+ "rows": [
+  {
+   "part": "synthetic",
+   "impl": "genomeblocks",
+   "threads": 4,
+   "seconds": 7.994787123054266,
+   "runs": [
+    7.994787123054266,
+    8.019244503229856,
+    7.992022607475519
+   ],
+   "peak_mb": 1219.59765625
+  },
+  {
+   "part": "synthetic",
+   "impl": "Mustache",
+   "threads": 4,
+   "seconds": 73.14900920540094,
+   "peak_mb": 863.51171875
+  },
+  {
+   "part": "synthetic",
+   "impl": "agreement",
+   "loops_ref": 660,
+   "loops_gb": 660,
+   "loops_shared": 660,
+   "max_rel_FDR": 1.536926532894662e-12,
+   "FDR_identical": 653,
+   "scales_equal": true,
+   "lines_identical": false,
+   "lines_differing": 14,
+   "planted_found_ref": 722,
+   "calls_at_planted_ref": 657,
+   "planted_found_gb": 722,
+   "calls_at_planted_gb": 657,
+   "planted": 1488
+  },
+  {
+   "part": "real",
+   "sample": "CM HiChIP 10 kb",
+   "threads": 4,
+   "seconds": 41.329661052674055,
+   "peak_mb": 1138.890625,
+   "mustache_seconds": 627.08,
+   "note": "iPSC-CM H3K27ac HiChIP, cooler balance (ICE); mustache -p 4",
+   "loops_ref": 4290,
+   "loops_gb": 4290,
+   "loops_shared": 4290,
+   "max_rel_FDR": 3.0336063266559998e-12,
+   "FDR_identical": 3639,
+   "scales_equal": true,
+   "lines_identical": false,
+   "lines_differing": 1302
+  },
+  {
+   "part": "real",
+   "sample": "CM HiChIP 5 kb",
+   "threads": 4,
+   "seconds": 137.1332535073161,
+   "peak_mb": 1620.48046875,
+   "mustache_seconds": 1215.66,
+   "note": "iPSC-CM H3K27ac HiChIP, cooler balance (ICE); mustache -p 4",
+   "loops_ref": 760,
+   "loops_gb": 760,
+   "loops_shared": 760,
+   "max_rel_FDR": 1.999504946900218e-12,
+   "FDR_identical": 739,
+   "scales_equal": true,
+   "lines_identical": false,
+   "lines_differing": 42
+  },
+  {
+   "part": "real",
+   "sample": "K5K19 HiChIP 5 kb (subset)",
+   "threads": 4,
+   "seconds": 2.686886638402939,
+   "peak_mb": 173.3671875,
+   "mustache_seconds": 942.77,
+   "note": "small HiChIP subset: every block under Mustache's 10 000 tested pixels; mustache -p 4",
+   "loops_ref": 0,
+   "loops_gb": 0,
+   "loops_shared": 0,
+   "max_rel_FDR": 0.0,
+   "FDR_identical": 0,
+   "scales_equal": true,
+   "lines_identical": true,
+   "lines_differing": 0
+  },
+  {
+   "part": "real",
+   "sample": "GM12878 HiChIP 5 kb",
+   "threads": 4,
+   "seconds": 143.3816103413701,
+   "peak_mb": 2005.74609375,
+   "mustache_seconds": 1263.03,
+   "note": "GM12878 H3K27ac HiChIP, cooler balance (ICE); mustache -p 4",
+   "loops_ref": 2159,
+   "loops_gb": 2159,
+   "loops_shared": 2159,
+   "max_rel_FDR": 7.46339922528408e-12,
+   "FDR_identical": 2036,
+   "scales_equal": true,
+   "lines_identical": false,
+   "lines_differing": 246
+  }
+ ]
+}
