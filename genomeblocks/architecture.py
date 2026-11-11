@@ -446,17 +446,39 @@ class Architecture(TableMixin):
 
     # ── Hi-C weights ──────────────────────────────────────────────────────
     def add_mcool(self, mcool: str, *, resolution: Optional[int] = None, name: str = "w",
-                  verbose: bool = True) -> "Architecture":
-        """Edge weight = Hi-C count of the (bin, bin) pixel holding the two CREs,
-        shared equally among the edges that fall in the same pixel.
+                  weights=None, diagonal: bool = False, verbose: bool = True) -> "Architecture":
+        """Edge weight = Hi-C count of the (bin, bin) pixel holding the two CREs
+        (each CRE in the bin of its start), shared among the edges that fall in
+        the same pixel, so every pixel's count is handed out once.
 
-        Same rule as the classic ``add_mcool``. Pixels are read one chromosome
-        block at a time (rows of the lower bin), so memory stays bounded and
-        trans pixels are found in the same pass.
+        The share is equal by default. ``weights`` (one non-negative value per
+        CRE, or the name of a vertex column) shares each pixel in proportion to
+        ``weights[i] * weights[j]`` instead; a pixel whose edges all weigh 0 is
+        shared equally. With a 0/1 mask of the CREs that have a peak in this
+        sample, CREs without one take nothing from a pixel that holds an edge
+        between two CREs with one, so a graph on the CREs of several samples does
+        not dilute each sample's counts over the other samples' CREs.
+
+        Edges whose two CREs fall in one bin get 0 unless ``diagonal=True``:
+        their pixel is the bin's self-contact, not a loop pixel (a loop never has
+        both anchors in one bin; such edges come from a CRE straddling the
+        boundary between the anchors of a loop between adjacent bins).
+
+        Pixels are read one chromosome block at a time (rows of the lower bin),
+        so memory stays bounded and trans pixels are found in the same pass.
         """
+        L = self.loci
+        if isinstance(weights, str):
+            if weights not in self.vp:
+                raise ValueError(f"weights: vertex column '{weights}' not found.")
+            weights = self.vp[weights]
+        if weights is not None:
+            weights = np.asarray(weights, float)
+            if weights.shape != (len(L),) or not np.isfinite(weights).all() or (weights < 0).any():
+                raise ValueError(f"weights: one finite, non-negative value per CRE ({len(L)}); "
+                                 f"got shape {weights.shape}")
         from .bedpe import open_cooler
         clr = open_cooler(mcool, resolution, caller="add_mcool")
-        L = self.loci
         nb = int(clr.info["nbins"])
         names = L.genome.names
         off = np.full(len(names), -1, np.int64)
@@ -469,6 +491,9 @@ class Architecture(TableMixin):
                                                     last[L.codes]), -1)
         b1, b2 = vb[self.src], vb[self.tgt]
         ok = (b1 >= 0) & (b2 >= 0)
+        n_diag = int((ok & (b1 == b2)).sum())
+        if not diagonal:
+            ok &= b1 != b2
         key = np.minimum(b1, b2) * nb + np.maximum(b1, b2)
         ukey, inv, n_share = np.unique(key[ok], return_inverse=True, return_counts=True)
         count = np.zeros(len(ukey))
@@ -490,12 +515,19 @@ class Architecture(TableMixin):
                 found = pk[hit] == ukey[a:z]
                 count[a:z][found] = pxc[p0:p1][hit[found]]
         w = np.zeros(self.n_links)
-        w[ok] = (count / n_share)[inv]
+        if weights is None:
+            w[ok] = (count / n_share)[inv]
+        else:                                            # share ∝ w_i · w_j; equal where every edge weighs 0
+            q = weights[self.src[ok]] * weights[self.tgt[ok]]
+            tot = np.bincount(inv, q, len(ukey))[inv]
+            w[ok] = np.where(tot > 0, count[inv] * q / np.where(tot > 0, tot, 1.0), count[inv] / n_share[inv])
         self.ep[name] = w
         self._gt = None
         if verbose:
+            skip = (f"; {n_diag} edge{'s' if n_diag != 1 else ''} with both CREs in one bin left at 0 (diagonal=False)"
+                    if n_diag and not diagonal else "")
             print(f"[INFO] Set distributed weights for {int((w > 0).sum())}/{self.n_links} edges "
-                  f"from cooler. [{name}]")
+                  f"from cooler{skip}. [{name}]")
         return self
 
     # ── distance-decay normalisation ─────────────────────────────────────
