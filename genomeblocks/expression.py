@@ -90,6 +90,9 @@ def _sep_of(path, line: str) -> str:
     return "," if "," in line else "\t"
 
 
+_BLOCK = "\0block"                      # _read_delim's key for the trailing numeric columns as one matrix
+
+
 def _read_delim(path, *, header: bool, skip: int = 0, sep: str = "\t", numeric=(), numeric_after=None,
                 backend=None):
     """A delimited text table as ``(column names, {name: numpy array})``:
@@ -100,35 +103,49 @@ def _read_delim(path, *, header: bool, skip: int = 0, sep: str = "\t", numeric=(
     numeric = set(numeric)
     if b == "polars":
         import polars as pl
+        opts = dict(separator=sep, has_header=header, skip_rows=skip, quote_char=None, truncate_ragged_lines=True)
         try:
-            df = pl.read_csv(path, separator=sep, has_header=header, skip_rows=skip, infer_schema_length=0,
-                             quote_char=None, truncate_ragged_lines=True)
+            # the header first, so the numeric columns are parsed as numbers while reading (in parallel) instead
+            # of read as text and cast column by column afterwards; a value that is not a number becomes NaN
+            head = pl.read_csv(path, infer_schema_length=0, n_rows=0, **opts)
+            names = [f"c{i}" for i in range(head.width)] if not header else list(head.columns)
+            num = numeric | (set(names[numeric_after:]) if numeric_after is not None else set())
+            src = list(head.columns)
+            df = pl.read_csv(path, infer_schema_length=0, ignore_errors=True,
+                             schema_overrides={src[i]: pl.Float64 for i, n in enumerate(names) if n in num}, **opts)
         except Exception as e:                       # noqa: BLE001 — polars has many error classes
             raise ValueError(f"{path}: cannot read as a delimited table: {e}") from None
-        names = [f"c{i}" for i in range(df.width)] if not header else list(df.columns)
         if not header:
             df.columns = names
-        if numeric_after is not None:
-            numeric |= set(names[numeric_after:])
         out = {}
+        if numeric_after is not None and len(names) > numeric_after:
+            # the trailing numeric block (a count matrix) as one 2-D array; its columns are views of it
+            block = pl.DataFrame(df.get_columns()[numeric_after:]).to_numpy()   # no select(): it goes through the lazy engine
+            out[_BLOCK] = block
+            for j, c in enumerate(names[numeric_after:]):
+                out[c] = block[:, j]
         for c in names:
-            s = df[c]
-            out[c] = (s.cast(pl.Float64, strict=False).to_numpy() if c in numeric
-                      else s.to_numpy().astype(object))
+            if c not in out:
+                s_ = df[c]
+                out[c] = s_.to_numpy() if c in num else s_.to_numpy().astype(object)
         return names, out
     import pandas as pd
     try:
-        df = pd.read_csv(path, sep=sep, header=0 if header else None, skiprows=skip, dtype=str, quoting=3,
-                         engine="c")
+        head = pd.read_csv(path, sep=sep, header=0 if header else None, skiprows=skip, dtype=str, quoting=3, engine="c", nrows=0)
+        names = [f"c{i}" for i in range(head.shape[1])] if not header else [str(c) for c in head.columns]
+        num = numeric | (set(names[numeric_after:]) if numeric_after is not None else set())
+        try:                                         # numbers parsed while reading; a bad value falls back below
+            df = pd.read_csv(path, sep=sep, header=0 if header else None, skiprows=skip, quoting=3, engine="c",
+                             dtype={(names[i] if header else i): (np.float64 if n in num else str) for i, n in enumerate(names)})
+        except ValueError:
+            df = pd.read_csv(path, sep=sep, header=0 if header else None, skiprows=skip, dtype=str, quoting=3,
+                             engine="c")
     except (ValueError, TypeError) as e:
         raise ValueError(f"{path}: cannot read as a delimited table: {e}") from None
-    names = [f"c{i}" for i in range(df.shape[1])] if not header else [str(c) for c in df.columns]
     df.columns = names
-    if numeric_after is not None:
-        numeric |= set(names[numeric_after:])
     out = {}
     for c in names:
-        out[c] = (pd.to_numeric(df[c], errors="coerce").to_numpy(np.float64) if c in numeric
+        out[c] = (pd.to_numeric(df[c], errors="coerce").to_numpy(np.float64) if c in num
                   else df[c].to_numpy(object))
     return names, out
 
@@ -279,7 +296,12 @@ def read_table(path, *, strand: str = "auto", sample: Optional[str] = None, back
     if fmt == "featurecounts":
         names, d = _read_delim(path, header=True, skip=skip, sep=sep, numeric_after=5, backend=backend)
         samples = names[6:]
-        counts = np.column_stack([d[c] for c in samples]) if samples else np.zeros((len(d[names[0]]), 0))
+        if not samples:
+            counts = np.zeros((len(d[names[0]]), 0))
+        elif _BLOCK in d and list(names[-len(samples):]) == list(samples):
+            counts = d[_BLOCK][:, -len(samples):]                         # the samples close the numeric block
+        else:
+            counts = np.column_stack([d[c] for c in samples])
         length = d[names[5]]
         return _Table(d[names[0]], {"counts": counts, "length": np.repeat(length[:, None], len(samples), axis=1)},
                       [_bam_stem(c) for c in samples], level=None, fmt=fmt)

@@ -98,7 +98,9 @@ def threshold_from_pvalue(lo_matrix, pvalue: float, *, resolution: float = 1e-3)
 
     A coarse pass bounds the answer from below, so the exact pass only builds
     the upper tail of the score distribution. A motif too short to reach
-    ``pvalue`` gets its best possible score (only perfect matches count)."""
+    ``pvalue`` (a 6-mer at p < 4^-6) gets ``inf``: no window is that rare, so no
+    hit — FIMO's rule, and the one every engine applies identically (a cutoff at
+    the best possible score would hang on float32 vs float64 rounding)."""
     m = np.asarray(lo_matrix, np.float64)
     q = np.rint(m / resolution).astype(np.int64)
     base = int(q.min(1).sum())
@@ -121,7 +123,7 @@ def threshold_from_pvalue(lo_matrix, pvalue: float, *, resolution: float = 1e-3)
         tail = np.cumsum(dist[::-1])[::-1]
         k = np.flatnonzero(tail <= pvalue)
     if not len(k):
-        return float(m.max(1).sum())
+        return float("inf")
     return float((lo + k[0] + base) * resolution)
 
 

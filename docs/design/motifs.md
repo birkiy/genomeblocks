@@ -119,7 +119,7 @@ both)` returns `(row, position in window, strand)` for every hit;
 
 | Backend | Engine call | Notes | Install |
 |---|---|---|---|
-| `moods` (default) | `MOODS.scan.Scanner(7).scan(block)` | C++; `scan_motifs_matrix` hands a whole batch of matrices to one `Scanner` (`Block.moods_counts`, up to 64 motifs per call), so the library is scanned in one pass over the block | conda `moods` (the conda package of genomeblocks depends on it); pip `genomeblocks[motifs]` (MOODS-python, compiled at install) |
+| `moods` (default without lightmotif) | `MOODS.scan.Scanner(7).scan(block)` | C++; `scan_motifs_matrix` hands a whole batch of matrices to one `Scanner` (`Block.moods_counts`, up to 64 motifs per call), so the library is scanned in one pass over the block | conda `moods` (the conda package of genomeblocks depends on it); pip `genomeblocks[motifs]` (MOODS-python, compiled at install) |
 | `lightmotif` | `lightmotif.scan(ScoringMatrix, striped block, threshold=)` | Rust, SIMD; the striped sequence is prepared once per block, one matrix per call; picked automatically only when MOODS is absent | pip `genomeblocks[lightmotif]` (prebuilt wheels) |
 | `biopython` | `PositionSpecificScoringMatrix.calculate` | numpy; always a request (`backend="biopython"`) | pip `biopython` |
 
@@ -159,7 +159,7 @@ for b in ("moods", "lightmotif", "biopython"):
   is computed once per motif, before any engine runs, so it is the same
   whichever engine scans, and it agrees with MOODS' `threshold_from_p` to a
   few thousandths of a bit. A motif too short to reach `pvalue` (a 4-mer at
-  `p < 1/256`) keeps only perfect matches. `norm=True` divides counts by
+  `p < 1/256`) gets an infinite cutoff and no hits, as in FIMO. `norm=True` divides counts by
   motif width; `both_strands=True` also scans the reverse complement.
 - **Parallelism.** Motifs are independent, so they are split into batches
   across a process pool whose initializer builds the block once per worker.

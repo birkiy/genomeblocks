@@ -80,6 +80,119 @@ def merge(codes, starts, ends):
     return c, gs[first] - c * STRIDE, run_end[last] - c * STRIDE, o[first]
 
 
+def count_overlaps(qc, qs, qe, rc, rs, re_):
+    """n[i] = number of reference intervals overlapping query i (half-open).
+
+    A reference [s, e) overlaps [a, b) iff s < b and e > a; every reference
+    ending at or before a also starts before b, so the count is
+    #(starts < b) - #(ends <= a) — two searchsorted calls. The rule also
+    gives genomeblocks' zero-length behaviour ([p, p) overlaps [s, e) iff
+    s < p < e). Chromosomes are apart on the genome axis, so references on
+    other chromosomes cancel out.
+    """
+    if len(rs) == 0 or len(qs) == 0:
+        return np.zeros(len(qs), np.int64)
+    rs_s = np.sort(gpos(rc, rs))
+    re_s = np.sort(gpos(rc, re_))
+    return (np.searchsorted(rs_s, gpos(qc, qe), side="left")
+            - np.searchsorted(re_s, gpos(qc, qs), side="right")).astype(np.int64)
+
+
+def _merged_axis(codes, starts, ends):
+    """Merged reference blocks on the genome axis: (block starts, block ends,
+    cumulative covered bases before each block). Zero-length intervals cover no
+    base, so they are left out (they would otherwise split a piece or a gap)."""
+    c, s, e, _ = merge(*_nonempty(codes, starts, ends))
+    bs, be = gpos(c, s), gpos(c, e)
+    cum = np.concatenate([[0], np.cumsum(be - bs)])
+    return bs, be, cum
+
+
+def covered_bases(qc, qs, qe, rc, rs, re_):
+    """bases[i] = bases of query i covered by the reference set (overlapping
+    references counted once: bedtools coverage's covered-bases column)."""
+    if len(rs) == 0 or len(qs) == 0:
+        return np.zeros(len(qs), np.int64)
+    bs, be, cum = _merged_axis(rc, rs, re_)
+    a, b = gpos(qc, qs), gpos(qc, qe)
+    j0 = np.searchsorted(be, a, side="right")             # first block ending after a
+    j1 = np.searchsorted(bs, b, side="left")              # first block starting at or after b
+    n = j1 - j0
+    out = cum[np.maximum(j1, j0)] - cum[j0]
+    has = n > 0
+    out[has] -= np.maximum(a[has] - bs[j0[has]], 0)        # clip the first block at a
+    out[has] -= np.maximum(be[j1[has] - 1] - b[has], 0)    # and the last at b
+    return np.maximum(out, 0).astype(np.int64)
+
+
+def subtract(qc, qs, qe, rc, rs, re_):
+    """bedtools subtract: the parts of each query interval no reference covers.
+
+    Returns (row, starts, ends): one row per surviving piece, ``row`` the query
+    row it came from, pieces in query order and left to right.
+    """
+    if len(qs) == 0:
+        z = np.zeros(0, np.int64)
+        return z, z, z
+    qs, qe = np.asarray(qs, np.int64), np.asarray(qe, np.int64)
+    if len(rs) == 0:
+        return np.arange(len(qs)), qs.copy(), qe.copy()
+    bs, be, _ = _merged_axis(rc, rs, re_)
+    off = np.asarray(qc, np.int64) * STRIDE
+    a, b = off + qs, off + qe
+    j0 = np.searchsorted(be, a, side="right")
+    j1 = np.searchsorted(bs, b, side="left")
+    n = np.maximum(j1 - j0, 0)                              # blocks inside each query; n + 1 candidate pieces
+    row = np.repeat(np.arange(len(qs)), n + 1)
+    k = np.arange(len(row)) - np.repeat(np.cumsum(n + 1) - (n + 1), n + 1)
+    j = j0[row] + k
+    ps = np.where(k == 0, a[row], be[np.minimum(j - 1, len(be) - 1)])
+    pe = np.where(k == n[row], b[row], bs[np.minimum(j, len(bs) - 1)])
+    ps, pe = np.maximum(ps, a[row]), np.minimum(pe, b[row])
+    keep = pe > ps
+    row, ps, pe = row[keep], ps[keep], pe[keep]
+    return row, ps - off[row], pe - off[row]
+
+
+def _nonempty(codes, starts, ends):
+    codes, starts, ends = (np.asarray(x, np.int64) for x in (codes, starts, ends))
+    keep = ends > starts
+    return codes[keep], starts[keep], ends[keep]
+
+
+def complement(codes, starts, ends, sizes):
+    """bedtools complement: the gaps between merged intervals within each
+    chromosome ``[0, size)``; ``sizes`` holds one length per genome code (a
+    chromosome with no interval is one whole gap, a code with size < 0 is left
+    out). Returns (codes, starts, ends) in (code, start) order.
+
+    The merged blocks are already in that order, and the gap ending at each
+    block comes right before it, so only each chromosome's closing gap (and the
+    chromosomes with no block) are inserted — no sort of the gaps."""
+    sizes = np.asarray(sizes, np.int64)
+    c, s, e = _nonempty(codes, starts, ends)
+    if len(c):
+        c, s, e, _ = merge(c, s, e)
+    first = np.r_[True, c[1:] != c[:-1]] if len(c) else np.zeros(0, bool)
+    gs = np.where(first, 0, np.r_[0, e[:-1]]) if len(c) else np.zeros(0, np.int64)
+    gc, ge = c.astype(np.int64), np.minimum(s, sizes[c]) if len(c) else np.zeros(0, np.int64)
+    # each chromosome's closing gap goes after its last block's gap
+    last = np.flatnonzero(np.r_[c[1:] != c[:-1], True]) if len(c) else np.zeros(0, np.int64)
+    at = last + 1
+    tc = gc[last]
+    gc = np.insert(gc, at, tc)
+    gs = np.insert(gs, at, e[last])
+    ge = np.insert(ge, at, sizes[tc])
+    # chromosomes with a size and no block: one whole gap, at their place in code order
+    known = np.flatnonzero(sizes >= 0)
+    empty = np.setdiff1d(known, np.unique(c))
+    if len(empty):
+        at = np.searchsorted(gc, empty, side="left")
+        gc, gs, ge = np.insert(gc, at, empty), np.insert(gs, at, 0), np.insert(ge, at, sizes[empty])
+    keep = (ge > gs) & (sizes[gc] >= 0)
+    return gc[keep], gs[keep], ge[keep]
+
+
 def running_argmax(a: np.ndarray) -> np.ndarray:
     """idx[i] = argmax(a[:i+1]) (first index of the running maximum)."""
     if len(a) == 0:

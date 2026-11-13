@@ -134,23 +134,36 @@ def fragments(ends, extsize: int = 147, chrom_sizes=None) -> Loci:
 
 def coverage(L):
     """Per-base coverage as runs: yields (chrom, start, end, depth) for depth > 0,
-    adjacent equal depths merged (the same records as ``bedtools genomecov -bg``)."""
+    adjacent equal depths merged (the same records as ``bedtools genomecov -bg``).
+
+    One pass over the whole genome axis: the starts and ends are each sorted, so
+    their union is a linear merge (a stable sort of two sorted runs) and the
+    depth at every breakpoint is two searchsorted calls."""
+    from . import _intervals as K
     L = _loci(L)
     names = L.genome.names
-    for c in sorted(np.unique(L.codes), key=lambda x: names[x]):
-        m = L.codes == c
-        st, en = np.sort(L.starts[m]), np.sort(L.ends[m])
-        b = np.unique(np.concatenate([st, en]))
-        depth = np.searchsorted(st, b, side="right") - np.searchsorted(en, b, side="right")
-        a, z, d = b[:-1], b[1:], depth[:-1]
-        keep = d > 0
-        a, z, d = a[keep], z[keep], d[keep]
-        if len(d) == 0:
-            continue
-        brk = np.r_[True, (a[1:] != z[:-1]) | (d[1:] != d[:-1])]           # merge touching equal runs
-        first = np.flatnonzero(brk)
-        last = np.r_[first[1:], len(d)] - 1
-        yield names[c], a[first], z[last], d[first]
+    if len(L) == 0:
+        return
+    gs, ge = np.sort(K.gpos(L.codes, L.starts)), np.sort(K.gpos(L.codes, L.ends))
+    b = np.sort(np.concatenate([gs, ge]), kind="stable")
+    b = b[np.r_[True, b[1:] != b[:-1]]]
+    depth = np.searchsorted(gs, b, side="right") - np.searchsorted(ge, b, side="right")
+    a, z, d = b[:-1], b[1:], depth[:-1]
+    keep = d > 0                                                        # depth 0 separates the chromosomes
+    a, z, d = a[keep], z[keep], d[keep]
+    if len(d) == 0:
+        return
+    brk = np.r_[True, (a[1:] != z[:-1]) | (d[1:] != d[:-1])]           # merge touching equal runs
+    first = np.flatnonzero(brk)
+    last = np.r_[first[1:], len(d)] - 1
+    a, z, d = a[first], z[last], d[first]
+    code = a // K.STRIDE
+    cut = np.r_[0, np.flatnonzero(np.diff(code)) + 1, len(code)]
+    seg = {int(code[i]): (i, j) for i, j in zip(cut[:-1], cut[1:])}
+    for c in sorted(seg, key=lambda x: names[x]):
+        i, j = seg[c]
+        off = np.int64(c) * K.STRIDE
+        yield names[c], a[i:j] - off, z[i:j] - off, d[i:j]
 
 
 def to_bigwig(L, path: str, chrom_sizes) -> str:

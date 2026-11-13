@@ -11,9 +11,9 @@ nav_order: 8
 Scan transcription-factor motifs (JASPAR / TRANSFAC / MEME / your own matrices)
 over the windows of a `Loci` table, read straight from a FASTA. genomeblocks
 parses the motif files, builds the log-odds matrices and the p-value cutoffs
-itself, and hands them to a scanning engine: [MOODS](https://github.com/jhkorhonen/MOODS)
-by default, [lightmotif](https://github.com/althonos/lightmotif) when only it
-is installed, Biopython on request (see [Credits]({{ '/credits/' | relative_url }})).
+itself, and hands them to a scanning engine: [lightmotif](https://github.com/althonos/lightmotif)
+when it is installed (up to 1.6x faster with a p-value cutoff), [MOODS](https://github.com/jhkorhonen/MOODS)
+otherwise (the conda package ships MOODS), Biopython on request (see [Credits]({{ '/credits/' | relative_url }})).
 Every engine reports the same hits.
 {: .fs-5 .fw-300 }
 
@@ -268,7 +268,7 @@ M = gm.scan_motifs_matrix(
     norm=True,             # divide counts by motif width
     both_strands=False,    # also count reverse-strand matches
     workers=None,          # processes over motifs; None = half the cores
-    backend=None,          # 'moods' (default; lightmotif when MOODS is absent), 'lightmotif', 'biopython'
+    backend=None,          # 'lightmotif' (default when installed; MOODS otherwise), 'moods', 'biopython'
     fasta_backend=None,    # 'genomeblocks' (default), 'pysam', 'pyfaidx', 'memory', 'biopython'
 )
 # -> pandas.DataFrame, index = uid (in the loci's order), columns = motif names
@@ -590,12 +590,12 @@ same hits, and they differ in speed and in what they need installed.
 
 | backend | engine | install |
 |---|---|---|
-| `moods` (default) | MOODS, C++ — scans the whole library in one pass | `conda install -c bioconda moods`, or `pip install 'genomeblocks[motifs]'` (MOODS-python, compiled at install) |
-| `lightmotif` | SIMD scanner, Rust — one matrix per call | `pip install 'genomeblocks[lightmotif]'` (prebuilt wheels); picked automatically only when MOODS is absent |
+| `moods` (default without lightmotif) | MOODS, C++ — scans the whole library in one pass | `conda install -c bioconda moods`, or `pip install 'genomeblocks[motifs]'` (MOODS-python, compiled at install) |
+| `lightmotif` (default when installed) | SIMD scanner, Rust — one matrix per call | `pip install 'genomeblocks[lightmotif]'` (prebuilt wheels) |
 | `biopython` | `Bio.motifs` PSSM, numpy | `pip install biopython`; never picked automatically |
 
 With `backend=None` the choice is automatic between the two engines that are
-interchangeable (`moods`, then `lightmotif`); Biopython is always a request.
+interchangeable (`lightmotif`, then `moods`); Biopython is always a request.
 
 ```python
 ref = gm.scan_motifs_matrix(L, "genome.fa", "motifs.jaspar", r=50, threshold=7.0, verbose=False)

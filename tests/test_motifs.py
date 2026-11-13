@@ -201,16 +201,29 @@ def test_pvalue_threshold_matches_moods():
         lo = logodds_matrix(rng.integers(0, 40, (w, 4)))
         for p in (1e-3, 1e-4, 1e-5):
             ours = threshold_from_pvalue(lo, p)
-            if p < 4.0 ** -w:                       # unreachable: we keep only perfect matches
-                assert ours == pytest.approx(lo.max(1).sum())
+            if p < 4.0 ** -w:                       # unreachable: no window is that rare, no hit
+                assert ours == float("inf")
                 continue
             theirs = MOODS_tools.threshold_from_p(lo.T.tolist(), [0.25] * 4, p)
             assert abs(ours - theirs) < 0.01
 
 
-def test_moods_is_the_default_engine():
-    pytest.importorskip("MOODS.scan")
-    assert gb.backends.resolve("motifs") == "moods"
+def test_auto_motif_engine():
+    """lightmotif when installed (faster, the same hits), else MOODS."""
+    import importlib.util
+    if importlib.util.find_spec("lightmotif"):
+        assert gb.backends.resolve("motifs") == "lightmotif"
+    else:
+        pytest.importorskip("MOODS.scan")
+        assert gb.backends.resolve("motifs") == "moods"
+
+
+def test_unreachable_pvalue_gives_no_hits():
+    """A 6-mer cannot reach p = 1e-4 (its rarest score has p = 4^-6): no hit on any engine."""
+    from genomeblocks.backends.motifs import logodds_matrix, threshold_from_pvalue
+    lo = logodds_matrix(np.diag([20] * 4)[[0, 1, 2, 3, 0, 1]])
+    assert threshold_from_pvalue(lo, 1e-4) == float("inf")
+    assert np.isfinite(threshold_from_pvalue(lo, 1e-3))
 
 
 def test_motifs_work_without_lightmotif(monkeypatch, fasta_path, jaspar_path):
