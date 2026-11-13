@@ -1707,35 +1707,65 @@ def bp_merged(df):
     return pd.concat(out, ignore_index=True)
 
 
-def cooccupancy_universe_jobs(rec, A, Q, tracks, names, universe, od, n_regioner=10, nperm=100):
-    """C5 (added 2026-10-23): enrichment against a custom universe. The query and every track are counted in
-    universe regions (300k simulated CREs); the reference is the exact Fisher test on those counts. LOLA takes the
-    universe as userUniverse, regioneR resamples within it, genomeblocks' Atlas.bootstrap draws its null from it."""
+def universe_reference(U, Q, tracks):
+    """C5's input and reference: the query as universe regions, and -log10 P of the exact Fisher test of every
+    track's universe-region counts (query against the rest of the universe)."""
     from scipy.stats import fisher_exact
-    U = universe
     Qu = U.take(np.flatnonzero(U.overlap_any(Q)))            # the query as universe regions (all engines get this)
-    ub, qb = write_bed(U, od / "universe.bed"), write_bed(Qu, od / "query_in_universe.bed")
     nU, nQ = len(U), len(Qu)
     ref = []
     for p in tracks:
         t = Loci.make(p)
-        hit_u = U.overlap_any(t)
         a = int(Qu.overlap_any(t).sum())
-        c = int(hit_u.sum()) - a
+        c = int(U.overlap_any(t).sum()) - a
         ref.append(fisher_exact([[a, nQ - a], [c, nU - nQ - c]], alternative="greater")[1])
-    ref_rank = -np.log10(np.maximum(np.array(ref), 1e-300))
-    rec.add(part="cooccupancy", task="universe_enrichment", engine="exact Fisher in universe regions (reference)", n=len(tracks), seconds=None, runs=None,
-            accuracy=1.0, detail=f"{nQ:,} of {nU:,} universe regions in the query")
+    return Qu, -np.log10(np.maximum(np.array(ref), 1e-300))
+
+
+def gb_universe_bootstrap(rec, part, A, Qu, U, names, ref_rank, nperm=100):
+    """genomeblocks' C5 row: Atlas.bootstrap with the universe as its pool, ranked by z against the reference."""
     res = {}
     try:
         t = timeit(lambda: res.__setitem__("b", A.bootstrap(Qu, n=nperm, pool=U, seed=1, verbose=False)), repeat=1)
         b = res["b"].set_index("name").reindex(names)
         acc, d = spearman_score(ref_rank, b["z"].fillna(0).to_numpy())
-        rec.add(part="cooccupancy", task="universe_enrichment", engine=f"genomeblocks Atlas.bootstrap (pool = universe, {nperm} draws)", n=len(tracks),
+        rec.add(part=part, task="universe_enrichment", engine=f"genomeblocks Atlas.bootstrap (pool = universe, {nperm} draws)", n=len(names),
                 seconds=t["median"], runs=t["runs"], accuracy=acc, detail=d + " vs the exact universe Fisher test")
     except Exception as e:
-        rec.add(part="cooccupancy", task="universe_enrichment", engine="genomeblocks Atlas.bootstrap (pool = universe)", n=len(tracks), seconds=None, runs=None,
-                accuracy=None, error=f"{type(e).__name__}: {e}"[:300])
+        rec.add(part=part, task="universe_enrichment", engine="genomeblocks Atlas.bootstrap (pool = universe)", n=len(names), seconds=None,
+                runs=None, accuracy=None, error=f"{type(e).__name__}: {e}"[:300])
+
+
+def part_cooccupancy_bootstrap(rec):
+    """C5 for genomeblocks alone (2026-11-12, after Atlas.bootstrap counts regions instead of distinct bins): the
+    inputs and reference of cooccupancy_universe_jobs, rebuilt from the seeded data, and Atlas.bootstrap's row. A
+    part of its own so it runs without LOLA / regioneR's R environment and keeps their rows."""
+    print("\n== cooccupancy_bootstrap ==")
+    from common import read_chromsizes
+    from make_data import make_peaks
+    tracks = sorted(glob.glob(str(DATA / "atlas" / "track_*.bed")))
+    names = [Path(p).stem for p in tracks]
+    Q = Loci.make(str(DATA / "atlas_query.bed"))
+    U = Loci.from_frame(make_peaks(300_000, read_chromsizes(), np.random.default_rng(7)))
+    A = Atlas.make(tracks, chromsizes=CS, bin_size=1000, workers=4, verbose=False)
+    Qu, ref_rank = universe_reference(U, Q, tracks)
+    print(f"  {len(Qu):,} of {len(U):,} universe regions in the query; {len(tracks)} tracks")
+    rec.add(part="cooccupancy_bootstrap", task="universe_enrichment", engine="exact Fisher in universe regions (reference)", n=len(tracks),
+            seconds=None, runs=None, accuracy=1.0, detail=f"{len(Qu):,} of {len(U):,} universe regions in the query")
+    gb_universe_bootstrap(rec, "cooccupancy_bootstrap", A, Qu, U, names, ref_rank)
+
+
+def cooccupancy_universe_jobs(rec, A, Q, tracks, names, universe, od, n_regioner=10, nperm=100):
+    """C5 (added 2026-10-23): enrichment against a custom universe. The query and every track are counted in
+    universe regions (300k simulated CREs); the reference is the exact Fisher test on those counts. LOLA takes the
+    universe as userUniverse and regioneR resamples within it; genomeblocks' Atlas.bootstrap (pool = the universe)
+    runs in part_cooccupancy_bootstrap."""
+    U = universe
+    Qu, ref_rank = universe_reference(U, Q, tracks)
+    ub, qb = write_bed(U, od / "universe.bed"), write_bed(Qu, od / "query_in_universe.bed")
+    nU, nQ = len(U), len(Qu)
+    rec.add(part="cooccupancy", task="universe_enrichment", engine="exact Fisher in universe regions (reference)", n=len(tracks), seconds=None, runs=None,
+            accuracy=1.0, detail=f"{nQ:,} of {nU:,} universe regions in the query")
 
     def score(r):
         if r["op"] != "universe_enrichment":
@@ -2672,7 +2702,7 @@ def part_hic_loops(rec):
 
 
 PARTS = {"intervals": part_intervals, "annotation": part_annotation, "signal": part_signal, "signal_bigwig": part_signal_bigwig, "motifs": part_motifs,
-         "cooccupancy": part_cooccupancy, "graph": part_graph, "hic": part_hic, "hic_loops": part_hic_loops, "expression": part_expression, "stability": part_stability}
+         "cooccupancy": part_cooccupancy, "cooccupancy_bootstrap": part_cooccupancy_bootstrap, "graph": part_graph, "hic": part_hic, "hic_loops": part_hic_loops, "expression": part_expression, "stability": part_stability}
 
 if __name__ == "__main__":
     todo = os.environ.get("GB_BENCH_PARTS")

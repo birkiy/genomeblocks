@@ -1293,11 +1293,11 @@ Core jobs: **C1** Index a large track collection (timed); **C2** Query-vs-collec
 
 | Tool | grade | S | C (core jobs done / known) | Q | timed core jobs (speed x accuracy) |
 |---|---|---|---|---|---|
-| **genomeblocks** | best | 0.42 | 6/10 | 0.70 | C1 1.00, C2 0.90, C3 0.90, C5 0.00 |
+| **genomeblocks** | best | 0.57 | 6/10 | 0.94 | C1 1.00, C2 0.90, C3 0.90, C5 0.96 |
 | GIGGLE | moderate | 0.21 | 5/10 | 0.42 | C1 0.70, C2 0.28, C3 0.28 |
-| LOLA | moderate | 0.20 | 6/9 (1 unknown) | 0.30 | C1 0.49, C2 0.00, C3 0.00, C5 0.70 |
-| bedtools | moderate | 0.13 | 4/10 | 0.33 | C2 0.00, C3 0.00, C7 1.00 |
-| regioneR | low | 0.11 | 2/10 | 0.56 | C5 0.56 |
+| LOLA | moderate | 0.19 | 6/9 (1 unknown) | 0.29 | C1 0.49, C2 0.00, C3 0.00, C5 0.67 |
+| bedtools | low | 0.13 | 4/10 | 0.33 | C2 0.00, C3 0.00, C7 1.00 |
+| regioneR | low | 0.11 | 2/10 | 0.53 | C5 0.53 |
 | valr | untested | – | 1/1 (9 unknown) | 0.99 | C7 0.99 |
 
 ### Scores
@@ -1306,10 +1306,10 @@ Core jobs: **C1** Index a large track collection (timed); **C2** Query-vs-collec
 | Tool | Overall | Accuracy | Scalability | Stability | Usability | tasks | perturbation tests |
 |---|---|---|---|---|---|---|---|
 | valr | 1.00 | 1.00 | 0.99 | – | 1.00 | 1 | 0 |
-| regioneR | 0.84 | 0.98 | 0.78 | – | 0.78 | 2 | 0 |
+| **genomeblocks** | 0.94 | 0.93 | 1.00 | – | 0.90 | 4 | 0 |
+| regioneR | 0.84 | 0.98 | 0.77 | – | 0.78 | 2 | 0 |
 | bedtools | 0.77 | 1.00 | 0.50 | – | 0.90 | 2 | 0 |
-| **genomeblocks** | 0.74 | 0.45 | 1.00 | – | 0.90 | 4 | 0 |
-| LOLA | 0.71 | 0.99 | 0.40 | – | 0.90 | 3 | 0 |
+| LOLA | 0.70 | 0.99 | 0.39 | – | 0.90 | 3 | 0 |
 | GIGGLE | 0.68 | 0.88 | 0.51 | – | 0.70 | 2 | 0 |
 | pyranges (0.x) | – | – | 0.44 | – | 1.00 | 1 | 0 |
 
@@ -1368,11 +1368,11 @@ Scored at n = 500; fastest 11.5 min.
 ### `universe_enrichment`
 {: .no_toc }
 
-Scored at n = 500; fastest 1.5 s.
+Scored at n = 500; fastest 1.2 s.
 
 | Engine (as run) | Tool | n | time | accuracy | detail | source |
 |---|---|---|---|---|---|---|
-| **genomeblocks Atlas.bootstrap (pool = universe, 100 draws)** | genomeblocks | 500 | 1.5 s | 0.00 | Spearman -0.4141 vs the exact universe Fisher test | landscape |
+| **genomeblocks Atlas.bootstrap (pool = universe, 100 draws)** | genomeblocks | 500 | 1.2 s | 0.96 | Spearman 0.9587 vs the exact universe Fisher test | landscape |
 | LOLA::runLOLA (userUniverse) | LOLA | 500 | 12 s | 1.00 | Spearman 1.0000 over 500 tracks vs the exact universe Fisher test | landscape |
 | regioneR::permTest (resampleRegions in the universe, 100 perms, per track) | regioneR | 500 | 32 s | 1.00 | Spearman 1.0000 over 10 tracks vs the exact universe Fisher test | landscape |
 

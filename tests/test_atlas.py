@@ -58,8 +58,17 @@ def test_search_accepts_any_interval_input(atlas, cre, tmp_path):
 def test_bootstrap_modes(atlas, cre, tmp_path):
     single = atlas.bootstrap(cre, n=3, seed=0, verbose=False)
     assert set(single.columns) >= {"name", "observed", "expected", "z", "p_emp"} and len(single) == 3
-    exact = atlas.search(cre).set_index("name")["overlaps"]
-    assert single.set_index("name")["observed"].to_dict() == exact.to_dict()   # observed = the exact counts
+
+    def bins(c, s, e):
+        return {(c, b) for b in range(s // 500, (e - 1) // 500 + 1)}
+
+    def all_bins(L):
+        return set().union(*(bins(c, s, e) for c, s, e in zip(L.chroms, L.starts, L.ends)))
+    want = {}
+    for k in range(3):
+        tb = all_bins(as_loci(str(tmp_path / f"t{k}.bed")))
+        want[f"t{k}"] = sum(1 for c, s, e in zip(cre.chroms, cre.starts, cre.ends) if bins(c, s, e) & tb)
+    assert single.set_index("name")["observed"].to_dict() == want     # observed = query regions sharing a bin, each once
     assert (single["expected"] >= 0).all() and ((single["p_emp"] > 0) & (single["p_emp"] <= 1)).all()
     groups = atlas.bootstrap({"a": cre.to_pandas(), "b": str(tmp_path / "t1.bed")}, n=3, seed=0, verbose=False)
     assert "group" in groups.columns and len(groups) == 6
@@ -68,6 +77,28 @@ def test_bootstrap_modes(atlas, cre, tmp_path):
     pooled = atlas.bootstrap(cre, pool=cre.to_polars(), n=2, sample=3, seed=1, verbose=False)
     assert len(pooled) == 3
     assert cre.enrich_mc(atlas, n=2, verbose=False).shape[0] == 3
+
+
+def test_bootstrap_counts_regions_so_a_clustered_query_is_not_read_as_depleted(tmp_path):
+    """A query whose regions share bins (240 regions on the track in 120 bins, 160 off it) drawn from a pool
+    where 500 of 1,200 regions are on the track: 1.44x enriched. Counting distinct bins (up to 2.0.1) read it
+    as depleted (120 bins against ~144 for random draws); counting regions gives 240 against 400 x 500/1200."""
+    (tmp_path / "track.bed").write_text("chr1\t0\t300000\n")              # bins 0-299 of 1 kb
+    A = Atlas.make([str(tmp_path / "track.bed")], chromsizes={"chr1": 2_000_000}, bin_size=1000, verbose=False, workers=1)
+    single = [("chr1", i * 1000 + 100, i * 1000 + 300) for i in range(1000)]
+    twins = [("chr1", i * 1000 + 500, i * 1000 + 700) for i in range(200)]     # a second region in bins 0-199
+    pool = as_loci(single + twins)
+    query = as_loci(single[:120] + twins[:120] + single[300:460])
+    r = A.bootstrap(query, pool=pool, n=200, seed=0, verbose=False).iloc[0]
+    assert r.observed == 240 and abs(r.expected - 400 * 500 / 1200) < 4 and r.z > 5 and r.log2fc > 0.4
+    sub = A.bootstrap(query, pool=pool, n=200, sample=200, seed=0, verbose=False).iloc[0]
+    assert abs(sub.observed / sub.expected - 240 / (400 * 500 / 1200)) < 0.05 and sub.z > 2
+    shuf = A.bootstrap(query, n=50, seed=0, verbose=False).iloc[0]                # 15 % of the chromosome is the track
+    assert shuf.observed == 240 and abs(shuf.expected - 0.15 * 400) < 6
+    # a region spanning several bins counts once however many of them the track covers
+    long_q = as_loci([("chr1", 100, 5_100), ("chr1", 299_500, 300_500), ("chr1", 400_000, 403_000)])
+    assert A._region_counts(A._intervals_to_bin_ranges(long_q)).tolist() == [2]
+    assert A._region_counts(A._intervals_to_bin_ranges(as_loci(single[:3] * 2))).tolist() == [6]   # repeats count
 
 
 def test_meta_and_persistence(atlas, tmp_path):
