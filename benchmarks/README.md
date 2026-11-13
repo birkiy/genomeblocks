@@ -33,7 +33,15 @@ packages is used; steps without one are skipped and listed) and
 FitHiChIP when `FITHICHIP_HOME` names its directory (`FITHICHIP_EXEC`, e.g.
 `singularity exec fithichip.sif`, prefixes the call; without it genomeblocks is
 timed alone) and compares real samples with existing FitHiChIP runs listed in
-`GB_BENCH_LOOPS_REAL=samples.tsv`.
+`GB_BENCH_LOOPS_REAL=samples.tsv`. `bench_maps.py` runs MAPS when `MAPS_HOME` points at a clone of
+github.com/ijuric/MAPS (`MAPS_PYTHON` / `MAPS_RSCRIPT`: a Python with pandas and an Rscript with VGAM, MASS,
+data.table); without it genomeblocks alone is timed on a made-up features table. `GB_BENCH_MAPS_REAL=samples.tsv`
+compares real samples with existing MAPS runs. `bench_hiccups.py` runs Juicer when `JUICER_TOOLS` names
+juicer_tools_2.13.06.jar (`JAVA` for the java), with `GB_BENCH_THREADS` threads / workers; real samples (Juicer
+output + dumped vectors) via `GB_BENCH_HICCUPS_REAL=samples.tsv`. `bench_mustache.py` runs Mustache when `MUSTACHE` names its
+command (`MUSTACHE_EXEC` prefixes it; `GB_BENCH_THREADS`, default 4, sets both tools' cores) and compares real
+samples with existing Mustache runs listed in `GB_BENCH_MUSTACHE_REAL=samples.tsv` (name, cool, mustache_tsv,
+mustache_seconds, note).
 
 ## Files
 
@@ -51,6 +59,9 @@ timed alone) and compares real samples with existing FitHiChIP runs listed in
 | `bench_shortrange.py` | HiChIP short-range track vs the awk / sort / bedtools recipe |
 | `bench_loops.py` | HiChIP loop calling: `fithichip` vs FitHiChIP 11.0 on the same cooler and peaks — tested pairs, loops, merged loops, P / q values and FitHiChIP's IGV files compared, wall time and memory; synthetic cooler, plus real samples on request |
 | `bench_mcool_split.py` | `add_mcool`'s pixel split: each sample's own graph against a union graph under eight sharing rules (equal split, no split, each pixel once per CRE, centre binning, ATAC-weighted, peak mask, with and without the self-contact pixel) — super-hubs lost, CREs diluted, contact conservation; seeded synthetic cooler, plus the T-cell HiChIP numbers recorded as measured |
+| `bench_maps.py` | HiChIP loop calling: `maps` vs MAPS (ijuric/MAPS) on the same pairs and peaks — tested bin pairs, counts, expected / P / fdr, calls and MAPS's sig3Dinteractions.bedpe compared, wall time and memory; synthetic HiChIP pairs with loops, plus real samples on request |
+| `bench_mustache.py` | Hi-C / HiChIP loop calling: `mustache()` vs Mustache 1.3.3 on the same balanced cooler — loop sets, FDR / detection scale, Mustache's output file, wall time and memory with the same cores; synthetic cooler (built on first run), plus real samples on request |
+| `bench_hiccups.py` | Hi-C loop calling: `hiccups` vs juicer_tools 2.13.06 `hiccups --cpu` on the same matrix and SCALE vectors — merged loops, postprocessed / enriched pixels, thresholds compared file by file, wall time and memory; synthetic Hi-C with planted loops, plus real samples on request |
 | `bench_import.py` | import cost of each entry point |
 | `bench_expression.py` | reading salmon / featureCounts tables with both table backends, tximport-style summarising and TMM / size factors / CPM / filterByExpr against R's tximport, edgeR and DESeq2 — exactness (max \|Δ\|) and time; generates its own GTF-scale data |
 | `build_site.py` | writes `docs/benchmarks/index.md` |

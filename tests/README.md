@@ -33,6 +33,9 @@ beyond `pip install genomeblocks`.
 | `test_atlas.py` | `Atlas.make` inputs, columnar bin ranges, search / bootstrap on any interval input, metadata, save / load, table protocols |
 | `test_browser.py` | `browser()` with every track kind (incl. BAM), `igv_html`, `View` payload (0-based genes, TSS) |
 | `test_loops.py` | R `smooth.spline(cv = TRUE)` and `p.adjust` parity, possible-pair counting vs brute force, the merging rule, planted loops found, FitHiChIP's tested-pair definition, its IGV format |
+| `test_maps.py` | VGAM's zero-truncated Poisson fit, MAPS's p-value and R number formatting, its peak-bin quirk, clusters, planted loops, MAPS's tested bin pairs and bedpe on synthetic pairs, cooler input |
+| `test_mustache.py` | Mustache's distance rules, blocks and scales, band Gaussians equal to scipy on the full block, local / diagonal normalisation, BH, planted loops, its output file, weights as an array |
+| `test_hiccups.py` | Juicer's background kernel to the bit, the float32 recheck, FDR thresholds and q-values, Poisson pmf, Java float strings and HashSet order, clustering and the resolution merge, expected, planted loops, search restriction, workers |
 | `test_bam.py` | BAM pileups, `se.stitch_peaks` / `call_se`, HiChIP short-range tracks |
 | `test_columnar.py` | the table contract on every container; seaborn / plotly / altair take a Loci; no hidden global state; backend differences do not leak |
 | `test_functional.py` | end to end: peaks → genes → architecture → signal → motifs → enrichment → views |

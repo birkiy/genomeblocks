@@ -65,7 +65,7 @@ Every table has `shape`, `columns`, `head()`, `tail()`, `describe()`, a notebook
 | `browser` · `igv_html` · `View` | a matplotlib region view; a one-file IGV page; a one-file interactive view of an `Architecture` | [Browser]({{ '/guide/browser/' | relative_url }}) |
 | `bedpe` | `count_pairs`, `count_pairs_2d`, `read_pairs_chunks` over HiC-Pro / 4DN / Juicer pairs files | [BEDPE]({{ '/guide/bedpe/' | relative_url }}) |
 | `se` · `hichip` · `coverage` | ROSE-style super-enhancers; HiChIP short-range tracks; BAM pileups | [Signal]({{ '/guide/signal/' | relative_url }}) |
-| `loops` | `gb.fithichip(cool, peaks)`: HiChIP loops with FitHiChIP's model, from a cooler, in seconds | [API: loops]({{ '/api/loops/' | relative_url }}) |
+| `loops` | `gb.fithichip`, `gb.maps`, `gb.mustache`, `gb.hiccups`: FitHiChIP, MAPS, Mustache and HiCCUPS loop calling, reproduced in numpy and faster than the originals | [API: loops]({{ '/api/loops/' | relative_url }}) |
 
 ### The boundary
 {: .no_toc }

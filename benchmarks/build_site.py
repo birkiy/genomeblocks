@@ -755,6 +755,152 @@ def sec_loops(md, tl):
                   "tested pairs, P and q are compared pair by pair.\n")
 
 
+def _maps_agrees(r):
+    """Same tested bin pairs, counts and reported loops as MAPS."""
+    return (r.get("tested_ref") == r.get("tested_gb") == r.get("tested_shared") and r.get("counts_equal", False)
+            and r.get("loops_ref") == r.get("loops_gb") == r.get("loops_shared"))
+
+
+def sec_maps(md, tl):
+    d = load("maps")
+    if not d:
+        return
+    md.append('## HiChIP loops (MAPS)\n{: .sec-purple #maps }\n')
+    md.append("`genomeblocks.maps` reproduces MAPS (feather's short / long split, AND / XOR bin pairs, "
+              "zero-truncated Poisson regression per chromosome as VGAM fits it, two-pass refit, BH, 15 kb "
+              "clusters) from a pairs file, and is compared with MAPS run on the same pairs and peaks.\n")
+    gb = pick(d, part="synthetic", impl="genomeblocks")
+    mp = pick(d, part="synthetic", impl="MAPS")
+    sp = pick(d, part="synthetic", impl="split (feather files for MAPS)")
+    ag = pick(d, part="synthetic", impl="agreement")
+    if gb and mp and ag:
+        md.append(f"On the synthetic HiChIP pairs: **{ftime(gb['seconds'])}** and {gb['peak_mb'] / 1e3:.1f} GB "
+                  f"against {ftime(mp['seconds'])} for MAPS"
+                  + (f" (after {ftime(sp['seconds'])} writing its per-chromosome input files)" if sp else "")
+                  + f"; {ag['tested_gb']:,} tested bin pairs and {ag['loops_gb']:,} reported loops, "
+                  f"{'the same as' if _maps_agrees(ag) else 'differing from'} MAPS's; expected within "
+                  f"{ag['max_rel_expected']:.0e}, P and fdr within {max(ag['max_rel_P'], ag['max_rel_fdr']):.0e} "
+                  "(relative).\n")
+        tl.append(("HiChIP loops vs MAPS", fx(mp["seconds"] / gb["seconds"]),
+                   f"synthetic pairs: {ftime(gb['seconds'])} vs {ftime(mp['seconds'])}"
+                   + (", same loops" if _maps_agrees(ag) else ""), "purple"))
+    elif gb:
+        md.append(f"On the synthetic HiChIP pairs: **{ftime(gb['seconds'])}** (MAPS not run).\n")
+    real = rows_where(d, part="real")
+    if real:
+        md.append('<details class="gb-table" open><summary>HiChIP samples</summary><table><thead><tr>'
+                  "<th>sample</th><th>tested bin pairs</th><th>loops</th><th>MAPS</th><th>genomeblocks</th>"
+                  "<th>speed-up</th><th>same result</th><th>MAPS run</th></tr></thead><tbody>"
+                  + "".join(f"<tr><td>{escape(r['sample'])}</td><td>{r['tested_gb']:,}</td><td>{r['loops_gb']:,}</td>"
+                            f"<td>{ftime(r['maps_seconds'])}</td><td>{ftime(r['seconds'])}</td>"
+                            f"<td>{fx(r['maps_seconds'] / r['seconds'])}</td>"
+                            f"<td>{'yes' if _maps_agrees(r) else 'no'} (P, fdr within "
+                            f"{max(r['max_rel_P'], r['max_rel_fdr']):.0e})</td>"
+                            f"<td>{escape(r.get('note', ''))}</td></tr>" for r in real)
+                  + "</tbody></table></details>\n")
+        md.append("MAPS times are MAPS.py + regression + formatting on the per-chromosome files feather would "
+                  "write from the same pairs; genomeblocks' include reading the pairs file.\n")
+
+
+def _hiccups_files(r):
+    """'byte-identical' / counts of Juicer's output files reproduced exactly by genomeblocks."""
+    keys = [k[:-len("_identical")] for k in r if k.endswith("_identical")]
+    same = [k for k in keys if r[f"{k}_identical"] or r.get(f"{k}_identical_as_sets")]
+    if len(same) == len(keys):
+        return "all byte-identical"
+    cols = {c for k in keys for c in (r.get(f"{k}_columns_differing") or [])}
+    if cols and all(c.startswith("fdr") for c in cols):
+        return f"same rows; only {', '.join(sorted(cols))} differ"
+    return f"{len(same)} of {len(keys)} identical"
+
+
+def sec_hiccups(md, tl):
+    d = load("hiccups")
+    if not d:
+        return
+    md.append('## Hi-C loops (HiCCUPS)\n{: .sec-purple #hiccups }\n')
+    md.append("`genomeblocks.hiccups` reproduces Juicer's HiCCUPS (`juicer_tools 2.13.06 hiccups --cpu`, the ENCODE "
+              "pipeline's version) on an .mcool: expected by distance, the four local backgrounds, lambda-chunk "
+              "Poisson FDR thresholds, clustering and the 5 / 10 / 25 kb merge. Fed Juicer's SCALE vectors and "
+              "expected, it is compared with Juicer file by file.\n")
+    gbw = pick(d, part="synthetic", impl="genomeblocks (cooler weights)")
+    gbj = pick(d, part="synthetic", impl="genomeblocks (Juicer's SCALE + expected)")
+    jt = pick(d, part="synthetic", impl="juicer_tools 2.13.06 hiccups --cpu")
+    ag = pick(d, part="synthetic", impl="agreement")
+    if gbj and jt and ag:
+        md.append(f"On the synthetic Hi-C map ({jt['threads']} threads / workers): **{ftime(gbj['seconds'])}** against "
+                  f"{ftime(jt['seconds'])} for Juicer; {ag.get('merged_loops_gb', 0):,} merged loops, Juicer's "
+                  f"output files {_hiccups_files(ag)}"
+                  + (f"; with the cooler's own balancing weights {ftime(gbw['seconds'])}" if gbw else "") + ".\n")
+        tl.append(("Hi-C loops vs HiCCUPS", fx(jt["seconds"] / gbj["seconds"]),
+                   f"synthetic map: {ftime(gbj['seconds'])} vs {ftime(jt['seconds'])}, {_hiccups_files(ag)}",
+                   "purple"))
+    elif gbw:
+        md.append(f"On the synthetic Hi-C map: **{ftime(gbw['seconds'])}** (Juicer not run).\n")
+    real = rows_where(d, part="real")
+    if real:
+        md.append('<details class="gb-table" open><summary>Samples</summary><table><thead><tr>'
+                  "<th>sample</th><th>merged loops</th><th>Juicer</th><th>genomeblocks</th><th>speed-up</th>"
+                  "<th>output files</th><th>note</th></tr></thead><tbody>"
+                  + "".join(f"<tr><td>{escape(r['sample'])}</td><td>{r.get('merged_loops_gb', 0):,}</td>"
+                            f"<td>{ftime(r['juicer_seconds'])} ({r['juicer_threads']} threads)</td>"
+                            f"<td>{ftime(r['seconds'])} ({r['threads']} workers)</td>"
+                            f"<td>{fx(r['juicer_seconds'] / r['seconds'])}</td><td>{_hiccups_files(r)}</td>"
+                            f"<td>{escape(r.get('note', ''))}</td></tr>" for r in real)
+                  + "</tbody></table></details>\n")
+        if any(r["juicer_threads"] > 1 for r in real):
+            md.append("Juicer ran with several threads here. Its CPU path updates the shared FDR histograms without a "
+                      "lock (`GPUOutputContainer.updateHistograms` is synchronized per tile), so the q-value columns "
+                      "(`fdrBL/Donut/H/V`) of a multi-threaded run lose counts and change from run to run; every "
+                      "other column, the pixel and loop sets and the thresholds match. genomeblocks reproduces the "
+                      "single-thread run byte for byte (synthetic map).\n")
+
+
+# For benchmarks/build_site.py (next to sec_loops; add sec_mustache to `secs` in build()).
+
+def _mustache_same(r):
+    """True when genomeblocks and Mustache call the same loops."""
+    return r.get("loops_ref") == r.get("loops_gb") == r.get("loops_shared")
+
+
+def sec_mustache(md, tl):
+    d = load("mustache")
+    if not d:
+        return
+    md.append('## Hi-C / HiChIP loops (Mustache)\n{: .sec-purple #mustache }\n')
+    md.append("`genomeblocks` runs Mustache's multi-scale loop caller (diagonal-wise local z-scores, "
+              "difference-of-Gaussian scale space in overlapping blocks, exponential P, BH, sparsity and "
+              "diagonal-enrichment filters) on the pixels of a balanced cooler, and is compared with Mustache "
+              "1.3.3 on the same cooler, both with 4 cores.\n")
+    gb = pick(d, part="synthetic", impl="genomeblocks")
+    mu = pick(d, part="synthetic", impl="Mustache")
+    ag = pick(d, part="synthetic", impl="agreement")
+    if gb and mu and ag:
+        md.append(f"On a synthetic 5 kb cooler (chr21 + chr22, {ag['planted']:,} planted loops): "
+                  f"**{ftime(gb['seconds'])}** and {gb['peak_mb'] / 1e3:.1f} GB against {ftime(mu['seconds'])} "
+                  f"for Mustache; {ag['loops_gb']:,} loops, "
+                  f"{'the same as' if _mustache_same(ag) else 'differing from'} Mustache's, FDR within "
+                  f"{ag['max_rel_FDR']:.0e} (relative; {ag['FDR_identical']:,} identical to the bit).\n")
+        tl.append(("Hi-C loops vs Mustache", fx(mu["seconds"] / gb["seconds"]),
+                   f"synthetic cooler: {ftime(gb['seconds'])} vs {ftime(mu['seconds'])}"
+                   + (", same loops" if _mustache_same(ag) else ""), "purple"))
+    elif gb:
+        md.append(f"On the synthetic cooler: **{ftime(gb['seconds'])}** (Mustache not run).\n")
+    real = rows_where(d, part="real")
+    if real:
+        md.append('<details class="gb-table" open><summary>HiChIP samples</summary><table><thead><tr>'
+                  "<th>sample</th><th>loops</th><th>Mustache</th><th>genomeblocks</th><th>speed-up</th>"
+                  "<th>same loops</th><th>FDR (max rel. diff.)</th><th>Mustache run</th></tr></thead><tbody>"
+                  + "".join(f"<tr><td>{escape(r['sample'])}</td><td>{r['loops_gb']:,}</td>"
+                            f"<td>{ftime(r['mustache_seconds'])}</td><td>{ftime(r['seconds'])}</td>"
+                            f"<td>{fx(r['mustache_seconds'] / r['seconds'])}</td>"
+                            f"<td>{'yes' if _mustache_same(r) else 'no'}</td><td>{r['max_rel_FDR']:.0e}</td>"
+                            f"<td>{escape(r.get('note', ''))}</td></tr>" for r in real)
+                  + "</tbody></table></details>\n")
+        md.append("Mustache times are the wall times of `mustache -p 4` on the same balanced coolers; the loop "
+                  "sets and FDRs are compared with those runs' output files.\n")
+
+
 def sec_import(md, tl):
     d = load("import")
     if not d:
@@ -776,7 +922,7 @@ def sec_import(md, tl):
 def build():
     md, tl = [], []
     secs = [sec_backends, sec_loci, sec_signal, sec_atlas, sec_motifs, sec_pairs, sec_genes, sec_architecture,
-            sec_expression, sec_shortrange, sec_loops, sec_import]
+            sec_expression, sec_shortrange, sec_loops, sec_maps, sec_mustache, sec_hiccups, sec_import]
     for s in secs:
         s(md, tl)
     env = next((load(n)["env"] for n in ("backends", "loci", "signal", "motifs") if load(n)), {})
