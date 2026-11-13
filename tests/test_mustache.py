@@ -135,13 +135,18 @@ def synthetic_cool(path):
 
 
 # Mustache 1.3.3 (df71aa1; numpy 1.26.4, scipy 1.16.3): ``mustache -f syn.cool -r 5000 -o syn.tsv -p 1`` on
-# synthetic_cool(), the whole of syn.tsv
-MUSTACHE_SYN = """\
-BIN1_CHR\tBIN1_START\tBIN1_END\tBIN2_CHROMOSOME\tBIN2_START\tBIN2_END\tFDR\tDETECTION_SCALE
-chr1\t1500000\t1505000\tchr1\t1800000\t1805000\t3.897234377525649e-05\t2.111212657236631
-chr1\t3500000\t3505000\tchr1\t3950000\t3955000\t0.0027665667848083184\t2.111212657236631
-chr1\t7000000\t7005000\tchr1\t7300000\t7305000\t3.897234377525649e-05\t2.111212657236631
-"""
+# synthetic_cool(), the whole of syn.tsv. Its FDR column depends on the CPU: the local normalisation's
+# np.convolve sums run through BLAS ddot, and OpenBLAS picks a ddot kernel per CPU, so the integer-count ties
+# round differently. One output per kernel family (OPENBLAS_CORETYPE=SkylakeX on AVX-512 CPUs; Haswell, Zen
+# and Sandybridge on AVX2 / AVX CPUs; Prescott, the generic one); the port writes Mustache's file under each.
+_HEAD = "BIN1_CHR\tBIN1_START\tBIN1_END\tBIN2_CHROMOSOME\tBIN2_START\tBIN2_END\tFDR\tDETECTION_SCALE\n"
+_LOOPS = [("1500000\t1505000", "1800000\t1805000", 0), ("3500000\t3505000", "3950000\t3955000", 1),
+          ("7000000\t7005000", "7300000\t7305000", 0)]
+_FDR = {"SkylakeX": ("3.897234377525649e-05", "0.0027665667848083184"),
+        "Haswell": ("3.896939018144252e-05", "0.0027663060180849186"),
+        "Prescott": ("3.898689013148715e-05", "0.0027673450454184976")}
+MUSTACHE_SYN = {k: _HEAD + "".join(f"chr1\t{a}\tchr1\t{b}\t{q[i]}\t2.111212657236631\n" for a, b, i in _LOOPS)
+                for k, q in _FDR.items()}
 
 
 @pytest.fixture(scope="module")
@@ -166,7 +171,7 @@ def test_mustache_writes_mustaches_output(syn, tmp_path):
     cool, _ = syn
     r = M.mustache(cool, threads=1, verbose=False)
     path = r.write(str(tmp_path), "syn")["loops"]
-    assert open(path).read() == MUSTACHE_SYN
+    assert open(path).read() in MUSTACHE_SYN.values()          # Mustache's file, for this CPU's BLAS kernel
 
 
 def test_weights_given_as_an_array_equal_a_weight_column(syn, tmp_path):
