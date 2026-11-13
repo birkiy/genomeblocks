@@ -129,6 +129,59 @@ gb.tmm(np.zeros((5, 2, 3)))
 
 ---
 
+## `write_bigwig(loci, path, values, ...)`
+{: #write_bigwig .sec-navy }
+
+```python
+from genomeblocks.signal import write_bigwig      # also gb.write_bigwig and Loci.to_bigwig
+write_bigwig(loci, path: str, values, *, chrom_sizes=None) -> str
+```
+
+One value per row of `loci` as a bigWig (bedGraph semantics), through
+pybigtools.
+
+| Argument | Meaning |
+|---|---|
+| `loci` | anything `as_loci` takes |
+| `values` | a column name, or an array with one value per row; NaN rows are left out |
+| `chrom_sizes` | a dict, a `.chrom.sizes` path or a `Genome`; default the sizes the table's `Genome` knows |
+
+Rows are written in chromosome-name, then start order. Raises `ValueError`
+when rows overlap on a chromosome, a row ends past its chromosome, a
+chromosome has no size, or `values` has the wrong length. Returns `path`.
+
+---
+
+## `bam_to_bigwig(bam, path, ...)`
+{: #bam_to_bigwig .sec-navy }
+
+```python
+from genomeblocks.bam import bam_to_bigwig       # also gb.bam_to_bigwig
+bam_to_bigwig(bam: str, path: str, *, bin_size=1, normalize=None, extend=None,
+              effective_genome_size=None, min_mapq=0, ignore_duplicates=False,
+              exclude=0x4 | 0x100 | 0x200 | 0x800, chroms=None, workers=1) -> str
+```
+
+A coverage bigWig from an indexed BAM (pysam).
+
+| Argument | Meaning |
+|---|---|
+| `bin_size` | 1: the depth of every base; `b` > 1: reads overlapping each bin of `b` bases (a read counts once per bin) |
+| `normalize` | `None`, `"CPM"` (× 10⁶ / reads), `"RPKM"` (× 10⁹ / (reads × `bin_size`)), `"BPM"` (× 10⁶ / summed bin values), `"RPGC"` (× `effective_genome_size` / (reads × fragment length)) |
+| `extend` | `None`: each read over its aligned blocks; an int: each read extended to that length along its strand (longer reads kept); `"pairs"`: properly paired reads once, over the fragment between the mates, other reads over their span |
+| `effective_genome_size` | needed by `"RPGC"`; the fragment length is `extend`, else the mean span of the reads |
+| `min_mapq`, `ignore_duplicates`, `exclude` | read filters; `exclude` is a SAM flag mask (default unmapped, secondary, failed QC, supplementary) |
+| `chroms` | the chromosomes to write; default every chromosome of the header |
+| `workers` | processes, one chromosome each at a time; `None` = half the cores |
+
+"Reads" in the normalisations are the reads that pass the filters on the
+chromosomes written. Bases or bins with no read hold no data. Raises
+`ValueError` for a BAM without an index, an unknown `normalize`, `"RPGC"`
+without `effective_genome_size`, or a chromosome the header lacks. Returns
+`path`.
+
+---
+
 ## `genomeblocks.signal_draw`
 {: .sec-purple }
 

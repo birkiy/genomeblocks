@@ -857,16 +857,16 @@ Core jobs: **C1** BAM -&gt; normalised coverage bigWig (CPM / RPGC, read extensi
 | Tool | grade | S | C (core jobs done / known) | Q | timed core jobs (speed x accuracy) |
 |---|---|---|---|---|---|
 | WiggleTools | best | 0.60 | 6/10 | 1.00 | C7 1.00 |
+| **genomeblocks** | best | 0.60 | 6/10 | 1.00 | C1 0.98, C2 1.00, C3 1.00, C8 1.00, C9 1.00 |
 | megadepth | good | 0.50 | 5/10 | 1.00 | C1 1.00 |
 | deepTools | good | 0.49 | 10/10 | 0.49 | C1 0.71, C4 0.26, C7 0.51 |
-| **genomeblocks** | good | 0.40 | 4/10 | 1.00 | C2 1.00, C3 1.00, C8 1.00 |
-| pybigtools | good | 0.39 | 4/10 | 0.97 | C9 0.97 |
+| pybigtools | good | 0.37 | 4/10 | 0.93 | C9 0.93 |
 | csaw | good | 0.36 | 4/9 (1 unknown) | 0.82 | C8 0.82 |
-| pyBigWig | moderate | 0.33 | 4/10 | 0.81 | C9 0.81 |
-| UCSC kent utilities | moderate | 0.32 | 4/10 | 0.79 | C3 0.66, C9 0.92 |
+| pyBigWig | moderate | 0.31 | 4/10 | 0.77 | C9 0.77 |
+| UCSC kent utilities | moderate | 0.31 | 4/10 | 0.77 | C3 0.66, C9 0.88 |
 | bedtools | moderate | 0.30 | 4/10 | 0.76 | C1 0.84, C4 0.67 |
-| rtracklayer | moderate | 0.30 | 3/10 | 1.00 | C9 1.00 |
 | genomation | moderate | 0.29 | 4/9 (1 unknown) | 0.66 | C2 0.66 |
+| rtracklayer | moderate | 0.29 | 3/10 | 0.96 | C9 0.96 |
 | pysam | moderate | 0.28 | 3/10 | 0.93 | C4 0.93 |
 | EnrichedHeatmap | low | 0.15 | 3/10 | 0.50 | C2 0.50 |
 | edgeR | untested | – | 1/1 (9 unknown) | 0.77 | C8 0.77 |
@@ -879,12 +879,12 @@ Core jobs: **C1** BAM -&gt; normalised coverage bigWig (CPM / RPGC, read extensi
 
 | Tool | Overall | Accuracy | Scalability | Stability | Usability | tasks | perturbation tests |
 |---|---|---|---|---|---|---|---|
-| rtracklayer | 1.00 | 1.00 | 1.00 | – | 1.00 | 2 | 0 |
 | megadepth | 1.00 | 1.00 | 1.00 | – | 1.00 | 1 | 0 |
 | Rsubread featureCounts | 1.00 | 1.00 | 1.00 | – | 1.00 | 1 | 0 |
+| rtracklayer | 0.99 | 1.00 | 0.98 | – | 1.00 | 2 | 0 |
 | GenomicAlignments | 0.99 | 1.00 | 0.98 | – | 1.00 | 1 | 0 |
-| pybigtools | 0.99 | 1.00 | 0.97 | – | 1.00 | 2 | 0 |
-| **genomeblocks** | 0.97 | 1.00 | 1.00 | 1.00 | 0.90 | 5 | 1 |
+| pybigtools | 0.97 | 1.00 | 0.93 | – | 1.00 | 2 | 0 |
+| **genomeblocks** | 0.97 | 1.00 | 0.99 | 1.00 | 0.90 | 7 | 1 |
 | pysam | 0.94 | 1.00 | 0.93 | – | 0.90 | 1 | 0 |
 | csaw | 0.94 | 0.99 | 0.83 | – | 1.00 | 1 | 0 |
 | edgeR | 0.92 | 1.00 | 0.77 | – | 1.00 | 1 | 0 |
@@ -892,10 +892,10 @@ Core jobs: **C1** BAM -&gt; normalised coverage bigWig (CPM / RPGC, read extensi
 | WiggleTools | 0.87 | 1.00 | 1.00 | – | 0.67 | 1 | 0 |
 | bedtools | 0.87 | 1.00 | 0.74 | – | 0.90 | 3 | 0 |
 | EnrichedHeatmap | 0.84 | 1.00 | 0.50 | 1.00 | 1.00 | 1 | 1 |
-| pyBigWig | 0.83 | 1.00 | 0.81 | – | 0.70 | 2 | 0 |
+| pyBigWig | 0.81 | 1.00 | 0.77 | – | 0.70 | 2 | 0 |
 | deepTools | 0.78 | 1.00 | 0.47 | – | 1.00 | 5 | 0 |
-| UCSC kent utilities | 0.73 | 1.00 | 0.79 | – | 0.50 | 2 | 0 |
 | RNAnorm | 0.73 | 1.00 | 0.49 | – | 0.80 | 1 | 0 |
+| UCSC kent utilities | 0.73 | 1.00 | 0.77 | – | 0.50 | 2 | 0 |
 
 ### `bam_to_bigwig`
 {: .no_toc }
@@ -905,9 +905,13 @@ Scored at n = 10M; fastest 28 s.
 | Engine (as run) | Tool | n | time | accuracy | detail | source |
 |---|---|---|---|---|---|---|
 | megadepth --bigwig (CLI) | megadepth | 10M | 28 s | 1.00 | max |Δ| 0.00e+00 | landscape |
+| **genomeblocks bam_to_bigwig(bin_size=50)** | genomeblocks | 10M | 33 s | 1.00 | max |Δ| 0.00e+00 | landscape |
+| **genomeblocks bam_to_bigwig(bin_size=1)** | genomeblocks | 10M | 39 s | 1.00 | max |Δ| 0.00e+00 | landscape |
 | bedtools genomecov -bg + UCSC bedGraphToBigWig (CLI) | bedtools | 10M | 83 s | 1.00 | max |Δ| 0.00e+00 | landscape |
 | deepTools bamCoverage --binSize 50 (CLI) | deepTools | 10M | 3.4 min | 1.00 | max |Δ| 0.00e+00 | landscape |
 | deepTools bamCoverage --binSize 1 (CLI) | deepTools | 10M | 44.8 min | 1.00 | max |Δ| 0.00e+00 | landscape |
+| **genomeblocks bam_to_bigwig(bin_size=50)** | genomeblocks | 1M | 5.4 s | 1.00 | max |Δ| 0.00e+00 | landscape |
+| **genomeblocks bam_to_bigwig(bin_size=1)** | genomeblocks | 1M | 5.8 s | 1.00 | max |Δ| 0.00e+00 | landscape |
 | megadepth --bigwig (CLI) | megadepth | 1M | 6.9 s | 1.00 | max |Δ| 0.00e+00 | landscape |
 | bedtools genomecov -bg + UCSC bedGraphToBigWig (CLI) | bedtools | 1M | 25 s | 1.00 | max |Δ| 0.00e+00 | landscape |
 | deepTools bamCoverage --binSize 50 (CLI) | deepTools | 1M | 90 s | 1.00 | max |Δ| 0.00e+00 | landscape |
@@ -1019,16 +1023,18 @@ Scored at n = 10M; fastest 79 ms.
 ### `write_bigwig`
 {: .no_toc }
 
-Scored at n = 10M; fastest 10 s.
+Scored at n = 10M; fastest 7.6 s.
 
 | Engine (as run) | Tool | n | time | accuracy | detail | source |
 |---|---|---|---|---|---|---|
+| **genomeblocks Loci.to_bigwig** | genomeblocks | 10M | 7.6 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
 | rtracklayer export.bw | rtracklayer | 10M | 10 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
 | pybigtools 0.2.5 write | pybigtools | 10M | 13 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
 | UCSC bedGraphToBigWig (CLI) | UCSC kent utilities | 10M | 17 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
 | pyBigWig 0.3.24 addEntries | pyBigWig | 10M | 37 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
 | rtracklayer export.bw | rtracklayer | 1000k | 1.1 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
 | UCSC bedGraphToBigWig (CLI) | UCSC kent utilities | 1000k | 1.5 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
+| **genomeblocks Loci.to_bigwig** | genomeblocks | 1000k | 1.7 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
 | pybigtools 0.2.5 write | pybigtools | 1000k | 1.9 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
 | pyBigWig 0.3.24 addEntries | pyBigWig | 1000k | 6.3 s | 1.00 | max |Δ| 2.98e-08 (within 1e-06 relative) | landscape |
 

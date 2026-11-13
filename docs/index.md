@@ -60,7 +60,7 @@ Every table has `shape`, `columns`, `head()`, `tail()`, `describe()`, a notebook
 
 | Module | Entry points | Guide |
 |---|---|---|
-| `signal` | `loci.signal(bigwigs)` → a `(rows, tracks, bins)` cube; `gb.tmm`; `plot_heatmap`, `plot_profiles`, `gb.compare_heatmap` | [Signal]({{ '/guide/signal/' | relative_url }}) |
+| `signal` | `loci.signal(bigwigs)` → a `(rows, tracks, bins)` cube; `gb.tmm`; `plot_heatmap`, `plot_profiles`, `gb.compare_heatmap`; writing bigWigs: `loci.to_bigwig`, `gb.bam_to_bigwig` | [Signal]({{ '/guide/signal/' | relative_url }}) |
 | `motifs` | `scan_motifs`, `scan_motifs_matrix`, `scan_motifs_matrix_masked`, `scan_motifs_profile`, `bootstrap_enrichment`, `compare_motifs`, `pwm_distance_matrix`, `cluster_motifs`, archetypes; `gb.plot_motif_heatmap` | [Motifs]({{ '/guide/motifs/' | relative_url }}) |
 | `browser` · `igv_html` · `View` | a matplotlib region view; a one-file IGV page; a one-file interactive view of an `Architecture` | [Browser]({{ '/guide/browser/' | relative_url }}) |
 | `bedpe` | `count_pairs`, `count_pairs_2d`, `read_pairs_chunks` over HiC-Pro / 4DN / Juicer pairs files | [BEDPE]({{ '/guide/bedpe/' | relative_url }}) |

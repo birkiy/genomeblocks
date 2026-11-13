@@ -672,6 +672,13 @@ class Loci(TableMixin):
         return list(zip(self.chroms.tolist(), self.starts.tolist(), self.ends.tolist(),
                         STRANDS[self.strands].tolist()))
 
+    def to_bigwig(self, path: str, values, *, chrom_sizes=None) -> str:
+        """Write one value per row as a bigWig: ``values`` is a column name or an array aligned to the
+        rows (NaN rows are left out; overlapping rows raise). ``chrom_sizes`` defaults to the sizes this
+        table's Genome knows. See :func:`genomeblocks.signal.write_bigwig`."""
+        from .signal import write_bigwig
+        return write_bigwig(self, path, values, chrom_sizes=chrom_sizes)
+
     def to_bed(self, path: Optional[str] = None, *, name: Optional[str] = None,
                score: Optional[str] = None):
         """BED6 text (written to ``path`` when given): name = ``cols[name]`` or the uid."""

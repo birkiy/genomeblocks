@@ -102,3 +102,30 @@ def test_tmm():
     assert np.isfinite(out).all() and (out[:, 2] == 0).all()
     with pytest.raises(ValueError, match="every track is empty"):
         tmm(np.zeros((5, 2, 3)))
+
+
+def test_write_bigwig_values_round_trip(tmp_path):
+    from genomeblocks.backends.bigwig import open_bigwig
+    from genomeblocks.signal import write_bigwig
+    L = gb.as_loci([("chr2", 50, 60), ("chr1", 30, 40), ("chr1", 10, 20), ("chr1", 20, 25)])
+    L["score"] = np.array([5.0, 3.0, 1.0, np.nan])                         # rows out of order; one NaN
+    p = L.to_bigwig(str(tmp_path / "v.bw"), "score", chrom_sizes={"chr1": 100, "chr2": 100})
+    for backend in ("pybigtools", "python"):
+        h = open_bigwig(p, backend=backend)
+        v1, v2 = h.values("chr1", 0, 100), h.values("chr2", 0, 100)
+        assert np.all(v1[10:20] == 1.0) and np.all(v1[30:40] == 3.0) and np.all(v2[50:60] == 5.0)
+        assert np.isnan(v1[20:25]).all() and np.isnan(v1[:10]).all()      # the NaN row and the gaps hold no data
+    arr = write_bigwig(L.take([1, 2]), str(tmp_path / "a.bw"), np.array([7.0, 8.0]),
+                       chrom_sizes=gb.Genome.from_sizes({"chr1": 100}))
+    assert open_bigwig(arr).values("chr1", 10, 11)[0] == 8.0
+    with pytest.raises(ValueError, match="overlap"):
+        write_bigwig(gb.as_loci([("chr1", 0, 10), ("chr1", 5, 15)]), str(tmp_path / "o.bw"), [1, 2],
+                     chrom_sizes={"chr1": 100})
+    with pytest.raises(ValueError, match="chromosome sizes"):
+        write_bigwig(gb.as_loci([("chr1", 0, 10)]), str(tmp_path / "n.bw"), [1])
+    with pytest.raises(ValueError, match="entries"):
+        write_bigwig(L, str(tmp_path / "n.bw"), [1, 2], chrom_sizes={"chr1": 100, "chr2": 100})
+    with pytest.raises(ValueError, match="ends past"):
+        write_bigwig(gb.as_loci([("chr1", 90, 110)]), str(tmp_path / "n.bw"), [1], chrom_sizes={"chr1": 100})
+    with pytest.raises(ValueError, match="no size"):
+        write_bigwig(gb.as_loci([("chr3", 0, 10)]), str(tmp_path / "n.bw"), [1], chrom_sizes={"chr1": 100})

@@ -169,19 +169,12 @@ def coverage(L):
 def to_bigwig(L, path: str, chrom_sizes) -> str:
     """Write the coverage of ``L`` (e.g. ``fragments(ends)``) as a bigWig;
     ``chrom_sizes`` is a dict, a .chrom.sizes path or a Genome with sizes."""
-    import pybigtools
+    from .signal import _write_bigwig
     L = _loci(L)
     sizes = read_sizes(chrom_sizes)
     if not sizes:
         raise ValueError("to_bigwig needs chromosome sizes (a dict, a .chrom.sizes path or a Genome with sizes)")
-
-    def records():
-        for chrom, a, z, d in coverage(L):
-            for x in zip([chrom] * len(a), a.tolist(), z.tolist(), d.astype(float).tolist()):
-                yield x
-    out = pybigtools.open(path, "w")
-    out.write({k: int(v) for k, v in sorted(sizes.items())}, records())
-    return path
+    return _write_bigwig(path, sizes, coverage(L))
 
 
 def to_bedgraph(L, path: str) -> str:
