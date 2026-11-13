@@ -146,7 +146,7 @@ ENGINE_TOOL = [
     (r"pysam", "pysam"),
     (r"pyfaidx", "pyfaidx"),
 ]
-PART_THEME = {"graph": "graph3d", "hic": "graph3d", "hic_loops": "graph3d", "signal_bigwig": "signal"}       # landscape parts whose name is not their theme
+PART_THEME = {"graph": "graph3d", "hic": "graph3d", "hic_loops": "graph3d", "signal_bigwig": "signal", "cooccupancy_bootstrap": "cooccupancy"}       # landscape parts whose name is not their theme
 SKIP_ENGINES = re.compile(r"naive|numpy sliding|pandas\.read_csv|pandas chunked|R read\.delim|sparse row-sum only|warm index|"
                           r"zoom|pure-Python|threads \(same|index build|query \(warm\)|^memory$|^python$|^polars$|^pandas$|"
                           r"re-striped|exact interval Fisher|stats\(nBins\)|\(reference\)$")

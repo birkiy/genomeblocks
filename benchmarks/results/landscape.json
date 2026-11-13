@@ -106,6 +106,12 @@
     "cores": 64,
     "mem_gb": 811.27798784,
     "python": "3.12.12"
+   },
+   "cooccupancy_bootstrap": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.27798784,
+    "python": "3.12.12"
    }
   }
  },
@@ -1393,18 +1399,6 @@
    "runs": null,
    "accuracy": 1.0,
    "detail": "25,022 of 300,000 universe regions in the query"
-  },
-  {
-   "part": "cooccupancy",
-   "task": "universe_enrichment",
-   "engine": "genomeblocks Atlas.bootstrap (pool = universe, 100 draws)",
-   "n": 500,
-   "seconds": 1.5230665877461433,
-   "runs": [
-    1.5230665877461433
-   ],
-   "accuracy": 0.0,
-   "detail": "Spearman -0.4141 vs the exact universe Fisher test"
   },
   {
    "part": "cooccupancy",
@@ -6649,6 +6643,28 @@
    ],
    "accuracy": 1.0,
    "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "cooccupancy_bootstrap",
+   "task": "universe_enrichment",
+   "engine": "exact Fisher in universe regions (reference)",
+   "n": 500,
+   "seconds": null,
+   "runs": null,
+   "accuracy": 1.0,
+   "detail": "25,022 of 300,000 universe regions in the query"
+  },
+  {
+   "part": "cooccupancy_bootstrap",
+   "task": "universe_enrichment",
+   "engine": "genomeblocks Atlas.bootstrap (pool = universe, 100 draws)",
+   "n": 500,
+   "seconds": 1.2497957348823547,
+   "runs": [
+    1.2497957348823547
+   ],
+   "accuracy": 0.9586648266593066,
+   "detail": "Spearman 0.9587 vs the exact universe Fisher test"
   }
  ]
 }
