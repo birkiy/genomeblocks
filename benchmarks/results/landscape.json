@@ -100,6 +100,12 @@
     "cores": 64,
     "mem_gb": 811.27798784,
     "python": "3.12.12"
+   },
+   "signal_bigwig": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.27798784,
+    "python": "3.12.12"
    }
   }
  },
@@ -6563,6 +6569,86 @@
    ],
    "accuracy": 0.6363636363636365,
    "detail": "F1 0.636 (precision 0.955, recall 0.477; 22 called, 44 planted, within 2 bins)"
+  },
+  {
+   "part": "signal_bigwig",
+   "task": "bam_to_bigwig",
+   "engine": "genomeblocks bam_to_bigwig(bin_size=1)",
+   "n": 1000000,
+   "seconds": 5.759790424257517,
+   "runs": [
+    5.759790424257517,
+    5.736439764499664,
+    5.784120298922062
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal_bigwig",
+   "task": "bam_to_bigwig",
+   "engine": "genomeblocks bam_to_bigwig(bin_size=50)",
+   "n": 1000000,
+   "seconds": 5.407523866742849,
+   "runs": [
+    5.433709762990475,
+    5.371682219207287,
+    5.407523866742849
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal_bigwig",
+   "task": "bam_to_bigwig",
+   "engine": "genomeblocks bam_to_bigwig(bin_size=1)",
+   "n": 10000000,
+   "seconds": 38.6658640652895,
+   "runs": [
+    38.73728505894542,
+    38.59444307163358
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal_bigwig",
+   "task": "bam_to_bigwig",
+   "engine": "genomeblocks bam_to_bigwig(bin_size=50)",
+   "n": 10000000,
+   "seconds": 32.59755892679095,
+   "runs": [
+    32.512758288532495,
+    32.68235956504941
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal_bigwig",
+   "task": "write_bigwig",
+   "engine": "genomeblocks Loci.to_bigwig",
+   "n": 999991,
+   "seconds": 1.6551813408732414,
+   "runs": [
+    1.6556618809700012,
+    1.6547008007764816
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal_bigwig",
+   "task": "write_bigwig",
+   "engine": "genomeblocks Loci.to_bigwig",
+   "n": 9999989,
+   "seconds": 7.602950416505337,
+   "runs": [
+    7.597936175763607,
+    7.6079646572470665
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
   }
  ]
 }

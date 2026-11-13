@@ -65,7 +65,7 @@
   },
   "signal": {
    "core": [
-    {"id": "C1", "job": "BAM -> normalised coverage bigWig (CPM / RPGC, read extension)", "standard": "deepTools bamCoverage", "checklist": ["bam_coverage"], "tasks": ["bam_to_bigwig"], "genomeblocks": "partial", "note": "HiChIP ends to bigWig; per-region pileup"},
+    {"id": "C1", "job": "BAM -> normalised coverage bigWig (CPM / RPGC, read extension)", "standard": "deepTools bamCoverage", "checklist": ["bam_coverage"], "tasks": ["bam_to_bigwig"], "genomeblocks": "yes", "note": "gb.bam_to_bigwig: per base or per bin, CPM / RPKM / BPM / RPGC, read extension, pairs (2026-11)"},
     {"id": "C2", "job": "Region x bin matrix (reference-point / scale-regions)", "standard": "deepTools computeMatrix", "checklist": ["region_matrix"], "tasks": ["region_matrix"], "genomeblocks": "yes"},
     {"id": "C3", "job": "Per-region summary over many tracks", "standard": "multiBigwigSummary, bigWigAverageOverBed", "checklist": ["region_mean", "multi_track"], "tasks": ["region_mean"], "genomeblocks": "yes"},
     {"id": "C4", "job": "Read counts per region across many BAMs", "standard": "multiBamSummary, featureCounts (SAF)", "checklist": ["multi_bam_region_counts"], "tasks": ["multi_bam_counts"], "genomeblocks": "no"},
@@ -73,7 +73,7 @@
     {"id": "C6", "job": "Sample correlation / PCA / fingerprint QC", "standard": "plotCorrelation, plotPCA, plotFingerprint", "checklist": ["sample_correlation_qc"], "tasks": [], "genomeblocks": "no"},
     {"id": "C7", "job": "Track comparison (log2 ratio / subtract vs input)", "standard": "bigwigCompare", "checklist": ["track_comparison"], "tasks": ["track_comparison"], "genomeblocks": "partial", "note": "compare_heatmap"},
     {"id": "C8", "job": "Normalisation across samples (scale factors, TMM, spike-in)", "standard": "deepTools --scaleFactors, csaw", "checklist": ["track_normalisation"], "tasks": ["track_tmm"], "genomeblocks": "yes"},
-    {"id": "C9", "job": "Write bigWig (from bedGraph / arrays)", "standard": "bedGraphToBigWig, pyBigWig", "checklist": ["bigwig_write", "bedgraph_to_bigwig"], "tasks": ["write_bigwig"], "genomeblocks": "partial", "note": "from intervals (hichip.to_bigwig)"},
+    {"id": "C9", "job": "Write bigWig (from bedGraph / arrays)", "standard": "bedGraphToBigWig, pyBigWig", "checklist": ["bigwig_write", "bedgraph_to_bigwig"], "tasks": ["write_bigwig"], "genomeblocks": "yes", "note": "gb.write_bigwig / Loci.to_bigwig: one value per row (2026-11); hichip.to_bigwig writes coverage"},
     {"id": "C10", "job": "Random-access bigWig reading, zoom levels", "standard": "pyBigWig, pybigtools", "checklist": ["bigwig_read"], "tasks": ["bigwig_read"], "genomeblocks": "yes"}
    ],
    "auxiliary": [

@@ -21,6 +21,8 @@ edgeR, DESeq2, ...) are read from their own results by build_landscape.py:
   cooccupancy   R: LOLA, regioneR; CLI: GIGGLE, bedtools fisher
   graph         R: GenomicInteractions / InteractionSet, igraph; CLI: bedtools pairtobed
   expression    Python: pytximport, pydeseq2, rnanorm
+  signal_bigwig genomeblocks' bam_to_bigwig and Loci.to_bigwig on signal C1 / C9's inputs
+  hic_loops     gb.mustache / gb.hiccups next to Mustache 1.3.3 and Juicer HiCCUPS (MUSTACHE, JUICER_TOOLS)
   stability     every theme's main task on the same data presented differently
                 (rows shuffled; chromosomes in another order): stable = identical answer
 
@@ -820,6 +822,27 @@ def rec_py(rec, part, task, engine, n, fn, score, rep=REPEAT, **extra):
         rec.add(part=part, task=task, engine=engine, n=n, seconds=None, runs=None, accuracy=None, error=f"{type(e).__name__}: {e}"[:300], **extra)
 
 
+BW_RECORDS = [int(x) for x in os.environ.get("GB_BENCH_BW_RECORDS", "1000000,10000000").split(",")]
+
+
+def track_bedgraph(od, nrec, lex):
+    """C9's input: a sorted bedGraph of about ``nrec`` records over the genome (seeded by ``nrec``), written to
+    ``od`` once; returns its path and the records as written (values rounded as in the file)."""
+    bg = od / f"track_{nrec}.bg"
+    rng = np.random.default_rng(nrec)
+    per = np.maximum(1, (np.array([s for _, s in lex]) / sum(s for _, s in lex) * nrec).astype(int))
+    frames = []
+    for (c, s), k in zip(lex, per):
+        gaps = rng.integers(1, max(2, int(s // k) - 20), k)
+        st = np.cumsum(gaps) + np.arange(k) * 10
+        st = st[st + 10 < s]
+        frames.append(pd.DataFrame({"c": c, "s": st, "e": st + rng.integers(1, 10, len(st)), "v": rng.random(len(st)).astype(np.float32)}))
+    B = pd.concat(frames, ignore_index=True)
+    if not bg.exists():
+        B.to_csv(bg, sep="\t", header=False, index=False, float_format="%.6g")
+    return bg, pd.read_csv(bg, sep="\t", header=None, names=["c", "s", "e", "v"])
+
+
 def bw_windows(chroms, sizes, n=400, width=2000, seed=5):
     """Sample windows for checking a coverage track: half around simulated peak summits, half anywhere."""
     rng = np.random.default_rng(seed)
@@ -1025,20 +1048,8 @@ def signal_track_jobs(rec):
     # C9: write a bigWig from a sorted bedGraph of n records (values read back over sample windows)
     chroms, sizes = chrom_sizes()
     lex = sorted(zip(chroms, sizes))
-    for nrec in [int(x) for x in os.environ.get("GB_BENCH_BW_RECORDS", "1000000,10000000").split(",")]:
-        bg = od / f"track_{nrec}.bg"
-        rng = np.random.default_rng(nrec)
-        per = np.maximum(1, (np.array([s for _, s in lex]) / sum(s for _, s in lex) * nrec).astype(int))
-        frames = []
-        for (c, s), k in zip(lex, per):
-            gaps = rng.integers(1, max(2, int(s // k) - 20), k)
-            st = np.cumsum(gaps) + np.arange(k) * 10
-            st = st[st + 10 < s]
-            frames.append(pd.DataFrame({"c": c, "s": st, "e": st + rng.integers(1, 10, len(st)), "v": rng.random(len(st)).astype(np.float32)}))
-        B = pd.concat(frames, ignore_index=True)
-        if not bg.exists():
-            B.to_csv(bg, sep="\t", header=False, index=False, float_format="%.6g")
-        B = pd.read_csv(bg, sep="\t", header=None, names=["c", "s", "e", "v"])         # the values as written in the file
+    for nrec in BW_RECORDS:
+        bg, B = track_bedgraph(od, nrec, lex)
         n_real = len(B)
         sample = B.sample(5000, random_state=1)
 
@@ -1081,6 +1092,44 @@ def signal_track_jobs(rec):
                     lambda: wscore(out3), max(1, REPEAT - 1))
         rows = worker("R", "write_bigwig", od / f"r_{nrec}", str(bg), str(gsize))
         record_worker(rec, "signal", rows, n=n_real, score=lambda r: wscore(r["out"]))
+
+
+def part_signal_bigwig(rec):
+    """genomeblocks' bigWig writers (2026-11) on the inputs the competitors of C1 and C9 ran on: the seeded ChIP
+    BAMs (chip_bams; per base and 50 bp bins, one process) scored against the simulated reads, and the seeded
+    bedGraph tracks (track_bedgraph) written from memory and read back over 5,000 sample positions. A part of
+    its own so it runs without the competitors' environments and keeps their rows."""
+    print("\n== signal_bigwig ==")
+    chroms, sizes = chrom_sizes()
+    od = WORK / "signal_bigwig"
+    od.mkdir(parents=True, exist_ok=True)
+    wins = bw_windows(chroms, sizes)
+    for nr in BAM_READS:
+        b0 = str(chip_bams(nr)[0])
+        t0 = read_truth(b0 + ".npz")
+        rep = REPEAT if nr <= 1_000_000 else max(1, REPEAT - 1)
+        for bs in (1, 50):
+            out = str(od / f"bam_{nr}_{bs}.bw")
+            rec_py(rec, "signal_bigwig", "bam_to_bigwig", f"genomeblocks bam_to_bigwig(bin_size={bs})", nr,
+                   lambda bs=bs, out=out: gb.bam_to_bigwig(b0, out, bin_size=bs, workers=1),
+                   lambda p, bs=bs: coverage_score(p, t0, chroms, wins, bs), rep=rep)
+    lex = sorted(zip(chroms, sizes))
+    td = WORK / "signal_tracks"                       # the competitors' bedGraphs, regenerated there if missing
+    td.mkdir(parents=True, exist_ok=True)
+    for nrec in BW_RECORDS:
+        bg, B = track_bedgraph(td, nrec, lex)
+        sample = B.sample(5000, random_state=1)
+
+        def wscore(path, sample=sample):
+            import pyBigWig
+            f = pyBigWig.open(str(path))
+            got = np.array([f.values(c, int(s), int(s) + 1)[0] for c, s in zip(sample["c"], sample["s"])], float)
+            f.close()
+            return corr_score(sample["v"].to_numpy(float), got, rtol=1e-6)
+        L = Loci.from_frame(B.rename(columns={"c": "chrom", "s": "start", "e": "end"}))
+        out = str(od / f"values_{nrec}.bw")
+        rec_py(rec, "signal_bigwig", "write_bigwig", "genomeblocks Loci.to_bigwig", len(B),
+               lambda L=L, out=out: L.to_bigwig(out, "v", chrom_sizes=dict(lex)), wscore, rep=max(1, REPEAT - 1))
 
 
 # ── motifs ───────────────────────────────────────────────────────────────────
@@ -2622,7 +2671,7 @@ def part_hic_loops(rec):
                 _juicer_loops, 1)
 
 
-PARTS = {"intervals": part_intervals, "annotation": part_annotation, "signal": part_signal, "motifs": part_motifs,
+PARTS = {"intervals": part_intervals, "annotation": part_annotation, "signal": part_signal, "signal_bigwig": part_signal_bigwig, "motifs": part_motifs,
          "cooccupancy": part_cooccupancy, "graph": part_graph, "hic": part_hic, "hic_loops": part_hic_loops, "expression": part_expression, "stability": part_stability}
 
 if __name__ == "__main__":
