@@ -281,6 +281,30 @@ class Atlas(TableMixin):
         sub = self.M[q_bins]
         return np.asarray(sub.sum(axis=0)).ravel().astype(np.int64)
 
+    def _region_counts(self, ranges: np.ndarray) -> np.ndarray:
+        """Regions overlapping each track, each region counted once: ``ranges`` are the regions' bin
+        ranges ``[start, end)`` (one row per region, repeats allowed); a region overlaps a track when they
+        share a bin. Unlike the distinct-bin count of :meth:`search`, this does not shrink when regions
+        cluster in the same bins, so a query and a null of the same size compare fairly."""
+        n_tracks = len(self.track_names)
+        if len(ranges) == 0:
+            return np.zeros(n_tracks, dtype=np.int64)
+        lens = ranges[:, 1] - ranges[:, 0]
+        one = lens == 1
+        out = np.zeros(n_tracks, dtype=np.int64)
+        if one.any():                                   # one bin: its row of M, once per region (rows may repeat)
+            out += np.asarray(self.M[ranges[one, 0]].sum(axis=0)).ravel().astype(np.int64)
+        if (~one).any():                                # several bins: any of them, once per region
+            from scipy.sparse import csr_matrix
+            r, ln = ranges[~one], lens[~one]
+            bins = _explode_ranges(r[:, 0], ln)
+            G = csr_matrix((np.ones(len(bins), np.int32), (np.repeat(np.arange(len(r)), ln), np.arange(len(bins)))),
+                           shape=(len(r), len(bins)))
+            P = (G @ self.M[bins].astype(np.int32)).tocsr()
+            P.eliminate_zeros()
+            out += np.bincount(P.indices, minlength=n_tracks).astype(np.int64)
+        return out
+
     # ---- GIGGLE search -------------------------------------------------
 
     def search(
@@ -373,6 +397,12 @@ class Atlas(TableMixin):
         dict. With a dict of groups, the result is a long-format DataFrame
         with a ``group`` column.
 
+        ``observed`` and ``expected`` count regions: the query's (or a null
+        draw's) regions that share a bin with each track, each region once.
+        (Up to 2.0.1 they counted distinct shared bins, which shrink when the
+        query's regions cluster in the same bins, so a clustered query read as
+        depleted against an unclustered null of the same size.)
+
         With ``sample`` set, ``observed`` and ``expected`` are means over
         the bootstrap distribution of subsamples; ``z`` is the paired z
         of (obs - null) per iteration.
@@ -445,8 +475,7 @@ class Atlas(TableMixin):
         fixed_observed: Dict[str, np.ndarray] = {}
         if sample is None:
             for g, r in group_ranges.items():
-                bins_u = np.unique(_explode_ranges(r[:, 0], r[:, 1] - r[:, 0]))
-                fixed_observed[g] = self._overlap_counts(bins_u)
+                fixed_observed[g] = self._region_counts(r)
 
         # Pre-stage the per-group genome-shuffle inputs (only if pool is None)
         gs: Dict[str, dict] = {}
@@ -472,12 +501,7 @@ class Atlas(TableMixin):
             if pool is not None and sample is not None:
                 # ONE shared pool draw, broadcast to every group
                 idx = rng.choice(n_pool, size=sample, replace=replace)
-                sampled = pool_ranges[idx]
-                bins_u = np.unique(
-                    _explode_ranges(sampled[:, 0],
-                                    sampled[:, 1] - sampled[:, 0]),
-                )
-                shared_null = self._overlap_counts(bins_u)
+                shared_null = self._region_counts(pool_ranges[idx])
                 for g in groups:
                     null_acc[g][i] = shared_null
             elif pool is not None:
@@ -491,12 +515,7 @@ class Atlas(TableMixin):
                             f"has {n_pool}. Pass replace=True or set sample.",
                         )
                     idx = rng.choice(n_pool, size=k, replace=replace)
-                    sampled = pool_ranges[idx]
-                    bins_u = np.unique(
-                        _explode_ranges(sampled[:, 0],
-                                        sampled[:, 1] - sampled[:, 0]),
-                    )
-                    null_acc[g][i] = self._overlap_counts(bins_u)
+                    null_acc[g][i] = self._region_counts(pool_ranges[idx])
             else:
                 # Genome-shuffle null per group (independent)
                 for g in groups:
@@ -509,8 +528,7 @@ class Atlas(TableMixin):
                     free = np.maximum(cb - lens_arr, 0)
                     local = rng.integers(0, free + 1)
                     starts = chrom_offsets_arr[cs] + local
-                    q_bins = np.unique(_explode_ranges(starts, lens_arr))
-                    null_acc[g][i] = self._overlap_counts(q_bins)
+                    null_acc[g][i] = self._region_counts(np.column_stack([starts, starts + lens_arr]))
 
             # ---- observed for this iteration ----
             if sample is None:
@@ -519,12 +537,7 @@ class Atlas(TableMixin):
             else:
                 for g, r in group_ranges.items():
                     idx = rng.choice(len(r), size=sample, replace=replace)
-                    sampled = r[idx]
-                    bins_u = np.unique(
-                        _explode_ranges(sampled[:, 0],
-                                        sampled[:, 1] - sampled[:, 0]),
-                    )
-                    obs_acc[g][i] = self._overlap_counts(bins_u)
+                    obs_acc[g][i] = self._region_counts(r[idx])
 
         # ---- per-group summary ----
         out_frames: List["pd.DataFrame"] = []

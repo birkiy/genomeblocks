@@ -223,8 +223,13 @@ res = atlas.bootstrap(cre, n=1000, seed=0)    # position-shuffle null, chromosom
 res[["name", "observed", "expected", "z", "p_emp"]].head()
 ```
 
-One row per track: `observed` and `expected` overlap counts (means over the
-iterations), their `obs_std` / `null_std`, `log2fc = log2((obs + 1) / (exp + 1))`,
+One row per track: `observed` and `expected` region counts (means over the
+iterations): the query's, or a null draw's, regions that share an atlas bin
+with the track, each region once. Counting regions rather than distinct bins
+keeps a query whose regions cluster in a few bins comparable with a null of the
+same size: on a query 1.44× enriched for a track, with its regions packed two
+to a bin, distinct bins read 0.83× and region counts read 1.44×. The rest:
+their `obs_std` / `null_std`, `log2fc = log2((obs + 1) / (exp + 1))`,
 the paired `z` of `observed − null` per iteration (the sort key) and
 `p_emp = (1 + #iterations with obs ≤ null) / (n + 1)`.
 

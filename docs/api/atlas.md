@@ -177,6 +177,12 @@ set of columns, not groups). Three knobs interact:
   regions per iteration; the pool draw is shared across groups within an
   iteration, so groups of different size are paired against the same null.
 
+`observed` and `expected` count regions: the query's (or a null draw's)
+regions that share an atlas bin with the track, each region once, so a query
+whose regions cluster in a few bins is compared fairly with a null of the same
+size. (Up to 2.0.1 they counted distinct shared bins, which read such a query
+as depleted.) `search` keeps its bin-level counts.
+
 Columns: `name`, `observed`, `expected`, `obs_std`, `null_std`, `log2fc`
 (`log2((obs + 1) / (null + 1))`), `z` (paired z of obs - null over the
 iterations), `p_emp` (`(1 + #(obs <= null)) / (n + 1)`), `track_n_bins`,
@@ -186,9 +192,9 @@ the metadata columns, and `group` first when `query` is a dict. Sorted by
 ```python
 atlas.bootstrap(cre, n=20, seed=0, verbose=False)[["name", "observed", "expected", "log2fc", "z", "p_emp"]]
 # ->   name  observed  expected    log2fc         z     p_emp
-#    0   t2       3.0      1.85  0.489038  0.807351  0.333333
-#    1   t1       2.0      1.70  0.152003  0.290953  0.619048
-#    2   t0       0.0      1.55 -1.350497 -1.476102  1.000000
+#    0   t2       3.0      1.95  0.439285  0.715219  0.428571
+#    1   t1       2.0      1.75  0.125531  0.223607  0.619048
+#    2   t0       0.0      1.60 -1.378512 -1.529203  1.000000
 groups = atlas.bootstrap({"a": cre.head(4), "b": "t1.bed"}, n=5, seed=0, verbose=False)
 groups.columns.tolist()
 # -> ['group', 'name', 'observed', 'expected', 'obs_std', 'null_std', 'log2fc', 'z', 'p_emp', 'track_n_bins', 'factor']
