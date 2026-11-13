@@ -2,6 +2,7 @@
 title: Benchmarks
 layout: default
 nav_order: 9
+has_children: true
 permalink: /benchmarks/
 ---
 
@@ -38,6 +39,9 @@ most 8 worker processes</p>
 <div class="gb-tile purple"><span class="tile-label">Hi-C loops vs Mustache</span><span class="tile-value">9.1×</span><span class="tile-ctx">synthetic cooler: 8.0 s vs 73 s, same loops</span></div>
 <div class="gb-tile purple"><span class="tile-label">Hi-C loops vs HiCCUPS</span><span class="tile-value">16×</span><span class="tile-ctx">synthetic map: 10 s vs 2.7 min, all byte-identical</span></div>
 </div>
+
+{: .note }
+> **How does genomeblocks compare with the field?** The [Landscape]({{ '/benchmarks/landscape/' | relative_url }}) page lists every tool that does each building block's job — bedtools, GenomicRanges, pyranges, deepTools, HOMER, ChIPseeker, MEME, GIGGLE, LOLA, cooler, DESeq2, edgeR and some two hundred and seventy more — and scores the ones that run here on accuracy, scalability, stability and usability.
 
 1. TOC
 {:toc}
@@ -230,14 +234,14 @@ The same call through every installed engine (`backend=`); every row below retur
 <text class="tick" x="622.7" y="116" text-anchor="middle">1 s</text>
 <line class="grid" x1="784.0" y1="8" x2="784.0" y2="100"/>
 <text class="tick" x="784.0" y="116" text-anchor="middle">10 s</text>
-<g class="row"><title>lightmotif: 37 ms · agrees</title>
+<g class="row gb navy"><title>lightmotif: 37 ms · agrees</title>
 <rect class="hit" x="0" y="8.0" width="880" height="28"/>
 <line class="rowline" x1="300" y1="22.0" x2="784" y2="22.0"/>
 <text class="lab" x="286" y="26.0" text-anchor="end">lightmotif</text>
 <circle class="dot" cx="391.9" cy="22.0" r="5.5"/>
 <text class="val" x="402.9" y="26.0">37 ms</text>
 </g>
-<g class="row gb navy"><title>moods: 53 ms · agrees</title>
+<g class="row"><title>moods: 53 ms · agrees</title>
 <rect class="hit" x="0" y="36.0" width="880" height="28"/>
 <line class="rowline" x1="300" y1="50.0" x2="784" y2="50.0"/>
 <text class="lab" x="286" y="54.0" text-anchor="end">moods</text>
@@ -1407,7 +1411,7 @@ The pipeline on 100k CREs and 50k loops (114,367 edges), step by step, then the 
 ## Expression
 {: .sec-navy #expression }
 
-salmon-style `quant.sf` files over GENCODE-shaped GTFs at three sizes (20,000 genes / 70,028 transcripts × 6 samples, 60,000 genes / 210,070 transcripts × 24 samples, 60,000 genes / 210,070 transcripts × 96 samples), read with both table backends and summarised to genes as tximport does; the summed gene counts normalised as edgeR and DESeq2 do. Every genomeblocks number is checked against R (tximport 1.34.0, readr 2.1.6, DESeq2 1.46.0, edgeR 4.4.0, data.table 1.17.8); the last table gives the largest absolute difference over every entry of each matrix, at every size. Wall time, log scales, genomeblocks in colour.
+salmon-style `quant.sf` files over GENCODE-shaped GTFs at three sizes (20,000 genes / 70,028 transcripts × 6 samples, 60,000 genes / 210,070 transcripts × 24 samples, 60,000 genes / 210,070 transcripts × 96 samples), read with both table backends and summarised to genes as tximport does; the summed gene counts normalised as edgeR and DESeq2 do. Every genomeblocks number is checked against R (tximport 1.34.0, readr 2.1.6, DESeq2 1.46.0, edgeR 4.4.0, data.table 1.18.6.1); the last table gives the largest absolute difference over every entry of each matrix, at every size. Wall time, log scales, genomeblocks in colour.
 
 <figure class="gb-fig gb-chart"><div class="gb-fig-body">
 <svg class="gbc" viewBox="0 0 880 300" role="img" aria-label="expression: read quant.sf files" xmlns="http://www.w3.org/2000/svg">
@@ -1524,34 +1528,34 @@ salmon-style `quant.sf` files over GENCODE-shaped GTFs at three sizes (20,000 ge
 <text class="tick" x="650.0" y="274" text-anchor="middle">10M</text>
 <line class="axis" x1="64" y1="256" x2="650" y2="256"/>
 <text class="axl" x="357.0" y="294" text-anchor="middle">genes × samples</text>
-<g class="line"><title>R read.delim</title><polyline points="87.2,146.3 403.4,96.7 579.8,67.8"/>
-<circle cx="87.2" cy="146.3" r="4"><title>R read.delim · 120k: 65 ms</title></circle>
-<circle cx="403.4" cy="96.7" r="4"><title>R read.delim · 1.4M: 429 ms</title></circle>
-<circle cx="579.8" cy="67.8" r="4"><title>R read.delim · 5.8M: 1.3 s</title></circle>
+<g class="line"><title>R read.delim</title><polyline points="87.2,137.5 403.4,89.2 579.8,63.8"/>
+<circle cx="87.2" cy="137.5" r="4"><title>R read.delim · 120k: 91 ms</title></circle>
+<circle cx="403.4" cy="89.2" r="4"><title>R read.delim · 1.4M: 572 ms</title></circle>
+<circle cx="579.8" cy="63.8" r="4"><title>R read.delim · 5.8M: 1.5 s</title></circle>
 </g>
-<g class="line"><title>R data.table::fread</title><polyline points="87.2,190.7 403.4,163.3 579.8,142.6"/>
-<circle cx="87.2" cy="190.7" r="4"><title>R data.table::fread · 120k: 12 ms</title></circle>
-<circle cx="403.4" cy="163.3" r="4"><title>R data.table::fread · 1.4M: 34 ms</title></circle>
-<circle cx="579.8" cy="142.6" r="4"><title>R data.table::fread · 5.8M: 75 ms</title></circle>
+<g class="line"><title>R data.table::fread</title><polyline points="87.2,195.5 403.4,157.8 579.8,141.5"/>
+<circle cx="87.2" cy="195.5" r="4"><title>R data.table::fread · 120k: 10 ms</title></circle>
+<circle cx="403.4" cy="157.8" r="4"><title>R data.table::fread · 1.4M: 42 ms</title></circle>
+<circle cx="579.8" cy="141.5" r="4"><title>R data.table::fread · 5.8M: 78 ms</title></circle>
 </g>
-<g class="line gb green"><title>genomeblocks (polars)</title><polyline points="87.2,137.3 403.4,81.8 579.8,47.3"/>
-<circle cx="87.2" cy="137.3" r="4"><title>genomeblocks (polars) · 120k: 92 ms</title></circle>
-<circle cx="403.4" cy="81.8" r="4"><title>genomeblocks (polars) · 1.4M: 757 ms</title></circle>
-<circle cx="579.8" cy="47.3" r="4"><title>genomeblocks (polars) · 5.8M: 2.8 s</title></circle>
+<g class="line gb green"><title>genomeblocks (polars)</title><polyline points="87.2,180.1 403.4,145.8 579.8,119.8"/>
+<circle cx="87.2" cy="180.1" r="4"><title>genomeblocks (polars) · 120k: 18 ms</title></circle>
+<circle cx="403.4" cy="145.8" r="4"><title>genomeblocks (polars) · 1.4M: 66 ms</title></circle>
+<circle cx="579.8" cy="119.8" r="4"><title>genomeblocks (polars) · 5.8M: 178 ms</title></circle>
 </g>
-<g class="line gb green"><title>genomeblocks (pandas)</title><polyline points="87.2,134.7 403.4,79.7 579.8,44.7"/>
-<circle cx="87.2" cy="134.7" r="4"><title>genomeblocks (pandas) · 120k: 101 ms</title></circle>
-<circle cx="403.4" cy="79.7" r="4"><title>genomeblocks (pandas) · 1.4M: 820 ms</title></circle>
-<circle cx="579.8" cy="44.7" r="4"><title>genomeblocks (pandas) · 5.8M: 3.1 s</title></circle>
+<g class="line gb green"><title>genomeblocks (pandas)</title><polyline points="87.2,152.9 403.4,108.7 579.8,86.1"/>
+<circle cx="87.2" cy="152.9" r="4"><title>genomeblocks (pandas) · 120k: 51 ms</title></circle>
+<circle cx="403.4" cy="108.7" r="4"><title>genomeblocks (pandas) · 1.4M: 272 ms</title></circle>
+<circle cx="579.8" cy="86.1" r="4"><title>genomeblocks (pandas) · 5.8M: 644 ms</title></circle>
 </g>
-<text class="lab gbl" x="660" y="48.7">genomeblocks (pandas)</text>
-<line class="leader" x1="585.8" y1="44.7" x2="656" y2="44.7"/>
-<text class="lab gbl" x="660" y="62.7">genomeblocks (polars)</text>
-<line class="leader" x1="585.8" y1="58.7" x2="656" y2="58.7"/>
-<text class="lab" x="660" y="76.7">R read.delim</text>
-<line class="leader" x1="585.8" y1="72.7" x2="656" y2="72.7"/>
-<text class="lab" x="660" y="146.6">R data.table::fread</text>
-<line class="leader" x1="585.8" y1="142.6" x2="656" y2="142.6"/>
+<text class="lab" x="660" y="67.8">R read.delim</text>
+<line class="leader" x1="585.8" y1="63.8" x2="656" y2="63.8"/>
+<text class="lab gbl" x="660" y="90.1">genomeblocks (pandas)</text>
+<line class="leader" x1="585.8" y1="86.1" x2="656" y2="86.1"/>
+<text class="lab gbl" x="660" y="123.8">genomeblocks (polars)</text>
+<line class="leader" x1="585.8" y1="119.8" x2="656" y2="119.8"/>
+<text class="lab" x="660" y="145.5">R data.table::fread</text>
+<line class="leader" x1="585.8" y1="141.5" x2="656" y2="141.5"/>
 </svg>
 </div><figcaption><strong>Reading a featureCounts matrix</strong> — both table backends against R's <code>read.delim</code> and <code>data.table::fread</code>.</figcaption></figure>
 
