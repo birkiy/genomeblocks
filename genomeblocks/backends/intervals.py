@@ -23,6 +23,9 @@ Support matrix::
     nearest          yes         -      -     yes      yes      yes
     merge            yes         -      -     yes      yes      yes
     point lookup     yes        yes    yes    yes      yes      yes
+
+``Loci.count_overlaps`` / ``coverage`` / ``subtract`` / ``complement`` run on genomeblocks'
+own kernels only (``_intervals``): they are faster there than on any of these engines.
 """
 from __future__ import annotations
 

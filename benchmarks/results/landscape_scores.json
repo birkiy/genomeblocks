@@ -1,0 +1,6730 @@
+{
+ "grades": {
+  "biobear | intervals": {
+   "state": "untested",
+   "C": 0.125,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "bedtk | intervals": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "plyranges | intervals": {
+   "state": "best",
+   "C": 0.9,
+   "Q": 0.8594686824220513,
+   "S": 0.7735218141798462,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.8411511987227012
+    ],
+    [
+     "C3",
+     0.9034498777496638
+    ],
+    [
+     "C5",
+     0.8749672335325136
+    ],
+    [
+     "C6",
+     0.955419823031369
+    ],
+    [
+     "C7",
+     0.8535767602170565
+    ],
+    [
+     "C8",
+     0.728247201279004
+    ]
+   ],
+   "rel": 0.9472612976615897
+  },
+  "pyfaidx | intervals": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "granges | intervals": {
+   "state": "untested",
+   "C": 0.375,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "rtracklayer | intervals": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "data.table | intervals": {
+   "state": "low",
+   "C": 0.3,
+   "Q": 0.6330961615090975,
+   "S": 0.18992884845272925,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.6330961615090975
+    ]
+   ],
+   "rel": 0.23258845988650242
+  },
+  "bioframe | intervals": {
+   "state": "good",
+   "C": 1.0,
+   "Q": 0.6652258006254597,
+   "S": 0.6652258006254597,
+   "n_yes": 10,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.6430592764203589
+    ],
+    [
+     "C4",
+     0.6684034356471815
+    ],
+    [
+     "C6",
+     0.7107521543920692
+    ],
+    [
+     "C7",
+     0.6667224829835301
+    ],
+    [
+     "C8",
+     0.6371916536841586
+    ]
+   ],
+   "rel": 0.8146410916757065
+  },
+  "HTSeq GenomicArray | intervals": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "BiocPy genomicranges / iranges | intervals": {
+   "state": "good",
+   "C": 0.9,
+   "Q": 0.5779267106698277,
+   "S": 0.520134039602845,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.554376401392114
+    ],
+    [
+     "C3",
+     0.8884478050920234
+    ],
+    [
+     "C6",
+     0.44622600132607737
+    ],
+    [
+     "C8",
+     0.42265663486909644
+    ]
+   ],
+   "rel": 0.6369605049012887
+  },
+  "GenomicRanges + IRanges | intervals": {
+   "state": "best",
+   "C": 0.9,
+   "Q": 0.898680908267003,
+   "S": 0.8088128174403026,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.8497930832163052
+    ],
+    [
+     "C3",
+     0.8887751204263755
+    ],
+    [
+     "C5",
+     0.8867432209797597
+    ],
+    [
+     "C6",
+     0.9543019423621697
+    ],
+    [
+     "C7",
+     0.8916797506728884
+    ],
+    [
+     "C8",
+     0.9207923319445193
+    ]
+   ],
+   "rel": 0.9904789560798265
+  },
+  "pybedlite | intervals": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pyranges (0.x) | intervals": {
+   "state": "best",
+   "C": 1.0,
+   "Q": 0.8165875836892766,
+   "S": 0.8165875836892766,
+   "n_yes": 10,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.7638925924047633
+    ],
+    [
+     "C4",
+     0.7433401738017383
+    ],
+    [
+     "C6",
+     0.9210759728748784
+    ],
+    [
+     "C7",
+     0.7785892870344091
+    ],
+    [
+     "C9",
+     0.8760398923305941
+    ]
+   ],
+   "rel": 1.0
+  },
+  "bedr | intervals": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "BEDOPS | intervals": {
+   "state": "good",
+   "C": 0.9,
+   "Q": 0.7419289735968831,
+   "S": 0.6677360762371949,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.6279134520987997
+    ],
+    [
+     "C3",
+     0.8836940278960642
+    ],
+    [
+     "C4",
+     0.6850888872452638
+    ],
+    [
+     "C6",
+     0.7444793522052084
+    ],
+    [
+     "C7",
+     0.8096482475529293
+    ],
+    [
+     "C8",
+     0.7007498745830323
+    ]
+   ],
+   "rel": 0.8177151962321265
+  },
+  "pybedtools | intervals": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "IGD | intervals": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GIGGLE | intervals": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "coitrees | intervals": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pyranges (1.x) | intervals": {
+   "state": "good",
+   "C": 1.0,
+   "Q": 0.6891857485186864,
+   "S": 0.6891857485186864,
+   "n_yes": 9,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": [
+    [
+     "C2",
+     0.6225335057707941
+    ],
+    [
+     "C3",
+     0.8071356129758146
+    ],
+    [
+     "C5",
+     0.6955342702018359
+    ],
+    [
+     "C6",
+     0.6613619884548035
+    ],
+    [
+     "C7",
+     0.7659876148979862
+    ],
+    [
+     "C8",
+     0.5825614988108843
+    ]
+   ],
+   "rel": 0.8439826447090966
+  },
+  "superintervals | intervals": {
+   "state": "moderate",
+   "C": 0.5,
+   "Q": 0.5215053083183079,
+   "S": 0.26075265415915394,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.5215053083183079
+    ]
+   ],
+   "rel": 0.319319886032426
+  },
+  "AIList | intervals": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "valr | intervals": {
+   "state": "best",
+   "C": 0.9,
+   "Q": 0.8453735670141128,
+   "S": 0.7608362103127015,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.7604200556356653
+    ],
+    [
+     "C4",
+     0.8590518751032549
+    ],
+    [
+     "C6",
+     0.911270376902354
+    ],
+    [
+     "C7",
+     0.9052397549598834
+    ],
+    [
+     "C8",
+     0.790885772469407
+    ]
+   ],
+   "rel": 0.9317264008292964
+  },
+  "intervaltree | intervals": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "bx-python | intervals": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "genomeblocks | intervals": {
+   "state": "best",
+   "C": 0.8,
+   "Q": 1.0,
+   "S": 0.8,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     1.0
+    ],
+    [
+     "C4",
+     1.0
+    ],
+    [
+     "C5",
+     1.0
+    ],
+    [
+     "C7",
+     1.0
+    ],
+    [
+     "C8",
+     1.0
+    ],
+    [
+     "C9",
+     1.0
+    ]
+   ],
+   "rel": 0.9796867059693276
+  },
+  "tabix / htslib | intervals": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "cgranges | intervals": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "polars-bio | intervals": {
+   "state": "good",
+   "C": 0.9,
+   "Q": 0.7337751426028144,
+   "S": 0.660397628342533,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.628841969926905
+    ],
+    [
+     "C3",
+     0.895962068155537
+    ],
+    [
+     "C4",
+     0.7032730623782899
+    ],
+    [
+     "C6",
+     0.6889347814845301
+    ],
+    [
+     "C7",
+     0.8341608430840006
+    ],
+    [
+     "C8",
+     0.6514781305876232
+    ]
+   ],
+   "rel": 0.8087284714260655
+  },
+  "bedtools | intervals": {
+   "state": "good",
+   "C": 1.0,
+   "Q": 0.60877003265177,
+   "S": 0.60877003265177,
+   "n_yes": 10,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.5625407753207449
+    ],
+    [
+     "C3",
+     0.8509483733102989
+    ],
+    [
+     "C4",
+     0.5423119533901035
+    ],
+    [
+     "C5",
+     0.3331987728472644
+    ],
+    [
+     "C6",
+     0.7239780873346382
+    ],
+    [
+     "C7",
+     0.6453832968367812
+    ],
+    [
+     "C8",
+     0.6030289695225586
+    ]
+   ],
+   "rel": 0.7455048849768157
+  },
+  "gtars | intervals": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GenomeKit | intervals": {
+   "state": "untested",
+   "C": 0.3333333333333333,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "ailist (Python) | intervals": {
+   "state": "low",
+   "C": 0.5,
+   "Q": 0.4829890898577458,
+   "S": 0.2414945449288729,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.4829890898577458
+    ]
+   ],
+   "rel": 0.29573624403866156
+  },
+  "ncls | intervals": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "biobear | annotation": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 1,
+   "jobs": []
+  },
+  "ensembldb | annotation": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GenomicDistributions | annotation": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "ChIPpeakAnno | annotation": {
+   "state": "moderate",
+   "C": 1.0,
+   "Q": 0.18147220441981005,
+   "S": 0.18147220441981005,
+   "n_yes": 10,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C4",
+     0.13861713471151396
+    ],
+    [
+     "C5",
+     0.22432727412810616
+    ]
+   ],
+   "rel": 0.3633198393402717
+  },
+  "plyranges | annotation": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": 0.9400708651281179,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 1,
+   "unknown": 9,
+   "jobs": [
+    [
+     "C5",
+     0.9400708651281179
+    ]
+   ]
+  },
+  "ChIPseeker | annotation": {
+   "state": "good",
+   "C": 0.8,
+   "Q": 0.42414486121339356,
+   "S": 0.33931588897071485,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C3",
+     0.4901540952574581
+    ],
+    [
+     "C4",
+     0.29212639312526434
+    ],
+    [
+     "C7",
+     0.4901540952574581
+    ]
+   ],
+   "rel": 0.6793337561561243
+  },
+  "rtracklayer | annotation": {
+   "state": "low",
+   "C": 0.1,
+   "Q": 1.0,
+   "S": 0.1,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     1.0
+    ]
+   ],
+   "rel": 0.20020688044312457
+  },
+  "goldmine | annotation": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "gffpandas | annotation": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "HTSeq GenomicArray | annotation": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "BiocPy genomicranges / iranges | annotation": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "rGREAT | annotation": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GenomicRanges + IRanges | annotation": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": 0.7628698411661654,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 2,
+   "unknown": 8,
+   "jobs": [
+    [
+     "C4",
+     0.5257396823323307
+    ],
+    [
+     "C5",
+     1.0
+    ]
+   ]
+  },
+  "PAVIS | annotation": {
+   "state": "untested",
+   "C": 0.625,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "GREAT (web) | annotation": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pyranges (0.x) | annotation": {
+   "state": "good",
+   "C": 0.4444444444444444,
+   "Q": 0.7284623190475326,
+   "S": 0.3237610306877922,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": [
+    [
+     "C5",
+     0.7284623190475326
+    ]
+   ],
+   "rel": 0.6481918596305359
+  },
+  "gtfparse | annotation": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "chipenrich | annotation": {
+   "state": "untested",
+   "C": 0.5555555555555556,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "pyranges (1.x) | annotation": {
+   "state": "good",
+   "C": 0.375,
+   "Q": 0.8325514746137355,
+   "S": 0.3122068029801508,
+   "n_yes": 3,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": [
+    [
+     "C5",
+     0.8325514746137355
+    ]
+   ],
+   "rel": 0.625059500777772
+  },
+  "UROPA | annotation": {
+   "state": "low",
+   "C": 0.6,
+   "Q": 0.0,
+   "S": 0.0,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C4",
+     0.0
+    ]
+   ],
+   "rel": 0.0
+  },
+  "GenomicFeatures + txdbmaker | annotation": {
+   "state": "good",
+   "C": 0.5,
+   "Q": 0.8955848368976964,
+   "S": 0.4477924184488482,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.7895985918867499
+    ],
+    [
+     "C3",
+     0.9485779594031696
+    ],
+    [
+     "C7",
+     0.9485779594031696
+    ]
+   ],
+   "rel": 0.8965112318372616
+  },
+  "ArchR | annotation": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "AGAT | annotation": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "greatpy | annotation": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "genomation | annotation": {
+   "state": "untested",
+   "C": 0.7,
+   "Q": null,
+   "S": null,
+   "n_yes": 7,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "valr | annotation": {
+   "state": "moderate",
+   "C": 0.3,
+   "Q": 0.9131726249983461,
+   "S": 0.27395178749950383,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C5",
+     0.9131726249983461
+    ]
+   ],
+   "rel": 0.5484703276709343
+  },
+  "pygtftk | annotation": {
+   "state": "untested",
+   "C": 0.5555555555555556,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "gffutils | annotation": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "BCBio.GFF | annotation": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "genomeblocks | annotation": {
+   "state": "best",
+   "C": 0.5,
+   "Q": 0.9989666666666667,
+   "S": 0.49948333333333333,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C3",
+     0.99845
+    ],
+    [
+     "C4",
+     1.0
+    ],
+    [
+     "C7",
+     0.99845
+    ]
+   ],
+   "rel": 1.0
+  },
+  "Signac | annotation": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "annotatr | annotation": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "polars-bio | annotation": {
+   "state": "untested",
+   "C": 0.1111111111111111,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "bedtools | annotation": {
+   "state": "low",
+   "C": 0.2,
+   "Q": 0.717473824294239,
+   "S": 0.1434947648588478,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C4",
+     0.7460211110591137
+    ],
+    [
+     "C5",
+     0.6889265375293643
+    ]
+   ],
+   "rel": 0.2872863923230961
+  },
+  "HOMER | annotation": {
+   "state": "low",
+   "C": 1.0,
+   "Q": 0.008538756187094773,
+   "S": 0.008538756187094773,
+   "n_yes": 9,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": [
+    [
+     "C3",
+     0.01280813428064216
+    ],
+    [
+     "C4",
+     0.0
+    ],
+    [
+     "C7",
+     0.01280813428064216
+    ]
+   ],
+   "rel": 0.017095177390826735
+  },
+  "pyensembl | annotation": {
+   "state": "untested",
+   "C": 0.25,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "GenomeKit | annotation": {
+   "state": "untested",
+   "C": 0.3333333333333333,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "gffread | annotation": {
+   "state": "untested",
+   "C": 0.1111111111111111,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "GTFtools | annotation": {
+   "state": "untested",
+   "C": 0.3333333333333333,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "WiggleTools | signal": {
+   "state": "best",
+   "C": 0.6,
+   "Q": 1.0,
+   "S": 0.6,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C7",
+     1.0
+    ]
+   ],
+   "rel": 1.0
+  },
+  "seqplots | signal": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pybigtools | signal": {
+   "state": "good",
+   "C": 0.4,
+   "Q": 0.9661855770009318,
+   "S": 0.38647423080037274,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C9",
+     0.9661855770009318
+    ]
+   ],
+   "rel": 0.6441237180006213
+  },
+  "CoverageView | signal": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "EnrichedHeatmap | signal": {
+   "state": "low",
+   "C": 0.3,
+   "Q": 0.5036831638891921,
+   "S": 0.15110494916675762,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.5036831638891921
+    ]
+   ],
+   "rel": 0.25184158194459605
+  },
+  "LILY | signal": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "ngs.plot | signal": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "ChIPseeker | signal": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "rtracklayer | signal": {
+   "state": "moderate",
+   "C": 0.3,
+   "Q": 1.0,
+   "S": 0.3,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C9",
+     1.0
+    ]
+   ],
+   "rel": 0.5
+  },
+  "mosdepth | signal": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "DiffBind | signal": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Rsubread featureCounts | signal": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": 1.0,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 1,
+   "unknown": 9,
+   "jobs": [
+    [
+     "C4",
+     1.0
+    ]
+   ]
+  },
+  "megadepth | signal": {
+   "state": "good",
+   "C": 0.5,
+   "Q": 1.0,
+   "S": 0.5,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     1.0
+    ]
+   ],
+   "rel": 0.8333333333333334
+  },
+  "SEanalysis 2.0 | signal": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "CREAM | signal": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "FitHiChIP | signal": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GenomicAlignments | signal": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": 0.9758049269286424,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 4,
+   "unknown": 6,
+   "jobs": [
+    [
+     "C4",
+     0.9758049269286424
+    ]
+   ]
+  },
+  "genomation | signal": {
+   "state": "moderate",
+   "C": 0.4444444444444444,
+   "Q": 0.6574331619625385,
+   "S": 0.29219251642779487,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": [
+    [
+     "C2",
+     0.6574331619625385
+    ]
+   ],
+   "rel": 0.4869875273796581
+  },
+  "deepTools | signal": {
+   "state": "good",
+   "C": 1.0,
+   "Q": 0.49492223922505313,
+   "S": 0.49492223922505313,
+   "n_yes": 10,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.7132386882443897
+    ],
+    [
+     "C4",
+     0.26249782527131293
+    ],
+    [
+     "C7",
+     0.5090302041594568
+    ]
+   ],
+   "rel": 0.8248703987084219
+  },
+  "ROSE2 | signal": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "bigwig-loader | signal": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "samtools | signal": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "profileplyr | signal": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "genomeblocks | signal": {
+   "state": "good",
+   "C": 0.4,
+   "Q": 1.0,
+   "S": 0.4,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     1.0
+    ],
+    [
+     "C3",
+     1.0
+    ],
+    [
+     "C8",
+     1.0
+    ]
+   ],
+   "rel": 0.6666666666666667
+  },
+  "trackplot | signal": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "ROSE | signal": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pysam | signal": {
+   "state": "moderate",
+   "C": 0.3,
+   "Q": 0.9289063499030303,
+   "S": 0.2786719049709091,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C4",
+     0.9289063499030303
+    ]
+   ],
+   "rel": 0.46445317495151517
+  },
+  "HiChIP-Peaks | signal": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "bwtool | signal": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "UCSC kent utilities | signal": {
+   "state": "moderate",
+   "C": 0.4,
+   "Q": 0.7929371033774,
+   "S": 0.31717484135096,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C3",
+     0.6642748287732958
+    ],
+    [
+     "C9",
+     0.9215993779815043
+    ]
+   ],
+   "rel": 0.5286247355849334
+  },
+  "imPROSE | signal": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "bedtools | signal": {
+   "state": "moderate",
+   "C": 0.4,
+   "Q": 0.7584303555954661,
+   "S": 0.3033721422381865,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.8424766879610331
+    ],
+    [
+     "C4",
+     0.6743840232298992
+    ]
+   ],
+   "rel": 0.5056202370636441
+  },
+  "HOMER | signal": {
+   "state": "untested",
+   "C": 0.7777777777777778,
+   "Q": null,
+   "S": null,
+   "n_yes": 7,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "pyBigWig | signal": {
+   "state": "moderate",
+   "C": 0.4,
+   "Q": 0.813821255643272,
+   "S": 0.32552850225730884,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C9",
+     0.813821255643272
+    ]
+   ],
+   "rel": 0.5425475037621814
+  },
+  "HiC-Pro | signal": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "TOBIAS | signal": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "metagene2 | signal": {
+   "state": "untested",
+   "C": 0.5714285714285714,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 7,
+   "unknown": 3,
+   "jobs": []
+  },
+  "RNAnorm | signal": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": 0.48982400398427994,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 1,
+   "unknown": 9,
+   "jobs": [
+    [
+     "C8",
+     0.48982400398427994
+    ]
+   ]
+  },
+  "csaw | signal": {
+   "state": "good",
+   "C": 0.4444444444444444,
+   "Q": 0.8181661938933661,
+   "S": 0.3636294195081627,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": [
+    [
+     "C8",
+     0.8181661938933661
+    ]
+   ],
+   "rel": 0.6060490325136045
+  },
+  "bamsignals | signal": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "soGGi | signal": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "edgeR | signal": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": 0.7749323194317079,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 1,
+   "unknown": 9,
+   "jobs": [
+    [
+     "C8",
+     0.7749323194317079
+    ]
+   ]
+  },
+  "MAnorm2 | signal": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "hichipper | signal": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "tangermeme | motifs": {
+   "state": "untested",
+   "C": 0.25,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "oPOSSUM 3 | motifs": {
+   "state": "untested",
+   "C": 0.3333333333333333,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "Biopython | motifs": {
+   "state": "low",
+   "C": 0.3,
+   "Q": 0.17892124373863005,
+   "S": 0.053676373121589016,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.17892124373863005
+    ]
+   ],
+   "rel": 0.08946909195137358
+  },
+  "Logomaker | motifs": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "PWMScan | motifs": {
+   "state": "untested",
+   "C": 0.1111111111111111,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "seqLogo | motifs": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "SnapATAC2 | motifs": {
+   "state": "untested",
+   "C": 0.375,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "pymemesuite | motifs": {
+   "state": "untested",
+   "C": 0.25,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "STAMP | motifs": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "MOODS | motifs": {
+   "state": "moderate",
+   "C": 0.3,
+   "Q": 0.906987830697077,
+   "S": 0.27209634920912307,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.9111939616633941
+    ],
+    [
+     "C2",
+     0.90278169973076
+    ]
+   ],
+   "rel": 0.4535368519009097
+  },
+  "RcisTarget | motifs": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pychromVAR | motifs": {
+   "state": "untested",
+   "C": 0.6666666666666666,
+   "Q": 1.0,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 3,
+   "unknown": 7,
+   "jobs": [
+    [
+     "C9",
+     1.0
+    ]
+   ]
+  },
+  "motifTestR | motifs": {
+   "state": "untested",
+   "C": 0.6666666666666666,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "chromVAR | motifs": {
+   "state": "moderate",
+   "C": 0.6,
+   "Q": 0.4869591212960834,
+   "S": 0.29217547277765,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C9",
+     0.4869591212960834
+    ]
+   ],
+   "rel": 0.4870052263155919
+  },
+  "gReLU | motifs": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "ArchR | motifs": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "TF-MoDISco-lite | motifs": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pycistarget | motifs": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Vierstra motif archetypes | motifs": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Biostrings | motifs": {
+   "state": "low",
+   "C": 0.1,
+   "Q": 0.0,
+   "S": 0.0,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.0
+    ]
+   ],
+   "rel": 0.0
+  },
+  "lightmotif | motifs": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "memes | motifs": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "JASPAR web tools | motifs": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "PWMEnrich | motifs": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "genomeblocks | motifs": {
+   "state": "best",
+   "C": 0.6,
+   "Q": 0.9999053295180067,
+   "S": 0.599943197710804,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.999621318072027
+    ],
+    [
+     "C2",
+     1.0
+    ],
+    [
+     "C3",
+     1.0
+    ],
+    [
+     "C8",
+     1.0
+    ]
+   ],
+   "rel": 1.0
+  },
+  "TFBSTools | motifs": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "MACRO-APE / PERFECTOS-APE | motifs": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Signac | motifs": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "MEME suite | motifs": {
+   "state": "good",
+   "C": 0.8,
+   "Q": 0.6393618773437093,
+   "S": 0.5114895018749674,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.30646577167605427
+    ],
+    [
+     "C2",
+     0.22416778467221465
+    ],
+    [
+     "C3",
+     0.7870497098063642
+    ],
+    [
+     "C5",
+     0.8330570272553232
+    ],
+    [
+     "C6",
+     0.9
+    ],
+    [
+     "C8",
+     0.7854309706522995
+    ]
+   ],
+   "rel": 0.8525632156955055
+  },
+  "HOMER | motifs": {
+   "state": "good",
+   "C": 0.9,
+   "Q": 0.5089817414374492,
+   "S": 0.4580835672937043,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.32582445719265085
+    ],
+    [
+     "C3",
+     0.6160959655407161
+    ],
+    [
+     "C5",
+     0.47803672300270406
+    ],
+    [
+     "C8",
+     0.615969820013726
+    ]
+   ],
+   "rel": 0.7635448973196267
+  },
+  "TOBIAS | motifs": {
+   "state": "untested",
+   "C": 0.625,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "RSAT | motifs": {
+   "state": "untested",
+   "C": 0.9,
+   "Q": null,
+   "S": null,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GimmeMotifs | motifs": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": null,
+   "S": null,
+   "n_yes": 10,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pyJASPAR | motifs": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "motifStack | motifs": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "ggseqlogo | motifs": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "MotifDb | motifs": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "memesuite-lite | motifs": {
+   "state": "untested",
+   "C": 0.3333333333333333,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "motifmatchr | motifs": {
+   "state": "low",
+   "C": 0.3,
+   "Q": 0.5008502524368589,
+   "S": 0.15025507573105765,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.5008502524368589
+    ]
+   ],
+   "rel": 0.2504488363304795
+  },
+  "monaLisa | motifs": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Pscan | motifs": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "universalmotif | motifs": {
+   "state": "good",
+   "C": 0.9,
+   "Q": 0.42926203456920964,
+   "S": 0.3863358311122887,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.35540285342957734
+    ],
+    [
+     "C6",
+     0.5031212157088419
+    ]
+   ],
+   "rel": 0.6439540152908236
+  },
+  "bedtk | cooccupancy": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "regioneReloaded | cooccupancy": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "LOLAweb | cooccupancy": {
+   "state": "untested",
+   "C": 0.6666666666666666,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "Cistrome-GO | cooccupancy": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GenometriCorr | cooccupancy": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GenomicDistributions | cooccupancy": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GAT | cooccupancy": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Genomic HyperBrowser | cooccupancy": {
+   "state": "untested",
+   "C": 0.7142857142857143,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 7,
+   "unknown": 3,
+   "jobs": []
+  },
+  "pyranges | cooccupancy": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "TFEA.ChIP | cooccupancy": {
+   "state": "untested",
+   "C": 0.75,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "rGREAT | cooccupancy": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "TF-COMB | cooccupancy": {
+   "state": "untested",
+   "C": 0.14285714285714285,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 7,
+   "unknown": 3,
+   "jobs": []
+  },
+  "regioneR | cooccupancy": {
+   "state": "low",
+   "C": 0.2,
+   "Q": 0.5602475626248088,
+   "S": 0.11204951252496176,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C5",
+     0.5602475626248088
+    ]
+   ],
+   "rel": 0.2658481615019211
+  },
+  "RegRegSEA | cooccupancy": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 5,
+   "unknown": 5,
+   "jobs": []
+  },
+  "pyranges (0.x) | cooccupancy": {
+   "state": "untested",
+   "C": null,
+   "Q": null,
+   "S": null,
+   "n_yes": 0,
+   "n_known": 0,
+   "unknown": 10,
+   "jobs": []
+  },
+  "Bedshift | cooccupancy": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "OLOGRAM (pygtftk) | cooccupancy": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "IGD | cooccupancy": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "GIGGLE | cooccupancy": {
+   "state": "moderate",
+   "C": 0.5,
+   "Q": 0.4196190043434343,
+   "S": 0.20980950217171715,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.6970192354541269
+    ],
+    [
+     "C2",
+     0.28091888878808796
+    ],
+    [
+     "C3",
+     0.28091888878808796
+    ]
+   ],
+   "rel": 0.49779306630681264
+  },
+  "geniml / BEDbase | cooccupancy": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "valr | cooccupancy": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": 0.9931135555384353,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 1,
+   "unknown": 9,
+   "jobs": [
+    [
+     "C7",
+     0.9931135555384353
+    ]
+   ]
+  },
+  "BART2 | cooccupancy": {
+   "state": "untested",
+   "C": 0.2857142857142857,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 7,
+   "unknown": 3,
+   "jobs": []
+  },
+  "RELI | cooccupancy": {
+   "state": "untested",
+   "C": 0.625,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "genomeblocks | cooccupancy": {
+   "state": "best",
+   "C": 0.6,
+   "Q": 0.7024655972287153,
+   "S": 0.42147935833722916,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     1.0
+    ],
+    [
+     "C2",
+     0.9049311944574304
+    ],
+    [
+     "C3",
+     0.9049311944574304
+    ],
+    [
+     "C5",
+     0.0
+    ]
+   ],
+   "rel": 1.0
+  },
+  "nullranges | cooccupancy": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Intervene | cooccupancy": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "UniBind Enrichment | cooccupancy": {
+   "state": "untested",
+   "C": 0.6666666666666666,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "bedtools | cooccupancy": {
+   "state": "moderate",
+   "C": 0.4,
+   "Q": 0.3333333333323814,
+   "S": 0.13333333333295258,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.0
+    ],
+    [
+     "C3",
+     0.0
+    ],
+    [
+     "C7",
+     0.9999999999971442
+    ]
+   ],
+   "rel": 0.3163460575126706
+  },
+  "Cistrome DB Toolkit | cooccupancy": {
+   "state": "untested",
+   "C": 0.5555555555555556,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "ChIP-Atlas Enrichment Analysis | cooccupancy": {
+   "state": "untested",
+   "C": 0.9,
+   "Q": null,
+   "S": null,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "ReMapEnrich | cooccupancy": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "LOLA | cooccupancy": {
+   "state": "moderate",
+   "C": 0.6666666666666666,
+   "Q": 0.2976591653037147,
+   "S": 0.1984394435358098,
+   "n_yes": 6,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": [
+    [
+     "C1",
+     0.4927139423211687
+    ],
+    [
+     "C2",
+     0.0
+    ],
+    [
+     "C3",
+     0.0
+    ],
+    [
+     "C5",
+     0.6979227188936903
+    ]
+   ],
+   "rel": 0.4708165171330567
+  },
+  "poverlap | cooccupancy": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "IntervalStats | cooccupancy": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "ColoWeb | cooccupancy": {
+   "state": "untested",
+   "C": 0.2857142857142857,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 7,
+   "unknown": 3,
+   "jobs": []
+  },
+  "Coloc-stats | cooccupancy": {
+   "state": "untested",
+   "C": 0.7142857142857143,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 7,
+   "unknown": 3,
+   "jobs": []
+  },
+  "chromosight | graph3d": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "cooler | graph3d": {
+   "state": "good",
+   "C": 0.3,
+   "Q": 0.9147044781388214,
+   "S": 0.2744113434416464,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.8520410775681997
+    ],
+    [
+     "C3",
+     0.9773678787094432
+    ]
+   ],
+   "rel": 0.6393674994123476
+  },
+  "iced | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "straw | graph3d": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Juicebox | graph3d": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pgltools | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "igraph | graph3d": {
+   "state": "untested",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "n_yes": 0,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "HiCcompare | graph3d": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Hub-enhancer / enhancer-community analyses (method only) | graph3d": {
+   "state": "untested",
+   "C": 0.125,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "HiCExplorer | graph3d": {
+   "state": "best",
+   "C": 1.0,
+   "Q": 0.4291918868160519,
+   "S": 0.4291918868160519,
+   "n_yes": 10,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C3",
+     0.9559681221215461
+    ],
+    [
+     "C6",
+     0.009882261030469871
+    ],
+    [
+     "C7",
+     0.6370044545243426
+    ],
+    [
+     "C8",
+     0.11391270958784905
+    ]
+   ],
+   "rel": 1.0
+  },
+  "coolpup.py | graph3d": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Cicero | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "MINE | graph3d": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 4,
+   "unknown": 6,
+   "jobs": []
+  },
+  "HiCHub | graph3d": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "hictk | graph3d": {
+   "state": "good",
+   "C": 0.3,
+   "Q": 0.9586336179359124,
+   "S": 0.2875900853807737,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C3",
+     0.9586336179359124
+    ]
+   ],
+   "rel": 0.6700734431730588
+  },
+  "3D-GNOME | graph3d": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "networkx | graph3d": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pyGenomeTracks | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "FitHiChIP | graph3d": {
+   "state": "low",
+   "C": 0.4,
+   "Q": 0.29385106639263714,
+   "S": 0.11754042655705486,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C6",
+     0.29385106639263714
+    ]
+   ],
+   "rel": 0.2738645118131781
+  },
+  "cLoops2 | graph3d": {
+   "state": "untested",
+   "C": 0.6666666666666666,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "hicstuff | graph3d": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "multiHiCcompare | graph3d": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "C3D | graph3d": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "dcHiC | graph3d": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Mustache | graph3d": {
+   "state": "moderate",
+   "C": 0.4,
+   "Q": 0.49223089909470236,
+   "S": 0.19689235963788096,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C6",
+     0.49223089909470236
+    ]
+   ],
+   "rel": 0.45875135501400427
+  },
+  "HiC-DC+ | graph3d": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "FAN-C | graph3d": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": null,
+   "S": null,
+   "n_yes": 9,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "Activity-by-Contact (ABC) | graph3d": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "GenomicInteractions | graph3d": {
+   "state": "low",
+   "C": 0.1,
+   "Q": 0.8582820795902588,
+   "S": 0.08582820795902589,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C10",
+     0.8582820795902588
+    ]
+   ],
+   "rel": 0.19997630569333466
+  },
+  "genomeblocks | graph3d": {
+   "state": "moderate",
+   "C": 0.2,
+   "Q": 0.9546498277841561,
+   "S": 0.19092996555683123,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C6",
+     0.9092996555683122
+    ],
+    [
+     "C10",
+     1.0
+    ]
+   ],
+   "rel": 0.44485921430910513
+  },
+  "cooltools | graph3d": {
+   "state": "good",
+   "C": 0.5,
+   "Q": 0.6726401611431742,
+   "S": 0.3363200805715871,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C6",
+     0.46479991612255606
+    ],
+    [
+     "C7",
+     0.5793103448275861
+    ],
+    [
+     "C8",
+     0.9738102224793801
+    ]
+   ],
+   "rel": 0.7836123908738543
+  },
+  "diffHic | graph3d": {
+   "state": "untested",
+   "C": 0.3333333333333333,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "ROSE | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Hi-Cociety | graph3d": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 5,
+   "jobs": []
+  },
+  "HiCExperiment / HiContacts | graph3d": {
+   "state": "untested",
+   "C": 0.8571428571428571,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 7,
+   "unknown": 3,
+   "jobs": []
+  },
+  "hictkpy | graph3d": {
+   "state": "untested",
+   "C": 0.1111111111111111,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "bedtools | graph3d": {
+   "state": "low",
+   "C": 0.1,
+   "Q": 0.5422737248120016,
+   "S": 0.054227372481200166,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C10",
+     0.5422737248120016
+    ]
+   ],
+   "rel": 0.126347617806768
+  },
+  "HiC1Dmetrics | graph3d": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "HiC-Pro | graph3d": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "SciPy (csgraph) | graph3d": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "graph-tool | graph3d": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Juicer / Juicer Tools | graph3d": {
+   "state": "best",
+   "C": 0.9,
+   "Q": 0.470685841394621,
+   "S": 0.4236172572551589,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C6",
+     0.470685841394621
+    ]
+   ],
+   "rel": 0.987011335180988
+  },
+  "QuIN | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "CHiCAGO | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "MAPS | graph3d": {
+   "state": "moderate",
+   "C": 0.3,
+   "Q": 0.6617041601003573,
+   "S": 0.19851124803010717,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C6",
+     0.6617041601003573
+    ]
+   ],
+   "rel": 0.4625233004816502
+  },
+  "plotgardener | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "HiGlass | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GENOVA | graph3d": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Peakachu | graph3d": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "hichipper | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "HiCseg | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pairtools | graph3d": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "iDEP | expression": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "PyDESeq2 | expression": {
+   "state": "good",
+   "C": 0.5,
+   "Q": 0.6164171804165525,
+   "S": 0.30820859020827623,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C4",
+     1.0
+    ],
+    [
+     "C6",
+     0.5883869155702943
+    ],
+    [
+     "C7",
+     0.455322814164199
+    ],
+    [
+     "C8",
+     0.6582035047344736
+    ],
+    [
+     "C9",
+     0.3801726676137954
+    ]
+   ],
+   "rel": 0.6661030491814789
+  },
+  "SummarizedExperiment | expression": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "apeglm | expression": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "ashr | expression": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "data.table | expression": {
+   "state": "untested",
+   "C": null,
+   "Q": null,
+   "S": null,
+   "n_yes": 0,
+   "n_known": 0,
+   "unknown": 10,
+   "jobs": []
+  },
+  "dearseq | expression": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "RUVSeq | expression": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "NOISeq | expression": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Rsubread featureCounts | expression": {
+   "state": "low",
+   "C": 0.1,
+   "Q": 1.0,
+   "S": 0.1,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     1.0
+    ]
+   ],
+   "rel": 0.21612085786815693
+  },
+  "Degust | expression": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "decoupler | expression": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "sleuth | expression": {
+   "state": "untested",
+   "C": 0.5555555555555556,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "EBSeq | expression": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pertpy | expression": {
+   "state": "untested",
+   "C": 0.25,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "DEGseq | expression": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "DEBrowser | expression": {
+   "state": "untested",
+   "C": 0.5555555555555556,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "BiocPy summarizedexperiment | expression": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "nf-core/rnaseq | expression": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "RNAlysis | expression": {
+   "state": "untested",
+   "C": 0.75,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "baySeq | expression": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "GenomicAlignments | expression": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": 0.8829775691527553,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 1,
+   "unknown": 9,
+   "jobs": [
+    [
+     "C1",
+     0.8829775691527553
+    ]
+   ]
+  },
+  "Wilcoxon rank-sum DE (Li et al. 2022) | expression": {
+   "state": "untested",
+   "C": 0.1111111111111111,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "OmicVerse | expression": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "GEO2R | expression": {
+   "state": "untested",
+   "C": 0.375,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "InMoose | expression": {
+   "state": "best",
+   "C": 0.6666666666666666,
+   "Q": 0.6940561012001281,
+   "S": 0.462704067466752,
+   "n_yes": 6,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": [
+    [
+     "C6",
+     0.9049756425809037
+    ],
+    [
+     "C7",
+     0.8151414761758337
+    ],
+    [
+     "C9",
+     0.7300111752792572
+    ],
+    [
+     "C10",
+     0.32609611076451783
+    ]
+   ],
+   "rel": 1.0
+  },
+  "genomeblocks | expression": {
+   "state": "good",
+   "C": 0.4,
+   "Q": 0.9951254954204617,
+   "S": 0.3980501981681847,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     1.0
+    ],
+    [
+     "C3",
+     1.0
+    ],
+    [
+     "C4",
+     0.9805019816818468
+    ],
+    [
+     "C5",
+     1.0
+    ]
+   ],
+   "rel": 0.8602695030269794
+  },
+  "edgePython | expression": {
+   "state": "untested",
+   "C": 0.4444444444444444,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "pytximport | expression": {
+   "state": "moderate",
+   "C": 0.2,
+   "Q": 0.7164099947618854,
+   "S": 0.1432819989523771,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C3",
+     0.7164099947618854
+    ]
+   ],
+   "rel": 0.30966228530652096
+  },
+  "DESeq2 | expression": {
+   "state": "good",
+   "C": 0.5,
+   "Q": 0.803901474255615,
+   "S": 0.4019507371278075,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C4",
+     0.6353490748198494
+    ],
+    [
+     "C6",
+     0.7862847292332261
+    ],
+    [
+     "C7",
+     0.6709533633365482
+    ],
+    [
+     "C8",
+     0.9269202038884511
+    ],
+    [
+     "C9",
+     1.0
+    ]
+   ],
+   "rel": 0.8686993812879978
+  },
+  "scanpy | expression": {
+   "state": "untested",
+   "C": 0.1111111111111111,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "diffxpy | expression": {
+   "state": "untested",
+   "C": 0.2222222222222222,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "RNAnorm | expression": {
+   "state": "low",
+   "C": 0.1,
+   "Q": 0.7877556025698977,
+   "S": 0.07877556025698979,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C4",
+     0.7877556025698977
+    ]
+   ],
+   "rel": 0.1702504166178532
+  },
+  "tximport | expression": {
+   "state": "moderate",
+   "C": 0.2,
+   "Q": 0.8804385878701588,
+   "S": 0.17608771757403177,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C2",
+     0.9000110498762343
+    ],
+    [
+     "C3",
+     0.8608661258640834
+    ]
+   ],
+   "rel": 0.38056228582145474
+  },
+  "edgeR | expression": {
+   "state": "good",
+   "C": 0.5,
+   "Q": 0.7913240861467716,
+   "S": 0.3956620430733858,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C4",
+     0.6669968569493412
+    ],
+    [
+     "C5",
+     0.9036475739042986
+    ],
+    [
+     "C6",
+     0.8379698596031968
+    ],
+    [
+     "C7",
+     0.7566820541302502
+    ]
+   ],
+   "rel": 0.8551082017488779
+  },
+  "glmGamPoi | expression": {
+   "state": "untested",
+   "C": 0.3333333333333333,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "bioinfokit | expression": {
+   "state": "unable",
+   "C": 0.0,
+   "Q": null,
+   "S": null,
+   "unknown": 0,
+   "jobs": []
+  },
+  "conorm | expression": {
+   "state": "untested",
+   "C": 0.1,
+   "Q": null,
+   "S": null,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "tximeta | expression": {
+   "state": "untested",
+   "C": 0.2,
+   "Q": null,
+   "S": null,
+   "n_yes": 2,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "HTSeq | expression": {
+   "state": "low",
+   "C": 0.1,
+   "Q": 0.44058974366151804,
+   "S": 0.044058974366151804,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C1",
+     0.44058974366151804
+    ]
+   ],
+   "rel": 0.09522063336803863
+  },
+  "limma | expression": {
+   "state": "good",
+   "C": 0.4,
+   "Q": 0.9811790491625182,
+   "S": 0.3924716196650073,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C7",
+     0.9826200874792047
+    ],
+    [
+     "C10",
+     0.9797380108458317
+    ]
+   ],
+   "rel": 0.8482130313090639
+  },
+  "sva / ComBat-seq | expression": {
+   "state": "low",
+   "C": 0.1,
+   "Q": 0.49453055428634335,
+   "S": 0.04945305542863434,
+   "n_yes": 1,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": [
+    [
+     "C10",
+     0.49453055428634335
+    ]
+   ],
+   "rel": 0.10687836763437968
+  },
+  "DESeq (legacy) | expression": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "fishpond (swish) | expression": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "pyGenomeViz | viewers": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Juicebox | viewers": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "karyoploteR | viewers": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "jbrowse-jupyter | viewers": {
+   "state": "untested",
+   "C": 0.75,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "igv.js | viewers": {
+   "state": "untested",
+   "C": 0.7,
+   "Q": null,
+   "S": null,
+   "n_yes": 7,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "gghic | viewers": {
+   "state": "untested",
+   "C": 0.6666666666666666,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "HiCPlotter | viewers": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "ChIPseeker | viewers": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Circos | viewers": {
+   "state": "untested",
+   "C": 0.4,
+   "Q": null,
+   "S": null,
+   "n_yes": 4,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "IGV desktop | viewers": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Gosling / gos | viewers": {
+   "state": "untested",
+   "C": 0.9,
+   "Q": null,
+   "S": null,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "JBrowse 2 | viewers": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": null,
+   "S": null,
+   "n_yes": 10,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "genomeview | viewers": {
+   "state": "untested",
+   "C": 0.6666666666666666,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "tracktables | viewers": {
+   "state": "untested",
+   "C": 0.375,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "igv-reports | viewers": {
+   "state": "untested",
+   "C": 0.375,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "pyGenomeTracks | viewers": {
+   "state": "untested",
+   "C": 0.7,
+   "Q": null,
+   "S": null,
+   "n_yes": 7,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Gviz | viewers": {
+   "state": "untested",
+   "C": 0.6,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "trackc | viewers": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "ggcoverage | viewers": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "LocusZoom | viewers": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Biopython GenomeDiagram | viewers": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "genomeblocks | viewers": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "trackplot | viewers": {
+   "state": "untested",
+   "C": 0.5555555555555556,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "GenomeSpy | viewers": {
+   "state": "untested",
+   "C": 0.75,
+   "Q": null,
+   "S": null,
+   "n_yes": 6,
+   "n_known": 8,
+   "unknown": 2,
+   "jobs": []
+  },
+  "trackViewer | viewers": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": null,
+   "S": null,
+   "n_yes": 9,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "UCSC Genome Browser | viewers": {
+   "state": "untested",
+   "C": 0.9,
+   "Q": null,
+   "S": null,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "igv-notebook | viewers": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "CoolBox | viewers": {
+   "state": "untested",
+   "C": 1.0,
+   "Q": null,
+   "S": null,
+   "n_yes": 9,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "FAN-C (fancplot) | viewers": {
+   "state": "untested",
+   "C": 0.7777777777777778,
+   "Q": null,
+   "S": null,
+   "n_yes": 7,
+   "n_known": 9,
+   "unknown": 1,
+   "jobs": []
+  },
+  "svist4get | viewers": {
+   "state": "untested",
+   "C": 0.3,
+   "Q": null,
+   "S": null,
+   "n_yes": 3,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "ggbio | viewers": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "plotgardener | viewers": {
+   "state": "untested",
+   "C": 0.8,
+   "Q": null,
+   "S": null,
+   "n_yes": 8,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "HiGlass | viewers": {
+   "state": "untested",
+   "C": 0.9,
+   "Q": null,
+   "S": null,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "GENOVA | viewers": {
+   "state": "untested",
+   "C": 0.7142857142857143,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 7,
+   "unknown": 3,
+   "jobs": []
+  },
+  "WashU Epigenome Browser | viewers": {
+   "state": "untested",
+   "C": 0.9,
+   "Q": null,
+   "S": null,
+   "n_yes": 9,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "HiCExplorer (hicPlotMatrix / hicPlotTADs) | viewers": {
+   "state": "untested",
+   "C": 0.5,
+   "Q": null,
+   "S": null,
+   "n_yes": 5,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "Sushi | viewers": {
+   "state": "untested",
+   "C": 0.7,
+   "Q": null,
+   "S": null,
+   "n_yes": 7,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  },
+  "rGenomeTracks | viewers": {
+   "state": "untested",
+   "C": 0.7,
+   "Q": null,
+   "S": null,
+   "n_yes": 7,
+   "n_known": 10,
+   "unknown": 0,
+   "jobs": []
+  }
+ },
+ "scores": {
+  "genomeblocks | graph3d": {
+   "accuracy": 0.9496109197601734,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.9489924045609214,
+   "n_tasks": 17,
+   "n_stability_tests": 0
+  },
+  "bedtools | graph3d": {
+   "accuracy": 1.0,
+   "scalability": 0.5422737248120016,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.7873243628557908,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "GenomicInteractions | graph3d": {
+   "accuracy": 1.0,
+   "scalability": 0.7994576901218785,
+   "stability": null,
+   "usability": 0.75,
+   "overall": 0.8432420381098696,
+   "n_tasks": 3,
+   "n_stability_tests": 0
+  },
+  "igraph | graph3d": {
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 1.0,
+   "n_tasks": 3,
+   "n_stability_tests": 0
+  },
+  "genomeblocks | annotation": {
+   "accuracy": 0.999225,
+   "scalability": 1.0,
+   "stability": 1.0,
+   "usability": 0.9,
+   "overall": 0.973814978329838,
+   "n_tasks": 4,
+   "n_stability_tests": 2
+  },
+  "bedtools | annotation": {
+   "accuracy": 1.0,
+   "scalability": 0.717473824294239,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.8643365074140985,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "GenomicFeatures + txdbmaker | annotation": {
+   "accuracy": 1.0,
+   "scalability": 0.8690882756449597,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.9655304457361032,
+   "n_tasks": 2,
+   "n_stability_tests": 2
+  },
+  "rtracklayer | annotation": {
+   "accuracy": null,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 1.0,
+   "overall": null,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "GenomicRanges + IRanges | annotation": {
+   "accuracy": 0.9994633333333334,
+   "scalability": 0.7630816218717721,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.9345111017234979,
+   "n_tasks": 2,
+   "n_stability_tests": 2
+  },
+  "ChIPseeker | annotation": {
+   "accuracy": 0.9994799999999999,
+   "scalability": 0.39129230806221205,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.7908039951601747,
+   "n_tasks": 2,
+   "n_stability_tests": 1
+  },
+  "ChIPpeakAnno | annotation": {
+   "accuracy": 0.999480093583155,
+   "scalability": 0.18154434737279962,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.6526633412802747,
+   "n_tasks": 2,
+   "n_stability_tests": 1
+  },
+  "HOMER | annotation": {
+   "accuracy": 0.96041,
+   "scalability": 0.006954743750484438,
+   "stability": null,
+   "usability": 0.875,
+   "overall": 0.1801283011684456,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "UROPA | annotation": {
+   "accuracy": 0.99999,
+   "scalability": 0.0,
+   "stability": null,
+   "usability": 0.5,
+   "overall": 0.07936978803068609,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "pyranges (0.x) | annotation": {
+   "accuracy": 1.0,
+   "scalability": 0.7284623190475326,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.8997786776966076,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "plyranges | annotation": {
+   "accuracy": 1.0,
+   "scalability": 0.9400708651281179,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9796107245846108,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "valr | annotation": {
+   "accuracy": 0.9998947431733429,
+   "scalability": 0.9132687527691477,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9701769702256998,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "pyranges (1.x) | annotation": {
+   "accuracy": 1.0,
+   "scalability": 0.8325514746137355,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.9082760611887977,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "genomeblocks | cooccupancy": {
+   "accuracy": 0.4524655972287152,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.7412124253582633,
+   "n_tasks": 4,
+   "n_stability_tests": 0
+  },
+  "LOLA | cooccupancy": {
+   "accuracy": 0.986835668610384,
+   "scalability": 0.3968788870716196,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.7063963523920569,
+   "n_tasks": 3,
+   "n_stability_tests": 0
+  },
+  "regioneR | cooccupancy": {
+   "accuracy": 0.9783586306027525,
+   "scalability": 0.7801237813124045,
+   "stability": null,
+   "usability": 0.7777777777777778,
+   "overall": 0.8404380557556402,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "GIGGLE | cooccupancy": {
+   "accuracy": 0.8772581553714518,
+   "scalability": 0.5086214884848452,
+   "stability": null,
+   "usability": 0.7,
+   "overall": 0.6784846910683235,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "bedtools | cooccupancy": {
+   "accuracy": 0.9980368158753503,
+   "scalability": 0.5,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.765807635039207,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "valr | cooccupancy": {
+   "accuracy": 1.0,
+   "scalability": 0.9931135555384353,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.997699229025481,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "genomeblocks | expression": {
+   "accuracy": 1.0,
+   "scalability": 0.9470879106228254,
+   "stability": 1.0,
+   "usability": 0.9,
+   "overall": 0.9608557659098917,
+   "n_tasks": 8,
+   "n_stability_tests": 2
+  },
+  "RNAnorm | expression": {
+   "accuracy": 1.0,
+   "scalability": 0.488853406430202,
+   "stability": 1.0,
+   "usability": 0.8,
+   "overall": 0.7908009059857166,
+   "n_tasks": 2,
+   "n_stability_tests": 2
+  },
+  "PyDESeq2 | expression": {
+   "accuracy": 0.9583716822196318,
+   "scalability": 0.6411102881645692,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.8853534414256429,
+   "n_tasks": 5,
+   "n_stability_tests": 2
+  },
+  "pytximport | expression": {
+   "accuracy": 1.0,
+   "scalability": 0.7164099947618854,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.8947888122591269,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "DESeq2 | expression": {
+   "accuracy": 0.9491504427531113,
+   "scalability": 0.7965594097596199,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9109986687277691,
+   "n_tasks": 5,
+   "n_stability_tests": 0
+  },
+  "edgeR | expression": {
+   "accuracy": 0.9687270067155962,
+   "scalability": 0.8169333775142874,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9249736249545017,
+   "n_tasks": 5,
+   "n_stability_tests": 0
+  },
+  "limma | expression": {
+   "accuracy": 0.9811790491625182,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9936865742592595,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "sva / ComBat-seq | expression": {
+   "accuracy": 0.7960285366498958,
+   "scalability": 0.6212472688072044,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.7907958407910107,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "InMoose | expression": {
+   "accuracy": 0.9333721056394324,
+   "scalability": 0.7422423448562762,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.8848442809909882,
+   "n_tasks": 4,
+   "n_stability_tests": 0
+  },
+  "Rsubread featureCounts | expression": {
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 1.0,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "HTSeq | expression": {
+   "accuracy": 1.0,
+   "scalability": 0.44058974366151804,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.760930153643316,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "GenomicAlignments | expression": {
+   "accuracy": 0.9975,
+   "scalability": 0.8851905455165466,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.959363571647974,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "cooler | graph3d": {
+   "accuracy": 0.9773678787094432,
+   "scalability": 0.9260205387840998,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.967296375278301,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "hictk | graph3d": {
+   "accuracy": 0.9773678787137956,
+   "scalability": 0.980831925024447,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9860165814035533,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "HiCExplorer | graph3d": {
+   "accuracy": 0.4513440306494715,
+   "scalability": 0.8185555680147641,
+   "stability": null,
+   "usability": 0.8,
+   "overall": 0.6661140881835297,
+   "n_tasks": 4,
+   "n_stability_tests": 0
+  },
+  "cooltools | graph3d": {
+   "accuracy": 0.7333931302787926,
+   "scalability": 0.8591635715492478,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.8277230840597544,
+   "n_tasks": 3,
+   "n_stability_tests": 0
+  },
+  "bedtools | intervals": {
+   "accuracy": 1.0,
+   "scalability": 0.6029913754853918,
+   "stability": 1.0,
+   "usability": 0.9,
+   "overall": 0.8582985967534231,
+   "n_tasks": 8,
+   "n_stability_tests": 4
+  },
+  "genomeblocks | intervals": {
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "stability": 1.0,
+   "usability": 0.9,
+   "overall": 0.9740037464252967,
+   "n_tasks": 12,
+   "n_stability_tests": 6
+  },
+  "bioframe | intervals": {
+   "accuracy": 1.0,
+   "scalability": 0.5773593817602504,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.8326875584995788,
+   "n_tasks": 7,
+   "n_stability_tests": 0
+  },
+  "pyranges (0.x) | intervals": {
+   "accuracy": 1.0,
+   "scalability": 0.7294306223569968,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9001771759649647,
+   "n_tasks": 7,
+   "n_stability_tests": 0
+  },
+  "GenomicRanges + IRanges | intervals": {
+   "accuracy": 1.0,
+   "scalability": 0.8916969332597604,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.9717494830159511,
+   "n_tasks": 7,
+   "n_stability_tests": 6
+  },
+  "plyranges | intervals": {
+   "accuracy": 1.0,
+   "scalability": 0.8568518990364299,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.9621137932170627,
+   "n_tasks": 7,
+   "n_stability_tests": 6
+  },
+  "valr | intervals": {
+   "accuracy": 0.9998648470532426,
+   "scalability": 0.8313314280201719,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.9548361977986081,
+   "n_tasks": 7,
+   "n_stability_tests": 6
+  },
+  "data.table | intervals": {
+   "accuracy": 1.0,
+   "scalability": 0.6330961615090975,
+   "stability": 1.0,
+   "usability": 0.9,
+   "overall": 0.868816474579143,
+   "n_tasks": 1,
+   "n_stability_tests": 2
+  },
+  "pyranges (1.x) | intervals": {
+   "accuracy": 0.9998767315042734,
+   "scalability": 0.6797455950592352,
+   "stability": 1.0,
+   "usability": 0.9,
+   "overall": 0.8843696772112568,
+   "n_tasks": 7,
+   "n_stability_tests": 6
+  },
+  "polars-bio | intervals": {
+   "accuracy": 0.9998767315042734,
+   "scalability": 0.7188696866599883,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.9207657537922412,
+   "n_tasks": 7,
+   "n_stability_tests": 6
+  },
+  "BiocPy genomicranges / iranges | intervals": {
+   "accuracy": 0.9344786846006398,
+   "scalability": 0.573216648814285,
+   "stability": 1.0,
+   "usability": 0.9,
+   "overall": 0.8332641094773239,
+   "n_tasks": 6,
+   "n_stability_tests": 6
+  },
+  "superintervals | intervals": {
+   "accuracy": 1.0,
+   "scalability": 0.5215053083183079,
+   "stability": 1.0,
+   "usability": 0.6,
+   "overall": 0.7479154348933629,
+   "n_tasks": 1,
+   "n_stability_tests": 2
+  },
+  "ailist (Python) | intervals": {
+   "accuracy": 1.0,
+   "scalability": 0.4829890898577458,
+   "stability": 1.0,
+   "usability": 0.75,
+   "overall": 0.7757997691185362,
+   "n_tasks": 1,
+   "n_stability_tests": 2
+  },
+  "BEDOPS | intervals": {
+   "accuracy": 0.9999968571428571,
+   "scalability": 0.7256438193394897,
+   "stability": 0.3333333333333333,
+   "usability": 0.8,
+   "overall": 0.6632430640161597,
+   "n_tasks": 7,
+   "n_stability_tests": 3
+  },
+  "genomeblocks | motifs": {
+   "accuracy": 0.9999158484604505,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.9654623013732059,
+   "n_tasks": 5,
+   "n_stability_tests": 0
+  },
+  "MEME suite | motifs": {
+   "accuracy": 0.9517703160561705,
+   "scalability": 0.5682724807036134,
+   "stability": null,
+   "usability": 0.7777777777777778,
+   "overall": 0.7492868381283605,
+   "n_tasks": 7,
+   "n_stability_tests": 0
+  },
+  "universalmotif | motifs": {
+   "accuracy": 0.7999838029985487,
+   "scalability": 0.5969748631191707,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.7816501452048978,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "Biostrings | motifs": {
+   "accuracy": 1.0,
+   "scalability": 0.0,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.096548938460563,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "motifmatchr | motifs": {
+   "accuracy": 0.6861909691838585,
+   "scalability": 0.7298992189194212,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.7941501684115216,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "HOMER | motifs": {
+   "accuracy": 0.8871815611765108,
+   "scalability": 0.6072046146880636,
+   "stability": null,
+   "usability": 0.875,
+   "overall": 0.7782489460032888,
+   "n_tasks": 4,
+   "n_stability_tests": 0
+  },
+  "chromVAR | motifs": {
+   "accuracy": 0.5,
+   "scalability": 0.9739182425921667,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.7867392818752267,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "pychromVAR | motifs": {
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 1.0,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "genomeblocks | signal": {
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "stability": 1.0,
+   "usability": 0.9,
+   "overall": 0.9740037464252967,
+   "n_tasks": 5,
+   "n_stability_tests": 1
+  },
+  "rtracklayer | signal": {
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 1.0,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "EnrichedHeatmap | signal": {
+   "accuracy": 1.0,
+   "scalability": 0.5036831638891921,
+   "stability": 1.0,
+   "usability": 1.0,
+   "overall": 0.8424407354438574,
+   "n_tasks": 1,
+   "n_stability_tests": 1
+  },
+  "genomation | signal": {
+   "accuracy": 0.9979639413528579,
+   "scalability": 0.6587744654093517,
+   "stability": 1.0,
+   "usability": 0.9,
+   "overall": 0.8770483362825278,
+   "n_tasks": 1,
+   "n_stability_tests": 1
+  },
+  "UCSC kent utilities | signal": {
+   "accuracy": 1.0,
+   "scalability": 0.7929371033774,
+   "stability": null,
+   "usability": 0.5,
+   "overall": 0.7346315593275694,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "deepTools | signal": {
+   "accuracy": 0.9997456514460057,
+   "scalability": 0.4692445150854633,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.7770153103324929,
+   "n_tasks": 5,
+   "n_stability_tests": 0
+  },
+  "megadepth | signal": {
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 1.0,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "bedtools | signal": {
+   "accuracy": 1.0,
+   "scalability": 0.737620123889262,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.87235198853254,
+   "n_tasks": 3,
+   "n_stability_tests": 0
+  },
+  "Rsubread featureCounts | signal": {
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 1.0,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "pysam | signal": {
+   "accuracy": 1.0,
+   "scalability": 0.9289063499030303,
+   "stability": null,
+   "usability": 0.9,
+   "overall": 0.9420446345515329,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "GenomicAlignments | signal": {
+   "accuracy": 1.0,
+   "scalability": 0.9758049269286424,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9918690423565855,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "edgeR | signal": {
+   "accuracy": 1.0,
+   "scalability": 0.7749323194317079,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9185185354475447,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "csaw | signal": {
+   "accuracy": 0.9855420556095658,
+   "scalability": 0.8301687271856945,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.935291908015149,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "RNAnorm | signal": {
+   "accuracy": 1.0,
+   "scalability": 0.48982400398427994,
+   "stability": null,
+   "usability": 0.8,
+   "overall": 0.7317735093043968,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "WiggleTools | signal": {
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 0.6666666666666666,
+   "overall": 0.8735804647362988,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "pyBigWig | signal": {
+   "accuracy": 1.0,
+   "scalability": 0.813821255643272,
+   "stability": null,
+   "usability": 0.7,
+   "overall": 0.8289767614792342,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "pybigtools | signal": {
+   "accuracy": 1.0,
+   "scalability": 0.9661855770009318,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9885990376986518,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "Mustache | graph3d": {
+   "accuracy": 0.7388059701492538,
+   "scalability": 0.6589889347244554,
+   "stability": null,
+   "usability": 0.5,
+   "overall": 0.6243951307429375,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "Juicer / Juicer Tools | graph3d": {
+   "accuracy": 0.8181818181818182,
+   "scalability": 0.5679584256456098,
+   "stability": null,
+   "usability": 0.5,
+   "overall": 0.6147692338631676,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "intervaltree | intervals": {
+   "accuracy": 1.0,
+   "scalability": 0.9784856962934388,
+   "stability": null,
+   "usability": 0.6,
+   "overall": 0.8373401398131773,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "pyranges (0.x) | cooccupancy": {
+   "accuracy": null,
+   "scalability": 0.43930610934616643,
+   "stability": null,
+   "usability": 1.0,
+   "overall": null,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "MOODS | motifs": {
+   "accuracy": 1.0,
+   "scalability": 0.906987830697077,
+   "stability": null,
+   "usability": 0.5555555555555556,
+   "overall": 0.7957493972217643,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "Biopython | motifs": {
+   "accuracy": 1.0,
+   "scalability": 0.17892124373863005,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.5634914137214934,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "tximport | expression": {
+   "accuracy": 1.0,
+   "scalability": 0.8804385878701588,
+   "stability": null,
+   "usability": 1.0,
+   "overall": 0.9584431463828401,
+   "n_tasks": 2,
+   "n_stability_tests": 0
+  },
+  "data.table | expression": {
+   "accuracy": null,
+   "scalability": 1.0,
+   "stability": null,
+   "usability": 0.9,
+   "overall": null,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "FitHiChIP | graph3d": {
+   "accuracy": 1.0,
+   "scalability": 0.29385106639263714,
+   "stability": null,
+   "usability": 0.5,
+   "overall": 0.5276740761885332,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  },
+  "MAPS | graph3d": {
+   "accuracy": 1.0,
+   "scalability": 0.6617041601003573,
+   "stability": null,
+   "usability": 0.2857142857142857,
+   "overall": 0.573938387946,
+   "n_tasks": 1,
+   "n_stability_tests": 0
+  }
+ },
+ "tasks": {
+  "graph3d | read_bedpe": {
+   "n": 50000,
+   "t_min": 0.025869179517030716,
+   "times": {
+    "genomeblocks": 0.025869179517030716,
+    "GenomicInteractions": 0.233000000000001
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "GenomicInteractions": 0.681808911185118
+   }
+  },
+  "graph3d | loop_overlap_either": {
+   "n": 50000,
+   "t_min": 0.023126527667045593,
+   "times": {
+    "bedtools": 0.5647073686122894,
+    "genomeblocks": 0.023126527667045593,
+    "GenomicInteractions": 0.0449999999999982
+   },
+   "scores": {
+    "bedtools": 0.5374289919415773,
+    "genomeblocks": 1.0,
+    "GenomicInteractions": 0.9036326389121616
+   }
+  },
+  "graph3d | loop_overlap_both": {
+   "n": 50000,
+   "t_min": 0.023620713502168655,
+   "times": {
+    "bedtools": 0.5394331589341164,
+    "genomeblocks": 0.023620713502168655,
+    "GenomicInteractions": 0.0860000000000021
+   },
+   "scores": {
+    "bedtools": 0.547118457682426,
+    "genomeblocks": 1.0,
+    "GenomicInteractions": 0.8129315202683559
+   }
+  },
+  "graph3d | components": {
+   "n": 114367,
+   "t_min": 0.013906459091231227,
+   "times": {
+    "genomeblocks": 0.013906459091231227
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | pagerank": {
+   "n": 114367,
+   "t_min": 0.10633923998102546,
+   "times": {
+    "genomeblocks": 0.10633923998102546
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | build_graph": {
+   "n": 50000,
+   "t_min": 0.186999999999998,
+   "times": {
+    "igraph": 0.186999999999998
+   },
+   "scores": {
+    "igraph": 1.0
+   }
+  },
+  "annotation | parse_gtf": {
+   "n": 100000,
+   "t_min": 3.627,
+   "times": {
+    "GenomicFeatures + txdbmaker": 15.515,
+    "rtracklayer": 3.627
+   },
+   "scores": {
+    "GenomicFeatures + txdbmaker": 0.7895985918867499,
+    "rtracklayer": 1.0
+   }
+  },
+  "annotation | nearest_tss": {
+   "n": 100000,
+   "t_min": 0.02504327893257141,
+   "times": {
+    "bedtools": 0.1447530947625637,
+    "genomeblocks": 0.02504327893257141,
+    "GenomicRanges + IRanges": 0.661000000000001,
+    "ChIPseeker": 3.322,
+    "ChIPpeakAnno": 9.60299999999999,
+    "HOMER": 89.15248466283083,
+    "UROPA": 260.90229975804687
+   },
+   "scores": {
+    "bedtools": 0.7460211110591137,
+    "genomeblocks": 1.0,
+    "GenomicRanges + IRanges": 0.5261632437435442,
+    "ChIPseeker": 0.29243052086696597,
+    "ChIPpeakAnno": 0.13876142061749308,
+    "HOMER": 0.0,
+    "UROPA": 0.0
+   }
+  },
+  "annotation | labels": {
+   "n": 100000,
+   "t_min": 0.09814358409494162,
+   "times": {
+    "genomeblocks": 0.09814358409494162,
+    "GenomicFeatures + txdbmaker": 0.140000000000001,
+    "ChIPseeker": 3.322,
+    "HOMER": 89.15248466283083
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "GenomicFeatures + txdbmaker": 0.9485779594031696,
+    "ChIPseeker": 0.4901540952574581,
+    "HOMER": 0.013909487500968876
+   }
+  },
+  "annotation | genes_in_window": {
+   "n": 100000,
+   "t_min": 0.0390000000000006,
+   "times": {
+    "bedtools": 0.33441441878676414,
+    "pyranges (0.x)": 0.254494059830904,
+    "GenomicRanges + IRanges": 0.0390000000000006,
+    "plyranges": 0.0590000000000011,
+    "valr": 0.070999999999998,
+    "ChIPpeakAnno": 8.281,
+    "pyranges (1.x)": 0.12399671599268913
+   },
+   "scores": {
+    "bedtools": 0.6889265375293643,
+    "pyranges (0.x)": 0.7284623190475326,
+    "GenomicRanges + IRanges": 1.0,
+    "plyranges": 0.9400708651281179,
+    "valr": 0.9132687527691477,
+    "ChIPpeakAnno": 0.22432727412810616,
+    "pyranges (1.x)": 0.8325514746137355
+   }
+  },
+  "cooccupancy | index_collection": {
+   "n": 500,
+   "t_min": 4.106739319860935,
+   "times": {
+    "genomeblocks": 4.106739319860935,
+    "LOLA": 136.57,
+    "GIGGLE": 33.29963168874383
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "LOLA": 0.4927139423211687,
+    "GIGGLE": 0.6970192354541269
+   }
+  },
+  "cooccupancy | enrichment_search": {
+   "n": 500,
+   "t_min": 0.014990512281656265,
+   "times": {
+    "genomeblocks": 0.014990512281656265,
+    "LOLA": 19.274,
+    "GIGGLE": 1.6411385610699654,
+    "bedtools": 25.566232353448868
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "LOLA": 0.0,
+    "GIGGLE": 0.32022374151556365,
+    "bedtools": 0.0
+   }
+  },
+  "cooccupancy | permutation_null": {
+   "n": 500,
+   "t_min": 690.173,
+   "times": {
+    "regioneR": 690.173
+   },
+   "scores": {
+    "regioneR": 1.0
+   }
+  },
+  "cooccupancy | universe_enrichment": {
+   "n": 500,
+   "t_min": 1.5230665877461433,
+   "times": {
+    "genomeblocks": 1.5230665877461433,
+    "LOLA": 12.273,
+    "regioneR": 31.767
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "LOLA": 0.6979227188936903,
+    "regioneR": 0.5602475626248089
+   }
+  },
+  "cooccupancy | pairwise_cooccurrence": {
+   "n": 20,
+   "t_min": 5.318867560476065,
+   "times": {
+    "bedtools": 5.318867560476065,
+    "valr": 5.578
+   },
+   "scores": {
+    "bedtools": 1.0,
+    "valr": 0.9931135555384353
+   }
+  },
+  "expression | tx_to_gene": {
+   "n": 60000,
+   "t_min": 1.087747189012589,
+   "times": {
+    "genomeblocks": 1.087747189012589,
+    "pytximport": 7.714325957000256,
+    "tximport": 2.84399999999999
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "pytximport": 0.7164099947618854,
+    "tximport": 0.8608661258640834
+   }
+  },
+  "expression | tmm": {
+   "n": 60000,
+   "t_min": 0.5304084159433842,
+   "times": {
+    "genomeblocks": 0.5304084159433842,
+    "RNAnorm": 2.2979659996926785,
+    "edgeR": 5.292
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "RNAnorm": 0.7877556025698977,
+    "edgeR": 0.6669968569493412
+   }
+  },
+  "expression | size_factors": {
+   "n": 60000,
+   "t_min": 0.054852236062288284,
+   "times": {
+    "genomeblocks": 0.07180958986282349,
+    "PyDESeq2": 0.054852236062288284,
+    "DESeq2": 0.681000000000001
+   },
+   "scores": {
+    "genomeblocks": 0.9610039633636935,
+    "PyDESeq2": 1.0,
+    "DESeq2": 0.6353490748198494
+   }
+  },
+  "expression | cpm": {
+   "n": 60000,
+   "t_min": 0.010597717016935349,
+   "times": {
+    "genomeblocks": 0.010597717016935349,
+    "RNAnorm": 2.853373922407627
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "RNAnorm": 0.1899512102905062
+   }
+  },
+  "expression | de_test": {
+   "n": 60000,
+   "t_min": 9.02199999999993,
+   "times": {
+    "DESeq2": 81.129,
+    "edgeR": 45.177,
+    "limma": 9.02199999999993,
+    "PyDESeq2": 368.74685480073094,
+    "InMoose": 29.337668426334858
+   },
+   "scores": {
+    "DESeq2": 0.6820422332952505,
+    "edgeR": 0.7667951449166036,
+    "limma": 1.0,
+    "PyDESeq2": 0.46285816601420704,
+    "InMoose": 0.8292924089604385
+   }
+  },
+  "expression | dispersion": {
+   "n": 60000,
+   "t_min": 22.755073480308056,
+   "times": {
+    "DESeq2": 56.304,
+    "edgeR": 37.617,
+    "PyDESeq2": 255.0106699578464,
+    "InMoose": 22.755073480308056
+   },
+   "scores": {
+    "DESeq2": 0.8688463309233797,
+    "edgeR": 0.9272313617205545,
+    "PyDESeq2": 0.6501732966785518,
+    "InMoose": 1.0
+   }
+  },
+  "expression | lfc_shrinkage": {
+   "n": 60000,
+   "t_min": 4.37299999999999,
+   "times": {
+    "DESeq2": 4.37299999999999,
+    "PyDESeq2": 31.89761022105813
+   },
+   "scores": {
+    "DESeq2": 1.0,
+    "PyDESeq2": 0.7123404435157991
+   }
+  },
+  "expression | vst": {
+   "n": 60000,
+   "t_min": 1.92599999999999,
+   "times": {
+    "DESeq2": 1.92599999999999,
+    "PyDESeq2": 139.35343519225717,
+    "InMoose": 12.43323265016079
+   },
+   "scores": {
+    "DESeq2": 1.0,
+    "PyDESeq2": 0.38017953461428766,
+    "InMoose": 0.7300240741873174
+   }
+  },
+  "expression | batch_correction": {
+   "n": 60000,
+   "t_min": 3.51900000000001,
+   "times": {
+    "sva / ComBat-seq": 48.159,
+    "limma": 3.51900000000001,
+    "InMoose": 207.7115172073245
+   },
+   "scores": {
+    "sva / ComBat-seq": 0.6212472688072044,
+    "limma": 1.0,
+    "InMoose": 0.4096528962773486
+   }
+  },
+  "expression | read_counts_bam": {
+   "n": 10000000,
+   "t_min": 5.962852884083986,
+   "times": {
+    "Rsubread featureCounts": 5.962852884083986,
+    "HTSeq": 284.2397834099829,
+    "GenomicAlignments": 13.179
+   },
+   "scores": {
+    "Rsubread featureCounts": 1.0,
+    "HTSeq": 0.44058974366151804,
+    "GenomicAlignments": 0.8851905455165466
+   }
+  },
+  "graph3d | matrix_balancing": {
+   "n": 8000,
+   "t_min": 61.03868041932583,
+   "times": {
+    "cooler": 61.03868041932583,
+    "hictk": 69.68019559234381,
+    "HiCExplorer": 72.03815981373191
+   },
+   "scores": {
+    "cooler": 1.0,
+    "hictk": 0.980831925024447,
+    "HiCExplorer": 0.976014175243625
+   }
+  },
+  "graph3d | loop_calling": {
+   "n": 8000,
+   "t_min": 3.6149206049740314,
+   "times": {
+    "cooltools": 25.299814328551292,
+    "HiCExplorer": 60.15777676552534,
+    "genomeblocks": 3.6149206049740314,
+    "Mustache": 43.93024356663227,
+    "Juicer / Juicer Tools": 89.76377802714705
+   },
+   "scores": {
+    "cooltools": 0.7183271430984957,
+    "HiCExplorer": 0.5929356618281922,
+    "genomeblocks": 1.0,
+    "Mustache": 0.6384450506967687,
+    "Juicer / Juicer Tools": 0.5349992133804389
+   }
+  },
+  "graph3d | tad_boundaries": {
+   "n": 8000,
+   "t_min": 3.7489411793649197,
+   "times": {
+    "cooltools": 3.7489411793649197,
+    "HiCExplorer": 4.450478293001652
+   },
+   "scores": {
+    "cooltools": 1.0,
+    "HiCExplorer": 0.9751673130989936
+   }
+  },
+  "graph3d | compartments": {
+   "n": 8000,
+   "t_min": 16.011844910681248,
+   "times": {
+    "cooltools": 16.011844910681248,
+    "HiCExplorer": 103.30611018836498
+   },
+   "scores": {
+    "cooltools": 1.0,
+    "HiCExplorer": 0.7301051218882455
+   }
+  },
+  "intervals | intersect": {
+   "n": 1000000,
+   "t_min": 0.08707446698099375,
+   "times": {
+    "bedtools": 1.8404737929813564,
+    "genomeblocks": 0.08707446698099375,
+    "GenomicRanges + IRanges": 0.276,
+    "plyranges": 0.311,
+    "valr": 0.557999999999993,
+    "data.table": 1.098,
+    "pyranges (1.x)": 1.2509216628968716,
+    "polars-bio": 1.2504864744842052,
+    "BiocPy genomicranges / iranges": 2.950199369341135,
+    "superintervals": 2.373421650379896,
+    "ailist (Python)": 3.096874136477709,
+    "BEDOPS": 1.1255711279809475,
+    "pyranges (0.x)": 0.3355735188815743,
+    "bioframe": 1.0141908701043576
+   },
+   "scores": {
+    "bedtools": 0.5583203956182228,
+    "genomeblocks": 1.0,
+    "GenomicRanges + IRanges": 0.8329939141920494,
+    "plyranges": 0.8157101452048428,
+    "valr": 0.7310855419012641,
+    "data.table": 0.6330961615090975,
+    "pyranges (1.x)": 0.6142202370468275,
+    "polars-bio": 0.6142706086556005,
+    "BiocPy genomicranges / iranges": 0.4900131529353029,
+    "superintervals": 0.5215053083183079,
+    "ailist (Python)": 0.4829890898577458,
+    "BEDOPS": 0.6295059600524202,
+    "pyranges (0.x)": 0.8047010475399633,
+    "bioframe": 0.6445903759982763
+   }
+  },
+  "intervals | merge": {
+   "n": 1000000,
+   "t_min": 0.09480891562998295,
+   "times": {
+    "bedtools": 0.6381384562700987,
+    "genomeblocks": 0.09480891562998295,
+    "GenomicRanges + IRanges": 0.130000000000001,
+    "plyranges": 0.128999999999998,
+    "valr": 0.174999999999997,
+    "pyranges (1.x)": 0.9796021021902561,
+    "polars-bio": 0.8095802254974842,
+    "BiocPy genomicranges / iranges": 4.346815183758736,
+    "BEDOPS": 0.5538741834461689,
+    "pyranges (0.x)": 0.16353897098451853,
+    "bioframe": 0.6991859879344702
+   },
+   "scores": {
+    "bedtools": 0.7239780873346382,
+    "genomeblocks": 1.0,
+    "GenomicRanges + IRanges": 0.9543019423621697,
+    "plyranges": 0.955419823031369,
+    "valr": 0.911270376902354,
+    "pyranges (1.x)": 0.6619331569865368,
+    "polars-bio": 0.6895297625606573,
+    "BiocPy genomicranges / iranges": 0.44622600132607737,
+    "BEDOPS": 0.7444793522052084,
+    "pyranges (0.x)": 0.9210759728748784,
+    "bioframe": 0.7107521543920692
+   }
+  },
+  "intervals | nearest": {
+   "n": 1000000,
+   "t_min": 0.7216638550162315,
+   "times": {
+    "bedtools": 2.0206441320478916,
+    "genomeblocks": 0.7216638550162315,
+    "GenomicRanges + IRanges": 1.556,
+    "plyranges": 1.406,
+    "pyranges (1.x)": 2.7348160184919834,
+    "polars-bio": 1.4806375168263912,
+    "BiocPy genomicranges / iranges": 1.5595221184194088,
+    "BEDOPS": 1.6113672964274883
+   },
+   "scores": {
+    "bedtools": 0.8509483733102989,
+    "genomeblocks": 1.0,
+    "GenomicRanges + IRanges": 0.8887751204263755,
+    "plyranges": 0.9034498777496638,
+    "pyranges (1.x)": 0.8071356129758146,
+    "polars-bio": 0.895962068155537,
+    "BiocPy genomicranges / iranges": 0.8884478050920234,
+    "BEDOPS": 0.8837134695923953
+   }
+  },
+  "intervals | overlap_count": {
+   "n": 1000000,
+   "t_min": 0.11499384604394436,
+   "times": {
+    "bedtools": 2.2929317839443684,
+    "genomeblocks": 0.11499384604394436,
+    "bioframe": 1.368012510240078,
+    "pyranges (0.x)": 0.778793266043067,
+    "GenomicRanges + IRanges": 0.288999999999998,
+    "plyranges": 0.289000000000001,
+    "valr": 0.489000000000004,
+    "pyranges (1.x)": 1.472767785191536,
+    "polars-bio": 1.350313488394022,
+    "BiocPy genomicranges / iranges": 1.6012371219694614,
+    "BEDOPS": 1.5195387061685324
+   },
+   "scores": {
+    "bedtools": 0.566761155023267,
+    "genomeblocks": 1.0,
+    "bioframe": 0.6415281768424415,
+    "pyranges (0.x)": 0.7230841372695631,
+    "GenomicRanges + IRanges": 0.866592252240561,
+    "plyranges": 0.8665922522405595,
+    "valr": 0.790455246784868,
+    "pyranges (1.x)": 0.6308467744947608,
+    "polars-bio": 0.6434133311982095,
+    "BiocPy genomicranges / iranges": 0.618739649848925,
+    "BEDOPS": 0.6263209441451791
+   }
+  },
+  "intervals | coverage": {
+   "n": 1000000,
+   "t_min": 0.18054419197142124,
+   "times": {
+    "bedtools": 4.262335799634457,
+    "genomeblocks": 0.18054419197142124,
+    "bioframe": 1.7839111294597387,
+    "pyranges (0.x)": 1.0630727857351303,
+    "valr": 0.478000000000009,
+    "polars-bio": 1.4020526893436909,
+    "BEDOPS": 1.5897061713039875
+   },
+   "scores": {
+    "bedtools": 0.5423119533901035,
+    "genomeblocks": 1.0,
+    "bioframe": 0.6684034356471815,
+    "pyranges (0.x)": 0.7433401738017383,
+    "valr": 0.8590518751032549,
+    "polars-bio": 0.7032730623782899,
+    "BEDOPS": 0.6850888872452638
+   }
+  },
+  "intervals | genome_depth": {
+   "n": 1000000,
+   "t_min": 0.24284221418201923,
+   "times": {
+    "bedtools": 24.306804360821843,
+    "genomeblocks": 0.24284221418201923,
+    "GenomicRanges + IRanges": 0.530999999999999,
+    "plyranges": 0.575999999999993,
+    "pyranges (1.x)": 1.98939660936594
+   },
+   "scores": {
+    "bedtools": 0.3331987728472644,
+    "genomeblocks": 1.0,
+    "GenomicRanges + IRanges": 0.8867432209797597,
+    "plyranges": 0.8749672335325136,
+    "pyranges (1.x)": 0.6955342702018359
+   }
+  },
+  "intervals | subtract": {
+   "n": 1000000,
+   "t_min": 0.25931032560765743,
+   "times": {
+    "bedtools": 3.003792440518737,
+    "genomeblocks": 0.25931032560765743,
+    "bioframe": 2.592103637754917,
+    "pyranges (0.x)": 1.1968836914747953,
+    "GenomicRanges + IRanges": 0.548000000000002,
+    "plyranges": 0.713000000000001,
+    "valr": 0.498999999999995,
+    "pyranges (1.x)": 1.305740773677826,
+    "polars-bio": 0.8153372444212437,
+    "BEDOPS": 0.9657730180770159
+   },
+   "scores": {
+    "bedtools": 0.6453832968367812,
+    "genomeblocks": 1.0,
+    "bioframe": 0.6667224829835301,
+    "pyranges (0.x)": 0.7785892870344091,
+    "GenomicRanges + IRanges": 0.8916797506728884,
+    "plyranges": 0.8535767602170565,
+    "valr": 0.9052397549598834,
+    "pyranges (1.x)": 0.7659876148979862,
+    "polars-bio": 0.8341608430840006,
+    "BEDOPS": 0.8096482475529293
+   }
+  },
+  "intervals | complement": {
+   "n": 1000000,
+   "t_min": 0.07406055554747581,
+   "times": {
+    "bedtools": 1.1494763940572739,
+    "genomeblocks": 0.07406055554747581,
+    "bioframe": 0.9078456237912178,
+    "GenomicRanges + IRanges": 0.128,
+    "plyranges": 0.484000000000002,
+    "valr": 0.313999999999993,
+    "pyranges (1.x)": 1.324044156819582,
+    "polars-bio": 0.8225315660238266,
+    "BiocPy genomicranges / iranges": 3.995922539383173,
+    "BEDOPS": 0.5852445010095835
+   },
+   "scores": {
+    "bedtools": 0.6030289695225586,
+    "genomeblocks": 1.0,
+    "bioframe": 0.6371916536841586,
+    "GenomicRanges + IRanges": 0.9207923319445193,
+    "plyranges": 0.728247201279004,
+    "valr": 0.790885772469407,
+    "pyranges (1.x)": 0.5825614988108843,
+    "polars-bio": 0.6514781305876232,
+    "BiocPy genomicranges / iranges": 0.42265663486909644,
+    "BEDOPS": 0.7007498745830323
+   }
+  },
+  "motifs | scan_logodds": {
+   "n": 1000,
+   "t_min": 0.037109822034835815,
+   "times": {
+    "genomeblocks": 0.037109822034835815,
+    "universalmotif": 3.186,
+    "Biostrings": 62.117,
+    "HOMER": 3.9068253748118877,
+    "MEME suite": 7.5575698090251535,
+    "MOODS": 0.0685341430362314,
+    "Biopython": 10.782640862977132
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "universalmotif": 0.3554143667236046,
+    "Biostrings": 0.0,
+    "HOMER": 0.3258882906131563,
+    "MEME suite": 0.23036890140120636,
+    "MOODS": 0.9111939616633941,
+    "Biopython": 0.17892124373863005
+   }
+  },
+  "motifs | scan_pvalue": {
+   "n": 1000,
+   "t_min": 0.22055277228355408,
+   "times": {
+    "genomeblocks": 0.22055277228355408,
+    "MEME suite": 15.691337659955025,
+    "motifmatchr": 1.42499999999998
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "MEME suite": 0.3826175176895955,
+    "motifmatchr": 0.7298992189194212
+   }
+  },
+  "motifs | known_enrichment": {
+   "n": 1000,
+   "t_min": 0.4135378934442997,
+   "times": {
+    "HOMER": 5.864451710134745,
+    "MEME suite": 1.8003882989287376,
+    "genomeblocks": 0.4135378934442997
+   },
+   "scores": {
+    "HOMER": 0.6160959655407161,
+    "MEME suite": 0.7870497098063642,
+    "genomeblocks": 1.0
+   }
+  },
+  "motifs | differential_enrichment": {
+   "n": 1000,
+   "t_min": 0.4101311229169369,
+   "times": {
+    "HOMER": 5.821210004389286,
+    "MEME suite": 1.8056343793869019,
+    "genomeblocks": 0.4101311229169369
+   },
+   "scores": {
+    "HOMER": 0.615969820013726,
+    "MEME suite": 0.7854309706522995,
+    "genomeblocks": 1.0
+   }
+  },
+  "motifs | de_novo": {
+   "n": 1000,
+   "t_min": 15.458169616758823,
+   "times": {
+    "MEME suite": 15.458169616758823,
+    "HOMER": 37.719412572681904
+   },
+   "scores": {
+    "MEME suite": 1.0,
+    "HOMER": 0.870864382584656
+   }
+  },
+  "motifs | db_comparison": {
+   "n": 20,
+   "t_min": 21.75233641639352,
+   "times": {
+    "MEME suite": 21.75233641639352,
+    "universalmotif": 66.359
+   },
+   "scores": {
+    "MEME suite": 1.0,
+    "universalmotif": 0.8385353595147367
+   }
+  },
+  "motifs | motif_activity": {
+   "n": 2000,
+   "t_min": 3.853295523673296,
+   "times": {
+    "chromVAR": 4.614,
+    "pychromVAR": 3.853295523673296
+   },
+   "scores": {
+    "chromVAR": 0.9739182425921667,
+    "pychromVAR": 1.0
+   }
+  },
+  "signal | region_matrix": {
+   "n": 10000,
+   "t_min": 0.45510034286417067,
+   "times": {
+    "genomeblocks": 0.45510034286417067,
+    "EnrichedHeatmap": 14.03,
+    "genomation": 4.806
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "EnrichedHeatmap": 0.5036831638891921,
+    "genomation": 0.6587744654093517
+   }
+  },
+  "signal | bigwig_read": {
+   "n": 10000,
+   "t_min": 2.029,
+   "times": {
+    "rtracklayer": 2.029
+   },
+   "scores": {
+    "rtracklayer": 1.0
+   }
+  },
+  "signal | region_mean": {
+   "n": 10000,
+   "t_min": 0.6024560630321503,
+   "times": {
+    "UCSC kent utilities": 6.1249266639351845,
+    "genomeblocks": 0.6024560630321503
+   },
+   "scores": {
+    "UCSC kent utilities": 0.6642748287732958,
+    "genomeblocks": 1.0
+   }
+  },
+  "signal | bam_to_bigwig": {
+   "n": 10000000,
+   "t_min": 28.023223465308547,
+   "times": {
+    "deepTools": 203.1430764682591,
+    "megadepth": 28.023223465308547,
+    "bedtools": 83.19323764182627
+   },
+   "scores": {
+    "deepTools": 0.7132386882443897,
+    "megadepth": 1.0,
+    "bedtools": 0.8424766879610331
+   }
+  },
+  "signal | multi_bam_counts": {
+   "n": 10000000,
+   "t_min": 17.971723975613713,
+   "times": {
+    "deepTools": 2931.5429668687284,
+    "bedtools": 170.38747615739703,
+    "Rsubread featureCounts": 17.971723975613713,
+    "pysam": 29.36775105074048,
+    "GenomicAlignments": 21.241
+   },
+   "scores": {
+    "deepTools": 0.26249782527131293,
+    "bedtools": 0.6743840232298992,
+    "Rsubread featureCounts": 1.0,
+    "pysam": 0.9289063499030303,
+    "GenomicAlignments": 0.9758049269286424
+   }
+  },
+  "signal | track_tmm": {
+   "n": 10000000,
+   "t_min": 0.07858504354953766,
+   "times": {
+    "edgeR": 0.372,
+    "csaw": 0.254,
+    "RNAnorm": 2.6660475209355354,
+    "genomeblocks": 0.07858504354953766
+   },
+   "scores": {
+    "edgeR": 0.7749323194317079,
+    "csaw": 0.8301687271856945,
+    "RNAnorm": 0.48982400398427994,
+    "genomeblocks": 1.0
+   }
+  },
+  "signal | track_comparison": {
+   "n": 248956422,
+   "t_min": 4.606952412053943,
+   "times": {
+    "deepTools": 136.87467901222408,
+    "WiggleTools": 4.606952412053943
+   },
+   "scores": {
+    "deepTools": 0.5090302041594568,
+    "WiggleTools": 1.0
+   }
+  },
+  "signal | write_bigwig": {
+   "n": 9999989,
+   "t_min": 10.088,
+   "times": {
+    "pyBigWig": 36.5040715187788,
+    "pybigtools": 12.742315163835883,
+    "UCSC kent utilities": 17.338317025452852,
+    "rtracklayer": 10.088
+   },
+   "scores": {
+    "pyBigWig": 0.813821255643272,
+    "pybigtools": 0.9661855770009318,
+    "UCSC kent utilities": 0.9215993779815043,
+    "rtracklayer": 1.0
+   }
+  },
+  "intervals | read_bed": {
+   "n": 1000000,
+   "t_min": 0.39398730895482004,
+   "times": {
+    "genomeblocks": 0.39398730895482004,
+    "pyranges (0.x)": 0.9276038780808449
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "pyranges (0.x)": 0.8760398923305941
+   }
+  },
+  "intervals | point_lookup": {
+   "n": 100000,
+   "t_min": 8.845675038173795e-06,
+   "times": {
+    "genomeblocks": 8.845675038173795e-06,
+    "intervaltree": 1.0262989671900869e-05,
+    "pyranges (0.x)": 0.0014763163984753192,
+    "bioframe": 0.005367212649434805
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "intervaltree": 0.9784856962934388,
+    "pyranges (0.x)": 0.2591838456478318,
+    "bioframe": 0.07232739277409506
+   }
+  },
+  "intervals | overlap_pairs": {
+   "n": 1000000,
+   "t_min": 0.28768382500857115,
+   "times": {
+    "genomeblocks": 0.28768382500857115
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "intervals | getfasta": {
+   "n": 10000,
+   "t_min": 0.005403141025453806,
+   "times": {
+    "genomeblocks": 0.005403141025453806
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "signal | region_matrix_16_tracks_8_workers": {
+   "n": 5000,
+   "t_min": 1.4389592478983104,
+   "times": {
+    "genomeblocks": 1.4389592478983104,
+    "deepTools": 95.81080004596151
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "deepTools": 0.39221134266669366
+   }
+  },
+  "cooccupancy | overlap_counts_500_tracks": {
+   "n": 500,
+   "t_min": 0.442224983824417,
+   "times": {
+    "genomeblocks": 0.442224983824417,
+    "pyranges (0.x)": 21.267916505923495
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "pyranges (0.x)": 0.43930610934616643
+   }
+  },
+  "motifs | scan_library_1019": {
+   "n": 1000,
+   "t_min": 0.3682519318535924,
+   "times": {
+    "genomeblocks": 0.3682519318535924,
+    "MOODS": 0.7207753648981452,
+    "MEME suite": 78.27835307596251
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "MOODS": 0.90278169973076,
+    "MEME suite": 0.22416778467221465
+   }
+  },
+  "graph3d | pairs_streaming": {
+   "n": 5000000,
+   "t_min": 3.186499474104494,
+   "times": {
+    "genomeblocks": 3.186499474104494
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | bin_pairs_to_matrix": {
+   "n": 5000000,
+   "t_min": 3.316628077067435,
+   "times": {
+    "genomeblocks": 3.316628077067435,
+    "cooler": 9.216659436933696
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "cooler": 0.8520410775681997
+   }
+  },
+  "annotation | isoform_selection": {
+   "n": 70028,
+   "t_min": 0.03969998308457434,
+   "times": {
+    "genomeblocks": 0.03969998308457434
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | contact_graph": {
+   "n": 114367,
+   "t_min": 0.15469234716147184,
+   "times": {
+    "genomeblocks": 0.15469234716147184
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | read_cool_mcool": {
+   "n": 114367,
+   "t_min": 4.1236011469736695,
+   "times": {
+    "genomeblocks": 4.1236011469736695
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | oe_normalisation": {
+   "n": 114367,
+   "t_min": 0.009584821062162519,
+   "times": {
+    "genomeblocks": 0.009584821062162519
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | anchor_gene_annotation": {
+   "n": 73237,
+   "t_min": 0.035178953083232045,
+   "times": {
+    "genomeblocks": 0.035178953083232045
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | hub_mining": {
+   "n": null,
+   "t_min": 0.00815494591370225,
+   "times": {
+    "genomeblocks": 0.00815494591370225
+   },
+   "scores": {
+    "genomeblocks": 1.0
+   }
+  },
+  "expression | log_cpm": {
+   "n": 60000,
+   "t_min": 0.059697781995055266,
+   "times": {
+    "genomeblocks": 0.059697781995055266,
+    "edgeR": 0.207000000000001
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "edgeR": 0.8199959500806395
+   }
+  },
+  "expression | filter_by_expr": {
+   "n": 60000,
+   "t_min": 0.054995416998281144,
+   "times": {
+    "genomeblocks": 0.054995416998281144,
+    "edgeR": 0.106999999999999
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "edgeR": 0.9036475739042986
+   }
+  },
+  "expression | read_salmon": {
+   "n": 60000,
+   "t_min": 12.569732853997266,
+   "times": {
+    "genomeblocks": 12.569732853997266,
+    "tximport": 25.078
+   },
+   "scores": {
+    "genomeblocks": 1.0,
+    "tximport": 0.9000110498762343
+   }
+  },
+  "expression | read_featurecounts": {
+   "n": 60000,
+   "t_min": 0.078000000000003,
+   "times": {
+    "genomeblocks": 0.17836732417345047,
+    "data.table": 0.078000000000003
+   },
+   "scores": {
+    "genomeblocks": 0.8802597685047826,
+    "data.table": 1.0
+   }
+  },
+  "graph3d | loops_fithichip": {
+   "n": 52797,
+   "t_min": 2.4548101127147675,
+   "times": {
+    "FitHiChIP": 322.45172495394945,
+    "genomeblocks": 2.4548101127147675
+   },
+   "scores": {
+    "FitHiChIP": 0.29385106639263714,
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | loops_maps": {
+   "n": 23941,
+   "t_min": 4.740671835024841,
+   "times": {
+    "MAPS": 49.059985189000145,
+    "genomeblocks": 4.740671835024841
+   },
+   "scores": {
+    "MAPS": 0.6617041601003573,
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | loops_mustache": {
+   "n": 660,
+   "t_min": 7.994787123054266,
+   "times": {
+    "Mustache": 73.14900920540094,
+    "genomeblocks": 7.994787123054266
+   },
+   "scores": {
+    "Mustache": 0.6795328187521421,
+    "genomeblocks": 1.0
+   }
+  },
+  "graph3d | loops_hiccups": {
+   "n": 182,
+   "t_min": 10.221595823764801,
+   "times": {
+    "Juicer / Juicer Tools": 160.97772690281272,
+    "genomeblocks": 10.221595823764801
+   },
+   "scores": {
+    "Juicer / Juicer Tools": 0.6009176379107808,
+    "genomeblocks": 1.0
+   }
+  },
+  "signal | hichip_shortrange_track": {
+   "n": 5095496,
+   "t_min": 16.86035699606873,
+   "times": {
+    "bedtools": 137.67902588215657,
+    "genomeblocks": 16.86035699606873
+   },
+   "scores": {
+    "bedtools": 0.6959996604768538,
+    "genomeblocks": 1.0
+   }
+  }
+ },
+ "summary": {
+  "genomeblocks": {
+   "overall": 0.9340493383403876,
+   "accuracy": 0.9144596236356198,
+   "scalability": 0.9924411300889749,
+   "usability": 0.9000000000000001,
+   "themes": [
+    "graph3d",
+    "annotation",
+    "cooccupancy",
+    "expression",
+    "intervals",
+    "motifs",
+    "signal"
+   ],
+   "stability": 1.0
+  },
+  "bedtools": {
+   "overall": 0.829623818119012,
+   "accuracy": 0.99960736317507,
+   "scalability": 0.6200718096961789,
+   "usability": 0.9,
+   "themes": [
+    "graph3d",
+    "annotation",
+    "cooccupancy",
+    "intervals",
+    "signal"
+   ],
+   "stability": 1.0
+  },
+  "GenomicInteractions": {
+   "overall": 0.8432420381098696,
+   "accuracy": 1.0,
+   "scalability": 0.7994576901218785,
+   "usability": 0.75,
+   "themes": [
+    "graph3d"
+   ]
+  },
+  "igraph": {
+   "overall": 1.0,
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "graph3d"
+   ]
+  },
+  "GenomicFeatures + txdbmaker": {
+   "overall": 0.9655304457361032,
+   "accuracy": 1.0,
+   "scalability": 0.8690882756449597,
+   "stability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "annotation"
+   ]
+  },
+  "rtracklayer": {
+   "scalability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "annotation",
+    "signal"
+   ],
+   "overall": 1.0,
+   "accuracy": 1.0
+  },
+  "GenomicRanges + IRanges": {
+   "overall": 0.9531302923697245,
+   "accuracy": 0.9997316666666667,
+   "scalability": 0.8273892775657663,
+   "stability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "annotation",
+    "intervals"
+   ]
+  },
+  "ChIPseeker": {
+   "overall": 0.7908039951601747,
+   "accuracy": 0.9994799999999999,
+   "scalability": 0.39129230806221205,
+   "stability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "annotation"
+   ]
+  },
+  "ChIPpeakAnno": {
+   "overall": 0.6526633412802747,
+   "accuracy": 0.999480093583155,
+   "scalability": 0.18154434737279962,
+   "stability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "annotation"
+   ]
+  },
+  "HOMER": {
+   "overall": 0.47918862358586717,
+   "accuracy": 0.9237957805882554,
+   "scalability": 0.30707967921927404,
+   "usability": 0.875,
+   "themes": [
+    "annotation",
+    "motifs"
+   ]
+  },
+  "UROPA": {
+   "overall": 0.07936978803068609,
+   "accuracy": 0.99999,
+   "scalability": 0.0,
+   "usability": 0.5,
+   "themes": [
+    "annotation"
+   ]
+  },
+  "pyranges (0.x)": {
+   "overall": 0.8999779268307861,
+   "accuracy": 1.0,
+   "scalability": 0.6323996835835652,
+   "usability": 1.0,
+   "themes": [
+    "annotation",
+    "intervals",
+    "cooccupancy"
+   ]
+  },
+  "plyranges": {
+   "overall": 0.9708622589008368,
+   "accuracy": 1.0,
+   "scalability": 0.8984613820822739,
+   "usability": 1.0,
+   "themes": [
+    "annotation",
+    "intervals"
+   ],
+   "stability": 1.0
+  },
+  "valr": {
+   "overall": 0.974237465683263,
+   "accuracy": 0.9999198634088619,
+   "scalability": 0.9125712454425848,
+   "usability": 1.0,
+   "themes": [
+    "annotation",
+    "cooccupancy",
+    "intervals"
+   ],
+   "stability": 1.0
+  },
+  "pyranges (1.x)": {
+   "overall": 0.8963228692000272,
+   "accuracy": 0.9999383657521367,
+   "scalability": 0.7561485348364854,
+   "usability": 0.9,
+   "themes": [
+    "annotation",
+    "intervals"
+   ],
+   "stability": 1.0
+  },
+  "LOLA": {
+   "overall": 0.7063963523920569,
+   "accuracy": 0.986835668610384,
+   "scalability": 0.3968788870716196,
+   "usability": 0.9,
+   "themes": [
+    "cooccupancy"
+   ]
+  },
+  "regioneR": {
+   "overall": 0.8404380557556402,
+   "accuracy": 0.9783586306027525,
+   "scalability": 0.7801237813124045,
+   "usability": 0.7777777777777778,
+   "themes": [
+    "cooccupancy"
+   ]
+  },
+  "GIGGLE": {
+   "overall": 0.6784846910683235,
+   "accuracy": 0.8772581553714518,
+   "scalability": 0.5086214884848452,
+   "usability": 0.7,
+   "themes": [
+    "cooccupancy"
+   ]
+  },
+  "RNAnorm": {
+   "overall": 0.7612872076450568,
+   "accuracy": 1.0,
+   "scalability": 0.489338705207241,
+   "stability": 1.0,
+   "usability": 0.8,
+   "themes": [
+    "expression",
+    "signal"
+   ]
+  },
+  "PyDESeq2": {
+   "overall": 0.8853534414256429,
+   "accuracy": 0.9583716822196318,
+   "scalability": 0.6411102881645692,
+   "stability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "expression"
+   ]
+  },
+  "pytximport": {
+   "overall": 0.8947888122591269,
+   "accuracy": 1.0,
+   "scalability": 0.7164099947618854,
+   "usability": 1.0,
+   "themes": [
+    "expression"
+   ]
+  },
+  "DESeq2": {
+   "overall": 0.9109986687277691,
+   "accuracy": 0.9491504427531113,
+   "scalability": 0.7965594097596199,
+   "usability": 1.0,
+   "themes": [
+    "expression"
+   ]
+  },
+  "edgeR": {
+   "overall": 0.9217460802010232,
+   "accuracy": 0.9843635033577981,
+   "scalability": 0.7959328484729977,
+   "usability": 1.0,
+   "themes": [
+    "expression",
+    "signal"
+   ]
+  },
+  "limma": {
+   "overall": 0.9936865742592595,
+   "accuracy": 0.9811790491625182,
+   "scalability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "expression"
+   ]
+  },
+  "sva / ComBat-seq": {
+   "overall": 0.7907958407910107,
+   "accuracy": 0.7960285366498958,
+   "scalability": 0.6212472688072044,
+   "usability": 1.0,
+   "themes": [
+    "expression"
+   ]
+  },
+  "InMoose": {
+   "overall": 0.8848442809909882,
+   "accuracy": 0.9333721056394324,
+   "scalability": 0.7422423448562762,
+   "usability": 1.0,
+   "themes": [
+    "expression"
+   ]
+  },
+  "Rsubread featureCounts": {
+   "overall": 1.0,
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "expression",
+    "signal"
+   ]
+  },
+  "HTSeq": {
+   "overall": 0.760930153643316,
+   "accuracy": 1.0,
+   "scalability": 0.44058974366151804,
+   "usability": 1.0,
+   "themes": [
+    "expression"
+   ]
+  },
+  "GenomicAlignments": {
+   "overall": 0.9756163070022797,
+   "accuracy": 0.99875,
+   "scalability": 0.9304977362225946,
+   "usability": 1.0,
+   "themes": [
+    "expression",
+    "signal"
+   ]
+  },
+  "cooler": {
+   "overall": 0.967296375278301,
+   "accuracy": 0.9773678787094432,
+   "scalability": 0.9260205387840998,
+   "usability": 1.0,
+   "themes": [
+    "graph3d"
+   ]
+  },
+  "hictk": {
+   "overall": 0.9860165814035533,
+   "accuracy": 0.9773678787137956,
+   "scalability": 0.980831925024447,
+   "usability": 1.0,
+   "themes": [
+    "graph3d"
+   ]
+  },
+  "HiCExplorer": {
+   "overall": 0.6661140881835297,
+   "accuracy": 0.4513440306494715,
+   "scalability": 0.8185555680147641,
+   "usability": 0.8,
+   "themes": [
+    "graph3d"
+   ]
+  },
+  "cooltools": {
+   "overall": 0.8277230840597544,
+   "accuracy": 0.7333931302787926,
+   "scalability": 0.8591635715492478,
+   "usability": 0.9,
+   "themes": [
+    "graph3d"
+   ]
+  },
+  "bioframe": {
+   "overall": 0.8326875584995788,
+   "accuracy": 1.0,
+   "scalability": 0.5773593817602504,
+   "usability": 1.0,
+   "themes": [
+    "intervals"
+   ]
+  },
+  "data.table": {
+   "overall": 0.868816474579143,
+   "accuracy": 1.0,
+   "scalability": 0.8165480807545488,
+   "stability": 1.0,
+   "usability": 0.9,
+   "themes": [
+    "intervals",
+    "expression"
+   ]
+  },
+  "polars-bio": {
+   "overall": 0.9207657537922412,
+   "accuracy": 0.9998767315042734,
+   "scalability": 0.7188696866599883,
+   "stability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "intervals"
+   ]
+  },
+  "BiocPy genomicranges / iranges": {
+   "overall": 0.8332641094773239,
+   "accuracy": 0.9344786846006398,
+   "scalability": 0.573216648814285,
+   "stability": 1.0,
+   "usability": 0.9,
+   "themes": [
+    "intervals"
+   ]
+  },
+  "superintervals": {
+   "overall": 0.7479154348933629,
+   "accuracy": 1.0,
+   "scalability": 0.5215053083183079,
+   "stability": 1.0,
+   "usability": 0.6,
+   "themes": [
+    "intervals"
+   ]
+  },
+  "ailist (Python)": {
+   "overall": 0.7757997691185362,
+   "accuracy": 1.0,
+   "scalability": 0.4829890898577458,
+   "stability": 1.0,
+   "usability": 0.75,
+   "themes": [
+    "intervals"
+   ]
+  },
+  "BEDOPS": {
+   "overall": 0.6632430640161597,
+   "accuracy": 0.9999968571428571,
+   "scalability": 0.7256438193394897,
+   "stability": 0.3333333333333333,
+   "usability": 0.8,
+   "themes": [
+    "intervals"
+   ]
+  },
+  "MEME suite": {
+   "overall": 0.7492868381283605,
+   "accuracy": 0.9517703160561705,
+   "scalability": 0.5682724807036134,
+   "usability": 0.7777777777777778,
+   "themes": [
+    "motifs"
+   ]
+  },
+  "universalmotif": {
+   "overall": 0.7816501452048978,
+   "accuracy": 0.7999838029985487,
+   "scalability": 0.5969748631191707,
+   "usability": 1.0,
+   "themes": [
+    "motifs"
+   ]
+  },
+  "Biostrings": {
+   "overall": 0.096548938460563,
+   "accuracy": 1.0,
+   "scalability": 0.0,
+   "usability": 0.9,
+   "themes": [
+    "motifs"
+   ]
+  },
+  "motifmatchr": {
+   "overall": 0.7941501684115216,
+   "accuracy": 0.6861909691838585,
+   "scalability": 0.7298992189194212,
+   "usability": 1.0,
+   "themes": [
+    "motifs"
+   ]
+  },
+  "chromVAR": {
+   "overall": 0.7867392818752267,
+   "accuracy": 0.5,
+   "scalability": 0.9739182425921667,
+   "usability": 1.0,
+   "themes": [
+    "motifs"
+   ]
+  },
+  "pychromVAR": {
+   "overall": 1.0,
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "motifs"
+   ]
+  },
+  "EnrichedHeatmap": {
+   "overall": 0.8424407354438574,
+   "accuracy": 1.0,
+   "scalability": 0.5036831638891921,
+   "stability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "signal"
+   ]
+  },
+  "genomation": {
+   "overall": 0.8770483362825278,
+   "accuracy": 0.9979639413528579,
+   "scalability": 0.6587744654093517,
+   "stability": 1.0,
+   "usability": 0.9,
+   "themes": [
+    "signal"
+   ]
+  },
+  "UCSC kent utilities": {
+   "overall": 0.7346315593275694,
+   "accuracy": 1.0,
+   "scalability": 0.7929371033774,
+   "usability": 0.5,
+   "themes": [
+    "signal"
+   ]
+  },
+  "deepTools": {
+   "overall": 0.7770153103324929,
+   "accuracy": 0.9997456514460057,
+   "scalability": 0.4692445150854633,
+   "usability": 1.0,
+   "themes": [
+    "signal"
+   ]
+  },
+  "megadepth": {
+   "overall": 1.0,
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "usability": 1.0,
+   "themes": [
+    "signal"
+   ]
+  },
+  "pysam": {
+   "overall": 0.9420446345515329,
+   "accuracy": 1.0,
+   "scalability": 0.9289063499030303,
+   "usability": 0.9,
+   "themes": [
+    "signal"
+   ]
+  },
+  "csaw": {
+   "overall": 0.935291908015149,
+   "accuracy": 0.9855420556095658,
+   "scalability": 0.8301687271856945,
+   "usability": 1.0,
+   "themes": [
+    "signal"
+   ]
+  },
+  "WiggleTools": {
+   "overall": 0.8735804647362988,
+   "accuracy": 1.0,
+   "scalability": 1.0,
+   "usability": 0.6666666666666666,
+   "themes": [
+    "signal"
+   ]
+  },
+  "pyBigWig": {
+   "overall": 0.8289767614792342,
+   "accuracy": 1.0,
+   "scalability": 0.813821255643272,
+   "usability": 0.7,
+   "themes": [
+    "signal"
+   ]
+  },
+  "pybigtools": {
+   "overall": 0.9885990376986518,
+   "accuracy": 1.0,
+   "scalability": 0.9661855770009318,
+   "usability": 1.0,
+   "themes": [
+    "signal"
+   ]
+  },
+  "Mustache": {
+   "overall": 0.6243951307429375,
+   "accuracy": 0.7388059701492538,
+   "scalability": 0.6589889347244554,
+   "usability": 0.5,
+   "themes": [
+    "graph3d"
+   ]
+  },
+  "Juicer / Juicer Tools": {
+   "overall": 0.6147692338631676,
+   "accuracy": 0.8181818181818182,
+   "scalability": 0.5679584256456098,
+   "usability": 0.5,
+   "themes": [
+    "graph3d"
+   ]
+  },
+  "intervaltree": {
+   "overall": 0.8373401398131773,
+   "accuracy": 1.0,
+   "scalability": 0.9784856962934388,
+   "usability": 0.6,
+   "themes": [
+    "intervals"
+   ]
+  },
+  "MOODS": {
+   "overall": 0.7957493972217643,
+   "accuracy": 1.0,
+   "scalability": 0.906987830697077,
+   "usability": 0.5555555555555556,
+   "themes": [
+    "motifs"
+   ]
+  },
+  "Biopython": {
+   "overall": 0.5634914137214934,
+   "accuracy": 1.0,
+   "scalability": 0.17892124373863005,
+   "usability": 1.0,
+   "themes": [
+    "motifs"
+   ]
+  },
+  "tximport": {
+   "overall": 0.9584431463828401,
+   "accuracy": 1.0,
+   "scalability": 0.8804385878701588,
+   "usability": 1.0,
+   "themes": [
+    "expression"
+   ]
+  },
+  "FitHiChIP": {
+   "overall": 0.5276740761885332,
+   "accuracy": 1.0,
+   "scalability": 0.29385106639263714,
+   "usability": 0.5,
+   "themes": [
+    "graph3d"
+   ]
+  },
+  "MAPS": {
+   "overall": 0.573938387946,
+   "accuracy": 1.0,
+   "scalability": 0.6617041601003573,
+   "usability": 0.2857142857142857,
+   "themes": [
+    "graph3d"
+   ]
+  }
+ }
+}

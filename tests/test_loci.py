@@ -106,6 +106,76 @@ def test_overlaps_match_brute_force(backend, seed):
     assert (q - r).equals(q.take(~want))
 
 
+def _covered(L, chroms=("chr1", "chr2", "chr10"), span=10_400):
+    """{chrom: per-base bool mask} of the bases an interval set covers."""
+    m = {c: np.zeros(span, bool) for c in chroms}
+    for c, s, e in zip(L.chroms, L.starts, L.ends):
+        m[c][s:e] = True
+    return m
+
+
+@pytest.mark.parametrize("seed", [0, 1, 2, 3])
+def test_counts_coverage_subtract_complement_match_brute_force(seed):
+    rng = np.random.default_rng(seed)
+    q, r = random_loci(rng, 60), random_loci(rng, 50)          # different Genomes, zero-length and duplicate rows
+    want = np.zeros(len(q), np.int64)
+    for i, _ in brute_pairs(q, r):
+        want[i] += 1
+    assert q.count_overlaps(r).tolist() == want.tolist()
+    cov = _covered(r)
+    assert q.coverage(r).tolist() == [int(cov[c][s:e].sum()) for c, s, e in zip(q.chroms, q.starts, q.ends)]
+    S = q.subtract(r)
+    assert (S.ends > S.starts).all() and S.cols["source_row"].tolist() == sorted(S.cols["source_row"].tolist())
+    for i, (c, s, e) in enumerate(zip(q.chroms, q.starts, q.ends)):
+        keep = np.zeros(10_400, bool)
+        keep[s:e] = True
+        keep &= ~cov[c]
+        got = np.zeros(10_400, bool)
+        for c2, s2, e2 in zip(S.chroms[S.cols["source_row"] == i], S.starts[S.cols["source_row"] == i], S.ends[S.cols["source_row"] == i]):
+            got[s2:e2] = True
+        assert (got == keep).all(), i
+    sizes = {"chr1": 10_400, "chr2": 10_400, "chr10": 10_400, "chr7": 500}
+    C = q.complement(sizes)
+    occ = _covered(q, chroms=("chr1", "chr2", "chr10", "chr7"))
+    got = {c: np.zeros(10_400, bool) for c in occ}
+    for c, s, e in zip(C.chroms, C.starts, C.ends):
+        got[c][s:e] = True
+    for c in occ:
+        free = ~occ[c]
+        free[sizes[c]:] = False
+        assert (got[c] == free).all(), c
+    assert C.is_sorted and ("chr7", 0, 500) in [(c, int(s), int(e)) for c, s, e in zip(C.chroms, C.starts, C.ends)]
+
+
+def test_subtract_complement_edges():
+    a = as_loci([("chr1", 0, 100, "+"), ("chr1", 200, 300, "-")])
+    b = as_loci([("chr1", 10, 20), ("chr1", 15, 30), ("chr1", 50, 50), ("chr1", 190, 310)])
+    S = a.subtract(b)
+    assert S.to_records() == [("chr1", 0, 10, "+"), ("chr1", 30, 100, "+")]    # a zero-length row cuts nothing
+    assert a.count_overlaps(b).tolist() == [3, 1] and a.coverage(b).tolist() == [20, 100]
+    assert a.complement({"chr1": 400}).to_records() == [("chr1", 100, 200, "."), ("chr1", 300, 400, ".")]
+    with pytest.raises(ValueError):
+        a.complement()                                       # no sizes known
+
+
+def test_hichip_coverage_matches_per_base_depth():
+    from genomeblocks import hichip
+    rng = np.random.default_rng(5)
+    L = random_loci(rng, 300)
+    depth = {c: np.zeros(10_400, np.int64) for c in ("chr1", "chr2", "chr10")}
+    for c, s, e in zip(L.chroms, L.starts, L.ends):
+        depth[c][s:e] += 1
+    seen = []
+    for c, st, en, d in hichip.coverage(L):
+        seen.append(c)
+        got = np.zeros(10_400, np.int64)
+        for s, e, v in zip(st, en, d):
+            got[s:e] = v
+        assert (got == depth[c]).all(), c
+        assert (d > 0).all() and not np.any((st[1:] == en[:-1]) & (d[1:] == d[:-1]))     # touching equal runs merged
+    assert seen == sorted(seen)
+
+
 @pytest.mark.parametrize("backend", installed_backends("intervals"))
 def test_zero_length_rule_is_uniform(backend):
     r = as_loci([("chr1", 5, 15)])

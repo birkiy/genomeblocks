@@ -503,8 +503,59 @@ class Loci(TableMixin):
         return self.take(self.overlap_any(o, backend=backend))
 
     def difference(self, o, *, backend: Optional[str] = None) -> "Loci":
-        """Rows that do not overlap ``o`` (``A - B``, bedtools intersect -v)."""
+        """Rows that do not overlap ``o`` (``A - B``, bedtools intersect -v).
+        To cut out only the overlapped bases, use :meth:`subtract`."""
         return self.take(~self.overlap_any(o, backend=backend))
+
+    def count_overlaps(self, o) -> np.ndarray:
+        """Number of intervals of ``o`` overlapping each row (bedtools intersect -c)."""
+        from . import _intervals as K
+        o = self._check(o)
+        return K.count_overlaps(self.codes, self.starts, self.ends, o.codes, o.starts, o.ends)
+
+    def coverage(self, o) -> np.ndarray:
+        """Bases of each row covered by ``o``, overlapping intervals of ``o`` counted
+        once (bedtools coverage's covered-bases column; divide by :attr:`lengths`
+        for the fraction)."""
+        from . import _intervals as K
+        o = self._check(o)
+        return K.covered_bases(self.codes, self.starts, self.ends, o.codes, o.starts, o.ends)
+
+    def subtract(self, o) -> "Loci":
+        """The parts of each row that ``o`` does not cover (bedtools subtract): a row
+        cut by ``o`` becomes one row per surviving piece, keeping its strand and
+        columns; a row ``o`` covers entirely disappears. ``cols['source_row']``
+        says which row each piece came from."""
+        from . import _intervals as K
+        o = self._check(o)
+        row, s, e = K.subtract(self.codes, self.starts, self.ends, o.codes, o.starts, o.ends)
+        out = self.take(row)
+        out = Loci(out.codes, s, e, out.strands, genome=self.genome, cols={**out.cols, "source_row": row})
+        return out
+
+    def complement(self, sizes=None) -> "Loci":
+        """The genome not covered by any row (bedtools complement), one row per gap.
+
+        ``sizes`` (a ``{chrom: length}`` dict, a .chrom.sizes path, or anything
+        :meth:`Genome.from_sizes` takes) defaults to the Genome's sizes;
+        chromosomes without a size are left out, chromosomes with a size and no
+        row come back whole."""
+        from . import _intervals as K
+        from .genome import read_sizes
+        known = read_sizes(sizes) if sizes is not None else self.genome.sizes
+        if not known:
+            raise ValueError("complement needs chromosome sizes: pass sizes= or use a Genome with sizes")
+        for n in known:
+            self.genome._add(n)
+        lens = np.full(len(self.genome.names), -1, np.int64)
+        for n, v in known.items():
+            lens[self.genome.code[n]] = int(v)
+        c, s, e = K.complement(self.codes, self.starts, self.ends, lens)
+        # (code, start) order -> genome order: a stable reorder of whole chromosomes, no re-sort of the gaps
+        o = np.argsort(self.genome.rank[c], kind="stable") if len(c) else np.zeros(0, np.int64)
+        out = Loci(c[o].astype(self.codes.dtype if len(self.codes) else np.int32), s[o], e[o], None, genome=self.genome)
+        out._sorted = True
+        return out
 
     __and__ = intersect
     __sub__ = difference

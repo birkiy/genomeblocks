@@ -316,7 +316,7 @@ An optional `graph` backend (`backend="networkx"`) and a converter target: `Arch
 ### MOODS — motif occurrence detection
 {: #moods }
 
-The default `motifs` backend: `scan_motifs`, `scan_motifs_matrix`, `scan_motifs_matrix_masked` and `scan_motifs_profile` hand each log-odds matrix — a whole batch of them for a library — to a `MOODS.scan.Scanner`, and `Library.to_moods()` exports the matrices. The conda package depends on bioconda's `moods`; on pip it is `pip install 'genomeblocks[motifs]'` (MOODS-python, compiled at install).
+A `motifs` backend (the default when lightmotif is not installed, as in the conda package): `scan_motifs`, `scan_motifs_matrix`, `scan_motifs_matrix_masked` and `scan_motifs_profile` hand each log-odds matrix — a whole batch of them for a library — to a `MOODS.scan.Scanner`, and `Library.to_moods()` exports the matrices. The conda package depends on bioconda's `moods`; on pip it is `pip install 'genomeblocks[motifs]'` (MOODS-python, compiled at install).
 
 - **Authors:** Janne H. Korhonen, Petri Martinmäki, Cinzia Pizzi, Pasi Rastas, Esko Ukkonen
 - **Repository:** [github.com/jhkorhonen/MOODS](https://github.com/jhkorhonen/MOODS)

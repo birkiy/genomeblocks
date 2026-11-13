@@ -329,6 +329,30 @@ len(a & b.to_pandas()), (a - [("chr1", 150, 160)]).to_records()
 # -> (2, [('chr1', 300, 400, '.'), ('chr1', 500, 600, '.'), ('chr2', 0, 100, '.')])
 ```
 
+### Counts, covered bases, subtract, complement
+
+These work on bases rather than whole rows (bedtools `intersect -c`,
+`coverage`, `subtract`, `complement`):
+
+```python
+a.count_overlaps(b)         # rows of b overlapping each row of a
+# -> array([0, 1, 0, 1])
+a.coverage(b)               # bases of each row of a that b covers (b's overlaps counted once)
+# -> array([ 0, 10,  0, 10])
+a.subtract(b).to_records()  # each row of a minus the bases b covers: a cut row becomes its pieces
+# -> [('chr1', 100, 200, '.'), ('chr1', 300, 350, '.'), ('chr1', 360, 400, '.'), ('chr1', 500, 600, '.'), ('chr2', 0, 50, '.'), ('chr2', 60, 100, '.')]
+a.complement({"chr1": 1000, "chr2": 200}).to_records()    # the genome a does not cover
+# -> [('chr1', 0, 100, '.'), ('chr1', 200, 300, '.'), ('chr1', 400, 500, '.'), ('chr1', 600, 1000, '.'), ('chr2', 100, 200, '.')]
+```
+
+`subtract` keeps each piece's strand and columns and adds `source_row` (the row
+of `a` it came from); `a - b` (`difference`) is different: it drops the rows of
+`a` that touch `b` and keeps the others whole. `complement` takes the
+chromosome sizes from its argument or from the Genome. All four are numpy on
+the genome axis, a few sorted searches whatever the number of rows; on 1 M
+intervals each takes 0.08 – 0.3 s, faster than bedtools, BEDOPS, GenomicRanges,
+valr, pyranges and polars-bio on the [landscape]({{ '/benchmarks/landscape/' | relative_url }}) runs.
+
 ---
 
 ## slop, sort, merge

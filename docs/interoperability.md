@@ -260,7 +260,7 @@ Architecture.
 | **AnnData** (scATAC) | `Loci.from_anndata(adata, axis='var')`: chrom/start/end columns, else names `chr1:100-200`, `chr1-100-200`, `chr1_100_200` | `to_anndata(X, obs=)` (loci as `var`, names `chrom:start-end`); `Architecture.to_anndata()` (vertices as `obs`, one adjacency per edge column in `obsp`); `interop.cube_to_anndata(S, L, tracks)` |
 | **Biopython** | `SeqIO.index` / `SeqIO.to_dict` mappings as FASTA sources; `Bio.motifs` objects in `load_motifs` and every motif function; `backend='biopython'` for scanning and FASTA | `to_seqrecords(fasta)`, `to_fasta(path, fasta)`, `Library.to_biopython()` |
 | **xarray** | — | `interop.cube_to_xarray(S, L, tracks, flank=)`: `(region, track, bin)` with chrom / start / end coordinates and bin centres in bp |
-| **MOODS** | the default scanning engine (`backend='moods'`; `genomeblocks[motifs]` or conda `moods`) | `Library.to_moods()`: 4 x W log-odds lists |
+| **MOODS** | a scanning engine, the default when lightmotif is not installed (`backend='moods'`; `genomeblocks[motifs]` or conda `moods`) | `Library.to_moods()`: 4 x W log-odds lists |
 | **lightmotif** | the alternative scanning engine (`backend='lightmotif'`; `genomeblocks[lightmotif]`); lightmotif motif objects in `load_motifs` | — |
 | **pyBigWig / pybigtools** | open handles anywhere a bigWig path goes (`Loci.signal`, `browser`, `call_se`) | — (`backends.bigwig.open_bigwig` wraps a path or a handle) |
 | **pysam / pyfaidx** | `pysam.FastaFile` / `pyfaidx.Fasta` handles as FASTA sources; pysam for BAM | — |

@@ -64,7 +64,21 @@ mustache_seconds, note).
 | `bench_hiccups.py` | Hi-C loop calling: `hiccups` vs juicer_tools 2.13.06 `hiccups --cpu` on the same matrix and SCALE vectors — merged loops, postprocessed / enriched pixels, thresholds compared file by file, wall time and memory; synthetic Hi-C with planted loops, plus real samples on request |
 | `bench_import.py` | import cost of each entry point |
 | `bench_expression.py` | reading salmon / featureCounts tables with both table backends, tximport-style summarising and TMM / size factors / CPM / filterByExpr against R's tximport, edgeR and DESeq2 — exactness (max \|Δ\|) and time; generates its own GTF-scale data |
+| `bench_landscape.py` | **the landscape**: genomeblocks against the field, theme by theme — the Bioconductor stack (GenomicRanges, plyranges, valr, data.table, txdbmaker, ChIPseeker, ChIPpeakAnno, EnrichedHeatmap, genomation, universalmotif, Biostrings, motifmatchr, chromVAR, LOLA, regioneR, GenomicInteractions, igraph, edgeR, limma, DESeq2), the newer Python engines (pyranges 1.x, polars-bio, BiocPy, superintervals, AIList, pytximport, PyDESeq2, InMoose, RNAnorm) and CLI tools (BEDOPS, HOMER, UROPA, UCSC, GIGGLE, deepTools, megadepth, WiggleTools, featureCounts, cooltools, hictk, HiCExplorer, bedtools) — accuracy against an independent reference or a planted truth, time, and perturbation (stability) tests. The `hic_loops` part runs genomeblocks' Mustache and HiCCUPS ports next to Mustache 1.3.3 and Juicer on the simulated Hi-C map. `landscape/worker.R` and `landscape/worker_py.py` run the competitors in their own environments; `landscape/tools.json` is the inventory of ~270 tools (`landscape/merge_inventory.py` builds it) and `landscape/jobs.json` the ten core and ten auxiliary jobs per theme |
+| `build_landscape.py` | scores every tool dynverse-style (accuracy · scalability · stability · usability · overall) and grades each theme on the confirmed jobs (coverage × quality), draws the figure and writes `docs/benchmarks/landscape.md`; it also reads the four loop benches' synthetic runs as the `loops_*` tasks |
 | `build_site.py` | writes `docs/benchmarks/index.md` |
+
+## The landscape page
+
+`bench_landscape.py` runs one theme per call (`GB_BENCH_PARTS=intervals`) and
+can write one results file per call (`GB_BENCH_OUT=landscape_intervals`), so
+the themes can run as separate cluster jobs; `landscape/merge_results.py`
+folds them back into `results/landscape.json`, and `build_landscape.py` makes
+the page and the figure. The competitors run from their own environments (the
+page's *Reproduce* section lists every variable): an R with the Bioconductor
+packages, a Python with the interval / expression tools plus BEDOPS,
+`bigWigAverageOverBed` and a `giggle` binary in its `bin/`, a `bin/` of CLI
+tools, a Hi-C environment, and Mustache / Juicer for `hic_loops`.
 
 ## Design studies (historical)
 

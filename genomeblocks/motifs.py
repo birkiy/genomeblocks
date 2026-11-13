@@ -4,7 +4,7 @@ Scanning reads each locus window (centre ± ``r``) from a FASTA (path, dict or
 open pyfaidx / pysam / Biopython handle — the fasta backend) and scores a
 motif library (JASPAR / TRANSFAC / uniprobe / MEME file, Biopython motifs, or
 plain matrices — see :func:`~genomeblocks.load_motifs`) with the motifs
-backend: MOODS by default (lightmotif when only it is installed), Biopython on request, all scoring
+backend: lightmotif by default (MOODS when only it is installed, as in the bioconda package), Biopython on request, all scoring
 the same log-odds matrices so they report the same hits.
 
 Results line up with the loci: row ``i`` of a matrix or cube is locus ``i``.
@@ -137,7 +137,7 @@ def scan_motifs_matrix(loci, fasta, motifs, *, format: str = "jaspar", r: int = 
         norm: divide counts by motif width.
         both_strands: also count reverse-strand matches.
         workers: processes over motifs (None = half the cores; small jobs stay serial).
-        backend: 'moods' (default), 'lightmotif' or 'biopython' — the same hits.
+        backend: 'lightmotif' (default when installed), 'moods' or 'biopython' — the same hits.
     """
     import pandas as pd
     lib = load_motifs(motifs, format=format)

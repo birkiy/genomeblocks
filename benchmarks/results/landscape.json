@@ -1,0 +1,6568 @@
+{
+ "bench": "landscape",
+ "env": {
+  "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+  "cores": 64,
+  "mem_gb": 811.27890944,
+  "python": "3.12.12",
+  "platform": "Linux-5.15.0-198-generic-x86_64-with-glibc2.35",
+  "versions": {
+   "genomeblocks": "2.0.1",
+   "numpy": "2.3.4",
+   "scipy": "1.16.3",
+   "pandas": "2.3.3",
+   "polars": "1.44.2",
+   "pyarrow": "21.0.0",
+   "narwhals": "2.10.2",
+   "pybigtools": "0.2.5",
+   "pyBigWig": "0.3.24",
+   "cgranges": "installed",
+   "ncls": "installed",
+   "pyranges": "0.1.4",
+   "bioframe": "0.8.0",
+   "pybedtools": "0.12.0",
+   "lightmotif": "0.10.0",
+   "Bio": "1.86",
+   "MOODS": "installed",
+   "graph_tool": "2.98 (commit c96a6bf3, )",
+   "igraph": "0.11.9",
+   "networkx": "3.6.1",
+   "bedtools": "v2.31.1"
+  }
+ },
+ "meta": {
+  "sizes": [
+   10000,
+   100000,
+   1000000
+  ],
+  "rscript": null,
+  "python": null,
+  "giggle": null,
+  "homer": "notebook_cn1/bin",
+  "envs": {
+   "annotation": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.278012416,
+    "python": "3.12.12"
+   },
+   "cooccupancy": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.278000128,
+    "python": "3.12.12"
+   },
+   "expression": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.277991936,
+    "python": "3.12.12"
+   },
+   "graph": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.278000128,
+    "python": "3.12.12"
+   },
+   "intervals": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.278012416,
+    "python": "3.12.12"
+   },
+   "motifs": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.277991936,
+    "python": "3.12.12"
+   },
+   "signal": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.277991936,
+    "python": "3.12.12"
+   },
+   "stability": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 743.632314368,
+    "python": "3.12.12"
+   },
+   "hic": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 743.63230208,
+    "python": "3.12.12"
+   },
+   "hic_loops": {
+    "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "cores": 64,
+    "mem_gb": 811.27798784,
+    "python": "3.12.12"
+   }
+  }
+ },
+ "rows": [
+  {
+   "part": "graph",
+   "task": "read_bedpe",
+   "engine": "genomeblocks Pairs.make",
+   "n": 50000,
+   "seconds": 0.025869179517030716,
+   "runs": [
+    0.02834957093000412,
+    0.02577594667673111,
+    0.025869179517030716
+   ],
+   "accuracy": null
+  },
+  {
+   "part": "graph",
+   "task": "loop_overlap_either",
+   "engine": "bedtools pairtobed (CLI)",
+   "n": 50000,
+   "seconds": 0.5647073686122894,
+   "runs": [
+    0.5931183807551861,
+    0.5528271161019802,
+    0.5647073686122894
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 42500
+  },
+  {
+   "part": "graph",
+   "task": "loop_overlap_either",
+   "engine": "genomeblocks Pairs.overlapping",
+   "n": 50000,
+   "seconds": 0.023126527667045593,
+   "runs": [
+    0.023126527667045593,
+    0.022802606225013733,
+    0.023213159292936325
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (42,500)",
+   "n_out": 42500
+  },
+  {
+   "part": "graph",
+   "task": "loop_overlap_both",
+   "engine": "bedtools pairtobed (CLI)",
+   "n": 50000,
+   "seconds": 0.5394331589341164,
+   "runs": [
+    0.5234174989163876,
+    0.5488266125321388,
+    0.5394331589341164
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 19717
+  },
+  {
+   "part": "graph",
+   "task": "loop_overlap_both",
+   "engine": "genomeblocks Pairs.overlapping",
+   "n": 50000,
+   "seconds": 0.023620713502168655,
+   "runs": [
+    0.023620713502168655,
+    0.023750904947519302,
+    0.02351686730980873
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (19,717)",
+   "n_out": 19717
+  },
+  {
+   "part": "graph",
+   "task": "components",
+   "engine": "genomeblocks (graph-tool)",
+   "n": 114367,
+   "seconds": 0.01608748733997345,
+   "runs": [
+    0.016652505844831467,
+    0.015867270529270172,
+    0.01608748733997345
+   ],
+   "accuracy": 1.0,
+   "detail": "reference: 6,638 components"
+  },
+  {
+   "part": "graph",
+   "task": "pagerank",
+   "engine": "genomeblocks (graph-tool)",
+   "n": 114367,
+   "seconds": 0.1079781986773014,
+   "runs": [
+    0.10259851813316345,
+    0.1079781986773014,
+    0.10821578279137611
+   ],
+   "accuracy": 1.0,
+   "detail": "reference"
+  },
+  {
+   "part": "graph",
+   "task": "read_bedpe",
+   "engine": "GenomicInteractions::makeGenomicInteractionsFromFile",
+   "n": 50000,
+   "seconds": 0.233000000000001,
+   "runs": [
+    0.321999999999999,
+    0.233000000000001,
+    0.225999999999999
+   ],
+   "n_out": 50000,
+   "accuracy": null,
+   "detail": ""
+  },
+  {
+   "part": "graph",
+   "task": "loop_overlap_either",
+   "engine": "InteractionSet::overlapsAny (either anchor)",
+   "n": 50000,
+   "seconds": 0.0449999999999982,
+   "runs": [
+    0.0509999999999984,
+    0.0449999999999982,
+    0.0440000000000005
+   ],
+   "n_out": 42500,
+   "accuracy": 1.0,
+   "detail": "identical (42,500)"
+  },
+  {
+   "part": "graph",
+   "task": "loop_overlap_both",
+   "engine": "InteractionSet::overlapsAny (both anchors)",
+   "n": 50000,
+   "seconds": 0.0860000000000021,
+   "runs": [
+    0.0890000000000022,
+    0.0859999999999985,
+    0.0860000000000021
+   ],
+   "n_out": 19717,
+   "accuracy": 1.0,
+   "detail": "identical (19,717)"
+  },
+  {
+   "part": "graph",
+   "task": "build_graph",
+   "engine": "igraph (R)",
+   "n": 50000,
+   "seconds": 0.186999999999998,
+   "runs": [
+    0.190999999999999,
+    0.186999999999998,
+    0.186999999999998
+   ],
+   "n_out": 114367,
+   "accuracy": null,
+   "detail": ""
+  },
+  {
+   "part": "graph",
+   "task": "components",
+   "engine": "igraph (R)",
+   "n": 50000,
+   "seconds": 0.0190000000000055,
+   "runs": [
+    0.0210000000000008,
+    0.0190000000000055,
+    0.0190000000000055
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "6,638 components of 2+ vertices"
+  },
+  {
+   "part": "graph",
+   "task": "pagerank",
+   "engine": "igraph (R)",
+   "n": 50000,
+   "seconds": 0.159999999999997,
+   "runs": [
+    0.159999999999997,
+    0.156999999999996,
+    0.167999999999999
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 3.24e-14"
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "genomeblocks",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "genomeblocks",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "genomeblocks",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "bedtools (CLI)",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "bedtools (CLI)",
+   "variant": "shuffled",
+   "stable": false,
+   "error": "notebook_cn1/bin/bedtools: Error: Sorted input specified, but the file data/landscape_work/stability/stability/A_shuffled.b"
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "bedtools (CLI)",
+   "variant": "shuffled",
+   "stable": false,
+   "error": "notebook_cn1/bin/bedtools: ERROR: Sort order was unspecified, and file data/landscape_work/stability/stability/B_shuffled.b"
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "GenomicRanges",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "GenomicRanges",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "GenomicRanges",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "plyranges",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "plyranges",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "plyranges",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "valr",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "valr",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "valr",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "data.table::foverlaps",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "pyranges 1.5.0",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "pyranges 1.5.0",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "pyranges 1.5.0",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "polars-bio 0.36.2",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "polars-bio 0.36.2",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "polars-bio 0.36.2",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "superintervals 1.0.3",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "AIList (ailist) 2.2.2",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "BEDOPS (CLI)",
+   "variant": "shuffled",
+   "stable": false,
+   "error": "No columns to parse from file"
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "BEDOPS (CLI)",
+   "variant": "shuffled",
+   "stable": false
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "genomeblocks",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "genomeblocks",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "genomeblocks",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "bedtools (CLI)",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "bedtools (CLI)",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "bedtools (CLI)",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "GenomicRanges",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "GenomicRanges",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "GenomicRanges",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "plyranges",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "plyranges",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "plyranges",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "valr",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "valr",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "valr",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "data.table::foverlaps",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "pyranges 1.5.0",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "pyranges 1.5.0",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "pyranges 1.5.0",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "polars-bio 0.36.2",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "polars-bio 0.36.2",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "polars-bio 0.36.2",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "nearest",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "superintervals 1.0.3",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "AIList (ailist) 2.2.2",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "intersect",
+   "engine": "BEDOPS (CLI)",
+   "variant": "chrom-order",
+   "stable": false
+  },
+  {
+   "part": "stability",
+   "theme": "intervals",
+   "task": "merge",
+   "engine": "BEDOPS (CLI)",
+   "variant": "chrom-order",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "signal",
+   "task": "region_matrix",
+   "engine": "genomeblocks",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "signal",
+   "task": "region_matrix",
+   "engine": "rtracklayer + EnrichedHeatmap::normalizeToMatrix",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "signal",
+   "task": "region_matrix",
+   "engine": "genomation::ScoreMatrixBin",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "annotation",
+   "task": "labels",
+   "engine": "genomeblocks",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "annotation",
+   "task": "nearest_tss",
+   "engine": "genomeblocks",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "annotation",
+   "task": "labels",
+   "engine": "GenomicFeatures DIY labels (gene-level TSS)",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "annotation",
+   "task": "labels",
+   "engine": "GenomicFeatures DIY labels (transcript-level TSS)",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "annotation",
+   "task": "nearest_tss",
+   "engine": "GenomicRanges distanceToNearest (gene-level TSS windows)",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "annotation",
+   "task": "nearest_tss",
+   "engine": "GenomicRanges distanceToNearest (transcript-level TSS windows)",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "annotation",
+   "task": "labels",
+   "engine": "ChIPseeker annotatePeak",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "annotation",
+   "task": "nearest_tss",
+   "engine": "ChIPpeakAnno annotatePeakInBatch",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "graph",
+   "task": "loop_overlap_either",
+   "engine": "genomeblocks",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "graph",
+   "task": "loop_overlap_both",
+   "engine": "genomeblocks",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "graph",
+   "task": "components",
+   "engine": "genomeblocks",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "graph",
+   "task": "loop_overlap_either",
+   "engine": "bedtools pairtobed (CLI)",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "graph",
+   "task": "loop_overlap_both",
+   "engine": "bedtools pairtobed (CLI)",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "graph",
+   "task": "loop_overlap_either",
+   "engine": "InteractionSet::overlapsAny (either anchor)",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "graph",
+   "task": "loop_overlap_both",
+   "engine": "InteractionSet::overlapsAny (both anchors)",
+   "variant": "shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "expression",
+   "task": "tmm",
+   "engine": "genomeblocks",
+   "variant": "samples shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "expression",
+   "task": "size_factors",
+   "engine": "genomeblocks",
+   "variant": "samples shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "expression",
+   "task": "tmm",
+   "engine": "rnanorm 2.2.0",
+   "variant": "genes shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "expression",
+   "task": "size_factors",
+   "engine": "pydeseq2 0.5.4",
+   "variant": "genes shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "expression",
+   "task": "tmm",
+   "engine": "rnanorm 2.2.0",
+   "variant": "samples shuffled",
+   "stable": true
+  },
+  {
+   "part": "stability",
+   "theme": "expression",
+   "task": "size_factors",
+   "engine": "pydeseq2 0.5.4",
+   "variant": "samples shuffled",
+   "stable": true
+  },
+  {
+   "part": "annotation",
+   "task": "parse_gtf",
+   "engine": "genomeblocks Genes.make",
+   "n": 876947,
+   "seconds": 1.043673936277628,
+   "runs": [
+    1.043673936277628,
+    1.118405744433403,
+    0.9847087599337101
+   ],
+   "accuracy": null,
+   "n_out": 70028
+  },
+  {
+   "part": "annotation",
+   "task": "nearest_tss",
+   "engine": "bedtools closest (gene-level TSS windows, CLI)",
+   "n": 100000,
+   "seconds": 0.1447530947625637,
+   "runs": [
+    0.14120423793792725,
+    0.1447530947625637,
+    0.1571369171142578
+   ],
+   "accuracy": 1.0,
+   "detail": "reference (20,000 windows)"
+  },
+  {
+   "part": "annotation",
+   "task": "nearest_tss",
+   "engine": "bedtools closest (transcript-level TSS windows, CLI)",
+   "n": 100000,
+   "seconds": 0.20794693008065224,
+   "runs": [
+    0.20794693008065224,
+    0.1790640950202942,
+    0.3450556732714176
+   ],
+   "accuracy": 1.0,
+   "detail": "reference (70,028 windows)"
+  },
+  {
+   "part": "annotation",
+   "task": "nearest_tss",
+   "engine": "genomeblocks nearest_tss",
+   "n": 100000,
+   "seconds": 0.02504327893257141,
+   "runs": [
+    0.02528376132249832,
+    0.024882014840841293,
+    0.02504327893257141
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows agree with bedtools closest (gene-level TSS)"
+  },
+  {
+   "part": "annotation",
+   "task": "labels",
+   "engine": "genomeblocks labels",
+   "n": 100000,
+   "seconds": 0.15194451436400414,
+   "runs": [
+    0.1523813009262085,
+    0.1511591635644436,
+    0.15194451436400414
+   ],
+   "accuracy": 0.99845,
+   "detail": "99,845/100,000 rows: same class as GenomicFeatures (gene-level TSS windows, same precedence)"
+  },
+  {
+   "part": "annotation",
+   "task": "parse_gtf",
+   "engine": "txdbmaker::makeTxDbFromGFF",
+   "n": 100000,
+   "seconds": 15.515,
+   "runs": 15.515,
+   "n_out": 69920,
+   "accuracy": null,
+   "detail": ""
+  },
+  {
+   "part": "annotation",
+   "task": "parse_gtf",
+   "engine": "rtracklayer::import",
+   "n": 100000,
+   "seconds": 3.627,
+   "runs": 3.627,
+   "n_out": 876946,
+   "accuracy": null,
+   "detail": ""
+  },
+  {
+   "part": "annotation",
+   "task": "labels",
+   "engine": "GenomicFeatures DIY labels (gene-level TSS)",
+   "n": 100000,
+   "seconds": 0.146000000000001,
+   "runs": [
+    0.147000000000006,
+    0.143999999999991,
+    0.146000000000001
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "reference for the classes (gene-level TSS windows)"
+  },
+  {
+   "part": "annotation",
+   "task": "labels",
+   "engine": "GenomicFeatures DIY labels (transcript-level TSS)",
+   "n": 100000,
+   "seconds": 0.140000000000001,
+   "runs": [
+    0.143000000000001,
+    0.140000000000001,
+    0.13900000000001
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "reference for the classes (transcript-level TSS windows)"
+  },
+  {
+   "part": "annotation",
+   "task": "nearest_tss",
+   "engine": "GenomicRanges distanceToNearest (gene-level TSS windows)",
+   "n": 100000,
+   "seconds": 0.689999999999998,
+   "runs": [
+    0.704999999999998,
+    0.687000000000012,
+    0.689999999999998
+   ],
+   "n_out": 100000,
+   "accuracy": 0.99943,
+   "detail": "99,943/100,000 rows agree (gene-level)"
+  },
+  {
+   "part": "annotation",
+   "task": "nearest_tss",
+   "engine": "GenomicRanges distanceToNearest (transcript-level TSS windows)",
+   "n": 100000,
+   "seconds": 0.661000000000001,
+   "runs": [
+    0.661000000000001,
+    0.655000000000001,
+    0.671000000000006
+   ],
+   "n_out": 100000,
+   "accuracy": 0.99896,
+   "detail": "99,896/100,000 rows agree (transcript-level)"
+  },
+  {
+   "part": "annotation",
+   "task": "nearest_tss",
+   "engine": "ChIPseeker annotatePeak",
+   "n": 100000,
+   "seconds": 3.322,
+   "runs": 3.322,
+   "accuracy": 0.99896,
+   "detail": "99,896/100,000 rows: same distance to the nearest TSS window (transcript-level)"
+  },
+  {
+   "part": "annotation",
+   "task": "labels",
+   "engine": "ChIPseeker annotatePeak",
+   "n": 100000,
+   "seconds": 3.322,
+   "runs": 3.322,
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows: same class as GenomicFeatures (transcript-level TSS windows)"
+  },
+  {
+   "part": "annotation",
+   "task": "nearest_tss",
+   "engine": "ChIPpeakAnno annotatePeakInBatch",
+   "n": 100000,
+   "seconds": 9.60299999999999,
+   "runs": 9.60299999999999,
+   "n_out": 100018,
+   "accuracy": 0.9989601871663101,
+   "detail": "99,914/100,018 rows: same distance to the nearest TSS window (transcript-level)"
+  },
+  {
+   "part": "annotation",
+   "task": "labels",
+   "engine": "HOMER annotatePeaks.pl -gtf (CLI)",
+   "n": 100000,
+   "seconds": 89.15248466283083,
+   "runs": [
+    89.15248466283083
+   ],
+   "accuracy": 0.92082,
+   "detail": "92,082/100,000 rows: same class as GenomicFeatures (transcript-level; HOMER's promoter is -1 kb..+100 bp)"
+  },
+  {
+   "part": "annotation",
+   "task": "nearest_tss",
+   "engine": "HOMER annotatePeaks.pl -gtf (CLI)",
+   "n": 100000,
+   "seconds": 89.15248466283083,
+   "runs": [
+    89.15248466283083
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows: same distance to the nearest TSS window (transcript-level)"
+  },
+  {
+   "part": "annotation",
+   "task": "nearest_tss",
+   "engine": "UROPA (CLI)",
+   "n": 100000,
+   "seconds": 260.90229975804687,
+   "runs": [
+    260.90229975804687
+   ],
+   "accuracy": 0.99999,
+   "detail": "99,999/100,000 rows: same distance to the nearest TSS window (transcript-level)"
+  },
+  {
+   "part": "annotation",
+   "task": "genes_in_window",
+   "engine": "bedtools window -w 50 kb (CLI)",
+   "n": 100000,
+   "seconds": 0.33441441878676414,
+   "runs": [
+    0.3315218463540077,
+    0.33441441878676414,
+    0.3357365131378174
+   ],
+   "accuracy": 1.0,
+   "detail": "reference (66,501 peak-gene pairs)"
+  },
+  {
+   "part": "annotation",
+   "task": "genes_in_window",
+   "engine": "pyranges 0.1.4 join (slack)",
+   "n": 100000,
+   "seconds": 0.254494059830904,
+   "runs": [
+    0.25574494525790215,
+    0.254494059830904,
+    0.25233711302280426
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (66,501)"
+  },
+  {
+   "part": "annotation",
+   "task": "genes_in_window",
+   "engine": "GenomicRanges findOverlaps (maxgap)",
+   "n": 100000,
+   "seconds": 0.0390000000000006,
+   "runs": [
+    0.0519999999999996,
+    0.0390000000000006,
+    0.0379999999999994
+   ],
+   "n_out": 66501,
+   "accuracy": 1.0,
+   "detail": "identical (66,501)"
+  },
+  {
+   "part": "annotation",
+   "task": "genes_in_window",
+   "engine": "plyranges join_overlap_inner (maxgap)",
+   "n": 100000,
+   "seconds": 0.0590000000000011,
+   "runs": [
+    0.0650000000000013,
+    0.0590000000000011,
+    0.0589999999999993
+   ],
+   "n_out": 66501,
+   "accuracy": 1.0,
+   "detail": "identical (66,501)"
+  },
+  {
+   "part": "annotation",
+   "task": "genes_in_window",
+   "engine": "valr bed_window (both)",
+   "n": 100000,
+   "seconds": 0.070999999999998,
+   "runs": [
+    0.0760000000000005,
+    0.0700000000000003,
+    0.070999999999998
+   ],
+   "n_out": 66500,
+   "accuracy": 0.9998947431733429,
+   "detail": "differs: 66,500 vs 66,501 (Jaccard 0.9999)"
+  },
+  {
+   "part": "annotation",
+   "task": "genes_in_window",
+   "engine": "ChIPpeakAnno annotatePeakInBatch (overlapping, maxgap)",
+   "n": 100000,
+   "seconds": 8.281,
+   "runs": 8.281,
+   "n_out": 66501,
+   "accuracy": 1.0,
+   "detail": "identical (66,501)"
+  },
+  {
+   "part": "annotation",
+   "task": "genes_in_window",
+   "engine": "pyranges 1.5.0 join_overlaps (slack)",
+   "n": 100000,
+   "seconds": 0.12399671599268913,
+   "runs": [
+    0.12359533831477165,
+    0.12643380090594292,
+    0.12399671599268913
+   ],
+   "n_out": 66501,
+   "accuracy": 1.0,
+   "detail": "identical (66,501)"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "enrichment_search",
+   "engine": "exact interval Fisher (reference)",
+   "n": 500,
+   "seconds": null,
+   "runs": null,
+   "accuracy": 1.0,
+   "detail": "Spearman with the designed truth 0.6525"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "index_collection",
+   "engine": "genomeblocks Atlas.make (1 kb bins, 4 workers)",
+   "n": 500,
+   "seconds": 4.106739319860935,
+   "runs": [
+    4.106739319860935
+   ],
+   "accuracy": null
+  },
+  {
+   "part": "cooccupancy",
+   "task": "enrichment_search",
+   "engine": "genomeblocks Atlas.search",
+   "n": 500,
+   "seconds": 0.014990512281656265,
+   "runs": [
+    0.014998503029346466,
+    0.014971859753131866,
+    0.014990512281656265
+   ],
+   "accuracy": 0.9049311944574304,
+   "detail": "Spearman 0.9049 vs exact Fisher; vs designed truth 0.8575"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "index_collection",
+   "engine": "LOLA::loadRegionDB (500 tracks)",
+   "n": 500,
+   "seconds": 136.57,
+   "runs": 136.57,
+   "n_out": 500,
+   "accuracy": null,
+   "detail": ""
+  },
+  {
+   "part": "cooccupancy",
+   "task": "enrichment_search",
+   "engine": "LOLA::runLOLA (1 kb-tile universe)",
+   "n": 500,
+   "seconds": 19.274,
+   "runs": 19.274,
+   "n_out": 500,
+   "accuracy": 0.9736713372207679,
+   "detail": "Spearman 0.9737 vs exact Fisher; vs designed truth 0.7126"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "permutation_null",
+   "engine": "regioneR::overlapPermTest (100 perms, per track)",
+   "n": 500,
+   "seconds": 690.173,
+   "runs": 690.173,
+   "n_out": 10,
+   "accuracy": 0.9567172612055053,
+   "detail": "Spearman 0.9567 over 10 tracks"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "index_collection",
+   "engine": "GIGGLE index (CLI)",
+   "n": 500,
+   "seconds": 33.29963168874383,
+   "runs": [
+    33.29963168874383
+   ],
+   "accuracy": null
+  },
+  {
+   "part": "cooccupancy",
+   "task": "enrichment_search",
+   "engine": "GIGGLE search -s (CLI)",
+   "n": 500,
+   "seconds": 1.6411385610699654,
+   "runs": [
+    1.6811741031706333,
+    1.6137909144163132,
+    1.6411385610699654
+   ],
+   "accuracy": 0.8772581553714518,
+   "detail": "Spearman 0.8773 vs exact Fisher; vs designed truth 0.8705"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "enrichment_search",
+   "engine": "bedtools fisher \u00d7500 (CLI)",
+   "n": 500,
+   "seconds": 25.566232353448868,
+   "runs": [
+    25.566232353448868
+   ],
+   "accuracy": 0.9960736317535565,
+   "detail": "Spearman 0.9961 vs exact Fisher; vs designed truth 0.6466"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "universe_enrichment",
+   "engine": "exact Fisher in universe regions (reference)",
+   "n": 500,
+   "seconds": null,
+   "runs": null,
+   "accuracy": 1.0,
+   "detail": "25,022 of 300,000 universe regions in the query"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "universe_enrichment",
+   "engine": "genomeblocks Atlas.bootstrap (pool = universe, 100 draws)",
+   "n": 500,
+   "seconds": 1.5230665877461433,
+   "runs": [
+    1.5230665877461433
+   ],
+   "accuracy": 0.0,
+   "detail": "Spearman -0.4141 vs the exact universe Fisher test"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "universe_enrichment",
+   "engine": "LOLA::runLOLA (userUniverse)",
+   "n": 500,
+   "seconds": 12.273,
+   "runs": 12.273,
+   "n_out": 500,
+   "accuracy": 1.0,
+   "detail": "Spearman 1.0000 over 500 tracks vs the exact universe Fisher test"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "universe_enrichment",
+   "engine": "regioneR::permTest (resampleRegions in the universe, 100 perms, per track)",
+   "n": 500,
+   "seconds": 31.767,
+   "runs": 31.767,
+   "n_out": 10,
+   "accuracy": 0.9999999999999999,
+   "detail": "Spearman 1.0000 over 10 tracks vs the exact universe Fisher test"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "pairwise_cooccurrence",
+   "engine": "bedtools jaccard x 190 pairs (CLI)",
+   "n": 20,
+   "seconds": 5.318867560476065,
+   "runs": [
+    5.318867560476065
+   ],
+   "accuracy": 0.9999999999971442,
+   "detail": "Pearson 1.00000, max |\u0394| 4.77e-08"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "pairwise_cooccurrence",
+   "engine": "intervene pairwise --compute jaccard (CLI)",
+   "n": 20,
+   "seconds": null,
+   "runs": null,
+   "accuracy": null,
+   "error": "RuntimeError: intervene: ImportError: cannot import name 'Iterable' from 'collections' (gb_bench_cli/lib/python3.11/collections/__init__.py)"
+  },
+  {
+   "part": "cooccupancy",
+   "task": "pairwise_cooccurrence",
+   "engine": "valr bed_jaccard x 190 pairs",
+   "n": 20,
+   "seconds": 5.578,
+   "runs": 5.578,
+   "n_out": 20,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 9.37e-17"
+  },
+  {
+   "part": "expression",
+   "task": "tx_to_gene",
+   "engine": "genomeblocks Expression.make + to_genes (length_scaled_tpm)",
+   "n": 60000,
+   "n_samples": 24,
+   "seconds": 3.911866143345833,
+   "runs": [
+    3.911866143345833,
+    3.97284983843565,
+    3.859463345259428
+   ],
+   "accuracy": 1.0,
+   "detail": "reference (equals R tximport to 1e-9, see the Expression bench)"
+  },
+  {
+   "part": "expression",
+   "task": "tmm",
+   "engine": "genomeblocks Expression.tmm",
+   "n": 60000,
+   "n_samples": 24,
+   "seconds": 0.5304084159433842,
+   "runs": [
+    0.5389913655817509,
+    0.5243595018982887,
+    0.5304084159433842
+   ],
+   "accuracy": 1.0,
+   "detail": "reference (equals edgeR calcNormFactors to 4e-16, see the Expression bench)"
+  },
+  {
+   "part": "expression",
+   "task": "size_factors",
+   "engine": "genomeblocks Expression.size_factors",
+   "n": 60000,
+   "n_samples": 24,
+   "seconds": 0.07180958986282349,
+   "runs": [
+    0.07180958986282349,
+    0.06944647431373596,
+    0.07228508591651917
+   ],
+   "accuracy": 1.0,
+   "detail": "reference (equals DESeq2 estimateSizeFactors, see the Expression bench)"
+  },
+  {
+   "part": "expression",
+   "task": "cpm",
+   "engine": "genomeblocks Expression.cpm",
+   "n": 60000,
+   "n_samples": 24,
+   "seconds": 0.010597717016935349,
+   "runs": [
+    0.010685350745916367,
+    0.009838953614234924,
+    0.010597717016935349
+   ],
+   "accuracy": 1.0,
+   "detail": "reference"
+  },
+  {
+   "part": "expression",
+   "task": "tmm",
+   "engine": "rnanorm 2.2.0",
+   "n": 60000,
+   "seconds": 2.2979659996926785,
+   "runs": [
+    2.2979659996926785,
+    2.297809135168791,
+    2.3018593676388264
+   ],
+   "n_out": 24,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 4.44e-16",
+   "n_samples": 24
+  },
+  {
+   "part": "expression",
+   "task": "cpm",
+   "engine": "rnanorm 2.2.0",
+   "n": 60000,
+   "seconds": 2.853373922407627,
+   "runs": [
+    2.853373922407627,
+    2.8596829064190388,
+    2.8501158207654953
+   ],
+   "n_out": 60000,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 1.75e-10",
+   "n_samples": 24
+  },
+  {
+   "part": "expression",
+   "task": "size_factors",
+   "engine": "pydeseq2 0.5.4",
+   "n": 60000,
+   "seconds": 0.054852236062288284,
+   "runs": [
+    0.054852236062288284,
+    0.054815031588077545,
+    0.05575460568070412
+   ],
+   "n_out": 24,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 1.33e-15",
+   "n_samples": 24
+  },
+  {
+   "part": "expression",
+   "task": "tx_to_gene",
+   "engine": "pytximport 0.13.0",
+   "n": 60000,
+   "seconds": 7.714325957000256,
+   "runs": [
+    7.714325957000256
+   ],
+   "n_out": 60000,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 9.02e-10",
+   "n_samples": 24
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "DESeq2",
+   "n": 20000,
+   "seconds": 11.741,
+   "runs": 11.741,
+   "n_out": 20000,
+   "accuracy": 0.9728465675573497,
+   "detail": "AUROC 0.9728 against the simulated DE genes; at BH 5 %: 1,801 called, 92.6% true, 84.9% of the true DE genes found",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "dispersion",
+   "engine": "DESeq2",
+   "n": 20000,
+   "seconds": 5.113,
+   "runs": 5.113,
+   "n_out": 20000,
+   "accuracy": 0.8561297424425615,
+   "detail": "Spearman 0.8561 with the simulated dispersions (19,997 genes)",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "lfc_shrinkage",
+   "engine": "DESeq2 lfcShrink (apeglm)",
+   "n": 20000,
+   "seconds": 8.55,
+   "runs": 8.55,
+   "n_out": 20000,
+   "accuracy": 0.8896906371404095,
+   "detail": "Pearson 0.8897 with the simulated log2 FC; RMSE 0.229",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "lfc_shrinkage",
+   "engine": "DESeq2 lfcShrink (ashr)",
+   "n": 20000,
+   "seconds": 1.541,
+   "runs": 1.541,
+   "n_out": 20000,
+   "accuracy": 0.9328248444105605,
+   "detail": "Pearson 0.9328 with the simulated log2 FC; RMSE 0.175",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "lfc_shrinkage",
+   "engine": "DESeq2 lfcShrink (normal)",
+   "n": 20000,
+   "seconds": 6.482,
+   "runs": 6.482,
+   "n_out": 20000,
+   "accuracy": 0.8497798907183676,
+   "detail": "Pearson 0.8498 with the simulated log2 FC; RMSE 0.266",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "vst",
+   "engine": "DESeq2 vst",
+   "n": 20000,
+   "seconds": 0.913000000000011,
+   "runs": 0.913000000000011,
+   "n_out": 20000,
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "edgeR QL",
+   "n": 20000,
+   "seconds": 6.88800000000001,
+   "runs": 6.88800000000001,
+   "n_out": 20000,
+   "accuracy": 0.9775471968486652,
+   "detail": "AUROC 0.9775 against the simulated DE genes; at BH 5 %: 1,733 called, 95.1% true, 83.9% of the true DE genes found",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "dispersion",
+   "engine": "edgeR estimateDisp",
+   "n": 20000,
+   "seconds": 5.71499999999999,
+   "runs": 5.71499999999999,
+   "n_out": 20000,
+   "accuracy": 0.8537259036510547,
+   "detail": "Spearman 0.8537 with the simulated dispersions (20,000 genes)",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "limma-voom",
+   "n": 20000,
+   "seconds": 1.848,
+   "runs": 1.848,
+   "n_out": 20000,
+   "accuracy": 0.9716399685354342,
+   "detail": "AUROC 0.9716 against the simulated DE genes; at BH 5 %: 1,638 called, 96.4% true, 80.4% of the true DE genes found",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "batch_correction",
+   "engine": "sva ComBat_seq",
+   "n": 20000,
+   "seconds": 5.44000000000001,
+   "runs": 5.44000000000001,
+   "n_out": 20000,
+   "accuracy": 0.8564046343807455,
+   "detail": "batch removed 0.861 (residual batch effect vs the simulated one: r 0.122, 0.879 before) x group effect kept 0.995 (r with the simulated log2 FC 0.867, 0.871 before)",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "batch_correction",
+   "engine": "limma removeBatchEffect",
+   "n": 20000,
+   "seconds": 0.302999999999997,
+   "runs": 0.302999999999997,
+   "n_out": 20000,
+   "accuracy": 0.9594760216916633,
+   "detail": "batch removed 0.964 (residual batch effect vs the simulated one: r 0.032, 0.879 before) x group effect kept 0.995 (r with the simulated log2 FC 0.867, 0.871 before)",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "PyDESeq2 0.5.4",
+   "n": 20000,
+   "seconds": 81.21561068668962,
+   "runs": [
+    81.21561068668962
+   ],
+   "n_out": 20000,
+   "accuracy": 0.97281808300123,
+   "detail": "AUROC 0.9728 against the simulated DE genes; at BH 5 %: 1,802 called, 92.6% true, 84.9% of the true DE genes found",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "dispersion",
+   "engine": "PyDESeq2 0.5.4",
+   "n": 20000,
+   "seconds": 62.8900129981339,
+   "runs": [
+    62.8900129981339
+   ],
+   "n_out": 20000,
+   "accuracy": 0.8561171626933818,
+   "detail": "Spearman 0.8561 with the simulated dispersions (19,997 genes)",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "lfc_shrinkage",
+   "engine": "PyDESeq2 0.5.4",
+   "n": 20000,
+   "seconds": 10.792671713978052,
+   "runs": [
+    10.792671713978052
+   ],
+   "n_out": 20000,
+   "accuracy": 0.889678829723388,
+   "detail": "Pearson 0.8897 with the simulated log2 FC; RMSE 0.229",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "vst",
+   "engine": "PyDESeq2 0.5.4",
+   "n": 20000,
+   "seconds": 37.32915636152029,
+   "runs": [
+    37.32915636152029
+   ],
+   "n_out": 20000,
+   "accuracy": 0.999995040043148,
+   "detail": "Pearson 1.00000, max |\u0394| 0.0619",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "InMoose 0.9.1 deseq2",
+   "n": 20000,
+   "seconds": 3.4090996235609055,
+   "runs": [
+    3.4090996235609055
+   ],
+   "n_out": 20000,
+   "accuracy": 0.9728465675573497,
+   "detail": "AUROC 0.9728 against the simulated DE genes; at BH 5 %: 1,801 called, 92.6% true, 84.9% of the true DE genes found",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "dispersion",
+   "engine": "InMoose 0.9.1 deseq2",
+   "n": 20000,
+   "seconds": 2.5858079940080643,
+   "runs": [
+    2.5858079940080643
+   ],
+   "n_out": 20000,
+   "accuracy": 0.8561298163253038,
+   "detail": "Spearman 0.8561 with the simulated dispersions (19,997 genes)",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "vst",
+   "engine": "InMoose 0.9.1 deseq2",
+   "n": 20000,
+   "seconds": 1.3077084943652153,
+   "runs": [
+    1.3077084943652153
+   ],
+   "n_out": 20000,
+   "accuracy": 0.9999946257532208,
+   "detail": "Pearson 0.99999, max |\u0394| 0.0644",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "InMoose 0.9.1 edgepy",
+   "n": 20000,
+   "seconds": 322.75399785116315,
+   "runs": [
+    322.75399785116315
+   ],
+   "n_out": 20000,
+   "accuracy": 0.9717856660519197,
+   "detail": "AUROC 0.9718 against the simulated DE genes; at BH 5 %: 1,721 called, 93.7% true, 82.1% of the true DE genes found",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "batch_correction",
+   "engine": "InMoose 0.9.1 pycombat_seq",
+   "n": 20000,
+   "seconds": 44.37996155396104,
+   "runs": [
+    44.37996155396104
+   ],
+   "n_out": 20000,
+   "accuracy": 0.8564067721951332,
+   "detail": "batch removed 0.861 (residual batch effect vs the simulated one: r 0.122, 0.879 before) x group effect kept 0.995 (r with the simulated log2 FC 0.867, 0.871 before)",
+   "n_samples": 12
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "DESeq2",
+   "n": 60000,
+   "seconds": 81.129,
+   "runs": 81.129,
+   "n_out": 60000,
+   "accuracy": 0.9946367658276606,
+   "detail": "AUROC 0.9946 against the simulated DE genes; at BH 5 %: 6,016 called, 94.3% true, 96.9% of the true DE genes found",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "dispersion",
+   "engine": "DESeq2",
+   "n": 60000,
+   "seconds": 56.304,
+   "runs": 56.304,
+   "n_out": 60000,
+   "accuracy": 0.9538214566321701,
+   "detail": "Spearman 0.9538 with the simulated dispersions (60,000 genes)",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "lfc_shrinkage",
+   "engine": "DESeq2 lfcShrink (apeglm)",
+   "n": 60000,
+   "seconds": 32.736,
+   "runs": 32.736,
+   "n_out": 60000,
+   "accuracy": 0.958388427466247,
+   "detail": "Pearson 0.9584 with the simulated log2 FC; RMSE 0.141",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "lfc_shrinkage",
+   "engine": "DESeq2 lfcShrink (ashr)",
+   "n": 60000,
+   "seconds": 4.37299999999999,
+   "runs": 4.37299999999999,
+   "n_out": 60000,
+   "accuracy": 0.9843281264840179,
+   "detail": "Pearson 0.9843 with the simulated log2 FC; RMSE 0.086",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "lfc_shrinkage",
+   "engine": "DESeq2 lfcShrink (normal)",
+   "n": 60000,
+   "seconds": 24.095,
+   "runs": 24.095,
+   "n_out": 60000,
+   "accuracy": 0.9465092971111047,
+   "detail": "Pearson 0.9465 with the simulated log2 FC; RMSE 0.159",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "vst",
+   "engine": "DESeq2 vst",
+   "n": 60000,
+   "seconds": 1.92599999999999,
+   "runs": 1.92599999999999,
+   "n_out": 60000,
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "edgeR QL",
+   "n": 60000,
+   "seconds": 45.177,
+   "runs": 45.177,
+   "n_out": 60000,
+   "accuracy": 0.9960752475463023,
+   "detail": "AUROC 0.9961 against the simulated DE genes; at BH 5 %: 6,076 called, 94.0% true, 97.6% of the true DE genes found",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "dispersion",
+   "engine": "edgeR estimateDisp",
+   "n": 60000,
+   "seconds": 37.617,
+   "runs": 37.617,
+   "n_out": 60000,
+   "accuracy": 0.9537406989631504,
+   "detail": "Spearman 0.9537 with the simulated dispersions (60,000 genes)",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "limma-voom",
+   "n": 60000,
+   "seconds": 9.02199999999993,
+   "runs": 9.02199999999993,
+   "n_out": 60000,
+   "accuracy": 0.9936002064229752,
+   "detail": "AUROC 0.9936 against the simulated DE genes; at BH 5 %: 5,867 called, 95.5% true, 95.7% of the true DE genes found",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "batch_correction",
+   "engine": "sva ComBat_seq",
+   "n": 60000,
+   "seconds": 48.159,
+   "runs": 48.159,
+   "n_out": 60000,
+   "accuracy": 0.735652438919046,
+   "detail": "batch removed 0.736 (residual batch effect vs the simulated one: r 0.245, 0.929 before) x group effect kept 1.000 (r with the simulated log2 FC 0.920, 0.920 before)",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "batch_correction",
+   "engine": "limma removeBatchEffect",
+   "n": 60000,
+   "seconds": 3.51900000000001,
+   "runs": 3.51900000000001,
+   "n_out": 60000,
+   "accuracy": 1.0,
+   "detail": "batch removed 1.000 (residual batch effect vs the simulated one: r -0.051, 0.929 before) x group effect kept 1.000 (r with the simulated log2 FC 0.961, 0.920 before)",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "PyDESeq2 0.5.4",
+   "n": 60000,
+   "seconds": 368.74685480073094,
+   "runs": [
+    368.74685480073094
+   ],
+   "n_out": 60000,
+   "accuracy": 0.9946218266587986,
+   "detail": "AUROC 0.9946 against the simulated DE genes; at BH 5 %: 6,015 called, 94.4% true, 96.9% of the true DE genes found",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "dispersion",
+   "engine": "PyDESeq2 0.5.4",
+   "n": 60000,
+   "seconds": 255.0106699578464,
+   "runs": [
+    255.0106699578464
+   ],
+   "n_out": 60000,
+   "accuracy": 0.9538215677223493,
+   "detail": "Spearman 0.9538 with the simulated dispersions (60,000 genes)",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "lfc_shrinkage",
+   "engine": "PyDESeq2 0.5.4",
+   "n": 60000,
+   "seconds": 31.89761022105813,
+   "runs": [
+    31.89761022105813
+   ],
+   "n_out": 60000,
+   "accuracy": 0.9583237952177727,
+   "detail": "Pearson 0.9583 with the simulated log2 FC; RMSE 0.141",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "vst",
+   "engine": "PyDESeq2 0.5.4",
+   "n": 60000,
+   "seconds": 139.35343519225717,
+   "runs": [
+    139.35343519225717
+   ],
+   "n_out": 60000,
+   "accuracy": 0.999968834916617,
+   "detail": "Pearson 0.99997, max |\u0394| 0.154",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "InMoose 0.9.1 deseq2",
+   "n": 60000,
+   "seconds": 29.337668426334858,
+   "runs": [
+    29.337668426334858
+   ],
+   "n_out": 60000,
+   "accuracy": 0.9946367626732753,
+   "detail": "AUROC 0.9946 against the simulated DE genes; at BH 5 %: 6,016 called, 94.3% true, 96.9% of the true DE genes found",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "dispersion",
+   "engine": "InMoose 0.9.1 deseq2",
+   "n": 60000,
+   "seconds": 22.755073480308056,
+   "runs": [
+    22.755073480308056
+   ],
+   "n_out": 60000,
+   "accuracy": 0.9538214688365035,
+   "detail": "Spearman 0.9538 with the simulated dispersions (60,000 genes)",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "vst",
+   "engine": "InMoose 0.9.1 deseq2",
+   "n": 60000,
+   "seconds": 12.43323265016079,
+   "runs": [
+    12.43323265016079
+   ],
+   "n_out": 60000,
+   "accuracy": 0.9999700359380402,
+   "detail": "Pearson 0.99997, max |\u0394| 0.151",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "de_test",
+   "engine": "InMoose 0.9.1 edgepy",
+   "n": 60000,
+   "seconds": 1980.6857711449265,
+   "runs": [
+    1980.6857711449265
+   ],
+   "n_out": 60000,
+   "accuracy": 0.9924755481907668,
+   "detail": "AUROC 0.9925 against the simulated DE genes; at BH 5 %: 7,648 called, 74.5% true, 97.3% of the true DE genes found",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "batch_correction",
+   "engine": "InMoose 0.9.1 pycombat_seq",
+   "n": 60000,
+   "seconds": 207.7115172073245,
+   "runs": [
+    207.7115172073245
+   ],
+   "n_out": 60000,
+   "accuracy": 0.7356537928728112,
+   "detail": "batch removed 0.736 (residual batch effect vs the simulated one: r 0.245, 0.929 before) x group effect kept 1.000 (r with the simulated log2 FC 0.920, 0.920 before)",
+   "n_samples": 48
+  },
+  {
+   "part": "expression",
+   "task": "read_counts_bam",
+   "engine": "Subread featureCounts (CLI)",
+   "n": 1000000,
+   "seconds": 1.9197448641061783,
+   "runs": [
+    1.9027386531233788,
+    1.9197448641061783,
+    1.9426087364554405
+   ],
+   "accuracy": 1.0,
+   "detail": "20,000/20,000 genes equal the simulated counts"
+  },
+  {
+   "part": "expression",
+   "task": "read_counts_bam",
+   "engine": "HTSeq htseq-count (CLI)",
+   "n": 1000000,
+   "seconds": 50.36349479481578,
+   "runs": [
+    50.36349479481578
+   ],
+   "accuracy": 1.0,
+   "detail": "20,000/20,000 genes equal the simulated counts"
+  },
+  {
+   "part": "expression",
+   "task": "read_counts_bam",
+   "engine": "Rsubread featureCounts (GTF)",
+   "n": 1000000,
+   "seconds": 2.346,
+   "runs": 2.346,
+   "n_out": 20000,
+   "accuracy": 1.0,
+   "detail": "20,000/20,000 genes equal the simulated counts"
+  },
+  {
+   "part": "expression",
+   "task": "read_counts_bam",
+   "engine": "GenomicAlignments summarizeOverlaps (Union)",
+   "n": 1000000,
+   "seconds": 1.698,
+   "runs": 1.698,
+   "n_out": 19999,
+   "accuracy": 0.9982,
+   "detail": "19,964/20,000 genes equal the simulated counts"
+  },
+  {
+   "part": "expression",
+   "task": "read_counts_bam",
+   "engine": "Subread featureCounts (CLI)",
+   "n": 10000000,
+   "seconds": 5.962852884083986,
+   "runs": [
+    5.962852884083986
+   ],
+   "accuracy": 1.0,
+   "detail": "20,000/20,000 genes equal the simulated counts"
+  },
+  {
+   "part": "expression",
+   "task": "read_counts_bam",
+   "engine": "HTSeq htseq-count (CLI)",
+   "n": 10000000,
+   "seconds": 284.2397834099829,
+   "runs": [
+    284.2397834099829
+   ],
+   "accuracy": 1.0,
+   "detail": "20,000/20,000 genes equal the simulated counts"
+  },
+  {
+   "part": "expression",
+   "task": "read_counts_bam",
+   "engine": "Rsubread featureCounts (GTF)",
+   "n": 10000000,
+   "seconds": 8.037,
+   "runs": 8.037,
+   "n_out": 20000,
+   "accuracy": 1.0,
+   "detail": "20,000/20,000 genes equal the simulated counts"
+  },
+  {
+   "part": "expression",
+   "task": "read_counts_bam",
+   "engine": "GenomicAlignments summarizeOverlaps (Union)",
+   "n": 10000000,
+   "seconds": 13.179,
+   "runs": 13.179,
+   "n_out": 19999,
+   "accuracy": 0.9968,
+   "detail": "19,936/20,000 genes equal the simulated counts"
+  },
+  {
+   "part": "hic",
+   "task": "matrix_balancing",
+   "engine": "cooler balance (CLI)",
+   "n": 8000,
+   "seconds": 61.03868041932583,
+   "runs": [
+    62.018293507397175,
+    60.55149948224425,
+    61.03868041932583
+   ],
+   "accuracy": 0.9773678787094432,
+   "detail": "Pearson 0.9774 between log weight and minus log simulated bias (7,812 of 8,000 bins)"
+  },
+  {
+   "part": "hic",
+   "task": "matrix_balancing",
+   "engine": "hictk balance ice (CLI)",
+   "n": 8000,
+   "seconds": 69.68019559234381,
+   "runs": [
+    69.2355698980391,
+    69.68019559234381,
+    71.51772222667933
+   ],
+   "accuracy": 0.9773678787137956,
+   "detail": "Pearson 0.9774 between log weight and minus log simulated bias (7,812 of 8,000 bins)"
+  },
+  {
+   "part": "hic",
+   "task": "matrix_balancing",
+   "engine": "HiCExplorer hicCorrectMatrix correct --correctionMethod ICE (CLI)",
+   "n": 8000,
+   "seconds": 72.03815981373191,
+   "runs": [
+    72.03815981373191
+   ],
+   "accuracy": 0.9794613094455569,
+   "detail": "Pearson 0.9795 between log weight and minus log simulated bias (7,817 of 8,000 bins)"
+  },
+  {
+   "part": "hic",
+   "task": "loop_calling",
+   "engine": "cooltools expected-cis + dots (CLI)",
+   "n": 8000,
+   "seconds": 25.299814328551292,
+   "runs": [
+    25.299814328551292
+   ],
+   "accuracy": 0.6470588235294118,
+   "detail": "F1 0.647 (precision 0.917, recall 0.500; 24 called, 44 planted, within 2 bins)"
+  },
+  {
+   "part": "hic",
+   "task": "tad_boundaries",
+   "engine": "cooltools insulation 100 kb (CLI)",
+   "n": 8000,
+   "seconds": 3.7489411793649197,
+   "runs": [
+    3.7489411793649197,
+    3.7302669920027256,
+    3.7624471113085747
+   ],
+   "accuracy": 0.5793103448275861,
+   "detail": "F1 0.579 (precision 0.410, recall 0.988; 205 called, 85 planted, within 2 bins)"
+  },
+  {
+   "part": "hic",
+   "task": "compartments",
+   "engine": "cooltools eigs-cis (CLI)",
+   "n": 8000,
+   "seconds": 16.011844910681248,
+   "runs": [
+    17.14420660585165,
+    16.011844910681248,
+    15.875621240586042
+   ],
+   "accuracy": 0.9738102224793801,
+   "detail": "|Pearson| 0.9738 with the simulated A/B compartments, mean over 2 chromosomes (0.975, 0.973)"
+  },
+  {
+   "part": "hic",
+   "task": "loop_calling",
+   "engine": "HiCExplorer hicDetectLoops (CLI)",
+   "n": 8000,
+   "seconds": 60.15777676552534,
+   "runs": [
+    60.15777676552534
+   ],
+   "accuracy": 0.016666666666666666,
+   "detail": "F1 0.017 (precision 0.013, recall 0.023; 76 called, 44 planted, within 2 bins)"
+  },
+  {
+   "part": "hic",
+   "task": "tad_boundaries",
+   "engine": "HiCExplorer hicFindTADs (CLI)",
+   "n": 8000,
+   "seconds": 4.450478293001652,
+   "runs": [
+    4.450478293001652
+   ],
+   "accuracy": 0.6532258064516129,
+   "detail": "F1 0.653 (precision 0.497, recall 0.953; 163 called, 85 planted, within 2 bins)"
+  },
+  {
+   "part": "hic",
+   "task": "compartments",
+   "engine": "HiCExplorer hicPCA (CLI)",
+   "n": 8000,
+   "seconds": 103.30611018836498,
+   "runs": [
+    103.30611018836498
+   ],
+   "accuracy": 0.15602234003404958,
+   "detail": "|Pearson| 0.1560 with the simulated A/B compartments, mean over 2 chromosomes (0.140, 0.172)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "bedtools intersect -u (CLI)",
+   "n": 10000,
+   "seconds": 0.033658962696790695,
+   "runs": [
+    0.03211446478962898,
+    0.03506135195493698,
+    0.033658962696790695
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 4069
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "bedtools merge (CLI)",
+   "n": 10000,
+   "seconds": 0.024352315813302994,
+   "runs": [
+    0.023372728377580643,
+    0.024352315813302994,
+    0.024937130510807037
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 9946
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "genomeblocks",
+   "n": 10000,
+   "seconds": 0.0011503547430038452,
+   "runs": [
+    0.0011750347912311554,
+    0.0011503547430038452,
+    0.0011480413377285004
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (4,069)",
+   "n_out": 4069
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "genomeblocks",
+   "n": 10000,
+   "seconds": 0.0014130845665931702,
+   "runs": [
+    0.0014130845665931702,
+    0.0013660863041877747,
+    0.0014495477080345154
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (9,946)",
+   "n_out": 9946
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "bedtools closest (CLI)",
+   "n": 10000,
+   "seconds": 0.03899821639060974,
+   "runs": [
+    0.03899821639060974,
+    0.039759982377290726,
+    0.037572816014289856
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "genomeblocks",
+   "n": 10000,
+   "seconds": 0.0041440874338150024,
+   "runs": [
+    0.004180237650871277,
+    0.0041440874338150024,
+    0.0041185468435287476
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 rows agree with bedtools closest"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "bedtools intersect -c (CLI)",
+   "n": 10000,
+   "seconds": 0.036039434373378754,
+   "runs": [
+    0.03631984069943428,
+    0.03461301699280739,
+    0.036039434373378754
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "bedtools coverage (CLI)",
+   "n": 10000,
+   "seconds": 0.05176522210240364,
+   "runs": [
+    0.05176522210240364,
+    0.05315608158707619,
+    0.05053894221782684
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "bedtools genomecov -bg (CLI)",
+   "n": 10000,
+   "seconds": 19.608798436820507,
+   "runs": [
+    19.54529783502221,
+    20.122061166912317,
+    19.608798436820507
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 10054
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "bedtools subtract (CLI)",
+   "n": 10000,
+   "seconds": 0.04564611241221428,
+   "runs": [
+    0.07764971628785133,
+    0.040502432733774185,
+    0.04564611241221428
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 8708
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "bedtools complement (CLI)",
+   "n": 10000,
+   "seconds": 0.0342031754553318,
+   "runs": [
+    0.03491276875138283,
+    0.03186124935746193,
+    0.0342031754553318
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 9967
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "genomeblocks Loci.count_overlaps",
+   "n": 10000,
+   "seconds": 0.0010849684476852417,
+   "runs": [
+    0.0010849684476852417,
+    0.0010899826884269714,
+    0.00107627734541893
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "genomeblocks Loci.coverage",
+   "n": 10000,
+   "seconds": 0.002150788903236389,
+   "runs": [
+    0.002150788903236389,
+    0.0021535493433475494,
+    0.0021258704364299774
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "genomeblocks Loci.subtract",
+   "n": 10000,
+   "seconds": 0.0024668946862220764,
+   "runs": [
+    0.002469334751367569,
+    0.002442549914121628,
+    0.0024668946862220764
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (8,674)",
+   "n_out": 8708
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "genomeblocks Loci.complement",
+   "n": 10000,
+   "seconds": 0.0015994273126125336,
+   "runs": [
+    0.0016215778887271881,
+    0.0015994273126125336,
+    0.0015917494893074036
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (9,967)",
+   "n_out": 9967
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "genomeblocks hichip.coverage",
+   "n": 10000,
+   "seconds": 0.002241227775812149,
+   "runs": [
+    0.002241227775812149,
+    0.0023444294929504395,
+    0.00214560329914093
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (10,054)",
+   "n_out": 10054
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "bioframe 0.8.0",
+   "n": 10000,
+   "seconds": 0.02185364067554474,
+   "runs": [
+    0.02185364067554474,
+    0.02196960151195526,
+    0.02183225005865097
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "bioframe 0.8.0",
+   "n": 10000,
+   "seconds": 0.05683094635605812,
+   "runs": [
+    0.05683094635605812,
+    0.056387096643447876,
+    0.059897419065237045
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "bioframe 0.8.0",
+   "n": 10000,
+   "seconds": 0.1139092817902565,
+   "runs": [
+    0.11894499883055687,
+    0.1139092817902565,
+    0.11314177513122559
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (8,674)",
+   "n_out": 8708
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "bioframe 0.8.0",
+   "n": 10000,
+   "seconds": 0.07625175267457962,
+   "runs": [
+    0.07641441375017166,
+    0.07625175267457962,
+    0.0760129764676094
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (9,967)",
+   "n_out": 9967
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "pyranges 0.1.4",
+   "n": 10000,
+   "seconds": 0.07797173783183098,
+   "runs": [
+    0.07783009856939316,
+    0.07828649878501892,
+    0.07797173783183098
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "pyranges 0.1.4",
+   "n": 10000,
+   "seconds": 0.142012070864439,
+   "runs": [
+    0.14194929599761963,
+    0.1421603411436081,
+    0.142012070864439
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "pyranges 0.1.4",
+   "n": 10000,
+   "seconds": 0.2017352133989334,
+   "runs": [
+    0.20197363570332527,
+    0.20144862681627274,
+    0.2017352133989334
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (8,674)",
+   "n_out": 8708
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "GenomicRanges",
+   "n": 10000,
+   "seconds": 0.0179999999999998,
+   "runs": [
+    0.0269999999999992,
+    0.0179999999999998,
+    0.0179999999999998
+   ],
+   "n_out": 4069,
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "GenomicRanges",
+   "n": 10000,
+   "seconds": 0.0110000000000001,
+   "runs": [
+    0.0259999999999998,
+    0.0110000000000001,
+    0.0109999999999992
+   ],
+   "n_out": 9946,
+   "accuracy": 1.0,
+   "detail": "identical (9,946)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "GenomicRanges",
+   "n": 10000,
+   "seconds": 0.0739999999999998,
+   "runs": [
+    0.077,
+    0.0699999999999994,
+    0.0739999999999998
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "GenomicRanges",
+   "n": 10000,
+   "seconds": 0.0170000000000003,
+   "runs": [
+    0.0190000000000001,
+    0.0170000000000003,
+    0.0170000000000003
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "GenomicRanges",
+   "n": 10000,
+   "seconds": 0.0329999999999995,
+   "runs": [
+    0.0419999999999998,
+    0.0329999999999995,
+    0.0329999999999995
+   ],
+   "n_out": 10054,
+   "accuracy": 1.0,
+   "detail": "identical (10,054)"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "GenomicRanges",
+   "n": 10000,
+   "seconds": 0.0840000000000014,
+   "runs": [
+    0.0920000000000005,
+    0.081999999999999,
+    0.0840000000000014
+   ],
+   "n_out": 8674,
+   "accuracy": 1.0,
+   "detail": "identical (8,674)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "GenomicRanges",
+   "n": 10000,
+   "seconds": 0.0150000000000006,
+   "runs": [
+    0.0150000000000006,
+    0.0120000000000005,
+    0.0659999999999989
+   ],
+   "n_out": 9967,
+   "accuracy": 1.0,
+   "detail": "identical (9,967)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "plyranges",
+   "n": 10000,
+   "seconds": 0.0200000000000031,
+   "runs": [
+    0.022000000000002,
+    0.0199999999999996,
+    0.0200000000000031
+   ],
+   "n_out": 4069,
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "plyranges",
+   "n": 10000,
+   "seconds": 0.0129999999999981,
+   "runs": [
+    0.0139999999999993,
+    0.0120000000000005,
+    0.0129999999999981
+   ],
+   "n_out": 9946,
+   "accuracy": 1.0,
+   "detail": "identical (9,946)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "plyranges",
+   "n": 10000,
+   "seconds": 0.0920000000000023,
+   "runs": [
+    0.0920000000000023,
+    0.0879999999999974,
+    0.093
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "plyranges",
+   "n": 10000,
+   "seconds": 0.0199999999999996,
+   "runs": [
+    0.022000000000002,
+    0.0199999999999996,
+    0.0189999999999984
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "plyranges",
+   "n": 10000,
+   "seconds": 0.0410000000000004,
+   "runs": [
+    0.0420000000000016,
+    0.0410000000000004,
+    0.0390000000000015
+   ],
+   "n_out": 10054,
+   "accuracy": 1.0,
+   "detail": "identical (10,054)"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "plyranges",
+   "n": 10000,
+   "seconds": 0.0860000000000021,
+   "runs": [
+    0.0879999999999974,
+    0.0860000000000021,
+    0.0860000000000021
+   ],
+   "n_out": 8674,
+   "accuracy": 1.0,
+   "detail": "identical (8,674)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "plyranges",
+   "n": 10000,
+   "seconds": 0.0889999999999986,
+   "runs": [
+    0.0909999999999975,
+    0.0889999999999986,
+    0.0889999999999986
+   ],
+   "n_out": 9967,
+   "accuracy": 1.0,
+   "detail": "identical (9,967)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "valr",
+   "n": 10000,
+   "seconds": 0.0120000000000005,
+   "runs": [
+    0.0160000000000053,
+    0.0120000000000005,
+    0.0109999999999957
+   ],
+   "n_out": 4069,
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "valr",
+   "n": 10000,
+   "seconds": 0.0140000000000029,
+   "runs": [
+    0.0159999999999982,
+    0.0140000000000029,
+    0.0109999999999957
+   ],
+   "n_out": 9946,
+   "accuracy": 1.0,
+   "detail": "identical (9,946)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "valr",
+   "n": 10000,
+   "seconds": 0.0160000000000053,
+   "runs": [
+    0.019999999999996,
+    0.0150000000000006,
+    0.0160000000000053
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "valr",
+   "n": 10000,
+   "seconds": 0.0150000000000006,
+   "runs": [
+    0.0150000000000006,
+    0.0130000000000052,
+    0.0150000000000006
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "valr",
+   "n": 10000,
+   "seconds": 0.0129999999999981,
+   "runs": [
+    0.0159999999999982,
+    0.0120000000000005,
+    0.0129999999999981
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "valr",
+   "n": 10000,
+   "seconds": 0.0300000000000011,
+   "runs": [
+    0.0330000000000013,
+    0.0300000000000011,
+    0.0279999999999987
+   ],
+   "n_out": 8708,
+   "accuracy": 1.0,
+   "detail": "identical (8,674)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "valr",
+   "n": 10000,
+   "seconds": 0.0219999999999985,
+   "runs": [
+    0.0259999999999962,
+    0.0219999999999985,
+    0.0219999999999985
+   ],
+   "n_out": 9967,
+   "accuracy": 1.0,
+   "detail": "identical (9,967)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "data.table::foverlaps",
+   "n": 10000,
+   "seconds": 0.0150000000000006,
+   "runs": [
+    0.0180000000000007,
+    0.0140000000000029,
+    0.0150000000000006
+   ],
+   "n_out": 4069,
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "pyranges 1.5.0",
+   "n": 10000,
+   "seconds": 0.011578023433685303,
+   "runs": [
+    0.011736143380403519,
+    0.011578023433685303,
+    0.011555913835763931
+   ],
+   "n_out": 4069,
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "pyranges 1.5.0",
+   "n": 10000,
+   "seconds": 0.01760772243142128,
+   "runs": [
+    0.01779640093445778,
+    0.017477132380008698,
+    0.01760772243142128
+   ],
+   "n_out": 9946,
+   "accuracy": 1.0,
+   "detail": "identical (9,946)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "pyranges 1.5.0",
+   "n": 10000,
+   "seconds": 0.021745800971984863,
+   "runs": [
+    0.02180645987391472,
+    0.021745800971984863,
+    0.021258391439914703
+   ],
+   "n_out": 10046,
+   "accuracy": 1.0,
+   "detail": "10,046/10,046 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "pyranges 1.5.0",
+   "n": 10000,
+   "seconds": 0.019559722393751144,
+   "runs": [
+    0.019703906029462814,
+    0.019414033740758896,
+    0.019559722393751144
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "pyranges 1.5.0",
+   "n": 10000,
+   "seconds": 0.023544970899820328,
+   "runs": [
+    0.024161357432603836,
+    0.023544970899820328,
+    0.02334766834974289
+   ],
+   "n_out": 10054,
+   "accuracy": 1.0,
+   "detail": "identical (10,054)"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "pyranges 1.5.0",
+   "n": 10000,
+   "seconds": 0.01860509067773819,
+   "runs": [
+    0.0185786634683609,
+    0.018654998391866684,
+    0.01860509067773819
+   ],
+   "n_out": 8708,
+   "accuracy": 1.0,
+   "detail": "identical (8,674)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "pyranges 1.5.0",
+   "n": 10000,
+   "seconds": 0.02422212064266205,
+   "runs": [
+    0.02426709234714508,
+    0.024159632623195648,
+    0.02422212064266205
+   ],
+   "n_out": 9967,
+   "accuracy": 1.0,
+   "detail": "identical (9,967)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "polars-bio 0.36.2",
+   "n": 10000,
+   "seconds": 0.017538122832775116,
+   "runs": [
+    0.017538122832775116,
+    0.014696162194013596,
+    0.022719066590070724
+   ],
+   "n_out": 4069,
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "polars-bio 0.36.2",
+   "n": 10000,
+   "seconds": 0.016683410853147507,
+   "runs": [
+    0.016683410853147507,
+    0.021327894181013107,
+    0.01641973853111267
+   ],
+   "n_out": 9946,
+   "accuracy": 1.0,
+   "detail": "identical (9,946)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "polars-bio 0.36.2",
+   "n": 10000,
+   "seconds": 0.018930505961179733,
+   "runs": [
+    0.019218195229768753,
+    0.018930505961179733,
+    0.018725119531154633
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "polars-bio 0.36.2",
+   "n": 10000,
+   "seconds": 0.032255589962005615,
+   "runs": [
+    0.032255589962005615,
+    0.03237493336200714,
+    0.018553920090198517
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "polars-bio 0.36.2",
+   "n": 10000,
+   "seconds": 0.02568388730287552,
+   "runs": [
+    0.031380780041217804,
+    0.02568388730287552,
+    0.018863216042518616
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "polars-bio 0.36.2",
+   "n": 10000,
+   "seconds": 0.015406381338834763,
+   "runs": [
+    0.02041744813323021,
+    0.015304982662200928,
+    0.015406381338834763
+   ],
+   "n_out": 8708,
+   "accuracy": 1.0,
+   "detail": "identical (8,674)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "polars-bio 0.36.2",
+   "n": 10000,
+   "seconds": 0.02086983248591423,
+   "runs": [
+    0.02086983248591423,
+    0.030049532651901245,
+    0.0166277214884758
+   ],
+   "n_out": 9967,
+   "accuracy": 1.0,
+   "detail": "identical (9,967)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 10000,
+   "seconds": 0.019948303699493408,
+   "runs": [
+    0.020515691488981247,
+    0.019868124276399612,
+    0.019948303699493408
+   ],
+   "n_out": 4069,
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 10000,
+   "seconds": 0.06525217741727829,
+   "runs": [
+    0.0660526342689991,
+    0.06517020240426064,
+    0.06525217741727829
+   ],
+   "n_out": 9946,
+   "accuracy": 1.0,
+   "detail": "identical (9,946)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 10000,
+   "seconds": 0.01862921193242073,
+   "runs": [
+    0.018904253840446472,
+    0.018521323800086975,
+    0.01862921193242073
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 10000,
+   "seconds": 0.0191737562417984,
+   "runs": [
+    0.0191737562417984,
+    0.019110795110464096,
+    0.0191788449883461
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 10000,
+   "seconds": 13.762712806463242,
+   "runs": [
+    13.823876529932022,
+    13.648588467389345,
+    13.762712806463242
+   ],
+   "n_out": 9998,
+   "accuracy": 0.46621515199243974,
+   "detail": "differs: 9,944 vs 8,674 (Jaccard 0.4662)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 10000,
+   "seconds": 0.06274805963039398,
+   "runs": [
+    0.062468983232975006,
+    0.0631479024887085,
+    0.06274805963039398
+   ],
+   "n_out": 9967,
+   "accuracy": 1.0,
+   "detail": "identical (9,967)"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 10000,
+   "seconds": null,
+   "runs": null,
+   "accuracy": null,
+   "error": "not run: GenomicRanges.coverage() returns a dense per-base float64 array per chromosome (about 25 GB for hg38)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "superintervals 1.0.3",
+   "n": 10000,
+   "seconds": 0.036960288882255554,
+   "runs": [
+    0.036960288882255554
+   ],
+   "n_out": 4069,
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "AIList (ailist) 2.2.2",
+   "n": 10000,
+   "seconds": 0.04335036128759384,
+   "runs": [
+    0.04335036128759384
+   ],
+   "n_out": 4069,
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "BEDOPS bedops --element-of (CLI)",
+   "n": 10000,
+   "seconds": 0.02754717320203781,
+   "runs": [
+    0.02696342021226883,
+    0.02754717320203781,
+    0.02833593264222145
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (4,069)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "BEDOPS bedops --merge (CLI)",
+   "n": 10000,
+   "seconds": 0.022515103220939636,
+   "runs": [
+    0.02249644696712494,
+    0.022515103220939636,
+    0.022811390459537506
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (9,946)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "BEDOPS closest-features (CLI)",
+   "n": 10000,
+   "seconds": 0.03304175287485123,
+   "runs": [
+    0.03409207612276077,
+    0.03304175287485123,
+    0.03283034265041351
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "BEDOPS bedmap --count (CLI)",
+   "n": 10000,
+   "seconds": 0.03242745250463486,
+   "runs": [
+    0.0329546257853508,
+    0.03242745250463486,
+    0.0314398817718029
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "BEDOPS bedmap --bases-uniq (CLI)",
+   "n": 10000,
+   "seconds": 0.03366955369710922,
+   "runs": [
+    0.03355522081255913,
+    0.035105329006910324,
+    0.03366955369710922
+   ],
+   "accuracy": 1.0,
+   "detail": "10,000/10,000 intervals agree",
+   "n_out": 10000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "BEDOPS bedops --difference (CLI)",
+   "n": 10000,
+   "seconds": 0.02938162162899971,
+   "runs": [
+    0.02821868285536766,
+    0.029441162943840027,
+    0.02938162162899971
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (8,674)",
+   "n_out": 8674
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "BEDOPS bedops --difference genome (CLI)",
+   "n": 10000,
+   "seconds": 0.023932170122861862,
+   "runs": [
+    0.023064810782670975,
+    0.024342302232980728,
+    0.023932170122861862
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (9,967)",
+   "n_out": 9967
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "bedtools intersect -u (CLI)",
+   "n": 100000,
+   "seconds": 0.18221557140350342,
+   "runs": [
+    0.18221557140350342,
+    0.18690665438771248,
+    0.1819877289235592
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 46096
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "bedtools merge (CLI)",
+   "n": 100000,
+   "seconds": 0.0915268138051033,
+   "runs": [
+    0.09312380477786064,
+    0.0915268138051033,
+    0.09120272099971771
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 95525
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "genomeblocks",
+   "n": 100000,
+   "seconds": 0.009247798472642899,
+   "runs": [
+    0.009307075291872025,
+    0.009237643331289291,
+    0.009247798472642899
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (46,096)",
+   "n_out": 46096
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "genomeblocks",
+   "n": 100000,
+   "seconds": 0.010271020233631134,
+   "runs": [
+    0.010438870638608932,
+    0.010271020233631134,
+    0.010222848504781723
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (95,525)",
+   "n_out": 95525
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "bedtools closest (CLI)",
+   "n": 100000,
+   "seconds": 0.20897513628005981,
+   "runs": [
+    0.21151003241539001,
+    0.20897513628005981,
+    0.20498409867286682
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "genomeblocks",
+   "n": 100000,
+   "seconds": 0.03691014647483826,
+   "runs": [
+    0.03709925711154938,
+    0.03691014647483826,
+    0.03680131956934929
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows agree with bedtools closest"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "bedtools intersect -c (CLI)",
+   "n": 100000,
+   "seconds": 0.23710958659648895,
+   "runs": [
+    0.26617587730288506,
+    0.21481090784072876,
+    0.23710958659648895
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "bedtools coverage (CLI)",
+   "n": 100000,
+   "seconds": 0.3674057349562645,
+   "runs": [
+    0.3774675689637661,
+    0.36540377512574196,
+    0.3674057349562645
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "bedtools genomecov -bg (CLI)",
+   "n": 100000,
+   "seconds": 20.072379656136036,
+   "runs": [
+    20.072379656136036,
+    20.54593661427498,
+    19.847062058746815
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 104427
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "bedtools subtract (CLI)",
+   "n": 100000,
+   "seconds": 0.25999725610017776,
+   "runs": [
+    0.25999725610017776,
+    0.25719159841537476,
+    0.2606766074895859
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 83879
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "bedtools complement (CLI)",
+   "n": 100000,
+   "seconds": 0.16325648501515388,
+   "runs": [
+    0.15874740108847618,
+    0.16325648501515388,
+    0.164409589022398
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 95545
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "genomeblocks Loci.count_overlaps",
+   "n": 100000,
+   "seconds": 0.009523905813694,
+   "runs": [
+    0.009523905813694,
+    0.009580116719007492,
+    0.009513720870018005
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "genomeblocks Loci.coverage",
+   "n": 100000,
+   "seconds": 0.01805449277162552,
+   "runs": [
+    0.018221721053123474,
+    0.01796981319785118,
+    0.01805449277162552
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "genomeblocks Loci.subtract",
+   "n": 100000,
+   "seconds": 0.02187170833349228,
+   "runs": [
+    0.02183055505156517,
+    0.022033605724573135,
+    0.02187170833349228
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (81,436)",
+   "n_out": 83879
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "genomeblocks Loci.complement",
+   "n": 100000,
+   "seconds": 0.008588753640651703,
+   "runs": [
+    0.008845709264278412,
+    0.008303403854370117,
+    0.008588753640651703
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (95,545)",
+   "n_out": 95545
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "genomeblocks hichip.coverage",
+   "n": 100000,
+   "seconds": 0.017976436764001846,
+   "runs": [
+    0.018170088529586792,
+    0.017976436764001846,
+    0.01793515309691429
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (104,427)",
+   "n_out": 104427
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "bioframe 0.8.0",
+   "n": 100000,
+   "seconds": 0.116248719394207,
+   "runs": [
+    0.116248719394207,
+    0.11572334915399551,
+    0.12643267586827278
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "bioframe 0.8.0",
+   "n": 100000,
+   "seconds": 0.2094535455107689,
+   "runs": [
+    0.2094535455107689,
+    0.20933644473552704,
+    0.2100377306342125
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "bioframe 0.8.0",
+   "n": 100000,
+   "seconds": 0.3329406827688217,
+   "runs": [
+    0.3318748436868191,
+    0.3356490880250931,
+    0.3329406827688217
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (81,436)",
+   "n_out": 83879
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "bioframe 0.8.0",
+   "n": 100000,
+   "seconds": 0.14857686683535576,
+   "runs": [
+    0.14857686683535576,
+    0.1482662297785282,
+    0.14984026923775673
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (95,545)",
+   "n_out": 95545
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "pyranges 0.1.4",
+   "n": 100000,
+   "seconds": 0.13290202617645264,
+   "runs": [
+    0.12894311174750328,
+    0.13290202617645264,
+    0.13661906123161316
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "pyranges 0.1.4",
+   "n": 100000,
+   "seconds": 0.22927680984139442,
+   "runs": [
+    0.22855210676789284,
+    0.22927680984139442,
+    0.2332904264330864
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "pyranges 0.1.4",
+   "n": 100000,
+   "seconds": 0.29739977791905403,
+   "runs": [
+    0.29739977791905403,
+    0.30148977413773537,
+    0.29685838147997856
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (81,436)",
+   "n_out": 83879
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "GenomicRanges",
+   "n": 100000,
+   "seconds": 0.0360000000000005,
+   "runs": [
+    0.0569999999999999,
+    0.0350000000000001,
+    0.0360000000000005
+   ],
+   "n_out": 46096,
+   "accuracy": 1.0,
+   "detail": "identical (46,096)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "GenomicRanges",
+   "n": 100000,
+   "seconds": 0.0250000000000004,
+   "runs": [
+    0.0380000000000003,
+    0.0250000000000004,
+    0.024
+   ],
+   "n_out": 95525,
+   "accuracy": 1.0,
+   "detail": "identical (95,525)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "GenomicRanges",
+   "n": 100000,
+   "seconds": 0.265,
+   "runs": [
+    0.459000000000001,
+    0.265,
+    0.262
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "GenomicRanges",
+   "n": 100000,
+   "seconds": 0.0369999999999999,
+   "runs": [
+    0.0369999999999999,
+    0.0360000000000005,
+    0.0380000000000003
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "GenomicRanges",
+   "n": 100000,
+   "seconds": 0.0709999999999997,
+   "runs": [
+    0.0819999999999999,
+    0.0709999999999997,
+    0.0709999999999997
+   ],
+   "n_out": 104427,
+   "accuracy": 1.0,
+   "detail": "identical (104,427)"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "GenomicRanges",
+   "n": 100000,
+   "seconds": 0.129000000000001,
+   "runs": [
+    0.146000000000001,
+    0.129000000000001,
+    0.129
+   ],
+   "n_out": 81436,
+   "accuracy": 1.0,
+   "detail": "identical (81,436)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "GenomicRanges",
+   "n": 100000,
+   "seconds": 0.0240000000000009,
+   "runs": [
+    0.0269999999999992,
+    0.0240000000000009,
+    0.0239999999999991
+   ],
+   "n_out": 95545,
+   "accuracy": 1.0,
+   "detail": "identical (95,545)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "plyranges",
+   "n": 100000,
+   "seconds": 0.036999999999999,
+   "runs": [
+    0.0410000000000004,
+    0.0360000000000014,
+    0.036999999999999
+   ],
+   "n_out": 46096,
+   "accuracy": 1.0,
+   "detail": "identical (46,096)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "plyranges",
+   "n": 100000,
+   "seconds": 0.0249999999999986,
+   "runs": [
+    0.027000000000001,
+    0.0249999999999986,
+    0.0249999999999986
+   ],
+   "n_out": 95525,
+   "accuracy": 1.0,
+   "detail": "identical (95,525)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "plyranges",
+   "n": 100000,
+   "seconds": 0.261999999999997,
+   "runs": [
+    0.261999999999997,
+    0.259,
+    0.27
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "plyranges",
+   "n": 100000,
+   "seconds": 0.0380000000000003,
+   "runs": [
+    0.0509999999999984,
+    0.0380000000000003,
+    0.0380000000000003
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "plyranges",
+   "n": 100000,
+   "seconds": 0.0919999999999987,
+   "runs": [
+    0.0919999999999987,
+    0.0940000000000012,
+    0.0919999999999987
+   ],
+   "n_out": 104427,
+   "accuracy": 1.0,
+   "detail": "identical (104,427)"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "plyranges",
+   "n": 100000,
+   "seconds": 0.163,
+   "runs": [
+    0.163,
+    0.158000000000001,
+    0.168000000000003
+   ],
+   "n_out": 81436,
+   "accuracy": 1.0,
+   "detail": "identical (81,436)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "plyranges",
+   "n": 100000,
+   "seconds": 0.138999999999996,
+   "runs": [
+    0.138999999999999,
+    0.137,
+    0.138999999999996
+   ],
+   "n_out": 95545,
+   "accuracy": 1.0,
+   "detail": "identical (95,545)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "valr",
+   "n": 100000,
+   "seconds": 0.0390000000000015,
+   "runs": [
+    0.0450000000000017,
+    0.0390000000000015,
+    0.0389999999999944
+   ],
+   "n_out": 46105,
+   "accuracy": 0.9998047934063551,
+   "detail": "differs: 46,105 vs 46,096 (Jaccard 0.9998)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "valr",
+   "n": 100000,
+   "seconds": 0.027000000000001,
+   "runs": [
+    0.0300000000000011,
+    0.0269999999999939,
+    0.027000000000001
+   ],
+   "n_out": 95525,
+   "accuracy": 1.0,
+   "detail": "identical (95,525)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "valr",
+   "n": 100000,
+   "seconds": 0.0750000000000028,
+   "runs": [
+    0.0800000000000054,
+    0.0740000000000052,
+    0.0750000000000028
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "valr",
+   "n": 100000,
+   "seconds": 0.0479999999999947,
+   "runs": [
+    0.0509999999999948,
+    0.0479999999999947,
+    0.046999999999997
+   ],
+   "n_out": 100000,
+   "accuracy": 0.99984,
+   "detail": "99,984/100,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "valr",
+   "n": 100000,
+   "seconds": 0.0480000000000018,
+   "runs": [
+    0.0519999999999996,
+    0.0480000000000018,
+    0.0479999999999947
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "valr",
+   "n": 100000,
+   "seconds": 0.0679999999999978,
+   "runs": [
+    0.0689999999999955,
+    0.0659999999999954,
+    0.0679999999999978
+   ],
+   "n_out": 83879,
+   "accuracy": 1.0,
+   "detail": "identical (81,436)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "valr",
+   "n": 100000,
+   "seconds": 0.0539999999999949,
+   "runs": [
+    0.0539999999999949,
+    0.0559999999999974,
+    0.0509999999999948
+   ],
+   "n_out": 95545,
+   "accuracy": 1.0,
+   "detail": "identical (95,545)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "data.table::foverlaps",
+   "n": 100000,
+   "seconds": 0.0899999999999963,
+   "runs": [
+    0.0910000000000011,
+    0.0899999999999963,
+    0.0889999999999986
+   ],
+   "n_out": 46096,
+   "accuracy": 1.0,
+   "detail": "identical (46,096)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "pyranges 1.5.0",
+   "n": 100000,
+   "seconds": 0.08310151100158691,
+   "runs": [
+    0.08310151100158691,
+    0.0828564278781414,
+    0.08660534396767616
+   ],
+   "n_out": 46096,
+   "accuracy": 1.0,
+   "detail": "identical (46,096)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "pyranges 1.5.0",
+   "n": 100000,
+   "seconds": 0.12942668423056602,
+   "runs": [
+    0.12942668423056602,
+    0.12669697776436806,
+    0.12956591695547104
+   ],
+   "n_out": 95535,
+   "accuracy": 0.9996860118268879,
+   "detail": "differs: 95,535 vs 95,525 (Jaccard 0.9997)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "pyranges 1.5.0",
+   "n": 100000,
+   "seconds": 0.18257125839591026,
+   "runs": [
+    0.17968353256583214,
+    0.19540798664093018,
+    0.18257125839591026
+   ],
+   "n_out": 105435,
+   "accuracy": 1.0,
+   "detail": "105,435/105,435 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "pyranges 1.5.0",
+   "n": 100000,
+   "seconds": 0.14259152486920357,
+   "runs": [
+    0.15218636393547058,
+    0.14259152486920357,
+    0.1418912522494793
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "pyranges 1.5.0",
+   "n": 100000,
+   "seconds": 0.16160956770181656,
+   "runs": [
+    0.16867035999894142,
+    0.16129408031702042,
+    0.16160956770181656
+   ],
+   "n_out": 104427,
+   "accuracy": 1.0,
+   "detail": "identical (104,427)"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "pyranges 1.5.0",
+   "n": 100000,
+   "seconds": 0.13618997856974602,
+   "runs": [
+    0.13618997856974602,
+    0.1362731009721756,
+    0.13558850809931755
+   ],
+   "n_out": 83879,
+   "accuracy": 1.0,
+   "detail": "identical (81,436)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "pyranges 1.5.0",
+   "n": 100000,
+   "seconds": 0.15996544435620308,
+   "runs": [
+    0.16029172390699387,
+    0.15996544435620308,
+    0.15982838347554207
+   ],
+   "n_out": 95545,
+   "accuracy": 1.0,
+   "detail": "identical (95,545)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "polars-bio 0.36.2",
+   "n": 100000,
+   "seconds": 0.11327711120247841,
+   "runs": [
+    0.11327711120247841,
+    0.11706621199846268,
+    0.09994050487875938
+   ],
+   "n_out": 46096,
+   "accuracy": 1.0,
+   "detail": "identical (46,096)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "polars-bio 0.36.2",
+   "n": 100000,
+   "seconds": 0.12014246731996536,
+   "runs": [
+    0.1181284673511982,
+    0.12678863108158112,
+    0.12014246731996536
+   ],
+   "n_out": 95535,
+   "accuracy": 0.9996860118268879,
+   "detail": "differs: 95,535 vs 95,525 (Jaccard 0.9997)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "polars-bio 0.36.2",
+   "n": 100000,
+   "seconds": 0.14691851660609245,
+   "runs": [
+    0.14633677527308464,
+    0.14813420176506042,
+    0.14691851660609245
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "polars-bio 0.36.2",
+   "n": 100000,
+   "seconds": 0.14213870093226433,
+   "runs": [
+    0.14213870093226433,
+    0.13773628696799278,
+    0.14429833367466927
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "polars-bio 0.36.2",
+   "n": 100000,
+   "seconds": 0.1489773541688919,
+   "runs": [
+    0.14859173819422722,
+    0.15139761194586754,
+    0.1489773541688919
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "polars-bio 0.36.2",
+   "n": 100000,
+   "seconds": 0.10881420597434044,
+   "runs": [
+    0.10881420597434044,
+    0.1317129023373127,
+    0.10680421814322472
+   ],
+   "n_out": 83879,
+   "accuracy": 1.0,
+   "detail": "identical (81,436)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "polars-bio 0.36.2",
+   "n": 100000,
+   "seconds": 0.11412015929818153,
+   "runs": [
+    0.11412015929818153,
+    0.12285472080111504,
+    0.1120537631213665
+   ],
+   "n_out": 95545,
+   "accuracy": 1.0,
+   "detail": "identical (95,545)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 100000,
+   "seconds": 0.20102370157837868,
+   "runs": [
+    0.20331690832972527,
+    0.18505150079727173,
+    0.20102370157837868
+   ],
+   "n_out": 46096,
+   "accuracy": 1.0,
+   "detail": "identical (46,096)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 100000,
+   "seconds": 0.5612370818853378,
+   "runs": [
+    0.5861466340720654,
+    0.5612370818853378,
+    0.5545005090534687
+   ],
+   "n_out": 95525,
+   "accuracy": 1.0,
+   "detail": "identical (95,525)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 100000,
+   "seconds": 0.17531639710068703,
+   "runs": [
+    0.17579790577292442,
+    0.17531639710068703,
+    0.1748335026204586
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 100000,
+   "seconds": 0.15461302176117897,
+   "runs": [
+    0.15461302176117897,
+    0.157049261033535,
+    0.1534268632531166
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 100000,
+   "seconds": 179.3763661943376,
+   "runs": [
+    180.0908761881292,
+    179.3763661943376,
+    179.16432535275817
+   ],
+   "n_out": 99994,
+   "accuracy": 0.4199224862184348,
+   "detail": "differs: 95,519 vs 81,436 (Jaccard 0.4199)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 100000,
+   "seconds": 0.5028677806258202,
+   "runs": [
+    0.5023314580321312,
+    0.5028677806258202,
+    0.504178624600172
+   ],
+   "n_out": 95545,
+   "accuracy": 1.0,
+   "detail": "identical (95,545)"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 100000,
+   "seconds": null,
+   "runs": null,
+   "accuracy": null,
+   "error": "not run: GenomicRanges.coverage() returns a dense per-base float64 array per chromosome (about 25 GB for hg38)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "superintervals 1.0.3",
+   "n": 100000,
+   "seconds": 0.22754136845469475,
+   "runs": [
+    0.22754136845469475
+   ],
+   "n_out": 46096,
+   "accuracy": 1.0,
+   "detail": "identical (46,096)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "AIList (ailist) 2.2.2",
+   "n": 100000,
+   "seconds": 0.28751956671476364,
+   "runs": [
+    0.28751956671476364
+   ],
+   "n_out": 46096,
+   "accuracy": 1.0,
+   "detail": "identical (46,096)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "BEDOPS bedops --element-of (CLI)",
+   "n": 100000,
+   "seconds": 0.11984169483184814,
+   "runs": [
+    0.11857891082763672,
+    0.11984169483184814,
+    0.12136590853333473
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (46,096)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "BEDOPS bedops --merge (CLI)",
+   "n": 100000,
+   "seconds": 0.0805276371538639,
+   "runs": [
+    0.07912647724151611,
+    0.08235983550548553,
+    0.0805276371538639
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (95,525)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "BEDOPS closest-features (CLI)",
+   "n": 100000,
+   "seconds": 0.16595013067126274,
+   "runs": [
+    0.16894042864441872,
+    0.16539520770311356,
+    0.16595013067126274
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "BEDOPS bedmap --count (CLI)",
+   "n": 100000,
+   "seconds": 0.1572638638317585,
+   "runs": [
+    0.1572638638317585,
+    0.15545782074332237,
+    0.1613209769129753
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "BEDOPS bedmap --bases-uniq (CLI)",
+   "n": 100000,
+   "seconds": 0.1610543243587017,
+   "runs": [
+    0.18442773446440697,
+    0.160716000944376,
+    0.1610543243587017
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 intervals agree",
+   "n_out": 100000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "BEDOPS bedops --difference (CLI)",
+   "n": 100000,
+   "seconds": 0.1219150684773922,
+   "runs": [
+    0.12267506495118141,
+    0.1219150684773922,
+    0.11764874309301376
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (81,436)",
+   "n_out": 81436
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "BEDOPS bedops --difference genome (CLI)",
+   "n": 100000,
+   "seconds": 0.08645600080490112,
+   "runs": [
+    0.08647588267922401,
+    0.08597034960985184,
+    0.08645600080490112
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (95,545)",
+   "n_out": 95545
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "bedtools intersect -u (CLI)",
+   "n": 1000000,
+   "seconds": 2.091574238613248,
+   "runs": [
+    2.1049173288047314,
+    2.0782311484217644
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 729413
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "bedtools merge (CLI)",
+   "n": 1000000,
+   "seconds": 0.6381384562700987,
+   "runs": [
+    0.6302585676312447,
+    0.6460183449089527
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 670293
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "genomeblocks",
+   "n": 1000000,
+   "seconds": 0.09464284777641296,
+   "runs": [
+    0.09225603938102722,
+    0.0970296561717987
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (729,413)",
+   "n_out": 729423
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "genomeblocks",
+   "n": 1000000,
+   "seconds": 0.09480891562998295,
+   "runs": [
+    0.09472216293215752,
+    0.09489566832780838
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (670,293)",
+   "n_out": 670293
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "bedtools closest (CLI)",
+   "n": 1000000,
+   "seconds": 2.0206441320478916,
+   "runs": [
+    2.0115233063697815,
+    2.0297649577260017
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "genomeblocks",
+   "n": 1000000,
+   "seconds": 0.7216638550162315,
+   "runs": [
+    0.7146292626857758,
+    0.7286984473466873
+   ],
+   "accuracy": 1.0,
+   "detail": "1,000,000/1,000,000 rows agree with bedtools closest"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "bedtools intersect -c (CLI)",
+   "n": 1000000,
+   "seconds": 2.2929317839443684,
+   "runs": [
+    2.290627744048834,
+    2.295235823839903
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "bedtools coverage (CLI)",
+   "n": 1000000,
+   "seconds": 4.262335799634457,
+   "runs": [
+    4.346931599080563,
+    4.177740000188351
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "bedtools genomecov -bg (CLI)",
+   "n": 1000000,
+   "seconds": 24.306804360821843,
+   "runs": [
+    23.483271941542625,
+    25.13033678010106
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 1326511
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "bedtools subtract (CLI)",
+   "n": 1000000,
+   "seconds": 3.003792440518737,
+   "runs": [
+    3.037143774330616,
+    2.9704411067068577
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 613315
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "bedtools complement (CLI)",
+   "n": 1000000,
+   "seconds": 1.1494763940572739,
+   "runs": [
+    1.1705582588911057,
+    1.128394529223442
+   ],
+   "accuracy": 1.0,
+   "detail": "reference",
+   "n_out": 670312
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "genomeblocks Loci.count_overlaps",
+   "n": 1000000,
+   "seconds": 0.11499384604394436,
+   "runs": [
+    0.1134493350982666,
+    0.11653835698962212
+   ],
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "genomeblocks Loci.coverage",
+   "n": 1000000,
+   "seconds": 0.18054419197142124,
+   "runs": [
+    0.18333768472075462,
+    0.17775069922208786
+   ],
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "genomeblocks Loci.subtract",
+   "n": 1000000,
+   "seconds": 0.25931032560765743,
+   "runs": [
+    0.2576628290116787,
+    0.26095782220363617
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (508,459)",
+   "n_out": 613315
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "genomeblocks Loci.complement",
+   "n": 1000000,
+   "seconds": 0.07406055554747581,
+   "runs": [
+    0.0728292390704155,
+    0.07529187202453613
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (670,312)",
+   "n_out": 670312
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "genomeblocks hichip.coverage",
+   "n": 1000000,
+   "seconds": 0.24284221418201923,
+   "runs": [
+    0.2463555671274662,
+    0.23932886123657227
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (1,326,511)",
+   "n_out": 1326511
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "bioframe 0.8.0",
+   "n": 1000000,
+   "seconds": 1.368012510240078,
+   "runs": [
+    1.3905495628714561,
+    1.3454754576086998
+   ],
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "bioframe 0.8.0",
+   "n": 1000000,
+   "seconds": 1.7839111294597387,
+   "runs": [
+    1.8091661743819714,
+    1.758656084537506
+   ],
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "bioframe 0.8.0",
+   "n": 1000000,
+   "seconds": 2.592103637754917,
+   "runs": [
+    2.5366771891713142,
+    2.64753008633852
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (508,459)",
+   "n_out": 613315
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "bioframe 0.8.0",
+   "n": 1000000,
+   "seconds": 0.9078456237912178,
+   "runs": [
+    0.9006273187696934,
+    0.9150639288127422
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (670,312)",
+   "n_out": 670312
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "pyranges 0.1.4",
+   "n": 1000000,
+   "seconds": 0.778793266043067,
+   "runs": [
+    0.7818519361317158,
+    0.7757345959544182
+   ],
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "pyranges 0.1.4",
+   "n": 1000000,
+   "seconds": 1.0630727857351303,
+   "runs": [
+    1.063512697815895,
+    1.0626328736543655
+   ],
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "pyranges 0.1.4",
+   "n": 1000000,
+   "seconds": 1.1968836914747953,
+   "runs": [
+    1.206560641527176,
+    1.1872067414224148
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (508,459)",
+   "n_out": 613315
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "GenomicRanges",
+   "n": 1000000,
+   "seconds": 0.276,
+   "runs": [
+    0.293,
+    0.273,
+    0.276
+   ],
+   "n_out": 729423,
+   "accuracy": 1.0,
+   "detail": "identical (729,413)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "GenomicRanges",
+   "n": 1000000,
+   "seconds": 0.130000000000001,
+   "runs": [
+    0.146,
+    0.130000000000001,
+    0.129
+   ],
+   "n_out": 670293,
+   "accuracy": 1.0,
+   "detail": "identical (670,293)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "GenomicRanges",
+   "n": 1000000,
+   "seconds": 1.556,
+   "runs": [
+    1.556,
+    1.656,
+    1.502
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "1,000,000/1,000,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "GenomicRanges",
+   "n": 1000000,
+   "seconds": 0.288999999999998,
+   "runs": [
+    0.277999999999999,
+    0.296000000000003,
+    0.288999999999998
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "GenomicRanges",
+   "n": 1000000,
+   "seconds": 0.530999999999999,
+   "runs": [
+    0.530999999999999,
+    0.535,
+    0.529
+   ],
+   "n_out": 1326511,
+   "accuracy": 1.0,
+   "detail": "identical (1,326,511)"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "GenomicRanges",
+   "n": 1000000,
+   "seconds": 0.548000000000002,
+   "runs": [
+    0.645,
+    0.548000000000002,
+    0.547999999999998
+   ],
+   "n_out": 508459,
+   "accuracy": 1.0,
+   "detail": "identical (508,459)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "GenomicRanges",
+   "n": 1000000,
+   "seconds": 0.128,
+   "runs": [
+    0.129000000000001,
+    0.128,
+    0.126999999999999
+   ],
+   "n_out": 670312,
+   "accuracy": 1.0,
+   "detail": "identical (670,312)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "plyranges",
+   "n": 1000000,
+   "seconds": 0.311,
+   "runs": [
+    0.305999999999997,
+    0.311,
+    0.330000000000005
+   ],
+   "n_out": 729423,
+   "accuracy": 1.0,
+   "detail": "identical (729,413)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "plyranges",
+   "n": 1000000,
+   "seconds": 0.128999999999998,
+   "runs": [
+    0.128,
+    0.128999999999998,
+    0.128999999999998
+   ],
+   "n_out": 670293,
+   "accuracy": 1.0,
+   "detail": "identical (670,293)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "plyranges",
+   "n": 1000000,
+   "seconds": 1.406,
+   "runs": [
+    1.397,
+    2.091,
+    1.406
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "1,000,000/1,000,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "plyranges",
+   "n": 1000000,
+   "seconds": 0.289000000000001,
+   "runs": [
+    0.289000000000001,
+    0.296999999999997,
+    0.283000000000001
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "plyranges",
+   "n": 1000000,
+   "seconds": 0.575999999999993,
+   "runs": [
+    0.575999999999993,
+    0.573,
+    0.591000000000001
+   ],
+   "n_out": 1326511,
+   "accuracy": 1.0,
+   "detail": "identical (1,326,511)"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "plyranges",
+   "n": 1000000,
+   "seconds": 0.713000000000001,
+   "runs": [
+    0.713000000000001,
+    0.706000000000003,
+    0.725000000000001
+   ],
+   "n_out": 508459,
+   "accuracy": 1.0,
+   "detail": "identical (508,459)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "plyranges",
+   "n": 1000000,
+   "seconds": 0.484000000000002,
+   "runs": [
+    0.490000000000002,
+    0.469999999999999,
+    0.484000000000002
+   ],
+   "n_out": 670312,
+   "accuracy": 1.0,
+   "detail": "identical (670,312)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "valr",
+   "n": 1000000,
+   "seconds": 0.557999999999993,
+   "runs": [
+    0.557999999999993,
+    0.569999999999993,
+    0.552000000000007
+   ],
+   "n_out": 729696,
+   "accuracy": 0.9996121672586941,
+   "detail": "differs: 729,696 vs 729,413 (Jaccard 0.9996)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "valr",
+   "n": 1000000,
+   "seconds": 0.174999999999997,
+   "runs": [
+    0.186999999999998,
+    0.174000000000007,
+    0.174999999999997
+   ],
+   "n_out": 670293,
+   "accuracy": 1.0,
+   "detail": "identical (670,293)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "valr",
+   "n": 1000000,
+   "seconds": null,
+   "runs": null,
+   "accuracy": null,
+   "error": "not run at n = 1000000: bed_closest did not finish at 1 M (4.5 h, 0.2% CPU); timed at 100k"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "valr",
+   "n": 1000000,
+   "seconds": 0.489000000000004,
+   "runs": [
+    0.518999999999991,
+    0.487000000000009,
+    0.489000000000004
+   ],
+   "n_out": 1000000,
+   "accuracy": 0.998039980399804,
+   "detail": "998,030/999,990 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "valr",
+   "n": 1000000,
+   "seconds": 0.478000000000009,
+   "runs": [
+    0.495000000000005,
+    0.478000000000009,
+    0.474999999999994
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "valr",
+   "n": 1000000,
+   "seconds": 0.498999999999995,
+   "runs": [
+    0.462000000000003,
+    0.498999999999995,
+    0.503
+   ],
+   "n_out": 613315,
+   "accuracy": 1.0,
+   "detail": "identical (508,459)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "valr",
+   "n": 1000000,
+   "seconds": 0.313999999999993,
+   "runs": [
+    0.331999999999994,
+    0.313999999999993,
+    0.310000000000002
+   ],
+   "n_out": 670312,
+   "accuracy": 1.0,
+   "detail": "identical (670,312)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "data.table::foverlaps",
+   "n": 1000000,
+   "seconds": 1.098,
+   "runs": [
+    1.095,
+    1.098,
+    1.105
+   ],
+   "n_out": 729423,
+   "accuracy": 1.0,
+   "detail": "identical (729,413)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "pyranges 1.5.0",
+   "n": 1000000,
+   "seconds": 1.2509216628968716,
+   "runs": [
+    1.2509216628968716,
+    1.2385195456445217,
+    1.275028694421053
+   ],
+   "n_out": 729423,
+   "accuracy": 1.0,
+   "detail": "identical (729,413)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "pyranges 1.5.0",
+   "n": 1000000,
+   "seconds": 0.9796021021902561,
+   "runs": [
+    0.9883114323019981,
+    0.9744869098067284,
+    0.9796021021902561
+   ],
+   "n_out": 670804,
+   "accuracy": 0.9977253497628524,
+   "detail": "differs: 670,804 vs 670,293 (Jaccard 0.9977)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "pyranges 1.5.0",
+   "n": 1000000,
+   "seconds": 2.7348160184919834,
+   "runs": [
+    2.743289090692997,
+    2.708625290542841,
+    2.7348160184919834
+   ],
+   "n_out": 1828167,
+   "accuracy": 1.0,
+   "detail": "1,828,167/1,828,167 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "pyranges 1.5.0",
+   "n": 1000000,
+   "seconds": 1.472767785191536,
+   "runs": [
+    1.469596978276968,
+    1.4749883115291595,
+    1.472767785191536
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "pyranges 1.5.0",
+   "n": 1000000,
+   "seconds": 1.98939660936594,
+   "runs": [
+    1.9902407340705395,
+    1.98939660936594,
+    1.9654286801815033
+   ],
+   "n_out": 1326511,
+   "accuracy": 1.0,
+   "detail": "identical (1,326,511)"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "pyranges 1.5.0",
+   "n": 1000000,
+   "seconds": 1.305740773677826,
+   "runs": [
+    1.293157633394003,
+    1.305740773677826,
+    1.3369230479002
+   ],
+   "n_out": 613315,
+   "accuracy": 1.0,
+   "detail": "identical (508,459)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "pyranges 1.5.0",
+   "n": 1000000,
+   "seconds": 1.324044156819582,
+   "runs": [
+    1.349403154104948,
+    1.324044156819582,
+    1.3106836713850498
+   ],
+   "n_out": 670312,
+   "accuracy": 1.0,
+   "detail": "identical (670,312)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "polars-bio 0.36.2",
+   "n": 1000000,
+   "seconds": 1.2504864744842052,
+   "runs": [
+    1.237716905772686,
+    1.2504864744842052,
+    1.2551208660006523
+   ],
+   "n_out": 729413,
+   "accuracy": 1.0,
+   "detail": "identical (729,413)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "polars-bio 0.36.2",
+   "n": 1000000,
+   "seconds": 0.8095802254974842,
+   "runs": [
+    0.8075066395103931,
+    0.8095802254974842,
+    0.8386819884181023
+   ],
+   "n_out": 670804,
+   "accuracy": 0.9977253497628524,
+   "detail": "differs: 670,804 vs 670,293 (Jaccard 0.9977)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "polars-bio 0.36.2",
+   "n": 1000000,
+   "seconds": 1.4806375168263912,
+   "runs": [
+    1.4611867405474186,
+    1.4806375168263912,
+    1.496297214180231
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "1,000,000/1,000,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "polars-bio 0.36.2",
+   "n": 1000000,
+   "seconds": 1.350313488394022,
+   "runs": [
+    1.3342183791100979,
+    1.350313488394022,
+    1.353112269192934
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "polars-bio 0.36.2",
+   "n": 1000000,
+   "seconds": 1.4020526893436909,
+   "runs": [
+    1.5231744721531868,
+    1.4020526893436909,
+    1.398071028292179
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "polars-bio 0.36.2",
+   "n": 1000000,
+   "seconds": 0.8153372444212437,
+   "runs": [
+    0.8153372444212437,
+    0.8340172283351421,
+    0.8079736195504665
+   ],
+   "n_out": 613315,
+   "accuracy": 1.0,
+   "detail": "identical (508,459)"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "polars-bio 0.36.2",
+   "n": 1000000,
+   "seconds": 0.8225315660238266,
+   "runs": [
+    0.8223333656787872,
+    0.8225315660238266,
+    0.8266644105315208
+   ],
+   "n_out": 670312,
+   "accuracy": 1.0,
+   "detail": "identical (670,312)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 1000000,
+   "seconds": 2.950199369341135,
+   "runs": [
+    2.9681956879794598,
+    2.950199369341135,
+    2.896731112152338
+   ],
+   "n_out": 729423,
+   "accuracy": 1.0,
+   "detail": "identical (729,413)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 1000000,
+   "seconds": 4.346815183758736,
+   "runs": [
+    4.346815183758736,
+    4.353570453822613,
+    4.306379821151495
+   ],
+   "n_out": 670293,
+   "accuracy": 1.0,
+   "detail": "identical (670,293)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 1000000,
+   "seconds": 1.5595221184194088,
+   "runs": [
+    1.579194325953722,
+    1.555941566824913,
+    1.5595221184194088
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "1,000,000/1,000,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 1000000,
+   "seconds": 1.6012371219694614,
+   "runs": [
+    1.6193028092384338,
+    1.6012371219694614,
+    1.57806783542037
+   ],
+   "n_out": 1000000,
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree"
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 1000000,
+   "seconds": null,
+   "runs": null,
+   "accuracy": null,
+   "error": "not run at n = 1,000,000: 3,000 s per run at 1 M on 2026-10-23 (superlinear; Jaccard 0.24); timed at 10k and 100k"
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 1000000,
+   "seconds": 3.995922539383173,
+   "runs": [
+    3.995922539383173,
+    3.969811398535967,
+    4.030957777053118
+   ],
+   "n_out": 670312,
+   "accuracy": 1.0,
+   "detail": "identical (670,312)"
+  },
+  {
+   "part": "intervals",
+   "task": "genome_depth",
+   "engine": "BiocPy genomicranges 0.9.0",
+   "n": 1000000,
+   "seconds": null,
+   "runs": null,
+   "accuracy": null,
+   "error": "not run: GenomicRanges.coverage() returns a dense per-base float64 array per chromosome (about 25 GB for hg38)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "superintervals 1.0.3",
+   "n": 1000000,
+   "seconds": 2.373421650379896,
+   "runs": [
+    2.373421650379896
+   ],
+   "n_out": 729423,
+   "accuracy": 1.0,
+   "detail": "identical (729,413)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "AIList (ailist) 2.2.2",
+   "n": 1000000,
+   "seconds": 3.096874136477709,
+   "runs": [
+    3.096874136477709
+   ],
+   "n_out": 729423,
+   "accuracy": 1.0,
+   "detail": "identical (729,413)"
+  },
+  {
+   "part": "intervals",
+   "task": "intersect",
+   "engine": "BEDOPS bedops --element-of (CLI)",
+   "n": 1000000,
+   "seconds": 1.1255711279809475,
+   "runs": [
+    1.111782941967249,
+    1.139359313994646
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (729,413)"
+  },
+  {
+   "part": "intervals",
+   "task": "merge",
+   "engine": "BEDOPS bedops --merge (CLI)",
+   "n": 1000000,
+   "seconds": 0.5538741834461689,
+   "runs": [
+    0.5586630776524544,
+    0.5490852892398834
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (670,293)"
+  },
+  {
+   "part": "intervals",
+   "task": "nearest",
+   "engine": "BEDOPS closest-features (CLI)",
+   "n": 1000000,
+   "seconds": 1.6113672964274883,
+   "runs": [
+    1.5587835386395454,
+    1.6639510542154312
+   ],
+   "accuracy": 0.999934,
+   "detail": "999,934/1,000,000 rows agree"
+  },
+  {
+   "part": "intervals",
+   "task": "overlap_count",
+   "engine": "BEDOPS bedmap --count (CLI)",
+   "n": 1000000,
+   "seconds": 1.5195387061685324,
+   "runs": [
+    1.5369296483695507,
+    1.502147763967514
+   ],
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "coverage",
+   "engine": "BEDOPS bedmap --bases-uniq (CLI)",
+   "n": 1000000,
+   "seconds": 1.5897061713039875,
+   "runs": [
+    1.5814833715558052,
+    1.5979289710521698
+   ],
+   "accuracy": 1.0,
+   "detail": "999,990/999,990 intervals agree",
+   "n_out": 1000000
+  },
+  {
+   "part": "intervals",
+   "task": "subtract",
+   "engine": "BEDOPS bedops --difference (CLI)",
+   "n": 1000000,
+   "seconds": 0.9657730180770159,
+   "runs": [
+    0.9736597798764706,
+    0.9578862562775612
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (508,459)",
+   "n_out": 508459
+  },
+  {
+   "part": "intervals",
+   "task": "complement",
+   "engine": "BEDOPS bedops --difference genome (CLI)",
+   "n": 1000000,
+   "seconds": 0.5852445010095835,
+   "runs": [
+    0.5862976461648941,
+    0.5841913558542728
+   ],
+   "accuracy": 1.0,
+   "detail": "identical (670,312)",
+   "n_out": 670312
+  },
+  {
+   "part": "motifs",
+   "task": "scan_logodds",
+   "engine": "exact numpy sliding-window scan (reference)",
+   "n": 1000,
+   "n_motifs": 100,
+   "seconds": null,
+   "runs": null,
+   "accuracy": 1.0,
+   "detail": "reference: 993 hits at log2-odds \u2265 13.0"
+  },
+  {
+   "part": "motifs",
+   "task": "scan_pvalue",
+   "engine": "exact score distribution + numpy scan (reference)",
+   "n": 1000,
+   "n_motifs": 100,
+   "seconds": null,
+   "runs": null,
+   "accuracy": 1.0,
+   "detail": "reference: 11,296 hits at p \u2264 0.0001, both strands"
+  },
+  {
+   "part": "motifs",
+   "task": "scan_logodds",
+   "engine": "genomeblocks scan_motifs_matrix (lightmotif)",
+   "n": 1000,
+   "n_motifs": 100,
+   "seconds": 0.05531151965260506,
+   "runs": [
+    0.05546271800994873,
+    0.05531151965260506,
+    0.055159490555524826
+   ],
+   "accuracy": 1.0,
+   "detail": "identical: 993 hits vs the exact numpy scan"
+  },
+  {
+   "part": "motifs",
+   "task": "scan_pvalue",
+   "engine": "genomeblocks scan_motifs_matrix (lightmotif, both strands)",
+   "n": 1000,
+   "n_motifs": 100,
+   "seconds": 0.22055277228355408,
+   "runs": [
+    0.22055277228355408,
+    0.22268004715442657,
+    0.21747517958283424
+   ],
+   "accuracy": 0.9992426361440542,
+   "detail": "11,355 vs 11,296 hits, Pearson 0.9992 over motifs vs the exact p-value scan"
+  },
+  {
+   "part": "motifs",
+   "task": "scan_pvalue",
+   "engine": "MEME FIMO --text, both strands (CLI)",
+   "n": 1000,
+   "n_motifs": 100,
+   "seconds": 15.691337659955025,
+   "runs": [
+    15.769225489348173,
+    15.691337659955025,
+    15.677419386804104
+   ],
+   "accuracy": 0.9999137556109703,
+   "detail": "11,255 vs 11,296 hits, Pearson 0.9999 over motifs vs the exact p-value scan"
+  },
+  {
+   "part": "motifs",
+   "task": "scan_logodds",
+   "engine": "universalmotif::scan_sequences",
+   "n": 1000,
+   "seconds": 3.186,
+   "runs": 3.186,
+   "n_out": 992,
+   "accuracy": 0.9999676059970974,
+   "detail": "992 vs 993 hits, Pearson 1.0000 over motifs",
+   "n_motifs": 100
+  },
+  {
+   "part": "motifs",
+   "task": "scan_logodds",
+   "engine": "Biostrings::countPWM",
+   "n": 1000,
+   "seconds": 62.117,
+   "runs": 62.117,
+   "n_out": 993,
+   "accuracy": 1.0,
+   "detail": "identical: 993 hits",
+   "n_motifs": 100
+  },
+  {
+   "part": "motifs",
+   "task": "scan_pvalue",
+   "engine": "motifmatchr::matchMotifs (p-value cutoff)",
+   "n": 1000,
+   "seconds": 1.42499999999998,
+   "runs": [
+    1.42400000000001,
+    1.429,
+    1.42499999999998
+   ],
+   "n_out": 12379,
+   "accuracy": 0.6861909691838585,
+   "detail": "12,379 vs 11,296 hits, Pearson 0.6862 over motifs",
+   "n_motifs": 100
+  },
+  {
+   "part": "motifs",
+   "task": "scan_logodds",
+   "engine": "HOMER homer2 find (CLI)",
+   "n": 1000,
+   "n_motifs": 100,
+   "seconds": 3.9068253748118877,
+   "runs": [
+    3.9068253748118877,
+    3.905608270317316,
+    3.916796889156103
+   ],
+   "accuracy": 0.9998041248417201,
+   "detail": "997 vs 993 hits, Pearson 0.9998 over motifs"
+  },
+  {
+   "part": "motifs",
+   "task": "known_enrichment",
+   "engine": "HOMER homer2 known (CLI)",
+   "n": 1000,
+   "seconds": 5.864451710134745,
+   "runs": [
+    5.865907251834869,
+    5.863154541701078,
+    5.864451710134745
+   ],
+   "accuracy": 1.0,
+   "detail": "ranks: MA0149.1 #1, MA0729.1 #3 (top 5 wanted for MA0149.1, MA0729.1)"
+  },
+  {
+   "part": "motifs",
+   "task": "known_enrichment",
+   "engine": "MEME SEA (CLI)",
+   "n": 1000,
+   "seconds": 5.44247255474329,
+   "runs": [
+    5.466853886842728,
+    5.44247255474329,
+    5.4407022818923
+   ],
+   "accuracy": 1.0,
+   "detail": "ranks: MA0149.1 #1, MA0729.1 #2 (top 5 wanted for MA0149.1, MA0729.1)"
+  },
+  {
+   "part": "motifs",
+   "task": "known_enrichment",
+   "engine": "MEME AME (CLI)",
+   "n": 1000,
+   "seconds": 1.8003882989287376,
+   "runs": [
+    1.8003882989287376,
+    1.783721674233675,
+    1.8015008382499218
+   ],
+   "accuracy": 1.0,
+   "detail": "ranks: MA0149.1 #1, MA0729.1 #2 (top 5 wanted for MA0149.1, MA0729.1)"
+  },
+  {
+   "part": "motifs",
+   "task": "known_enrichment",
+   "engine": "genomeblocks scan_motifs_matrix + compare_motifs_to_ref",
+   "n": 1000,
+   "seconds": 0.4135378934442997,
+   "runs": [
+    0.4135378934442997,
+    0.4192434027791023,
+    0.41083378717303276
+   ],
+   "accuracy": 1.0,
+   "detail": "ranks: MA0149.1 #1, MA0729.1 #3 (top 5 wanted for MA0149.1, MA0729.1)"
+  },
+  {
+   "part": "motifs",
+   "task": "differential_enrichment",
+   "engine": "HOMER homer2 known (CLI)",
+   "n": 1000,
+   "seconds": 5.821210004389286,
+   "runs": [
+    5.813817553222179,
+    5.841135315597057,
+    5.821210004389286
+   ],
+   "accuracy": 1.0,
+   "detail": "ranks: MA0149.1 #1, MA0729.1 #17 (top 5 wanted for MA0149.1; not wanted for MA0729.1)"
+  },
+  {
+   "part": "motifs",
+   "task": "differential_enrichment",
+   "engine": "MEME SEA (CLI)",
+   "n": 1000,
+   "seconds": 5.470630042254925,
+   "runs": [
+    5.573929786682129,
+    5.470630042254925,
+    5.449210364371538
+   ],
+   "accuracy": 1.0,
+   "detail": "ranks: MA0149.1 #1, MA0729.1 #None (top 5 wanted for MA0149.1; not wanted for MA0729.1)"
+  },
+  {
+   "part": "motifs",
+   "task": "differential_enrichment",
+   "engine": "MEME AME (CLI)",
+   "n": 1000,
+   "seconds": 1.8056343793869019,
+   "runs": [
+    1.8085040040314198,
+    1.8056343793869019,
+    1.8024370223283768
+   ],
+   "accuracy": 1.0,
+   "detail": "ranks: MA0149.1 #1, MA0729.1 #None (top 5 wanted for MA0149.1; not wanted for MA0729.1)"
+  },
+  {
+   "part": "motifs",
+   "task": "differential_enrichment",
+   "engine": "genomeblocks scan_motifs_matrix + compare_motifs",
+   "n": 1000,
+   "seconds": 0.4101311229169369,
+   "runs": [
+    0.40837327763438225,
+    0.4101311229169369,
+    0.4130835384130478
+   ],
+   "accuracy": 1.0,
+   "detail": "ranks: MA0149.1 #1, MA0729.1 #10 (top 5 wanted for MA0149.1; not wanted for MA0729.1)"
+  },
+  {
+   "part": "motifs",
+   "task": "de_novo",
+   "engine": "MEME STREME (CLI)",
+   "n": 1000,
+   "seconds": 15.458169616758823,
+   "runs": [
+    15.458169616758823
+   ],
+   "accuracy": 0.749645121789019,
+   "detail": "best match to X 0.722, to Z 0.778 (5 motifs)"
+  },
+  {
+   "part": "motifs",
+   "task": "de_novo",
+   "engine": "MEME meme -mod zoops (CLI)",
+   "n": 1000,
+   "seconds": 923.7683287933469,
+   "runs": [
+    923.7683287933469
+   ],
+   "accuracy": 0.9164689327216273,
+   "detail": "best match to X 0.944, to Z 0.889 (3 motifs)"
+  },
+  {
+   "part": "motifs",
+   "task": "de_novo",
+   "engine": "HOMER homer2 denovo (CLI)",
+   "n": 1000,
+   "seconds": 37.719412572681904,
+   "runs": [
+    37.719412572681904
+   ],
+   "accuracy": 0.5489221198643228,
+   "detail": "best match to X 0.556, to Z 0.542 (5 motifs)"
+  },
+  {
+   "part": "motifs",
+   "task": "db_comparison",
+   "engine": "MEME Tomtom (CLI)",
+   "n": 20,
+   "seconds": 21.75233641639352,
+   "runs": [
+    21.701847914606333,
+    21.75233641639352,
+    21.767396043986082
+   ],
+   "accuracy": 0.9,
+   "detail": "18/20 queries have their source motif in the top 3"
+  },
+  {
+   "part": "motifs",
+   "task": "db_comparison",
+   "engine": "universalmotif compare_motifs (PCC)",
+   "n": 20,
+   "seconds": 66.359,
+   "runs": 66.359,
+   "n_out": 20570,
+   "accuracy": 0.6,
+   "detail": "12/20 queries have their source motif in the top 3"
+  },
+  {
+   "part": "motifs",
+   "task": "motif_activity",
+   "engine": "chromVAR matchMotifs + computeDeviations",
+   "n": 2000,
+   "seconds": 4.614,
+   "runs": 4.614,
+   "n_out": 100,
+   "accuracy": 0.5,
+   "detail": "X (MA0149.1) #4 of 100 by B - A t; Y (MA0731.1) #2 from the bottom (top / bottom 3 wanted)"
+  },
+  {
+   "part": "motifs",
+   "task": "motif_activity",
+   "engine": "pychromVAR 0.0.4",
+   "n": 2000,
+   "seconds": 3.853295523673296,
+   "runs": [
+    3.853295523673296
+   ],
+   "n_out": 100,
+   "accuracy": 1.0,
+   "detail": "X (MA0149.1) #3 of 100 by B - A t; Y (MA0731.1) #2 from the bottom (top / bottom 3 wanted)"
+  },
+  {
+   "part": "signal",
+   "task": "region_matrix",
+   "engine": "genomeblocks signal (pybigtools)",
+   "n": 10000,
+   "seconds": 0.6423984915018082,
+   "runs": [
+    0.6537764966487885,
+    0.6423984915018082,
+    0.6215992718935013
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 7.38e-06 vs per-base pyBigWig means"
+  },
+  {
+   "part": "signal",
+   "task": "bigwig_read",
+   "engine": "rtracklayer::import (bigWig, which=windows)",
+   "n": 10000,
+   "seconds": 2.029,
+   "runs": [
+    2.106,
+    2.024,
+    2.029
+   ],
+   "n_out": 430115,
+   "accuracy": null,
+   "detail": ""
+  },
+  {
+   "part": "signal",
+   "task": "region_matrix",
+   "engine": "rtracklayer + EnrichedHeatmap::normalizeToMatrix",
+   "n": 10000,
+   "seconds": 14.03,
+   "runs": [
+    15.455,
+    13.35,
+    14.03
+   ],
+   "n_out": 10000,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 6.39e-14"
+  },
+  {
+   "part": "signal",
+   "task": "region_matrix",
+   "engine": "genomation::ScoreMatrixBin",
+   "n": 10000,
+   "seconds": 4.806,
+   "runs": [
+    4.806,
+    4.655,
+    5.36499999999999
+   ],
+   "n_out": 10000,
+   "accuracy": 0.9979639413528579,
+   "detail": "Pearson 0.99796, max |\u0394| 9.01"
+  },
+  {
+   "part": "signal",
+   "task": "region_mean",
+   "engine": "UCSC bigWigAverageOverBed (CLI)",
+   "n": 10000,
+   "seconds": 6.1249266639351845,
+   "runs": [
+    6.120113790035248,
+    6.1249266639351845,
+    6.134608507156372
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 4.87e-05 (within 0.0001 relative) vs per-base means (its mean column: covered bases only)"
+  },
+  {
+   "part": "signal",
+   "task": "region_mean",
+   "engine": "genomeblocks signal (span=True, 1 bin)",
+   "n": 10000,
+   "seconds": 0.6024560630321503,
+   "runs": [
+    0.6024560630321503,
+    0.6022610627114773,
+    0.6276570186018944
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 3.48e-06 (within 0.0001 relative) vs per-base means"
+  },
+  {
+   "part": "signal",
+   "task": "bam_to_bigwig",
+   "engine": "deepTools bamCoverage --binSize 1 (CLI)",
+   "n": 1000000,
+   "seconds": 2547.8149344213307,
+   "runs": [
+    2547.8149344213307
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal",
+   "task": "bam_to_bigwig",
+   "engine": "deepTools bamCoverage --binSize 50 (CLI)",
+   "n": 1000000,
+   "seconds": 90.40269991382957,
+   "runs": [
+    90.40269991382957,
+    90.4665120318532,
+    90.28950295224786
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal",
+   "task": "bam_to_bigwig",
+   "engine": "megadepth --bigwig (CLI)",
+   "n": 1000000,
+   "seconds": 6.9229757860302925,
+   "runs": [
+    6.828076284378767,
+    6.9229757860302925,
+    7.019553415477276
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal",
+   "task": "bam_to_bigwig",
+   "engine": "bedtools genomecov -bg + UCSC bedGraphToBigWig (CLI)",
+   "n": 1000000,
+   "seconds": 25.165331307798624,
+   "runs": [
+    25.146464232355356,
+    25.165331307798624,
+    25.303786851465702
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "deepTools multiBamSummary BED-file (CLI)",
+   "n": 1000000,
+   "seconds": 4295.572876602411,
+   "runs": [
+    4295.572876602411
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "bedtools multicov (CLI)",
+   "n": 1000000,
+   "seconds": 58.83903044834733,
+   "runs": [
+    58.83903044834733,
+    58.740422915667295,
+    58.856517516076565
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "Subread featureCounts -F SAF -O (CLI)",
+   "n": 1000000,
+   "seconds": 2.1056270226836205,
+   "runs": [
+    2.1100552305579185,
+    2.1056270226836205,
+    2.104747422039509
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "pysam 0.23.3 AlignmentFile.count",
+   "n": 1000000,
+   "seconds": 19.541166178882122,
+   "runs": [
+    19.541166178882122
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "Rsubread featureCounts (SAF, allowMultiOverlap)",
+   "n": 1000000,
+   "seconds": 3.399,
+   "runs": [
+    3.399,
+    3.403,
+    3.343
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "GenomicAlignments summarizeOverlaps (Union, inter.feature = FALSE)",
+   "n": 1000000,
+   "seconds": 2.886,
+   "runs": [
+    2.908,
+    2.87799999999999,
+    2.886
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "track_tmm",
+   "engine": "edgeR calcNormFactors + cpm",
+   "n": 1000000,
+   "seconds": 0.17,
+   "runs": [
+    0.176,
+    0.17,
+    0.169
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "reference"
+  },
+  {
+   "part": "signal",
+   "task": "track_tmm",
+   "engine": "csaw normFactors (TMM)",
+   "n": 1000000,
+   "seconds": 0.106,
+   "runs": [
+    0.097999999999999,
+    0.106,
+    0.106999999999999
+   ],
+   "n_out": 100000,
+   "accuracy": 0.9999968337888004,
+   "detail": "Pearson 1.00000, max |\u0394| 0.585"
+  },
+  {
+   "part": "signal",
+   "task": "track_tmm",
+   "engine": "rnanorm 2.2.0 TMM",
+   "n": 1000000,
+   "seconds": 2.30281949788332,
+   "runs": [
+    2.3085110187530518,
+    2.30281949788332,
+    2.28207590803504
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 5.12e-13 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "track_tmm",
+   "engine": "genomeblocks signal.tmm",
+   "n": 1000000,
+   "seconds": 0.04040973633527756,
+   "runs": [
+    0.04218363016843796,
+    0.04033380746841431,
+    0.04040973633527756
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 5.12e-13 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "bam_to_bigwig",
+   "engine": "deepTools bamCoverage --binSize 1 (CLI)",
+   "n": 10000000,
+   "seconds": 2685.4502822756767,
+   "runs": [
+    2685.4502822756767
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal",
+   "task": "bam_to_bigwig",
+   "engine": "deepTools bamCoverage --binSize 50 (CLI)",
+   "n": 10000000,
+   "seconds": 203.1430764682591,
+   "runs": [
+    203.27591796591878,
+    203.0102349705994
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal",
+   "task": "bam_to_bigwig",
+   "engine": "megadepth --bigwig (CLI)",
+   "n": 10000000,
+   "seconds": 28.023223465308547,
+   "runs": [
+    27.97911235317588,
+    28.067334577441216
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal",
+   "task": "bam_to_bigwig",
+   "engine": "bedtools genomecov -bg + UCSC bedGraphToBigWig (CLI)",
+   "n": 10000000,
+   "seconds": 83.19323764182627,
+   "runs": [
+    83.20931945368648,
+    83.17715582996607
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 0.00e+00"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "deepTools multiBamSummary BED-file (CLI)",
+   "n": 10000000,
+   "seconds": 2931.5429668687284,
+   "runs": [
+    2931.5429668687284
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "bedtools multicov (CLI)",
+   "n": 10000000,
+   "seconds": 170.38747615739703,
+   "runs": [
+    170.15142956003547,
+    170.6235227547586
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "Subread featureCounts -F SAF -O (CLI)",
+   "n": 10000000,
+   "seconds": 17.971723975613713,
+   "runs": [
+    17.976482555270195,
+    17.96696539595723
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "pysam 0.23.3 AlignmentFile.count",
+   "n": 10000000,
+   "seconds": 29.36775105074048,
+   "runs": [
+    29.36775105074048
+   ],
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "Rsubread featureCounts (SAF, allowMultiOverlap)",
+   "n": 10000000,
+   "seconds": 25.658,
+   "runs": [
+    25.661,
+    25.582,
+    25.658
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "multi_bam_counts",
+   "engine": "GenomicAlignments summarizeOverlaps (Union, inter.feature = FALSE)",
+   "n": 10000000,
+   "seconds": 21.241,
+   "runs": [
+    21.241,
+    21.237,
+    21.29
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "100,000/100,000 regions agree in all 4 BAMs"
+  },
+  {
+   "part": "signal",
+   "task": "track_tmm",
+   "engine": "edgeR calcNormFactors + cpm",
+   "n": 10000000,
+   "seconds": 0.372,
+   "runs": [
+    0.377,
+    0.372,
+    0.369
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "reference"
+  },
+  {
+   "part": "signal",
+   "task": "track_tmm",
+   "engine": "csaw normFactors (TMM)",
+   "n": 10000000,
+   "seconds": 0.254,
+   "runs": [
+    0.268000000000001,
+    0.253,
+    0.254
+   ],
+   "n_out": 100000,
+   "accuracy": 0.9710872774303311,
+   "detail": "Pearson 0.97109, max |\u0394| 44.1"
+  },
+  {
+   "part": "signal",
+   "task": "track_tmm",
+   "engine": "rnanorm 2.2.0 TMM",
+   "n": 10000000,
+   "seconds": 2.6660475209355354,
+   "runs": [
+    2.6777632012963295,
+    2.6660475209355354,
+    2.6455638259649277
+   ],
+   "n_out": 100000,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 5.40e-13 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "track_tmm",
+   "engine": "genomeblocks signal.tmm",
+   "n": 10000000,
+   "seconds": 0.07858504354953766,
+   "runs": [
+    0.07858504354953766,
+    0.07997594401240349,
+    0.0784141942858696
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 5.26e-13 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "track_comparison",
+   "engine": "deepTools bigwigCompare --binSize 50 (CLI)",
+   "n": 248956422,
+   "seconds": 136.87467901222408,
+   "runs": [
+    135.40686491131783,
+    138.34249311313033
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 4.89e-06"
+  },
+  {
+   "part": "signal",
+   "task": "track_comparison",
+   "engine": "WiggleTools log 2 ratio of 50 bp bin means (CLI)",
+   "n": 248956422,
+   "seconds": 4.606952412053943,
+   "runs": [
+    4.684641737490892,
+    4.529263086616993
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 6.43e-07"
+  },
+  {
+   "part": "signal",
+   "task": "write_bigwig",
+   "engine": "pyBigWig 0.3.24 addEntries",
+   "n": 999991,
+   "seconds": 6.2938866429030895,
+   "runs": [
+    6.305434342473745,
+    6.282338943332434
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "write_bigwig",
+   "engine": "pybigtools 0.2.5 write",
+   "n": 999991,
+   "seconds": 1.9419003706425428,
+   "runs": [
+    1.9499599933624268,
+    1.933840747922659
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "write_bigwig",
+   "engine": "UCSC bedGraphToBigWig (CLI)",
+   "n": 999991,
+   "seconds": 1.4616434946656227,
+   "runs": [
+    1.4129625670611858,
+    1.5103244222700596
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "write_bigwig",
+   "engine": "rtracklayer export.bw",
+   "n": 999991,
+   "seconds": 1.059,
+   "runs": 1.059,
+   "n_out": 999991,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "write_bigwig",
+   "engine": "pyBigWig 0.3.24 addEntries",
+   "n": 9999989,
+   "seconds": 36.5040715187788,
+   "runs": [
+    36.461980044841766,
+    36.546162992715836
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "write_bigwig",
+   "engine": "pybigtools 0.2.5 write",
+   "n": 9999989,
+   "seconds": 12.742315163835883,
+   "runs": [
+    12.78765682131052,
+    12.696973506361246
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "write_bigwig",
+   "engine": "UCSC bedGraphToBigWig (CLI)",
+   "n": 9999989,
+   "seconds": 17.338317025452852,
+   "runs": [
+    17.196750942617655,
+    17.47988310828805
+   ],
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "signal",
+   "task": "write_bigwig",
+   "engine": "rtracklayer export.bw",
+   "n": 9999989,
+   "seconds": 10.088,
+   "runs": 10.088,
+   "n_out": 9999989,
+   "accuracy": 1.0,
+   "detail": "max |\u0394| 2.98e-08 (within 1e-06 relative)"
+  },
+  {
+   "part": "hic_loops",
+   "task": "loop_calling",
+   "engine": "genomeblocks mustache() (port of Mustache 1.3.3)",
+   "n": 8000,
+   "seconds": 3.6149206049740314,
+   "runs": [
+    3.6149206049740314
+   ],
+   "accuracy": 0.4776119402985074,
+   "detail": "F1 0.478 (precision 0.696, recall 0.364; 23 called, 44 planted, within 2 bins)"
+  },
+  {
+   "part": "hic_loops",
+   "task": "loop_calling",
+   "engine": "genomeblocks hiccups() (port of Juicer HiCCUPS, cooler weights)",
+   "n": 8000,
+   "seconds": 6.209499128162861,
+   "runs": [
+    6.209499128162861
+   ],
+   "accuracy": 0.6153846153846153,
+   "detail": "F1 0.615 (precision 0.952, recall 0.455; 21 called, 44 planted, within 2 bins)"
+  },
+  {
+   "part": "hic_loops",
+   "task": "loop_calling",
+   "engine": "Mustache 1.3.3 (CLI)",
+   "n": 8000,
+   "seconds": 43.93024356663227,
+   "runs": [
+    43.93024356663227
+   ],
+   "accuracy": 0.4776119402985074,
+   "detail": "F1 0.478 (precision 0.696, recall 0.364; 23 called, 44 planted, within 2 bins)"
+  },
+  {
+   "part": "hic_loops",
+   "task": "loop_calling",
+   "engine": "Juicer juicer_tools 2.13.06 hiccups --cpu (CLI)",
+   "n": 8000,
+   "seconds": 89.76377802714705,
+   "runs": [
+    89.76377802714705
+   ],
+   "accuracy": 0.6363636363636365,
+   "detail": "F1 0.636 (precision 0.955, recall 0.477; 22 called, 44 planted, within 2 bins)"
+  }
+ ]
+}

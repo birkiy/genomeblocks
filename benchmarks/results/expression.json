@@ -3,9 +3,9 @@
  "env": {
   "cpu": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
   "cores": 64,
-  "mem_gb": 811.27890944,
+  "mem_gb": 811.27798784,
   "python": "3.12.12",
-  "platform": "Linux-5.15.0-198-generic-x86_64-with-glibc2.35",
+  "platform": "Linux-5.15.0-113-generic-x86_64-with-glibc2.35",
   "versions": {
    "genomeblocks": "2.0.1",
    "numpy": "2.3.4",
@@ -27,7 +27,7 @@
    "graph_tool": "2.98 (commit c96a6bf3, )",
    "igraph": "0.11.9",
    "networkx": "3.6.1",
-   "bedtools": "v2.31.0"
+   "bedtools": "v2.31.1"
   }
  },
  "meta": {
@@ -51,188 +51,14 @@
    "readr": "2.1.6",
    "DESeq2": "1.46.0",
    "edgeR": "4.4.0",
-   "data.table": "1.17.8"
+   "data.table": "1.18.6.1"
   },
   "rscript": {
-   "tximport": "/home/ualtintas/micromamba/envs/notebook_r/bin/Rscript",
-   "edgeR": "/home/ualtintas/micromamba/envs/hichip/bin/Rscript"
+   "tximport": "/home/ualtintas/micromamba/envs/gb_bench_r/bin/Rscript",
+   "edgeR": "/home/ualtintas/micromamba/envs/gb_bench_r/bin/Rscript"
   }
  },
  "rows": [
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "genomeblocks (polars)",
-   "seconds": 0.09156418799830135,
-   "runs": [
-    0.09156418799830135,
-    0.07660575599584263,
-    0.0935070999985328
-   ],
-   "n": 120000,
-   "n_genes": 20000,
-   "n_transcripts": 70028,
-   "n_samples": 6,
-   "agrees": true
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "genomeblocks (pandas)",
-   "seconds": 0.10096175999206025,
-   "runs": [
-    0.10137811000458896,
-    0.09993934500380419,
-    0.10096175999206025
-   ],
-   "n": 120000,
-   "n_genes": 20000,
-   "n_transcripts": 70028,
-   "n_samples": 6,
-   "agrees": true
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "R read.delim",
-   "seconds": 0.0650000000000004,
-   "runs": [
-    0.151000000000001,
-    0.0650000000000004,
-    0.0579999999999998
-   ],
-   "n": 120000,
-   "n_genes": 20000,
-   "n_transcripts": 70028,
-   "n_samples": 6
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "R data.table::fread",
-   "seconds": 0.0120000000000005,
-   "runs": [
-    0.0120000000000005,
-    0.0120000000000005,
-    0.0110000000000001
-   ],
-   "n": 120000,
-   "n_genes": 20000,
-   "n_transcripts": 70028,
-   "n_samples": 6
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "genomeblocks (polars)",
-   "seconds": 0.7574526450043777,
-   "runs": [
-    0.772609702005866,
-    0.7574526450043777,
-    0.7493549810023978
-   ],
-   "n": 1440000,
-   "n_genes": 60000,
-   "n_transcripts": 210070,
-   "n_samples": 24,
-   "agrees": true
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "genomeblocks (pandas)",
-   "seconds": 0.8204069160128711,
-   "runs": [
-    0.8135728149936767,
-    0.8204069160128711,
-    0.8380462150089443
-   ],
-   "n": 1440000,
-   "n_genes": 60000,
-   "n_transcripts": 210070,
-   "n_samples": 24,
-   "agrees": true
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "R read.delim",
-   "seconds": 0.429,
-   "runs": [
-    0.511000000000001,
-    0.429,
-    0.395
-   ],
-   "n": 1440000,
-   "n_genes": 60000,
-   "n_transcripts": 210070,
-   "n_samples": 24
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "R data.table::fread",
-   "seconds": 0.0339999999999989,
-   "runs": [
-    0.0530000000000008,
-    0.0339999999999989,
-    0.032
-   ],
-   "n": 1440000,
-   "n_genes": 60000,
-   "n_transcripts": 210070,
-   "n_samples": 24
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "genomeblocks (polars)",
-   "seconds": 2.8163508950092364,
-   "runs": [
-    2.8163508950092364
-   ],
-   "n": 5760000,
-   "n_genes": 60000,
-   "n_transcripts": 210070,
-   "n_samples": 96,
-   "agrees": true
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "genomeblocks (pandas)",
-   "seconds": 3.1114987659966573,
-   "runs": [
-    3.1114987659966573
-   ],
-   "n": 5760000,
-   "n_genes": 60000,
-   "n_transcripts": 210070,
-   "n_samples": 96,
-   "agrees": true
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "R read.delim",
-   "seconds": 1.29,
-   "runs": 1.29,
-   "n": 5760000,
-   "n_genes": 60000,
-   "n_transcripts": 210070,
-   "n_samples": 96
-  },
-  {
-   "part": "featurecounts",
-   "step": "read featureCounts matrix",
-   "engine": "R data.table::fread",
-   "seconds": 0.0750000000000028,
-   "runs": 0.0750000000000028,
-   "n": 5760000,
-   "n_genes": 60000,
-   "n_transcripts": 210070,
-   "n_samples": 96
-  },
   {
    "part": "normalise",
    "step": "tmm",
@@ -1170,6 +996,180 @@
    "agrees": true,
    "max_abs_diff_abundance": 0.0,
    "max_abs_diff_length": 0.0
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (polars)",
+   "seconds": 0.017969489097595215,
+   "runs": [
+    0.020377755165100098,
+    0.01763828471302986,
+    0.017969489097595215
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (pandas)",
+   "seconds": 0.05067431181669235,
+   "runs": [
+    0.050918176770210266,
+    0.049292124807834625,
+    0.05067431181669235
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R read.delim",
+   "seconds": 0.091,
+   "runs": [
+    0.091,
+    0.0899999999999999,
+    0.0920000000000001
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R data.table::fread",
+   "seconds": 0.0100000000000002,
+   "runs": [
+    0.00999999999999979,
+    0.0109999999999997,
+    0.0100000000000002
+   ],
+   "n": 120000,
+   "n_genes": 20000,
+   "n_transcripts": 70028,
+   "n_samples": 6
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (polars)",
+   "seconds": 0.06642172858119011,
+   "runs": [
+    0.07187110185623169,
+    0.062202922999858856,
+    0.06642172858119011
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (pandas)",
+   "seconds": 0.271919559687376,
+   "runs": [
+    0.271919559687376,
+    0.26398250460624695,
+    0.27321740984916687
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R read.delim",
+   "seconds": 0.571999999999999,
+   "runs": [
+    0.571999999999999,
+    0.589,
+    0.547000000000001
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R data.table::fread",
+   "seconds": 0.0419999999999998,
+   "runs": [
+    0.0419999999999998,
+    0.0429999999999993,
+    0.0419999999999998
+   ],
+   "n": 1440000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 24
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (polars)",
+   "seconds": 0.17836732417345047,
+   "runs": [
+    0.17836732417345047
+   ],
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "genomeblocks (pandas)",
+   "seconds": 0.6442867033183575,
+   "runs": [
+    0.6442867033183575
+   ],
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96,
+   "agrees": true
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R read.delim",
+   "seconds": 1.502,
+   "runs": 1.502,
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
+  },
+  {
+   "part": "featurecounts",
+   "step": "read featureCounts matrix",
+   "engine": "R data.table::fread",
+   "seconds": 0.078000000000003,
+   "runs": 0.078000000000003,
+   "n": 5760000,
+   "n_genes": 60000,
+   "n_transcripts": 210070,
+   "n_samples": 96
   }
  ]
 }

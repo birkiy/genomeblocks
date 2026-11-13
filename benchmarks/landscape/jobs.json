@@ -1,0 +1,223 @@
+{
+ "meta": {
+  "confirmed": "2026-10-23",
+  "how": "Ten core and ten auxiliary jobs per theme, chosen from what the field's main tools are built around, before looking at genomeblocks; confirmed theme by theme by the author (Intervals with getfasta promoted to core and out-of-core streaming moved to auxiliary).",
+  "fields": {
+   "id": "C1-C10 core (the main, hardest or longest-running jobs), A1-A10 auxiliary",
+   "standard": "the tools that define the job in the field",
+   "checklist": "the tools.json capability keys that cover the job (62 of them added and filled by resurvey_jobs.py on 2026-10-23)",
+   "tasks": "the benchmark tasks (results/landscape.json and the main suite) that time the job; empty = not timed",
+   "genomeblocks": "yes / partial / no, read from the genomeblocks source on 2026-10-23, not from its inventory record"
+  }
+ },
+ "themes": {
+  "intervals": {
+   "core": [
+    {"id": "C1", "job": "Overlap join, all A x B pairs", "standard": "bedtools intersect -wa -wb", "checklist": ["overlap"], "tasks": ["overlap_pairs"], "genomeblocks": "yes"},
+    {"id": "C2", "job": "Overlap filter / count (-u, -c, -v)", "standard": "bedtools intersect -u/-c/-v", "checklist": ["overlap"], "tasks": ["intersect", "overlap_count"], "genomeblocks": "yes", "note": "Loci.intersect / difference (intersect -u / -v), Loci.count_overlaps (-c, since 2026-10-24)"},
+    {"id": "C3", "job": "Nearest / closest (ties, k nearest, strand)", "standard": "bedtools closest -k -s", "checklist": ["nearest"], "tasks": ["nearest"], "genomeblocks": "partial", "note": "single nearest only, no k"},
+    {"id": "C4", "job": "Coverage of A over B (counts, bp, fraction)", "standard": "bedtools coverage", "checklist": ["coverage"], "tasks": ["coverage"], "genomeblocks": "yes", "note": "Loci.coverage: covered bases per row (since 2026-10-24)"},
+    {"id": "C5", "job": "Genome-wide depth track", "standard": "bedtools genomecov -bg", "checklist": ["coverage"], "tasks": ["genome_depth"], "genomeblocks": "yes", "note": "genomeblocks.hichip.coverage takes any intervals"},
+    {"id": "C6", "job": "Merge / cluster with distance and column aggregation", "standard": "bedtools merge -d -c -o, cluster", "checklist": ["merge"], "tasks": ["merge"], "genomeblocks": "partial", "note": "no -d distance, no column aggregation"},
+    {"id": "C7", "job": "Subtract / difference", "standard": "bedtools subtract", "checklist": ["set_algebra"], "tasks": ["subtract"], "genomeblocks": "yes", "note": "Loci.subtract (base level, since 2026-10-24); Loci.difference is intersect -v"},
+    {"id": "C8", "job": "Complement against a genome", "standard": "bedtools complement", "checklist": ["set_algebra"], "tasks": ["complement"], "genomeblocks": "yes", "note": "Loci.complement (since 2026-10-24)"},
+    {"id": "C9", "job": "Parse + sort large BED / narrowPeak / GFF", "standard": "sort-bed, bedtools sort", "checklist": ["read_bed", "sort"], "tasks": ["read_bed"], "genomeblocks": "yes"},
+    {"id": "C10", "job": "Sequence extraction, strand-aware", "standard": "bedtools getfasta", "checklist": ["getfasta"], "tasks": ["getfasta"], "genomeblocks": "yes"}
+   ],
+   "auxiliary": [
+    {"id": "A1", "job": "Slop / flank / resize", "standard": "bedtools slop / flank", "checklist": ["slop"], "tasks": [], "genomeblocks": "partial", "note": "slop only"},
+    {"id": "A2", "job": "Genome windows / tiles", "standard": "bedtools makewindows", "checklist": ["tile"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A3", "job": "Out-of-core streaming on sorted input", "standard": "BEDOPS, bedtools -sorted", "checklist": ["out_of_core"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A4", "job": "Jaccard / Fisher between two sets", "standard": "bedtools jaccard / fisher", "checklist": ["jaccard_fisher"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A5", "job": "Shuffle / random placement with exclusions", "standard": "bedtools shuffle", "checklist": ["shuffle_regions"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A6", "job": "Multi-set intersection", "standard": "bedtools multiinter, unionbedg", "checklist": ["multi_set_intersect"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A7", "job": "Window search (+/- N bp)", "standard": "bedtools window", "checklist": ["window_search"], "tasks": [], "genomeblocks": "partial", "note": "slop + overlap"},
+    {"id": "A8", "job": "Liftover between assemblies", "standard": "liftOver, CrossMap", "checklist": ["liftover"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A9", "job": "Indexed point / range lookup", "standard": "cgranges, ncls, IITree", "checklist": ["point_lookup_index"], "tasks": ["point_lookup"], "genomeblocks": "yes"},
+    {"id": "A10", "job": "DataFrame interop (pandas, polars, Arrow, GRanges)", "standard": "bioframe, pyranges", "checklist": ["dataframe_interop"], "tasks": [], "genomeblocks": "yes"}
+   ]
+  },
+  "annotation": {
+   "core": [
+    {"id": "C1", "job": "Gene models from GTF / GFF3", "standard": "GenomicFeatures / txdbmaker, gffutils", "checklist": ["parse_gtf"], "tasks": ["parse_gtf"], "genomeblocks": "yes"},
+    {"id": "C2", "job": "Derived regions: promoters, introns, UTRs, intergenic", "standard": "GenomicFeatures", "checklist": ["derived_gene_regions"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C3", "job": "Region -> feature class with priority rules", "standard": "ChIPseeker annotatePeak", "checklist": ["feature_labels"], "tasks": ["labels"], "genomeblocks": "yes"},
+    {"id": "C4", "job": "Nearest TSS / gene with signed distance", "standard": "ChIPseeker, HOMER annotatePeaks", "checklist": ["nearest_tss"], "tasks": ["nearest_tss"], "genomeblocks": "yes"},
+    {"id": "C5", "job": "All genes within a window (multi-gene assignment)", "standard": "ChIPpeakAnno, GREAT", "checklist": ["genes_in_window"], "tasks": ["genes_in_window"], "genomeblocks": "partial", "note": "nearest gene only"},
+    {"id": "C6", "job": "Region-gene-set enrichment (regulatory domains)", "standard": "GREAT / rGREAT", "checklist": ["region_gene_enrichment"], "tasks": [], "genomeblocks": "no"},
+    {"id": "C7", "job": "Custom promoter / regulatory windows", "standard": "ChIPseeker tssRegion", "checklist": ["custom_promoter_window"], "tasks": ["labels"], "genomeblocks": "yes", "note": "measured inside labels: every tool is set to TSS +/- 1 kb (not ChIPseeker's default); genomeblocks' window is symmetric"},
+    {"id": "C8", "job": "Transcript- vs gene-level annotation", "standard": "ChIPseeker level=, HOMER", "checklist": ["transcript_level_annotation"], "tasks": [], "genomeblocks": "partial", "note": "one TSS per gene"},
+    {"id": "C9", "job": "Summary plots (feature mix, distance to TSS)", "standard": "ChIPseeker, annotatr", "checklist": ["distance_plots"], "tasks": [], "genomeblocks": "no"},
+    {"id": "C10", "job": "GO / pathway enrichment of the assigned genes", "standard": "clusterProfiler, HOMER GO, GREAT", "checklist": ["gene_set_function_enrichment"], "tasks": [], "genomeblocks": "no"}
+   ],
+   "auxiliary": [
+    {"id": "A1", "job": "Gene ID <-> symbol / biotype mapping", "standard": "AnnotationDbi, biomaRt", "checklist": ["gene_id_mapping"], "tasks": [], "genomeblocks": "partial", "note": "from GTF attributes"},
+    {"id": "A2", "job": "TSS table export", "standard": "GenomicFeatures", "checklist": ["tss_table"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A3", "job": "Export BED12 / GTF", "standard": "rtracklayer, gffread", "checklist": ["export_bed12", "export_gtf"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A4", "job": "genePred / refFlat reading", "standard": "txdbmaker, UCSC tools", "checklist": ["parse_genepred"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A5", "job": "Gene filters (biotype, canonical / MANE)", "standard": "biomaRt", "checklist": ["gene_filters"], "tasks": [], "genomeblocks": "partial", "note": "canonical isoform selection"},
+    {"id": "A6", "job": "Custom annotation sets (CpG islands, repeats, enhancers)", "standard": "annotatr", "checklist": ["custom_annotation_sets"], "tasks": [], "genomeblocks": "partial", "note": "generic overlap, no built-in sets"},
+    {"id": "A7", "job": "Annotation resources (TxDb, AnnotationHub, Ensembl)", "standard": "Bioconductor annotation packages", "checklist": ["uses_txdb"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A8", "job": "Chromosome naming (UCSC <-> Ensembl)", "standard": "GenomeInfoDb seqlevelsStyle", "checklist": ["chrom_naming_conversion"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A9", "job": "Data-driven isoform selection", "standard": "genomeblocks", "checklist": ["isoform_selection"], "tasks": ["isoform_selection"], "genomeblocks": "yes"},
+    {"id": "A10", "job": "Sequence context per region (GC, CpG)", "standard": "HOMER annotatePeaks -CpG", "checklist": ["sequence_context_gc_cpg"], "tasks": [], "genomeblocks": "no"}
+   ]
+  },
+  "signal": {
+   "core": [
+    {"id": "C1", "job": "BAM -> normalised coverage bigWig (CPM / RPGC, read extension)", "standard": "deepTools bamCoverage", "checklist": ["bam_coverage"], "tasks": ["bam_to_bigwig"], "genomeblocks": "partial", "note": "HiChIP ends to bigWig; per-region pileup"},
+    {"id": "C2", "job": "Region x bin matrix (reference-point / scale-regions)", "standard": "deepTools computeMatrix", "checklist": ["region_matrix"], "tasks": ["region_matrix"], "genomeblocks": "yes"},
+    {"id": "C3", "job": "Per-region summary over many tracks", "standard": "multiBigwigSummary, bigWigAverageOverBed", "checklist": ["region_mean", "multi_track"], "tasks": ["region_mean"], "genomeblocks": "yes"},
+    {"id": "C4", "job": "Read counts per region across many BAMs", "standard": "multiBamSummary, featureCounts (SAF)", "checklist": ["multi_bam_region_counts"], "tasks": ["multi_bam_counts"], "genomeblocks": "no"},
+    {"id": "C5", "job": "Profile + heatmap plots (sorting, k-means)", "standard": "plotProfile / plotHeatmap, EnrichedHeatmap", "checklist": ["profile_plot", "heatmap_plot"], "tasks": [], "genomeblocks": "partial", "note": "no k-means clustering"},
+    {"id": "C6", "job": "Sample correlation / PCA / fingerprint QC", "standard": "plotCorrelation, plotPCA, plotFingerprint", "checklist": ["sample_correlation_qc"], "tasks": [], "genomeblocks": "no"},
+    {"id": "C7", "job": "Track comparison (log2 ratio / subtract vs input)", "standard": "bigwigCompare", "checklist": ["track_comparison"], "tasks": ["track_comparison"], "genomeblocks": "partial", "note": "compare_heatmap"},
+    {"id": "C8", "job": "Normalisation across samples (scale factors, TMM, spike-in)", "standard": "deepTools --scaleFactors, csaw", "checklist": ["track_normalisation"], "tasks": ["track_tmm"], "genomeblocks": "yes"},
+    {"id": "C9", "job": "Write bigWig (from bedGraph / arrays)", "standard": "bedGraphToBigWig, pyBigWig", "checklist": ["bigwig_write", "bedgraph_to_bigwig"], "tasks": ["write_bigwig"], "genomeblocks": "partial", "note": "from intervals (hichip.to_bigwig)"},
+    {"id": "C10", "job": "Random-access bigWig reading, zoom levels", "standard": "pyBigWig, pybigtools", "checklist": ["bigwig_read"], "tasks": ["bigwig_read"], "genomeblocks": "yes"}
+   ],
+   "auxiliary": [
+    {"id": "A1", "job": "Per-base pileup / allele counts", "standard": "pysam, bam-readcount", "checklist": ["bam_pileup"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A2", "job": "Super-enhancer calling (stitch + rank)", "standard": "ROSE", "checklist": ["super_enhancer"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A3", "job": "HiChIP short-range track", "standard": "genomeblocks", "checklist": ["hichip_shortrange_track"], "tasks": ["hichip_shortrange_track"], "genomeblocks": "yes"},
+    {"id": "A4", "job": "Strand-aware signal (RNA-, PRO-seq)", "standard": "deepTools --filterRNAstrand", "checklist": ["strand_aware"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A5", "job": "Paired-end fragment handling (size, centring)", "standard": "deepTools bamPEFragmentSize", "checklist": ["paired_end_fragments"], "tasks": [], "genomeblocks": "partial", "note": "HiChIP fragments"},
+    {"id": "A6", "job": "Blacklist / mappability masking", "standard": "deepTools --blackListFileName", "checklist": ["blacklist_masking"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A7", "job": "Peak-set QC (FRiP, TSS enrichment)", "standard": "deepTools plotEnrichment, ATACseqQC", "checklist": ["peak_set_qc"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A8", "job": "Smoothing / rebinning", "standard": "bwtool, deepTools --smoothLength", "checklist": ["signal_smoothing"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A9", "job": "Merge / average bigWigs across replicates", "standard": "bigWigMerge, WiggleTools", "checklist": ["bigwig_merge"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A10", "job": "Parallel multi-track extraction", "standard": "deepTools -p", "checklist": ["parallel"], "tasks": ["region_matrix_16_tracks_8_workers"], "genomeblocks": "yes"}
+   ]
+  },
+  "motifs": {
+   "core": [
+    {"id": "C1", "job": "Genome-scale PWM scan with a p-value threshold", "standard": "FIMO, MOODS, HOMER", "checklist": ["pwm_scan", "pvalue_threshold"], "tasks": ["scan_logodds", "scan_pvalue"], "genomeblocks": "yes"},
+    {"id": "C2", "job": "Library-scale scan (1,000+ motifs x 100k regions)", "standard": "MOODS, motifmatchr, GimmeMotifs", "checklist": ["library_scale_scan"], "tasks": ["scan_library_1019"], "genomeblocks": "yes"},
+    {"id": "C3", "job": "Known-motif enrichment vs background", "standard": "HOMER known, AME / SEA", "checklist": ["enrichment_vs_background"], "tasks": ["known_enrichment"], "genomeblocks": "yes", "note": "scan_motifs_matrix + compare_motifs_to_ref"},
+    {"id": "C4", "job": "Background construction (GC/CpG-matched, shuffled)", "standard": "HOMER, GimmeMotifs, fasta-shuffle-letters", "checklist": ["background_construction"], "tasks": [], "genomeblocks": "no"},
+    {"id": "C5", "job": "De novo motif discovery", "standard": "MEME / STREME, HOMER", "checklist": ["de_novo_discovery"], "tasks": ["de_novo"], "genomeblocks": "no"},
+    {"id": "C6", "job": "Comparison to motif databases", "standard": "Tomtom", "checklist": ["motif_comparison"], "tasks": ["db_comparison"], "genomeblocks": "partial", "note": "pwm_distance_matrix compares motifs within one library; no query-vs-database search"},
+    {"id": "C7", "job": "Clustering into non-redundant archetypes", "standard": "GimmeMotifs, Vierstra archetypes", "checklist": ["motif_clustering"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C8", "job": "Differential enrichment between two sets", "standard": "HOMER -bg, monaLisa, AME", "checklist": ["differential_enrichment"], "tasks": ["differential_enrichment"], "genomeblocks": "yes", "note": "compare_motifs"},
+    {"id": "C9", "job": "Per-sample motif activity (deviation scores)", "standard": "chromVAR, GimmeMotifs maelstrom", "checklist": ["per_sample_motif_activity"], "tasks": ["motif_activity"], "genomeblocks": "no"},
+    {"id": "C10", "job": "Positional distribution / centrality around summits", "standard": "CentriMo, HOMER -hist", "checklist": ["per_position_profile"], "tasks": [], "genomeblocks": "yes"}
+   ],
+   "auxiliary": [
+    {"id": "A1", "job": "Read JASPAR / MEME / TRANSFAC libraries", "standard": "universalmotif", "checklist": ["parse_jaspar", "parse_meme", "parse_transfac"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A2", "job": "Logo plots", "standard": "ggseqlogo, logomaker", "checklist": ["logo_plot"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A3", "job": "Write / convert motif formats", "standard": "universalmotif, MEME tools", "checklist": ["motif_format_export"], "tasks": [], "genomeblocks": "partial", "note": "MEME export"},
+    {"id": "A4", "job": "PFM <-> PWM conversion, pseudocounts, background model", "standard": "universalmotif, Biopython", "checklist": ["motif_model_conversion"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A5", "job": "Motif hits as genomic coordinates (BED)", "standard": "FIMO, HOMER", "checklist": ["motif_hits_genomic"], "tasks": [], "genomeblocks": "partial"},
+    {"id": "A6", "job": "Motif co-occurrence / spacing (composite sites)", "standard": "SpaMo, HOMER", "checklist": ["motif_cooccurrence_spacing"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A7", "job": "Variant effect on motifs (SNP gain / loss)", "standard": "motifbreakR, atSNP", "checklist": ["variant_motif_effect"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A8", "job": "Multi-engine scanning (swap backends)", "standard": "genomeblocks, universalmotif", "checklist": ["multi_engine"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A9", "job": "Masked scanning (repeats / regions)", "standard": "HOMER -mask", "checklist": ["masked_scanning"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A10", "job": "Deep-learning attribution -> motifs", "standard": "TF-MoDISco, tangermeme", "checklist": ["attribution_motifs"], "tasks": [], "genomeblocks": "no"}
+   ]
+  },
+  "cooccupancy": {
+   "core": [
+    {"id": "C1", "job": "Index a large track collection", "standard": "GIGGLE, LOLA", "checklist": ["index_collection"], "tasks": ["index_collection"], "genomeblocks": "yes"},
+    {"id": "C2", "job": "Query-vs-collection enrichment ranking", "standard": "GIGGLE, LOLA, ChIP-Atlas", "checklist": ["enrichment_search"], "tasks": ["enrichment_search"], "genomeblocks": "yes"},
+    {"id": "C3", "job": "Exact overlap statistics (Fisher)", "standard": "bedtools fisher, LOLA", "checklist": ["fisher_test"], "tasks": ["enrichment_search"], "genomeblocks": "yes", "note": "measured inside enrichment_search (LOLA, genomeblocks and bedtools fisher are Fisher tests)"},
+    {"id": "C4", "job": "Permutation null with genome-aware randomisation", "standard": "regioneR permTest, GAT", "checklist": ["permutation_null"], "tasks": ["permutation_null"], "genomeblocks": "partial", "note": "query bootstrap (Atlas.bootstrap)"},
+    {"id": "C5", "job": "Custom universe / restricted background", "standard": "LOLA, regioneR", "checklist": ["reference_background"], "tasks": ["universe_enrichment"], "genomeblocks": "yes", "note": "Atlas.bootstrap(pool=universe)"},
+    {"id": "C6", "job": "Covariate-matched background (GC, distance, signal)", "standard": "nullranges matchRanges, GAT", "checklist": ["matched_background"], "tasks": [], "genomeblocks": "no"},
+    {"id": "C7", "job": "Pairwise co-occurrence across many sets", "standard": "bedtools jaccard, intervene", "checklist": ["pairwise_cooccupancy"], "tasks": ["pairwise_cooccurrence"], "genomeblocks": "no"},
+    {"id": "C8", "job": "Metadata search (TF, cell type, antigen)", "standard": "ChIP-Atlas, Cistrome DB", "checklist": ["metadata_search"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C9", "job": "Scale to 10k+ tracks", "standard": "GIGGLE, ChIP-Atlas, IGD", "checklist": ["scale_10k_tracks"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C10", "job": "Multiple-testing correction across tracks", "standard": "LOLA, regioneR", "checklist": ["multiple_testing_correction"], "tasks": [], "genomeblocks": "no"}
+   ],
+   "auxiliary": [
+    {"id": "A1", "job": "Bootstrap resampling of the query", "standard": "genomeblocks", "checklist": ["bootstrap_resampling_of_query"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A2", "job": "Local z-score / shift test", "standard": "regioneR localZScore", "checklist": ["local_zscore_shift"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A3", "job": "Block bootstrap respecting genome structure", "standard": "nullranges bootRanges", "checklist": ["block_bootstrap"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A4", "job": "Effect sizes (log odds, fold enrichment)", "standard": "LOLA, bedtools", "checklist": ["effect_sizes"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A5", "job": "Region-set similarity search", "standard": "GIGGLE, IGD", "checklist": ["set_similarity_search"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A6", "job": "Overlap visualisation (UpSet / Venn)", "standard": "intervene, UpSetR", "checklist": ["overlap_set_visualisation"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A7", "job": "Enrichment plots (ranked bars, volcano)", "standard": "LOLA, ChIP-Atlas", "checklist": ["enrichment_plots"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A8", "job": "Aggregate results by antigen / cell type", "standard": "ChIP-Atlas", "checklist": ["aggregate_by_metadata"], "tasks": [], "genomeblocks": "partial", "note": "Atlas.attach_meta"},
+    {"id": "A9", "job": "Public-atlas bundles (ChIP-Atlas, Cistrome, ReMap)", "standard": "ChIP-Atlas, ReMapEnrich", "checklist": ["public_atlas_bundles"], "tasks": [], "genomeblocks": "partial"},
+    {"id": "A10", "job": "Raw overlap counts per track", "standard": "bedtools intersect -c", "checklist": ["per_track_overlap_counts"], "tasks": ["overlap_counts_500_tracks"], "genomeblocks": "yes"}
+   ]
+  },
+  "graph3d": {
+   "core": [
+    {"id": "C1", "job": "Parse + deduplicate pairs from alignments", "standard": "pairtools parse / dedup, Juicer", "checklist": ["pairs_parse_dedup"], "tasks": [], "genomeblocks": "no"},
+    {"id": "C2", "job": "Pairs -> binned multi-resolution matrix (.cool / .mcool / .hic)", "standard": "cooler cload / zoomify, Juicer pre, hictk", "checklist": ["bin_pairs_to_matrix"], "tasks": ["bin_pairs_to_matrix"], "genomeblocks": "partial", "note": "in-memory sparse matrix (count_pairs_2d); no .cool writer"},
+    {"id": "C3", "job": "Matrix balancing (ICE / KR)", "standard": "cooler balance, Juicer", "checklist": ["matrix_balancing"], "tasks": ["matrix_balancing"], "genomeblocks": "no"},
+    {"id": "C4", "job": "Expected / observed-over-expected (distance decay)", "standard": "cooltools expected", "checklist": ["oe_normalisation"], "tasks": ["oe_normalisation"], "genomeblocks": "partial", "note": "power-law O/E on graph edges"},
+    {"id": "C5", "job": "Read .cool / .mcool / .hic", "standard": "cooler, hictk, straw", "checklist": ["read_cool_mcool", "read_hic_juicer"], "tasks": ["read_cool_mcool"], "genomeblocks": "partial", "note": "no .hic"},
+    {"id": "C6", "job": "Loop / interaction calling", "standard": "HiCCUPS, Mustache, FitHiChIP", "checklist": ["loop_calling"], "tasks": ["loop_calling", "loops_fithichip", "loops_maps", "loops_mustache", "loops_hiccups"], "genomeblocks": "yes", "note": "gb.hiccups and gb.mustache (Hi-C, from a cooler), gb.fithichip and gb.maps (HiChIP), ports of the originals (2026-11)"},
+    {"id": "C7", "job": "TAD / insulation boundaries", "standard": "cooltools insulation, HiCExplorer", "checklist": ["tad_calling"], "tasks": ["tad_boundaries"], "genomeblocks": "no"},
+    {"id": "C8", "job": "A/B compartments (eigenvectors, saddle)", "standard": "cooltools eigs", "checklist": ["compartment_calling"], "tasks": ["compartments"], "genomeblocks": "no"},
+    {"id": "C9", "job": "Differential contacts / loops", "standard": "diffHic, multiHiCcompare, CHESS", "checklist": ["differential_contacts"], "tasks": [], "genomeblocks": "no"},
+    {"id": "C10", "job": "Loop-feature overlap and anchor-gene assignment", "standard": "bedtools pairtobed, GenomicInteractions", "checklist": ["loop_region_overlap", "anchor_gene_annotation"], "tasks": ["loop_overlap_both", "loop_overlap_either", "anchor_gene_annotation"], "genomeblocks": "yes"}
+   ],
+   "auxiliary": [
+    {"id": "A1", "job": "Aggregate pile-ups (APA)", "standard": "cooltools pileup, coolpup.py, Juicer APA", "checklist": ["aggregate_pileups"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A2", "job": "Read BEDPE / loop lists", "standard": "GenomicInteractions, bedtools", "checklist": ["read_bedpe"], "tasks": ["read_bedpe"], "genomeblocks": "yes"},
+    {"id": "A3", "job": "Stream pairs into window counts", "standard": "pairtools, cooler", "checklist": ["pairs_streaming"], "tasks": ["pairs_streaming"], "genomeblocks": "yes"},
+    {"id": "A4", "job": "Contact graph (anchors as nodes)", "standard": "GenomicInteractions, graph libraries", "checklist": ["contact_graph"], "tasks": ["contact_graph", "build_graph"], "genomeblocks": "yes"},
+    {"id": "A5", "job": "Graph algorithms (components, PageRank)", "standard": "igraph, networkx, graph-tool", "checklist": ["graph_algorithms"], "tasks": ["components", "pagerank"], "genomeblocks": "yes"},
+    {"id": "A6", "job": "Hub / clique mining", "standard": "genomeblocks", "checklist": ["hub_mining"], "tasks": ["hub_mining"], "genomeblocks": "yes"},
+    {"id": "A7", "job": "HiChIP-aware bias correction", "standard": "FitHiChIP, MAPS", "checklist": ["hichip_support"], "tasks": ["loops_fithichip", "loops_maps"], "genomeblocks": "yes", "note": "gb.fithichip (FitHiChIP's coverage-bias regression) and gb.maps (MAPS's zero-truncated Poisson regression on GC, mappability, effective length)"},
+    {"id": "A8", "job": "Virtual 4C / viewpoint profiles", "standard": "FAN-C, HiCExplorer", "checklist": ["virtual_4c"], "tasks": [], "genomeblocks": "partial", "note": "anchor_profile track"},
+    {"id": "A9", "job": "Contact QC: P(s) curve, cis/trans ratio", "standard": "pairtools stats, cooltools", "checklist": ["contact_qc"], "tasks": [], "genomeblocks": "partial", "note": "power-law fit, cis / trans counts"},
+    {"id": "A10", "job": "Graph export (graph-tool, networkx, igraph)", "standard": "graph libraries", "checklist": ["graph_export"], "tasks": [], "genomeblocks": "yes"}
+   ]
+  },
+  "expression": {
+   "core": [
+    {"id": "C1", "job": "Count reads per gene from BAM", "standard": "featureCounts, HTSeq", "checklist": ["count_reads_from_bam"], "tasks": ["read_counts_bam"], "genomeblocks": "no"},
+    {"id": "C2", "job": "Import Salmon / kallisto / RSEM", "standard": "tximport", "checklist": ["read_salmon_kallisto", "read_rsem"], "tasks": ["read_salmon"], "genomeblocks": "yes"},
+    {"id": "C3", "job": "Transcript -> gene with length offsets", "standard": "tximport", "checklist": ["tx_to_gene"], "tasks": ["tx_to_gene"], "genomeblocks": "yes"},
+    {"id": "C4", "job": "Library-size normalisation (size factors, TMM, upper quartile)", "standard": "DESeq2, edgeR", "checklist": ["size_factors", "tmm"], "tasks": ["size_factors", "tmm"], "genomeblocks": "yes"},
+    {"id": "C5", "job": "Low-count filtering", "standard": "edgeR filterByExpr", "checklist": ["filter_by_expr"], "tasks": ["filter_by_expr"], "genomeblocks": "yes"},
+    {"id": "C6", "job": "Dispersion estimation (NB, empirical Bayes)", "standard": "DESeq2, edgeR", "checklist": ["dispersion_estimation"], "tasks": ["dispersion"], "genomeblocks": "no"},
+    {"id": "C7", "job": "DE test with a design matrix (Wald, LRT, QL F, voom)", "standard": "DESeq2, edgeR, limma", "checklist": ["de_test"], "tasks": ["de_test"], "genomeblocks": "no", "note": "planned for 2.1"},
+    {"id": "C8", "job": "LFC shrinkage", "standard": "apeglm, ashr", "checklist": ["lfc_shrinkage"], "tasks": ["lfc_shrinkage"], "genomeblocks": "no"},
+    {"id": "C9", "job": "Variance-stabilising transforms (VST, rlog, voom)", "standard": "DESeq2, limma", "checklist": ["variance_stabilising_transform"], "tasks": ["vst"], "genomeblocks": "partial", "note": "log-CPM only"},
+    {"id": "C10", "job": "Batch correction / covariates", "standard": "ComBat-seq, RUVSeq, removeBatchEffect", "checklist": ["batch_correction"], "tasks": ["batch_correction"], "genomeblocks": "no"}
+   ],
+   "auxiliary": [
+    {"id": "A1", "job": "Read featureCounts / STAR / HTSeq / nf-core tables", "standard": "edgeR, DESeq2 helpers", "checklist": ["read_featurecounts", "read_star_htseq"], "tasks": ["read_featurecounts"], "genomeblocks": "yes"},
+    {"id": "A2", "job": "CPM / log-CPM / TPM", "standard": "edgeR", "checklist": ["cpm_logcpm"], "tasks": ["cpm", "log_cpm"], "genomeblocks": "yes"},
+    {"id": "A3", "job": "Sample QC: PCA, MDS, clustering", "standard": "DESeq2 plotPCA, limma plotMDS", "checklist": ["sample_qc_pca"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A4", "job": "MA / volcano plots", "standard": "DESeq2, EnhancedVolcano", "checklist": ["ma_volcano_plots"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A5", "job": "Independent filtering / FDR", "standard": "DESeq2", "checklist": ["independent_filtering_fdr"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A6", "job": "Gene-set tests on DE results", "standard": "fgsea, limma camera", "checklist": ["gene_set_tests"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A7", "job": "AnnData / SummarizedExperiment interop", "standard": "anndata, SummarizedExperiment", "checklist": ["anndata_or_sce"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A8", "job": "Join genes to gene models / coordinates", "standard": "tximeta", "checklist": ["aligned_to_gene_models"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A9", "job": "Input format auto-detection", "standard": "genomeblocks", "checklist": ["multi_format_sniffing"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A10", "job": "Pseudobulk from single-cell", "standard": "muscat, decoupler", "checklist": ["pseudobulk"], "tasks": [], "genomeblocks": "no"}
+   ]
+  },
+  "viewers": {
+   "core": [
+    {"id": "C1", "job": "Multi-track static locus figure (signal, genes, peaks)", "standard": "pyGenomeTracks, Gviz, plotgardener", "checklist": ["static_region_plot"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C2", "job": "bigWig signal tracks", "standard": "pyGenomeTracks, Gviz", "checklist": ["bigwig_tracks"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C3", "job": "Gene model tracks", "standard": "Gviz, plotgardener", "checklist": ["gene_tracks"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C4", "job": "BAM read / coverage tracks", "standard": "IGV, Gviz", "checklist": ["bam_tracks"], "tasks": [], "genomeblocks": "partial", "note": "coverage pileup, no read view"},
+    {"id": "C5", "job": "Loop arcs", "standard": "pyGenomeTracks, IGV", "checklist": ["loop_arcs"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C6", "job": "Hi-C contact-matrix track", "standard": "pyGenomeTracks, HiGlass", "checklist": ["hic_matrix_track"], "tasks": [], "genomeblocks": "no"},
+    {"id": "C7", "job": "Interactive zoom / pan browsing", "standard": "IGV / igv.js, HiGlass, JBrowse 2", "checklist": ["interactive_browsing"], "tasks": [], "genomeblocks": "yes", "note": "igv.js export"},
+    {"id": "C8", "job": "Notebook-inline display", "standard": "igv-notebook, CoolBox", "checklist": ["notebook_inline"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C9", "job": "Many regions / multi-panel layouts", "standard": "plotgardener, pyGenomeTracks", "checklist": ["multi_region_layout"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "C10", "job": "Programmatic figure API", "standard": "Gviz, plotgardener", "checklist": ["programmatic_api"], "tasks": [], "genomeblocks": "yes"}
+   ],
+   "auxiliary": [
+    {"id": "A1", "job": "Standalone interactive HTML export", "standard": "igv.js, HiGlass", "checklist": ["interactive_html_export"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A2", "job": "IGV session / igv.js embedding", "standard": "igv-reports", "checklist": ["igv_session_or_igvjs"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A3", "job": "Config-file driven figures", "standard": "pyGenomeTracks", "checklist": ["config_file_driven"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A4", "job": "Command-line rendering", "standard": "pyGenomeTracks, IGV batch", "checklist": ["cli"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A5", "job": "Network view of contacts", "standard": "Cytoscape", "checklist": ["graph_network_view"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A6", "job": "Hosted web app / server", "standard": "HiGlass, JBrowse 2", "checklist": ["web_app"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A7", "job": "Variant / VCF tracks", "standard": "IGV, Gviz", "checklist": ["variant_tracks"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A8", "job": "Region highlights / annotations", "standard": "IGV, pyGenomeTracks", "checklist": ["region_highlights"], "tasks": [], "genomeblocks": "yes"},
+    {"id": "A9", "job": "Linked / synchronised views", "standard": "HiGlass", "checklist": ["linked_views"], "tasks": [], "genomeblocks": "no"},
+    {"id": "A10", "job": "Publication export (SVG / PDF)", "standard": "plotgardener, pyGenomeTracks", "checklist": ["publication_export"], "tasks": [], "genomeblocks": "yes"}
+   ]
+  }
+ }
+}

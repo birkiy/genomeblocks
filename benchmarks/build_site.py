@@ -933,6 +933,7 @@ def build():
 title: Benchmarks
 layout: default
 nav_order: 9
+has_children: true
 permalink: /benchmarks/
 ---
 
@@ -950,6 +951,9 @@ Python {escape(env.get('python', ''))} · synthetic hg38-shaped data (seeded) ·
 most 8 worker processes</p>
 
 {tiles(tl)}
+
+{{: .note }}
+> **How does genomeblocks compare with the field?** The [Landscape]({{{{ '/benchmarks/landscape/' | relative_url }}}}) page lists every tool that does each building block's job — bedtools, GenomicRanges, pyranges, deepTools, HOMER, ChIPseeker, MEME, GIGGLE, LOLA, cooler, DESeq2, edgeR and some two hundred and seventy more — and scores the ones that run here on accuracy, scalability, stability and usability.
 
 1. TOC
 {{:toc}}

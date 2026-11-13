@@ -47,7 +47,7 @@ That is the default install: everything but a motif engine. Optional extras add 
 
 | Extra | Adds | Use it for |
 |---|---|---|
-| `motifs` | `MOODS-python` | the default motif engine, [MOODS](https://github.com/jhkorhonen/MOODS) (C++, compiled at install) |
+| `motifs` | `MOODS-python` | a motif engine, [MOODS](https://github.com/jhkorhonen/MOODS) (C++, compiled at install); the default when lightmotif is not installed |
 | `lightmotif` | `lightmotif` | the alternative motif engine (prebuilt wheels, no compiler); same hits; used automatically only when MOODS is absent |
 | `fast` | `polars` | faster GTF / GFF3 / BED / pairs parsing (same columns as pandas) |
 | `bam` | `pysam` | BAM pileups in `browser` / `gb.coverage`, FASTA through pysam |

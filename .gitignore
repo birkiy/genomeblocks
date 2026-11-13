@@ -237,3 +237,6 @@ benchmarks/data/
 
 # local Jekyll builds
 docs/Gemfile.lock
+
+# figures written by benchmark builders (the docs keep their own copies under docs/assets/images)
+benchmarks/figures/

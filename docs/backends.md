@@ -391,6 +391,7 @@ raises `NotImplementedError` naming the engines that have it.
 | nearest (`nearest`, `nearest_tss`, `nearest_genes`) | yes | — | — | yes | yes | yes |
 | merge (`merge`, `stitch_peaks`) | yes | — | — | yes | yes | yes |
 | point lookup (`overlap_rows`, `overlaps`, `A.region`) | yes, cached index | yes, cached index | yes, cached index | via overlap | via overlap | via overlap |
+| counts, coverage, subtract, complement (`count_overlaps`, `coverage`, `subtract`, `complement`) | yes | — | — | — | — | — |
 
 **bigwig**
 

@@ -330,6 +330,10 @@ keeps row order).
 | `overlap_pairs` | `overlap_pairs(o, *, backend=None)` | `(rows of self, rows of o)` for every overlapping pair, sorted by (self row, o row). |
 | `intersect` | `intersect(o, *, backend=None)` | Rows that overlap `o` (`A & B`, bedtools `intersect -u`). |
 | `difference` | `difference(o, *, backend=None)` | Rows that do not overlap `o` (`A - B`, bedtools `intersect -v`). |
+| `count_overlaps` | `count_overlaps(o) -> np.ndarray` | Number of rows of `o` overlapping each row (bedtools `intersect -c`). |
+| `coverage` | `coverage(o) -> np.ndarray` | Bases of each row covered by `o`, overlapping rows of `o` counted once (bedtools `coverage`'s covered-bases column; divide by `lengths` for the fraction). |
+| `subtract` | `subtract(o) -> Loci` | Each row minus the bases `o` covers (bedtools `subtract`): a cut row becomes one row per piece, with its strand, its columns and `cols['source_row']`; a fully covered row disappears. |
+| `complement` | `complement(sizes=None) -> Loci` | The genome no row covers (bedtools `complement`), from `sizes` (a dict or .chrom.sizes path) or the Genome's sizes; chromosomes with a size and no row come back whole. Sorted. |
 | `nearest` | `nearest(o, *, backend=None)` | `(row in o, distance)` per row: 0 for an overlap, else the gap in bases (book-ended = 0); `(-1, -1)` when `o` has nothing on that chromosome. |
 | `merge` | `merge(*, backend=None)` | Overlapping or book-ended rows fused (strand of the first row of each block), sorted; extra columns dropped. |
 | `slop` | `slop(n)` | Every interval widened by `n` bp on each side (clipped at 0); columns kept. |
