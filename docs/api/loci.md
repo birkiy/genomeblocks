@@ -474,6 +474,7 @@ Loci.from_anndata(ad).equals(cre)
 | `Loci.load` | `load(path, *, genome=None)` | Reads it back onto any `Genome`; sets `filename`. |
 | `to_bed` | `to_bed(path=None, *, name=None, score=None)` | BED6 text (returned, or written to `path`): name = `cols[name]` or the uid, score = `cols[score]` or 0. |
 | `to_fasta` | `to_fasta(path, fasta, r=None, *, strand=False, **kw)` | The rows' sequences as FASTA, headers = uids (see [Sequences](#sequences-and-liftover)). |
+| `to_bigwig` | `to_bigwig(path, values, *, chrom_sizes=None)` | One value per row as a bigWig: `values` a column name or an array; NaN rows left out, overlapping rows raise (see [`write_bigwig`]({{ '/api/signal/#write_bigwig' | relative_url }})). |
 
 ```python
 cre.save("cre.parquet")

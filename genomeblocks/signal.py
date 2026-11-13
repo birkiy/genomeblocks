@@ -224,3 +224,80 @@ def tmm(cube: np.ndarray) -> np.ndarray:
     factors = _tmm_norm_factors(means[:, has])
     scale[has] = 1.0 / (factors * lib_size[has] / 1_000_000)
     return cube * scale[None, :, None]
+
+
+# ── writing ──────────────────────────────────────────────────────────────────
+
+def _write_bigwig(path, sizes, chunks) -> str:
+    """Write ``chunks`` — ``(chrom, starts, ends, values)`` arrays, sorted and non-overlapping within each
+    chromosome — as a bigWig with pybigtools. Chromosomes go in name order (``sort -k1,1``, what bigWig
+    writers expect); a chromosome may come in several chunks, in position order."""
+    import itertools
+    import pybigtools
+    sizes = {str(k): int(v) for k, v in sorted(sizes.items())}
+    by = {}
+    for c, s, e, v in chunks:
+        if len(s):
+            by.setdefault(str(c), []).append((s, e, v))
+    missing = sorted(set(by) - set(sizes))
+    if missing:
+        raise ValueError(f"no size for chromosome(s) {', '.join(missing[:5])}: pass chrom_sizes")
+    recs = itertools.chain.from_iterable(
+        zip(itertools.repeat(c), np.asarray(s, np.int64).tolist(), np.asarray(e, np.int64).tolist(),
+            np.asarray(v, np.float64).tolist())
+        for c in sorted(by) for s, e, v in by[c])
+    out = pybigtools.open(str(path), "w")
+    out.write(sizes, recs)                      # write() closes the file
+    return str(path)
+
+
+def write_bigwig(loci, path: str, values, *, chrom_sizes=None) -> str:
+    """Write one value per row of ``loci`` as a bigWig (bedGraph semantics: each row is an interval
+    holding its value).
+
+    Args:
+        loci: anything :func:`~genomeblocks.as_loci` takes (a ``Loci``, a bedGraph-like frame, a path).
+        path: the bigWig to write.
+        values: a column name of ``loci`` or an array with one value per row. Rows whose value is NaN
+            are left out (no data there).
+        chrom_sizes: a dict, a .chrom.sizes path or a ``Genome``; default the sizes ``loci``'s genome
+            carries.
+
+    Rows are written in chromosome-name, then start order; rows that overlap on a chromosome raise
+    ``ValueError`` (a bigWig holds one value per base). Returns ``path``.
+    """
+    from .genome import read_sizes
+    from .interop import as_loci
+    L = as_loci(loci)
+    if isinstance(values, str):
+        if values not in L.cols:
+            raise KeyError(f"no column {values!r} (have {', '.join(L.cols) or 'none'})")
+        v = np.asarray(L.cols[values], np.float64)
+    else:
+        v = np.asarray(values, np.float64).ravel()
+        if len(v) != len(L):
+            raise ValueError(f"values has {len(v)} entries for {len(L)} rows")
+    sizes = read_sizes(chrom_sizes) if chrom_sizes is not None else dict(L.genome.sizes)
+    if not sizes:
+        raise ValueError("write_bigwig needs chromosome sizes: pass chrom_sizes (or a Loci whose Genome has them)")
+    names = np.asarray(L.genome.names, dtype=object)
+    keep = np.isfinite(v)
+    codes, s, e, v = L.codes[keep], L.starts[keep], L.ends[keep], v[keep]
+    rank = np.argsort(np.argsort(names, kind="stable"), kind="stable")    # code -> position in name order
+    o = np.lexsort((s, rank[codes]))
+    codes, s, e, v = codes[o], s[o], e[o], v[o]
+    same = codes[1:] == codes[:-1]
+    if np.any(same & (s[1:] < e[:-1])):
+        i = int(np.flatnonzero(same & (s[1:] < e[:-1]))[0])
+        raise ValueError(f"rows overlap ({names[codes[i]]}:{s[i]}-{e[i]} and {s[i + 1]}-{e[i + 1]}): a bigWig "
+                         "holds one value per base; merge or average them first")
+    cut = np.r_[0, np.flatnonzero(~same) + 1, len(codes)]
+    chunks = []
+    for a, b in zip(cut[:-1], cut[1:]):
+        if a == b:
+            continue
+        c = str(names[codes[a]])
+        if c in sizes and e[b - 1] > sizes[c]:
+            raise ValueError(f"{c}:{s[b - 1]}-{e[b - 1]} ends past the chromosome ({sizes[c]:,} bp)")
+        chunks.append((c, s[a:b], e[a:b], v[a:b]))
+    return _write_bigwig(path, sizes, chunks)

@@ -7,7 +7,7 @@ Fluent building blocks for regulatory genomics, as columnar tables.
 - `Genes`: GTF / GFF3 / UCSC gene models as three linked tables (genes, transcripts, features); annotation and ATAC-supported isoforms.
 - `Expression`: RNA-seq quantifications (salmon, kallisto, RSEM, featureCounts, STAR, HTSeq, nf-core, any matrix) as a features × samples table on the gene rows; tximport-style summarising, TMM / size factors / CPM.
 - `Pairs` and `Architecture`: BEDPE loops and the chromatin-contact graph over CREs — Hi-C weights from `.mcool`, O/E normalisation, hubs.
-- `signal`: bigWig signal cubes, TMM normalisation, heatmaps; `motifs`: motif scanning with any engine; `Atlas`: GIGGLE-style enrichment.
+- `signal`: bigWig signal cubes, TMM normalisation, heatmaps, bigWig writing (from values or a BAM, CPM / RPKM / BPM / RPGC); `motifs`: motif scanning with any engine; `Atlas`: GIGGLE-style enrichment.
 - `browser`, `igv_html`, `View`: a matplotlib region view, a shareable IGV page and a one-file interactive browser.
 
 Every table hands itself to pandas, polars, Arrow, bioframe, pyranges, pybedtools, AnnData, duckdb, seaborn and friends, and takes their frames back. The heavy work runs through swappable backends (numpy / cgranges / ncls / bioframe / pyranges / bedtools for intervals, pybigtools / pyBigWig / pure Python for bigWigs, MOODS / lightmotif / Biopython for motifs, graph-tool / scipy / igraph / networkx for graphs, ...) with the same answer whichever engine runs.

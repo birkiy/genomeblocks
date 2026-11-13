@@ -254,6 +254,62 @@ gb.tmm(np.zeros((5, 2, 3)))
 
 ---
 
+## Writing bigWigs
+{: .sec-green }
+
+Two writers, both through pybigtools:
+
+| Call | Writes | The job of |
+|---|---|---|
+| `loci.to_bigwig(path, values)` / `gb.write_bigwig(loci, path, values)` | one value per row: each row is an interval holding its value (bedGraph semantics) | `bedGraphToBigWig`, rtracklayer `export.bw` |
+| `gb.bam_to_bigwig(bam, path, ...)` | read coverage from an indexed BAM, per base or per bin, raw or normalised | deepTools `bamCoverage`, megadepth, `bedtools genomecov` + `bedGraphToBigWig` |
+
+```python
+cre["atac"] = S[:, 0, :].mean(axis=1)                  # any per-row number
+cre.to_bigwig("cre_atac.bw", "atac")                   # sizes from the table's Genome, or chrom_sizes=
+gb.write_bigwig(cre, "cre_score.bw", cre.cols["score"], chrom_sizes="hg38.chrom.sizes")
+```
+
+Rows go out in chromosome-name, then start order; a row whose value is NaN is
+left out (no data there), and rows that overlap on a chromosome raise
+`ValueError`, since a bigWig holds one value per base.
+
+```python
+gb.bam_to_bigwig("chip.bam", "chip.bw")                # per-base depth, the records of genomecov -bg
+gb.bam_to_bigwig("chip.bam", "chip.cpm.bw", bin_size=10, normalize="CPM",
+                 extend=200, ignore_duplicates=True, workers=4)
+gb.bam_to_bigwig("atac.bam", "atac.bw", extend="pairs", normalize="RPGC",
+                 effective_genome_size=2_913_022_398)
+```
+
+`bin_size=1` writes the depth of every base, each read counted over its
+aligned blocks (split at deletions and introns). A larger `bin_size` writes,
+for each bin from the chromosome's start, the number of reads overlapping it,
+a read counting once per bin: deepTools' value. The options map onto
+`bamCoverage`'s:
+
+| `bam_to_bigwig` | deepTools `bamCoverage` |
+|---|---|
+| `bin_size` | `--binSize` |
+| `normalize` = `"CPM"`, `"RPKM"`, `"BPM"`, `"RPGC"` | `--normalizeUsing`, the same formulas |
+| `effective_genome_size` | `--effectiveGenomeSize` |
+| `extend=200` (each read to 200 bases along its strand) | `--extendReads 200` |
+| `extend="pairs"` (proper pairs once, over the fragment) | `--extendReads` on paired-end data |
+| `min_mapq`, `ignore_duplicates`, `exclude` | `--minMappingQuality`, `--ignoreDuplicates`, `--samFlagExclude` |
+| `chroms`, `workers` | the chromosomes written, processes (`-p`) |
+
+By default unmapped, secondary, failed-QC and supplementary reads are left
+out; duplicates count unless `ignore_duplicates=True`. The reads counted for
+the normalisations are the reads that pass these filters. The BAM needs an
+index (`samtools index`); pysam reads it (`pip install genomeblocks[bam]`).
+
+On the [Landscape]({{ '/benchmarks/landscape/' | relative_url }}) page's simulated ChIP BAM (10 M reads,
+one core) the per-base track takes 39 s, megadepth 28 s and deepTools 45 min, with the same depth at
+every base; at 50 bp bins it takes 33 s against deepTools' 203 s. Writing 10 M values takes 7.6 s
+(rtracklayer 10 s, `bedGraphToBigWig` 17 s). `workers=` spreads the chromosomes over processes.
+
+---
+
 ## `plot_heatmap`
 {: .sec-green }
 
